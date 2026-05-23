@@ -1,6 +1,6 @@
-# @is-pinoy-dev/cli
+# @is-pinoy-dev/validate
 
-## 0.2.0
+## 0.1.0
 
 ### Minor Changes
 
@@ -9,8 +9,7 @@
   - `@is-pinoy-dev/validate` — public validator for is-pinoy.dev domain files
   - `@is-pinoy-dev/schemas` — Zod schemas and TypeScript types for is-pinoy.dev domain files
 
-## 0.1.0
+### Patch Changes
 
-### Minor Changes
-
-- 5e4b1eb: Initial release of `@is-pinoy-dev/cli` — validate and sync is-pinoy.dev subdomains to Cloudflare.
+- Updated dependencies [51d2007]
+  - @is-pinoy-dev/schemas@0.1.0
