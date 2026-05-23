@@ -1,0 +1,39 @@
+import { z } from "zod";
+
+const baseRecord = z.object({
+  ttl: z.number().optional(),
+});
+
+const aRecord = baseRecord.extend({
+  value: z.ipv4(),
+});
+
+const aaaaRecord = baseRecord.extend({
+  value: z.ipv6(),
+});
+
+const cnameRecord = baseRecord.extend({
+  value: z.string().min(1),
+  proxied: z.boolean().optional(),
+});
+
+const txtRecord = baseRecord.extend({
+  value: z.string().min(1),
+  provider: z.enum(["vercel"]),
+});
+
+const singleOrArray = <T extends z.ZodTypeAny>(schema: T) =>
+  z.union([schema, z.array(schema)]);
+
+export const dnsRecordSchema = z.discriminatedUnion("type", [
+  aRecord.extend({ type: z.literal("A") }),
+  aaaaRecord.extend({ type: z.literal("AAAA") }),
+  cnameRecord.extend({ type: z.literal("CNAME") }),
+  txtRecord.extend({ type: z.literal("TXT") }),
+]);
+
+export const aRecordSchema = aRecord;
+export const aaaaRecordSchema = aaaaRecord;
+export const cnameRecordSchema = cnameRecord;
+export const txtRecordSchema = txtRecord;
+export { singleOrArray };

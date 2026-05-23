@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dnsRecordSchema } from "./index.js";
+import { dnsRecordSchema } from "./records.js";
 
 export const createActionSchema = z.object({
   type: z.literal("CREATE"),
