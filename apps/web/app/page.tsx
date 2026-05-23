@@ -167,7 +167,7 @@ export default function Page() {
         </Link>
 
         <a
-          href="https://github.com/is-pinoy-dev/domains"
+          href="https://github.com/is-pinoy-dev"
           target="_blank"
           rel="noopener noreferrer"
           style={{
@@ -196,7 +196,7 @@ export default function Page() {
             el.style.transform = "translate(0, 0)"
           }}
         >
-          CLAIM YOUR SUBDOMAIN
+          GITHUB
         </a>
       </nav>
 
