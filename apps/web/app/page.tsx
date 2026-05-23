@@ -258,12 +258,12 @@ export default function Page() {
             <span>Claim your</span>
             <span style={{
               fontSize: "clamp(1.25rem, 4vw, 2.75rem)",
-              color: "#F5C800",
-              border: "3px solid #F5C800",
-              padding: "12px 28px",
-              boxShadow: "5px 5px 0 #D4A800, 8px 8px 0 rgba(212,168,0,0.3)",
+              color: "#0D0D0D",
+              backgroundColor: "#F5C800",
+              padding: "12px 32px",
               letterSpacing: "0.05em",
               display: "inline-block",
+              animation: "stamp-in 0.4s cubic-bezier(0.22,0.61,0.36,1) both, gold-flicker 6s ease-in-out 1s infinite",
             }}>
               PINOY PRIDE
             </span>
