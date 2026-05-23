@@ -2,10 +2,7 @@
   "name": "@is-pinoy-dev/registry",
   "version": "0.0.2",
   "type": "module",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
-    "access": "restricted"
-  },
+  "private": true,
   "scripts": {
     "build": "tsc",
     "lint": "eslint",
