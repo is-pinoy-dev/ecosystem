@@ -4,7 +4,7 @@ import {
   dnsActionSchema,
   type DNSAction,
   type CloudflareRecord,
-} from "@is-pinoy/schemas";
+} from "@is-pinoy-dev/schemas";
 import { env } from "./env.js";
 
 function toFQDN(subdomain: string) {

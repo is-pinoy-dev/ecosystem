@@ -1,5 +1,5 @@
 {
-  "name": "@is-pinoy/cli",
+  "name": "@is-pinoy-dev/cli",
   "version": "0.0.0",
   "type": "module",
   "bin": {
@@ -26,7 +26,7 @@
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
-    "@is-pinoy/registry": "workspace:*",
+    "@is-pinoy-dev/registry": "workspace:*",
     "@types/figlet": "^1.7.0",
     "@types/node": "^22.15.3",
     "@workspace/eslint-config": "workspace:*",

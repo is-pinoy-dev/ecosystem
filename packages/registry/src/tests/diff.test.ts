@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { diff } from "../core/diff.js";
-import type { Domain, CloudflareRecord } from "@is-pinoy/schemas";
+import type { Domain, CloudflareRecord } from "@is-pinoy-dev/schemas";
 
 describe("diff", () => {
   beforeEach(() => {

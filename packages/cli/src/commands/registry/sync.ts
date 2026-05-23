@@ -29,7 +29,7 @@ export async function handleSync(
   const creds = resolveCloudflareCreds(credsOptions);
   setCloudflareEnv(creds);
 
-  const registry = await import("@is-pinoy/registry");
+  const registry = await import("@is-pinoy-dev/registry");
   const domains = registry.loadDomains(dir);
   info(`Loaded ${domains.length} domain(s) from ${dir}`);
 

@@ -9,7 +9,7 @@ export async function handleStatus(
   const creds = resolveCloudflareCreds(credsOptions);
   setCloudflareEnv(creds);
 
-  const registry = await import("@is-pinoy/registry");
+  const registry = await import("@is-pinoy-dev/registry");
   const domains = registry.loadDomains(dir);
   const records = await registry.listRecords();
   const recordsArray = Array.isArray(records) ? records : [records];

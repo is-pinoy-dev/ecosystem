@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { type CloudflareRecord, type DNSRecord } from "@is-pinoy/schemas";
+import { type CloudflareRecord, type DNSRecord } from "@is-pinoy-dev/schemas";
 import { env } from "../../core/env.js";
 
 function normalizeContent(record: DNSRecord): string {

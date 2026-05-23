@@ -1,4 +1,4 @@
-import { validateDomains } from "@is-pinoy/registry/core/validate.js";
+import { validateDomains } from "@is-pinoy-dev/registry/core/validate.js";
 import { success, error } from "../../utils/output.js";
 
 export function handleValidate(dir: string): void {

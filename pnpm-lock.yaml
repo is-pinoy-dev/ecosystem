@@ -94,7 +94,7 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1
     devDependencies:
-      '@is-pinoy/registry':
+      '@is-pinoy-dev/registry':
         specifier: workspace:*
         version: link:../registry
       '@types/figlet':
@@ -166,7 +166,7 @@ importers:
 
   packages/registry:
     dependencies:
-      '@is-pinoy/schemas':
+      '@is-pinoy-dev/schemas':
         specifier: workspace:*
         version: link:../schemas
       dotenv:

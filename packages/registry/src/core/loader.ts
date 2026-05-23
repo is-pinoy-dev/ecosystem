@@ -5,8 +5,8 @@ import {
   domainSchema,
   resolvedDomainSchema,
   ResolvedDomainsSchema,
-} from "@is-pinoy/schemas";
-import type { ResolvedDomain, ResolvedDomains } from "@is-pinoy/schemas";
+} from "@is-pinoy-dev/schemas";
+import type { ResolvedDomain, ResolvedDomains } from "@is-pinoy-dev/schemas";
 
 const DOMAIN_DIR = "domains";
 
