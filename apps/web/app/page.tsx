@@ -56,7 +56,6 @@ function SubdomainInput() {
             width: "100%",
             outline: "none",
             caretColor: "#F5C800",
-            textAlign: "right",
             position: "relative",
             zIndex: 1,
           }}
@@ -68,7 +67,7 @@ function SubdomainInput() {
             style={{
               ...monoStyle,
               position: "absolute",
-              right: "8px",
+              left: "16px",
               top: 0,
               bottom: 0,
               display: "flex",
