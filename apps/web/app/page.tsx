@@ -1,15 +1,24 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 
 function SubdomainInput() {
+  const [value, setValue] = useState("")
+
   const handleClaim = () => {
     window.open("https://github.com/is-pinoy-dev/domains", "_blank", "noopener,noreferrer")
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleClaim()
+  }
+
+  const monoStyle: React.CSSProperties = {
+    fontFamily: "var(--font-mono)",
+    fontSize: "13px",
+    lineHeight: 1,
   }
 
   return (
@@ -21,44 +30,76 @@ function SubdomainInput() {
       maxWidth: "560px",
       width: "100%",
     }}>
-      {/* Text input */}
-      <input
-        type="text"
-        placeholder="yourname"
-        onKeyDown={handleKeyDown}
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "13px",
-          color: "#FAFAF5",
-          backgroundColor: "#0D0D0D",
-          border: "none",
-          padding: "18px 16px",
-          flex: 1,
-          minWidth: 0,
-          outline: "none",
-          caretColor: "#F5C800",
-        }}
-      />
+      {/* Input zone: input + suffix share one dark background */}
+      <div style={{
+        position: "relative",
+        flex: 1,
+        minWidth: 0,
+        display: "flex",
+        alignItems: "center",
+        backgroundColor: "#0D0D0D",
+      }}>
+        {/* Real input — placeholder hidden, replaced by overlay below */}
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          style={{
+            ...monoStyle,
+            color: "#FAFAF5",
+            backgroundColor: "transparent",
+            border: "none",
+            padding: "18px 8px 18px 16px",
+            width: "100%",
+            outline: "none",
+            caretColor: "#F5C800",
+            position: "relative",
+            zIndex: 1,
+          }}
+        />
+        {/* Animated placeholder — visible only when input is empty */}
+        {value === "" && (
+          <div
+            aria-hidden="true"
+            style={{
+              ...monoStyle,
+              position: "absolute",
+              left: "16px",
+              top: 0,
+              bottom: 0,
+              display: "flex",
+              alignItems: "center",
+              pointerEvents: "none",
+              color: "#444444",
+              zIndex: 0,
+              gap: "1px",
+            }}
+          >
+            <span>yourname</span>
+            <span className="blink" style={{ color: "#F5C800" }}>█</span>
+          </div>
+        )}
+      </div>
+
       {/* Suffix */}
       <div style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: "13px",
-        color: "#555555",
+        ...monoStyle,
+        color: "#3A3A3A",
         backgroundColor: "#0D0D0D",
-        padding: "18px 0 18px 2px",
+        padding: "18px 12px 18px 0",
         display: "flex",
         alignItems: "center",
         whiteSpace: "nowrap",
         userSelect: "none",
+        flexShrink: 0,
       }}>
         .is-pinoy.dev
       </div>
+
       {/* Divider */}
-      <div style={{
-        width: "3px",
-        backgroundColor: "#F5C800",
-        flexShrink: 0,
-      }} />
+      <div style={{ width: "3px", backgroundColor: "#F5C800", flexShrink: 0 }} />
+
       {/* Claim button */}
       <button
         onClick={handleClaim}
@@ -75,12 +116,8 @@ function SubdomainInput() {
           whiteSpace: "nowrap",
           flexShrink: 0,
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "#FFE566"
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "#F5C800"
-        }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#FFE566" }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#F5C800" }}
       >
         CLAIM
       </button>

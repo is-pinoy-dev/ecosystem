@@ -12,6 +12,16 @@
   50% { transform: translateY(-8px); }
 }
 
+/* Blinking block cursor for subdomain input placeholder */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.blink {
+  animation: cursor-blink 1s step-end infinite;
+}
+
 /* Eyebrow badge glow pulse */
 @keyframes glow-pulse {
   0%, 100% { box-shadow: 0 0 8px rgba(245, 200, 0, 0.3); }
