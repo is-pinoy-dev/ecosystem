@@ -5,7 +5,7 @@ import {
   type CloudflareRecord,
 } from "@is-pinoy-dev/schemas";
 import { env } from "./env.js";
-import { normalizeRecordContent } from "./normalize.js";
+import { normalizeContent, normalizeRecordContent } from "./normalize.js";
 
 function toFQDN(subdomain: string) {
   return `${subdomain}.${env("DOMAIN")}`;
@@ -68,11 +68,13 @@ export function diff(
   );
 
   // Build O(1) lookup maps keyed by "fqdn:type:content" and "fqdn:type".
+  // Content is normalized on both sides so format differences (e.g. trailing
+  // dots or casing in CNAME targets) do not produce false UPDATE actions.
   const exactMap = new Map<string, CloudflareRecord[]>();
   const byTypeMap = new Map<string, CloudflareRecord[]>();
 
   for (const a of actual) {
-    const ek = `${a.name}:${a.type}:${a.content}`;
+    const ek = `${a.name}:${a.type}:${normalizeContent(a.type, a.content)}`;
     const tk = `${a.name}:${a.type}`;
     if (!exactMap.has(ek)) exactMap.set(ek, []);
     exactMap.get(ek)!.push(a);
