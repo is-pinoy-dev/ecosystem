@@ -1,4 +1,5 @@
 import pc from "picocolors";
+import type { SchemaIssue } from "@is-pinoy/registry";
 
 export function success(message: string): void {
   console.log(pc.green(`✔ ${message}`));
@@ -24,6 +25,18 @@ export interface ActionRow {
   type: string;
   fqdn: string;
   details?: string;
+}
+
+export function printSchemaError(file: string, issues: SchemaIssue[]): void {
+  error(`Schema error in ${pc.bold(file)}`);
+  console.log();
+  const colWidth = Math.max(...issues.map((i) => i.path.length), 5);
+  console.log(`  ${pc.dim("Field".padEnd(colWidth))}  ${pc.dim("Issue")}`);
+  console.log(`  ${pc.dim("─".repeat(colWidth + 2 + 40))}`);
+  for (const issue of issues) {
+    console.log(`  ${pc.yellow(issue.path.padEnd(colWidth))}  ${issue.message}`);
+  }
+  console.log();
 }
 
 export function printActionTable(actions: ActionRow[]): void {
