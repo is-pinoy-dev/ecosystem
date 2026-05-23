@@ -37,11 +37,13 @@ export function registerRegistryCommand(program: Command): void {
     .option("--zone-id <id>", "Cloudflare zone ID (overrides CLOUDFLARE_ZONE_ID env)")
     .option("--api-key <key>", "Cloudflare API token (overrides CLOUDFLARE_API_TOKEN env)")
     .option("-y, --yes", "Skip confirmation prompt")
+    .option("--dry-run", "Preview changes without applying them")
     .action(async (options) => {
       await handleSync(
         options.dir,
         { apiKey: options.apiKey, zoneId: options.zoneId },
         options.yes,
+        options.dryRun,
       );
     });
 

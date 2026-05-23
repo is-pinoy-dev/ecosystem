@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
   singleOrArray,
   aRecord,
-  aaaaRecord,
   cnameRecord,
   txtRecord,
   dnsRecordSchema,
@@ -20,7 +19,6 @@ export const domainSchema = z.object({
   }),
   records: z.object({
     A: singleOrArray(aRecord).optional(),
-    AAAA: singleOrArray(aaaaRecord).optional(),
     CNAME: singleOrArray(cnameRecord).optional(),
     TXT: singleOrArray(txtRecord).optional(),
   }).refine((r) => Object.keys(r).length > 0, "At least one record type required"),
