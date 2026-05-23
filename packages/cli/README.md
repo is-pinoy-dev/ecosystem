@@ -57,7 +57,7 @@ is-pinoy registry status --dir ./subdomains
 
 ## Environment Variables
 
-Required for `diff`, `sync`, and `status`:
+Required for `diff`, `sync`, and `status` (not needed for `validate`):
 
 ```
 CLOUDFLARE_API_TOKEN=
