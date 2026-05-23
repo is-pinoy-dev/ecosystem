@@ -1,27 +1,27 @@
+import { createRequire } from "module";
 import pc from "picocolors";
 import type { SchemaIssue } from "@is-pinoy/registry";
+import type figletType from "figlet";
+
+const require = createRequire(import.meta.url);
+const figlet = require("figlet") as typeof figletType;
 
 export function printBanner(version: string): void {
-  const label = "is-pinoy.dev";
-  const ver = `v${version}`;
-  const padding = 2;
-  const inner = " ".repeat(padding) + label + "  " + ver + " ".repeat(padding);
-  const width = inner.length;
-  const line = "─".repeat(width);
+  const art = figlet.textSync("IS PINOY", { font: "ANSI Shadow" });
+  const lines = art.split("\n").filter((l) => l.trim().length > 0);
 
   console.log();
-  console.log("  " + pc.cyan(`╭${line}╮`));
+  for (const line of lines) {
+    console.log("  " + pc.cyan(line));
+  }
   console.log(
     "  " +
-      pc.cyan("│") +
-      " ".repeat(padding) +
-      pc.bold(pc.white(label)) +
+      pc.dim("─".repeat(55)) +
+      " " +
+      pc.bold(".dev") +
       "  " +
-      pc.dim(ver) +
-      " ".repeat(padding) +
-      pc.cyan("│"),
+      pc.dim(`v${version}`),
   );
-  console.log("  " + pc.cyan(`╰${line}╯`));
   console.log();
 }
 

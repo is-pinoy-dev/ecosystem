@@ -17,9 +17,11 @@
   "dependencies": {
     "@is-pinoy/registry": "workspace:*",
     "commander": "^13.1.0",
+    "figlet": "^1.8.0",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
+    "@types/figlet": "^1.7.0",
     "@types/node": "^22.15.3",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
