@@ -19,9 +19,12 @@
   },
   "dependencies": {
     "@is-pinoy-dev/schemas": "workspace:*",
+    "figlet": "^1.8.0",
+    "picocolors": "^1.1.1",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@types/figlet": "^1.7.0",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^9.39.2",
