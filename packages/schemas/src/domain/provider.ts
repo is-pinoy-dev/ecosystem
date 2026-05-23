@@ -5,6 +5,8 @@ export const cloudflareRecordSchema = z.object({
   content: z.string(),
   id: z.string(),
   name: z.string(),
+  proxied: z.boolean().optional(),
+  ttl: z.number().optional(),
 });
 
 export type CloudflareRecord = z.infer<typeof cloudflareRecordSchema>;
