@@ -290,6 +290,66 @@ describe("diff", () => {
     expect(result).toHaveLength(0);
   });
 
+  it("does not generate UPDATE when Cloudflare CNAME content has a trailing dot", () => {
+    const desired: Domain[] = [
+      {
+        subdomain: "jun",
+        owner: { github: "jun" },
+        records: { CNAME: { value: "jun.vercel.app" } },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "123",
+        name: "jun.is-pinoy.dev",
+        type: "CNAME",
+        content: "jun.vercel.app.", // trailing dot from CF
+      },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(0);
+  });
+
+  it("does not generate UPDATE when Cloudflare CNAME content has different casing", () => {
+    const desired: Domain[] = [
+      {
+        subdomain: "jun",
+        owner: { github: "jun" },
+        records: { CNAME: { value: "jun.vercel.app" } },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "123",
+        name: "jun.is-pinoy.dev",
+        type: "CNAME",
+        content: "JUN.VERCEL.APP", // uppercase from CF
+      },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(0);
+  });
+
+  it("does not generate UPDATE when Cloudflare CNAME content has both trailing dot and different casing", () => {
+    const desired: Domain[] = [
+      {
+        subdomain: "roasi",
+        owner: { github: "roasi" },
+        records: { CNAME: { value: "cname.vercel-dns.com" } },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "456",
+        name: "roasi.is-pinoy.dev",
+        type: "CNAME",
+        content: "Cname.Vercel-Dns.Com.",
+      },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(0);
+  });
+
   it("destroy deletes both CNAME and TXT records", () => {
     const desired: Domain[] = [
       {
