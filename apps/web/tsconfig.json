@@ -11,7 +11,7 @@
         "name": "next"
       }
     ],
-    "types": ["node", "react", "react-dom"]
+    "types": ["node", "react", "react-dom", "mdx"]
   },
   "include": [
     "next-env.d.ts",
