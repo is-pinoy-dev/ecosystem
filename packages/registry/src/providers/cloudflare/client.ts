@@ -2,9 +2,6 @@ import "dotenv/config";
 
 import { type CloudflareRecord, type DNSRecord } from "@is-pinoy/schemas";
 
-const API_TOKEN = process.env.CLOUDFLARE_API_TOKEN!;
-const ZONE_ID = process.env.CLOUDFLARE_ZONE_ID!;
-
 function normalizeContent(record: DNSRecord): string {
   if (record.type === "TXT") {
     const value = record.value;
@@ -21,12 +18,15 @@ async function cfRequest(
   method: string,
   body?: Record<string, unknown>,
 ): Promise<CloudflareRecord[] | CloudflareRecord> {
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+  const zoneId = process.env.CLOUDFLARE_ZONE_ID;
+
   const res = await fetch(
-    `https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/${path}`,
+    `https://api.cloudflare.com/client/v4/zones/${zoneId}/${path}`,
     {
       method,
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${apiToken}`,
         "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
