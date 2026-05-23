@@ -42,6 +42,13 @@ if (!result.success) {
 | `ResolvedDomains` | Array of `ResolvedDomain` |
 | `DNSRecord` | Union of all DNS record types |
 
+### Owner Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `github` | `string` | Yes | GitHub username of the subdomain owner |
+| `email` | `string` (email) | No | Contact email — collected only if voluntarily provided |
+
 ### DNS Record Schemas
 
 `aRecordSchema`, `aaaaRecordSchema`, `cnameRecordSchema`, `txtRecordSchema`

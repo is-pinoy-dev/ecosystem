@@ -6,8 +6,9 @@ import { config as loadEnv } from "dotenv";
 import { SchemaError } from "@is-pinoy-dev/registry";
 import { registerRegistryCommand } from "./commands/registry/index.js";
 import { printSchemaError, printBanner, error } from "./utils/output.js";
+import pkg from "../package.json" with { type: "json" };
 
-const VERSION = "0.0.0";
+const VERSION = pkg.version;
 
 program
   .name("is-pinoy")

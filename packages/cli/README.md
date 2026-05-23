@@ -79,7 +79,7 @@ Each file in the `subdomains/` directory represents one subdomain:
   "subdomain": "your-name",
   "owner": {
     "github": "your-github-username",
-    "email": "you@example.com"
+    "email": "you@example.com"  // optional — for contact purposes only
   },
   "records": {
     "CNAME": {
