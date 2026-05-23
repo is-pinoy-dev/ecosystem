@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createRequire } from "module"
-import { readFileSync } from "fs"
+import { readFileSync, lstatSync } from "fs"
 import { fileURLToPath } from "url"
 import { join, dirname } from "path"
 import pc from "picocolors"
@@ -13,6 +13,8 @@ const figlet = require("figlet") as typeof figletType
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const pkg = JSON.parse(readFileSync(join(__dirname, "../package.json"), "utf-8")) as { version: string }
 const version = pkg.version
+
+const MAX_FILE_SIZE = 64 * 1024 // 64 KB
 
 function printBanner(): void {
   const art = figlet.textSync("IS-PINOY.dev", { font: "ANSI Shadow" })
@@ -36,11 +38,30 @@ if (!file) {
 
 printBanner()
 
+// Reject symlinks before reading to prevent symlink-based traversal attacks.
+const stat = lstatSync(file, { throwIfNoEntry: false })
+if (!stat) {
+  console.error(pc.red(`✖ File not found: ${file}`))
+  process.exit(1)
+}
+if (stat.isSymbolicLink()) {
+  console.error(pc.red(`✖ Symlinks are not permitted: ${file}`))
+  process.exit(1)
+}
+if (!stat.isFile()) {
+  console.error(pc.red(`✖ Not a regular file: ${file}`))
+  process.exit(1)
+}
+if (stat.size > MAX_FILE_SIZE) {
+  console.error(pc.red(`✖ File too large (max ${MAX_FILE_SIZE} bytes): ${file}`))
+  process.exit(1)
+}
+
 let json: unknown
 try {
   json = JSON.parse(readFileSync(file, "utf-8"))
 } catch {
-  console.error(pc.red(`✖ Could not read file: ${file}`))
+  console.error(pc.red(`✖ Could not read or parse file: ${file}`))
   process.exit(1)
 }
 

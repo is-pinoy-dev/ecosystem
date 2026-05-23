@@ -28,7 +28,9 @@ async function cfRequest<T>(
   };
 
   if (!json.success) {
-    throw new Error(JSON.stringify(json.errors));
+    // Extract only the human-readable message to avoid leaking raw API internals.
+    const first = Array.isArray(json.errors) ? (json.errors[0] as { message?: string }) : null;
+    throw new Error(`Cloudflare API error: ${first?.message ?? "unknown error"}`);
   }
 
   return json.result;
