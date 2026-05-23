@@ -249,6 +249,36 @@ export default function Page() {
             ))}
           </div>
         </div>
+
+        {/* Footer */}
+        <footer style={{
+          padding: "24px 40px",
+          textAlign: "center",
+          borderTop: "2px solid #1A1A1A",
+        }}>
+          <span style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            color: "#444444",
+            letterSpacing: "0.0625em",
+            textTransform: "uppercase",
+          }}>
+            © 2026 is-pinoy-dev
+            {" · "}
+            <a
+              href="/tos"
+              style={{
+                color: "#888888",
+                textDecoration: "none",
+                transition: "color 0.1s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#F5C800" }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#888888" }}
+            >
+              Terms of Service
+            </a>
+          </span>
+        </footer>
       </main>
     </>
   )
