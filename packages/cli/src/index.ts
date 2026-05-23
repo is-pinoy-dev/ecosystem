@@ -3,14 +3,18 @@
 import { program } from "commander";
 import { SchemaError } from "@is-pinoy/registry";
 import { registerRegistryCommand } from "./commands/registry/index.js";
-import { printSchemaError, error } from "./utils/output.js";
+import { printSchemaError, printBanner, error } from "./utils/output.js";
+
+const VERSION = "0.0.0";
 
 program
   .name("is-pinoy")
   .description("CLI for managing the Philippine domain DNS registry")
-  .version("0.0.0");
+  .version(VERSION);
 
 registerRegistryCommand(program);
+
+program.hook("preAction", () => printBanner(VERSION));
 
 program.parseAsync().catch((err) => {
   if (err instanceof SchemaError) {

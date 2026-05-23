@@ -1,6 +1,30 @@
 import pc from "picocolors";
 import type { SchemaIssue } from "@is-pinoy/registry";
 
+export function printBanner(version: string): void {
+  const label = "is-pinoy.dev";
+  const ver = `v${version}`;
+  const padding = 2;
+  const inner = " ".repeat(padding) + label + "  " + ver + " ".repeat(padding);
+  const width = inner.length;
+  const line = "─".repeat(width);
+
+  console.log();
+  console.log("  " + pc.cyan(`╭${line}╮`));
+  console.log(
+    "  " +
+      pc.cyan("│") +
+      " ".repeat(padding) +
+      pc.bold(pc.white(label)) +
+      "  " +
+      pc.dim(ver) +
+      " ".repeat(padding) +
+      pc.cyan("│"),
+  );
+  console.log("  " + pc.cyan(`╰${line}╯`));
+  console.log();
+}
+
 export function success(message: string): void {
   console.log(pc.green(`✔ ${message}`));
 }
