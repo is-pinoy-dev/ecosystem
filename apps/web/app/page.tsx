@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { MainNav } from "@/components/main-nav"
 import { ScanlineOverlay } from "@/components/scanline-overlay"
+import { TopMarquee } from "@/components/top-marquee"
 
 function SubdomainInput() {
   const [value, setValue] = useState("")
@@ -130,66 +131,18 @@ export default function Page() {
   return (
     <>
       <ScanlineOverlay />
+      <TopMarquee />
       <MainNav />
 
-      <main style={{ minHeight: "100vh" }}>
-        {/* Gold Marquee Strip — top, below fixed nav */}
-        <div style={{
-          marginTop: "64px",
-          backgroundColor: "#F5C800",
-          borderTop: "3px solid #0D0D0D",
-          borderBottom: "3px solid #0D0D0D",
-          overflow: "hidden",
-          padding: "14px 0",
-        }}>
-          <div style={{
-            display: "flex",
-            width: "max-content",
-            animation: "marquee-scroll 20s linear infinite",
-          }}>
-            {[0, 1].map((i) => (
-              <span
-                key={i}
-                style={{
-                  fontFamily: "var(--font-pixel)",
-                  fontSize: "10px",
-                  color: "#0D0D0D",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" LIBRE "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" PARA SA MGA PINOY DEVELOPER "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" FREE SUBDOMAINS "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" IS-PINOY.DEV "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" CLAIM YOURS NOW "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" LIBRE "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" PARA SA MGA PINOY DEVELOPER "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" FREE SUBDOMAINS "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" IS-PINOY.DEV "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" CLAIM YOURS NOW "}
-              </span>
-            ))}
-          </div>
-        </div>
-
+      <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         {/* Hero Section */}
         <section style={{
-          minHeight: "calc(100vh - 64px)",
+          flex: 1,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "60px 40px 100px",
+          padding: "110px 40px 100px",
           textAlign: "center",
           gap: "32px",
         }}>
@@ -269,15 +222,20 @@ export default function Page() {
             {" · "}
             <Link
               href="/tos"
-              style={{
-                color: "#888888",
-                textDecoration: "none",
-                transition: "color 0.1s ease",
-              }}
+              style={{ color: "#888888", textDecoration: "none", transition: "color 0.1s ease" }}
               onMouseEnter={(e) => { e.currentTarget.style.color = "#F5C800" }}
               onMouseLeave={(e) => { e.currentTarget.style.color = "#888888" }}
             >
               Terms of Service
+            </Link>
+            {" · "}
+            <Link
+              href="/privacy"
+              style={{ color: "#888888", textDecoration: "none", transition: "color 0.1s ease" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#F5C800" }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#888888" }}
+            >
+              Privacy Policy
             </Link>
           </span>
         </footer>

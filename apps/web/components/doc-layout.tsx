@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { MainNav } from "@/components/main-nav"
 import { ScanlineOverlay } from "@/components/scanline-overlay"
+import { TopMarquee } from "@/components/top-marquee"
 
 interface DocLayoutProps {
   title: string
@@ -14,6 +15,7 @@ export function DocLayout({ title, effectiveDate, children }: DocLayoutProps) {
   return (
     <>
       <ScanlineOverlay />
+      <TopMarquee />
       <MainNav />
 
       <main style={{
