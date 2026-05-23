@@ -1,0 +1,30 @@
+{
+  "name": "@is-pinoy/cli",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "is-pinoy": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint",
+    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@is-pinoy/registry": "workspace:*",
+    "commander": "^13.1.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
