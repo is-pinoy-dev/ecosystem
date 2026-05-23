@@ -1,5 +1,14 @@
 # @is-pinoy-dev/schemas
 
+## 0.3.0
+
+### Minor Changes
+
+- bdefedc: Initial release of the is-pinoy.dev tooling — a free subdomain registry for Filipino developers.
+  - `@is-pinoy-dev/cli` — CLI to validate and sync is-pinoy.dev subdomains to Cloudflare
+  - `@is-pinoy-dev/validate` — public validator for is-pinoy.dev domain files
+  - `@is-pinoy-dev/schemas` — Zod schemas and TypeScript types for is-pinoy.dev domain files
+
 ## 0.2.0
 
 ### Minor Changes
