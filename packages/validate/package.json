@@ -2,6 +2,9 @@
   "name": "@is-pinoy-dev/validate",
   "version": "0.1.0",
   "type": "module",
+  "bin": {
+    "validate": "./dist/bin.js"
+  },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
     "access": "public"
