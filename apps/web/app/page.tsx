@@ -17,7 +17,7 @@ function SubdomainInput() {
       display: "flex",
       alignItems: "stretch",
       border: "3px solid #F5C800",
-      boxShadow: "6px 6px 0 #D4A800, 0 0 24px rgba(245,200,0,0.12)",
+      boxShadow: "6px 6px 0 #FAFAF5, 0 0 24px rgba(245,200,0,0.12)",
       maxWidth: "560px",
       width: "100%",
     }}>
