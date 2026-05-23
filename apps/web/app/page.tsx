@@ -133,14 +133,63 @@ export default function Page() {
       <MainNav />
 
       <main style={{ minHeight: "100vh" }}>
+        {/* Gold Marquee Strip — top, below fixed nav */}
+        <div style={{
+          marginTop: "64px",
+          backgroundColor: "#F5C800",
+          borderTop: "3px solid #0D0D0D",
+          borderBottom: "3px solid #0D0D0D",
+          overflow: "hidden",
+          padding: "14px 0",
+        }}>
+          <div style={{
+            display: "flex",
+            width: "max-content",
+            animation: "marquee-scroll 20s linear infinite",
+          }}>
+            {[0, 1].map((i) => (
+              <span
+                key={i}
+                style={{
+                  fontFamily: "var(--font-pixel)",
+                  fontSize: "10px",
+                  color: "#0D0D0D",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span style={{ color: "#D4A800" }}>★</span>
+                {" LIBRE "}
+                <span style={{ color: "#D4A800" }}>★</span>
+                {" PARA SA MGA PINOY DEVELOPER "}
+                <span style={{ color: "#D4A800" }}>★</span>
+                {" FREE SUBDOMAINS "}
+                <span style={{ color: "#D4A800" }}>★</span>
+                {" IS-PINOY.DEV "}
+                <span style={{ color: "#D4A800" }}>★</span>
+                {" CLAIM YOURS NOW "}
+                <span style={{ color: "#D4A800" }}>★</span>
+                {" LIBRE "}
+                <span style={{ color: "#D4A800" }}>★</span>
+                {" PARA SA MGA PINOY DEVELOPER "}
+                <span style={{ color: "#D4A800" }}>★</span>
+                {" FREE SUBDOMAINS "}
+                <span style={{ color: "#D4A800" }}>★</span>
+                {" IS-PINOY.DEV "}
+                <span style={{ color: "#D4A800" }}>★</span>
+                {" CLAIM YOURS NOW "}
+              </span>
+            ))}
+          </div>
+        </div>
+
         {/* Hero Section */}
         <section style={{
-          minHeight: "100vh",
+          minHeight: "calc(100vh - 64px)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "120px 40px 100px",
+          padding: "60px 40px 100px",
           textAlign: "center",
           gap: "32px",
         }}>
@@ -202,54 +251,6 @@ export default function Page() {
           {/* Subdomain input */}
           <SubdomainInput />
         </section>
-
-        {/* Gold Marquee Strip */}
-        <div style={{
-          backgroundColor: "#F5C800",
-          borderTop: "3px solid #0D0D0D",
-          borderBottom: "3px solid #0D0D0D",
-          overflow: "hidden",
-          padding: "14px 0",
-        }}>
-          <div style={{
-            display: "flex",
-            width: "max-content",
-            animation: "marquee-scroll 20s linear infinite",
-          }}>
-            {[0, 1].map((i) => (
-              <span
-                key={i}
-                style={{
-                  fontFamily: "var(--font-pixel)",
-                  fontSize: "10px",
-                  color: "#0D0D0D",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" LIBRE "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" PARA SA MGA PINOY DEVELOPER "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" FREE SUBDOMAINS "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" IS-PINOY.DEV "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" CLAIM YOURS NOW "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" LIBRE "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" PARA SA MGA PINOY DEVELOPER "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" FREE SUBDOMAINS "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" IS-PINOY.DEV "}
-                <span style={{ color: "#D4A800" }}>★</span>
-                {" CLAIM YOURS NOW "}
-              </span>
-            ))}
-          </div>
-        </div>
 
         {/* Footer */}
         <footer style={{
