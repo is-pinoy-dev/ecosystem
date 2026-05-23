@@ -213,20 +213,6 @@ export default function Page() {
           textAlign: "center",
           gap: "32px",
         }}>
-          {/* Floating jeepney logo */}
-          <Image
-            src="/logo.png"
-            alt="is-pinoy.dev jeepney"
-            width={140}
-            height={140}
-            style={{
-              width: "140px",
-              height: "auto",
-              imageRendering: "pixelated",
-              animation: "float 5s ease-in-out infinite",
-            }}
-          />
-
           {/* Eyebrow badge */}
           <div style={{
             fontFamily: "var(--font-pixel)",
