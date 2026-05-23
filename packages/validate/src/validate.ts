@@ -19,6 +19,9 @@ export function validateDomain(json: unknown): { ok: boolean; errors: string[] }
     errors.push(`Reserved subdomain: ${domain.subdomain}`);
   }
 
+  // Belt-and-suspenders: Zod's min(1)/ipv4/ipv6 constraints already enforce non-empty
+  // values, so this loop is unreachable under the current schema. It guards against
+  // future schema relaxation that could allow empty values through.
   for (const records of Object.values(domain.records)) {
     if (!records) continue;
     const list = Array.isArray(records) ? records : [records];

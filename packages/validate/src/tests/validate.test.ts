@@ -70,4 +70,14 @@ describe("validateDomain", () => {
     expect(result.ok).toBe(true);
     expect(result.errors).toEqual([]);
   });
+
+  it("returns ok for multiple A records", () => {
+    const result = validateDomain({
+      subdomain: "jun",
+      owner: { github: "bosquejun" },
+      records: { A: [{ value: "76.76.21.21" }, { value: "76.76.21.22" }] },
+    });
+    expect(result.ok).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
 });
