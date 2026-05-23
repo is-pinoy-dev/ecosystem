@@ -57,3 +57,60 @@ body {
 * {
   border-radius: 0 !important;
 }
+
+/* Doc page MDX prose styles */
+.doc-content h2 {
+  font-family: var(--font-pixel);
+  font-size: 0.6875rem;
+  color: #FAFAF5;
+  line-height: 1.6;
+  margin: 48px 0 16px;
+  letter-spacing: 0.01em;
+}
+
+.doc-content p {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: #FAFAF5;
+  line-height: 1.7;
+  margin: 16px 0;
+}
+
+.doc-content ul {
+  margin: 16px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.doc-content li {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: #FAFAF5;
+  line-height: 1.7;
+  padding-left: 24px;
+  position: relative;
+  margin: 8px 0;
+}
+
+.doc-content li::before {
+  content: "■";
+  color: #F5C800;
+  position: absolute;
+  left: 0;
+  font-size: 10px;
+  top: 4px;
+}
+
+.doc-content strong {
+  color: #F5C800;
+  font-weight: 500;
+}
+
+.doc-content a {
+  color: #1E90FF;
+  text-decoration: none;
+}
+
+.doc-content a:hover {
+  text-decoration: underline;
+}
