@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 import { createRequire } from "module"
 import { readFileSync } from "fs"
+import { fileURLToPath } from "url"
+import { join, dirname } from "path"
 import pc from "picocolors"
 import type figletType from "figlet"
 import { validateDomain } from "./validate.js"
-import pkg from "../package.json" with { type: "json" }
 
 const require = createRequire(import.meta.url)
 const figlet = require("figlet") as typeof figletType
 
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const pkg = JSON.parse(readFileSync(join(__dirname, "../package.json"), "utf-8")) as { version: string }
 const version = pkg.version
 
 function printBanner(): void {

@@ -5,19 +5,19 @@ Validate your [is-pinoy.dev](https://is-pinoy.dev) subdomain file before submitt
 ## Usage
 
 ```bash
-npx @is-pinoy-dev/validate bosque.json
+npx @is-pinoy-dev/validate ./subdomains/juan.json
 ```
 
 On success:
 
 ```
-✔ bosque.json is valid
+✔ juan.json is valid
 ```
 
 On failure:
 
 ```
-✖ Validation failed for bosque.json:
+✖ Validation failed for juan.json:
   - subdomain: String must contain at least 1 character(s)
   - records: At least one record type required
 ```
@@ -26,7 +26,7 @@ On failure:
 
 ```json
 {
-  "subdomain": "your-name",
+  "subdomain": "juan",
   "owner": {
     "github": "your-github-username",
     "email": "you@example.com"  // optional — for contact purposes only
