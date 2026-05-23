@@ -33,6 +33,7 @@ function NavButton({ href, label, variant = "solid", children }: { href: string;
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
+      className="nav-btn"
       style={variant === "outline" ? outlineStyle : btnBase}
       onMouseEnter={(e) => {
         const el = e.currentTarget
@@ -80,7 +81,7 @@ function DiscordIcon() {
 
 export function MainNav() {
   return (
-    <nav style={{
+    <nav className="nav-root" style={{
       position: "fixed",
       top: "46px",
       left: 0,
@@ -115,11 +116,11 @@ export function MainNav() {
       <div style={{ display: "flex", gap: "12px" }}>
         <NavButton href={process.env.NEXT_PUBLIC_DISCORD_LINK ?? "#"} label="Join is-pinoy-dev on Discord" variant="outline">
           <DiscordIcon />
-          DISCORD
+          <span className="nav-btn-text">DISCORD</span>
         </NavButton>
         <NavButton href="https://github.com/is-pinoy-dev" label="Visit is-pinoy-dev on GitHub">
           <GitHubIcon />
-          GITHUB
+          <span className="nav-btn-text">GITHUB</span>
         </NavButton>
       </div>
     </nav>
