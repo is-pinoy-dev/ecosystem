@@ -76,5 +76,5 @@ export async function deleteRecord(id: string) {
 }
 
 export async function listRecords() {
-  return cfRequest("dns_records", "GET");
+  return cfRequest("dns_records?per_page=5000", "GET");
 }

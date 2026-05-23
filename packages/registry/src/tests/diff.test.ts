@@ -169,6 +169,60 @@ describe("diff", () => {
     expect(result).toHaveLength(0);
   });
 
+  it("does not generate duplicate CREATE when multiple A records already exist", () => {
+    const desired: Domain[] = [
+      {
+        subdomain: "jun",
+        owner: { github: "jun" },
+        records: { A: [{ value: "1.2.3.4" }, { value: "5.6.7.8" }] },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      { id: "cf1", name: "jun.is-pinoy.dev", type: "A", content: "1.2.3.4" },
+      { id: "cf2", name: "jun.is-pinoy.dev", type: "A", content: "5.6.7.8" },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(0);
+  });
+
+  it("creates only the missing record when one of multiple A records is new", () => {
+    const desired: Domain[] = [
+      {
+        subdomain: "jun",
+        owner: { github: "jun" },
+        records: { A: [{ value: "1.2.3.4" }, { value: "9.9.9.9" }] },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      { id: "cf1", name: "jun.is-pinoy.dev", type: "A", content: "1.2.3.4" },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.type).toBe("CREATE");
+    if (result[0]?.type === "CREATE") {
+      expect(result[0].record.value).toBe("9.9.9.9");
+    }
+  });
+
+  it("does not attempt to update a record when an identical one already exists alongside it", () => {
+    // Regression: find() without content check would always return the first
+    // actual record, causing a bogus UPDATE that Cloudflare rejects with 81058.
+    const desired: Domain[] = [
+      {
+        subdomain: "jun",
+        owner: { github: "jun" },
+        records: { A: [{ value: "1.2.3.4" }, { value: "5.6.7.8" }] },
+      },
+    ];
+    // Cloudflare returns records in reverse order from what we expect.
+    const actual: CloudflareRecord[] = [
+      { id: "cf1", name: "jun.is-pinoy.dev", type: "A", content: "5.6.7.8" },
+      { id: "cf2", name: "jun.is-pinoy.dev", type: "A", content: "1.2.3.4" },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(0);
+  });
+
   it("destroy deletes both CNAME and TXT records", () => {
     const desired: Domain[] = [
       {

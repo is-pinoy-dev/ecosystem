@@ -1,7 +1,6 @@
 import {
   type Domain,
   type DNSRecord,
-  dnsActionSchema,
   type DNSAction,
   type CloudflareRecord,
 } from "@is-pinoy-dev/schemas";
@@ -78,30 +77,41 @@ export function diff(
     }),
   );
 
+  // Track claimed actual records to prevent the same actual record from
+  // matching multiple desired records (multi-value A/TXT records).
+  const claimed = new Set<string>();
+
   for (const d of desiredFlat) {
-    const match = actual.find(
-      (a) => a.name === d.fqdn && a.type === d.record.type,
+    const normalizedContent = normalizeTXTValue(d.record);
+
+    // Exact match (same fqdn + type + content) — already in sync, skip.
+    const exactMatch = actual.find(
+      (a) =>
+        !claimed.has(a.id) &&
+        a.name === d.fqdn &&
+        a.type === d.record.type &&
+        a.content === normalizedContent,
     );
 
-    if (!match) {
-      const action: DNSAction = {
-        type: "CREATE",
-        fqdn: d.fqdn,
-        record: d.record,
-      };
-      actions.push(dnsActionSchema.parse(action));
+    if (exactMatch) {
+      claimed.add(exactMatch.id);
       continue;
     }
 
-    if (match.content !== normalizeTXTValue(d.record)) {
-      const action: DNSAction = {
-        type: "UPDATE",
-        id: match.id,
-        fqdn: d.fqdn,
-        record: d.record,
-      };
-      actions.push(dnsActionSchema.parse(action));
+    // Same fqdn + type but different content — UPDATE the existing record.
+    const updateTarget = actual.find(
+      (a) =>
+        !claimed.has(a.id) && a.name === d.fqdn && a.type === d.record.type,
+    );
+
+    if (updateTarget) {
+      claimed.add(updateTarget.id);
+      actions.push({ type: "UPDATE", id: updateTarget.id, fqdn: d.fqdn, record: d.record });
+      continue;
     }
+
+    // No matching actual record — CREATE.
+    actions.push({ type: "CREATE", fqdn: d.fqdn, record: d.record });
   }
 
   for (const a of actual) {
@@ -109,12 +119,7 @@ export function diff(
       a.type === "TXT" && destroyedTXTValues.has(a.content);
 
     if (destroyedFqdns.has(a.name) || isTXTRecordMatch) {
-      const action: DNSAction = {
-        type: "DELETE",
-        id: a.id,
-        fqdn: a.name,
-      };
-      actions.push(dnsActionSchema.parse(action));
+      actions.push({ type: "DELETE", id: a.id, fqdn: a.name });
     }
   }
 
