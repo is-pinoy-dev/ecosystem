@@ -1,5 +1,11 @@
 # @is-pinoy-dev/cli
 
+## 0.4.2
+
+### Patch Changes
+
+- 6b4ce03: Fix version reading in CLI banner — replaced static `../package.json` import with runtime `require()` for consistency with the validate package fix.
+
 ## 0.4.1
 
 ### Patch Changes
