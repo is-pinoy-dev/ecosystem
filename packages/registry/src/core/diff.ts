@@ -36,7 +36,7 @@ function expandDomain(domain: Domain) {
       const dnsRecord = { type: type as DNSRecord["type"], ...record } as DNSRecord;
       let fqdn = baseFqdn;
       if (type === "TXT" && "provider" in record) {
-        fqdn = toTXTRecordFQDN(record.provider);
+        fqdn = toTXTRecordFQDN(record.provider as string);
       }
       result.push({ fqdn, record: dnsRecord });
     }

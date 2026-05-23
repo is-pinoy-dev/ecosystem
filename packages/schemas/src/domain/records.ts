@@ -1,23 +1,23 @@
 import { z } from "zod";
 
-const baseRecord = z.object({
+export const baseRecord = z.object({
   ttl: z.number().optional(),
 });
 
-const aRecord = baseRecord.extend({
+export const aRecord = baseRecord.extend({
   value: z.ipv4(),
 });
 
-const aaaaRecord = baseRecord.extend({
+export const aaaaRecord = baseRecord.extend({
   value: z.ipv6(),
 });
 
-const cnameRecord = baseRecord.extend({
+export const cnameRecord = baseRecord.extend({
   value: z.string().min(1),
   proxied: z.boolean().optional(),
 });
 
-const txtRecord = baseRecord.extend({
+export const txtRecord = baseRecord.extend({
   value: z.string().min(1),
   provider: z.enum(["vercel"]),
 });
