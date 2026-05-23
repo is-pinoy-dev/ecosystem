@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 
 import fs from "fs";
+import { createRequire } from "module";
+import { fileURLToPath } from "url";
+import { join, dirname } from "path";
 import { program } from "commander";
 import { config as loadEnv } from "dotenv";
 import { SchemaError } from "@is-pinoy-dev/registry";
 import { registerRegistryCommand } from "./commands/registry/index.js";
 import { printSchemaError, printBanner, error } from "./utils/output.js";
-import pkg from "../package.json" with { type: "json" };
 
+const require = createRequire(import.meta.url);
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = require(join(__dirname, "../package.json")) as { version: string };
 const VERSION = pkg.version;
 
 program
