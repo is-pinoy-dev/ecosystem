@@ -12,7 +12,7 @@ export function printBanner(version: string): void {
 
   console.log();
   for (const line of lines) {
-    console.log("  " + pc.cyan(line));
+    console.log("  " + pc.yellow(line));
   }
   console.log(
     "  " +
