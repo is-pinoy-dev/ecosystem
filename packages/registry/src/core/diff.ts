@@ -5,6 +5,7 @@ import {
   type CloudflareRecord,
 } from "@is-pinoy-dev/schemas";
 import { env } from "./env.js";
+import { normalizeRecordContent } from "./normalize.js";
 
 function toFQDN(subdomain: string) {
   return `${subdomain}.${env("DOMAIN")}`;
@@ -12,17 +13,6 @@ function toFQDN(subdomain: string) {
 
 function toTXTRecordFQDN(provider: string) {
   return `_${provider}.${env("DOMAIN")}`;
-}
-
-function normalizeTXTValue(record: DNSRecord): string {
-  if (record.type === "TXT") {
-    const value = record.value;
-    if (!value.startsWith('"') || !value.endsWith('"')) {
-      return `"${value}"`;
-    }
-    return value;
-  }
-  return record.value;
 }
 
 function expandDomain(domain: Domain) {
@@ -77,32 +67,51 @@ export function diff(
     }),
   );
 
-  // Track claimed actual records to prevent the same actual record from
-  // matching multiple desired records (multi-value A/TXT records).
+  // Build O(1) lookup maps keyed by "fqdn:type:content" and "fqdn:type".
+  const exactMap = new Map<string, CloudflareRecord[]>();
+  const byTypeMap = new Map<string, CloudflareRecord[]>();
+
+  for (const a of actual) {
+    const ek = `${a.name}:${a.type}:${a.content}`;
+    const tk = `${a.name}:${a.type}`;
+    if (!exactMap.has(ek)) exactMap.set(ek, []);
+    exactMap.get(ek)!.push(a);
+    if (!byTypeMap.has(tk)) byTypeMap.set(tk, []);
+    byTypeMap.get(tk)!.push(a);
+  }
+
+  // Track claimed records so each actual record is matched at most once
+  // (prevents double-matching when a domain has multiple records of the same type).
   const claimed = new Set<string>();
 
   for (const d of desiredFlat) {
-    const normalizedContent = normalizeTXTValue(d.record);
+    const normalizedContent = normalizeRecordContent(d.record);
+    const desiredProxied = "proxied" in d.record ? (d.record.proxied ?? false) : false;
+    const desiredTTL = d.record.ttl ?? 1;
 
-    // Exact match (same fqdn + type + content) — already in sync, skip.
-    const exactMatch = actual.find(
-      (a) =>
-        !claimed.has(a.id) &&
-        a.name === d.fqdn &&
-        a.type === d.record.type &&
-        a.content === normalizedContent,
-    );
+    const ek = `${d.fqdn}:${d.record.type}:${normalizedContent}`;
+    const contentMatches = exactMap.get(ek) ?? [];
+    const contentMatch = contentMatches.find((a) => !claimed.has(a.id));
 
-    if (exactMatch) {
-      claimed.add(exactMatch.id);
+    if (contentMatch) {
+      claimed.add(contentMatch.id);
+      // Content matches but proxied or TTL may still differ.
+      const actualProxied = contentMatch.proxied ?? false;
+      const actualTTL = contentMatch.ttl ?? 1;
+      const proxiedChanged = actualProxied !== desiredProxied;
+      // Cloudflare forces TTL=1 on proxied records, so skip TTL check for those.
+      const ttlChanged = !desiredProxied && actualTTL !== desiredTTL;
+
+      if (proxiedChanged || ttlChanged) {
+        actions.push({ type: "UPDATE", id: contentMatch.id, fqdn: d.fqdn, record: d.record });
+      }
       continue;
     }
 
-    // Same fqdn + type but different content — UPDATE the existing record.
-    const updateTarget = actual.find(
-      (a) =>
-        !claimed.has(a.id) && a.name === d.fqdn && a.type === d.record.type,
-    );
+    // Same fqdn+type but different content — UPDATE an unclaimed record.
+    const tk = `${d.fqdn}:${d.record.type}`;
+    const typeCandidates = byTypeMap.get(tk) ?? [];
+    const updateTarget = typeCandidates.find((a) => !claimed.has(a.id));
 
     if (updateTarget) {
       claimed.add(updateTarget.id);

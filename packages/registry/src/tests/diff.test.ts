@@ -223,6 +223,73 @@ describe("diff", () => {
     expect(result).toHaveLength(0);
   });
 
+  it("generates UPDATE when proxied changes but content is same", () => {
+    const desired: Domain[] = [
+      {
+        subdomain: "jun",
+        owner: { github: "jun" },
+        records: { CNAME: { value: "jun.vercel.app", proxied: true } },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "123",
+        name: "jun.is-pinoy.dev",
+        type: "CNAME",
+        content: "jun.vercel.app",
+        proxied: false,
+      },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.type).toBe("UPDATE");
+  });
+
+  it("generates UPDATE when TTL changes but content is same", () => {
+    const desired: Domain[] = [
+      {
+        subdomain: "jun",
+        owner: { github: "jun" },
+        records: { A: { value: "1.2.3.4", ttl: 3600 } },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "123",
+        name: "jun.is-pinoy.dev",
+        type: "A",
+        content: "1.2.3.4",
+        proxied: false,
+        ttl: 1,
+      },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.type).toBe("UPDATE");
+  });
+
+  it("does not generate UPDATE when content, proxied, and TTL all match", () => {
+    const desired: Domain[] = [
+      {
+        subdomain: "jun",
+        owner: { github: "jun" },
+        records: { CNAME: { value: "jun.vercel.app", proxied: true } },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "123",
+        name: "jun.is-pinoy.dev",
+        type: "CNAME",
+        content: "jun.vercel.app",
+        proxied: true,
+        ttl: 1,
+      },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(0);
+  });
+
   it("destroy deletes both CNAME and TXT records", () => {
     const desired: Domain[] = [
       {

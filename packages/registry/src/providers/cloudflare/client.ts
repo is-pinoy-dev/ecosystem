@@ -2,23 +2,13 @@ import "dotenv/config";
 
 import { type CloudflareRecord, type DNSRecord } from "@is-pinoy-dev/schemas";
 import { env } from "../../core/env.js";
+import { normalizeRecordContent } from "../../core/normalize.js";
 
-function normalizeContent(record: DNSRecord): string {
-  if (record.type === "TXT") {
-    const value = record.value;
-    if (!value.startsWith('"') || !value.endsWith('"')) {
-      return `"${value}"`;
-    }
-    return value;
-  }
-  return record.value;
-}
-
-async function cfRequest(
+async function cfRequest<T>(
   path: string,
   method: string,
   body?: Record<string, unknown>,
-): Promise<CloudflareRecord[] | CloudflareRecord> {
+): Promise<T> {
   const res = await fetch(
     `https://api.cloudflare.com/client/v4/zones/${env("CLOUDFLARE_ZONE_ID")}/${path}`,
     {
@@ -33,7 +23,7 @@ async function cfRequest(
 
   const json = (await res.json()) as {
     success: boolean;
-    result: CloudflareRecord;
+    result: T;
     errors: unknown[];
   };
 
@@ -48,10 +38,10 @@ export async function createRecord<TRecord extends DNSRecord>(
   record: TRecord,
   fqdn: string,
 ) {
-  return cfRequest("dns_records", "POST", {
+  return cfRequest<CloudflareRecord>("dns_records", "POST", {
     type: record.type,
     name: fqdn,
-    content: normalizeContent(record),
+    content: normalizeRecordContent(record),
     ttl: record.ttl ?? 1,
     proxied: "proxied" in record ? record.proxied : false,
   });
@@ -62,19 +52,19 @@ export async function updateRecord<TRecord extends DNSRecord>(
   record: TRecord,
   fqdn: string,
 ) {
-  return cfRequest(`dns_records/${id}`, "PUT", {
+  return cfRequest<CloudflareRecord>(`dns_records/${id}`, "PUT", {
     type: record.type,
     name: fqdn,
-    content: normalizeContent(record),
+    content: normalizeRecordContent(record),
     ttl: record.ttl ?? 1,
     proxied: "proxied" in record ? record.proxied : false,
   });
 }
 
 export async function deleteRecord(id: string) {
-  return cfRequest(`dns_records/${id}`, "DELETE");
+  return cfRequest<CloudflareRecord>(`dns_records/${id}`, "DELETE");
 }
 
 export async function listRecords() {
-  return cfRequest("dns_records?per_page=5000", "GET");
+  return cfRequest<CloudflareRecord[]>("dns_records?per_page=5000", "GET");
 }

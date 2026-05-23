@@ -9,12 +9,12 @@ function logAction(action: DNSAction) {
   switch (action.type) {
     case "CREATE":
       console.log(
-        `[DRY RUN] CREATE ${action.fqdn} \u2192 ${action.record.type} \u2192 ${action.record.value}`,
+        `[DRY RUN] CREATE ${action.fqdn} → ${action.record.type} → ${action.record.value}`,
       );
       break;
     case "UPDATE":
       console.log(
-        `[DRY RUN] UPDATE ${action.fqdn} (${action.id}) \u2192 ${action.record.type} \u2192 ${action.record.value}`,
+        `[DRY RUN] UPDATE ${action.fqdn} (${action.id}) → ${action.record.type} → ${action.record.value}`,
       );
       break;
     case "DELETE":
@@ -23,25 +23,34 @@ function logAction(action: DNSAction) {
   }
 }
 
+function executeAction(action: DNSAction): Promise<string> {
+  switch (action.type) {
+    case "CREATE":
+      return createRecord(action.record, action.fqdn).then(
+        () => `CREATED ${action.fqdn}`,
+      );
+    case "UPDATE":
+      return updateRecord(action.id, action.record, action.fqdn).then(
+        () => `UPDATED ${action.fqdn}`,
+      );
+    case "DELETE":
+      return deleteRecord(action.id).then(() => `DELETED ${action.fqdn}`);
+  }
+}
+
 export async function sync(actions: DNSAction[], isDryRun = false) {
-  for (const action of actions) {
-    if (isDryRun) {
-      logAction(action);
-      continue;
-    }
-    switch (action.type) {
-      case "CREATE":
-        await createRecord(action.record, action.fqdn);
-        console.log(`CREATED ${action.fqdn}`);
-        break;
-      case "UPDATE":
-        await updateRecord(action.id, action.record, action.fqdn);
-        console.log(`UPDATED ${action.fqdn}`);
-        break;
-      case "DELETE":
-        await deleteRecord(action.id);
-        console.log(`DELETED ${action.fqdn}`);
-        break;
+  if (isDryRun) {
+    actions.forEach(logAction);
+    return;
+  }
+
+  const results = await Promise.allSettled(actions.map(executeAction));
+
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      console.log(result.value);
+    } else {
+      console.error(`FAILED: ${String(result.reason)}`);
     }
   }
 }

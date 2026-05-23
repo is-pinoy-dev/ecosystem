@@ -81,4 +81,34 @@ describe("sync", () => {
     expect(cloudflare.deleteRecord).toHaveBeenCalledTimes(1);
     expect(cloudflare.deleteRecord).toHaveBeenCalledWith("123");
   });
+
+  it("executes all actions in parallel and continues past failures", async () => {
+    vi.mocked(cloudflare.createRecord).mockRejectedValue(
+      new Error("API error"),
+    );
+    vi.mocked(cloudflare.updateRecord).mockResolvedValue({
+      type: "CNAME",
+      content: "new.vercel.app",
+      id: "456",
+      name: "bob.is-pinoy.dev",
+    });
+
+    await sync([
+      {
+        type: "CREATE",
+        fqdn: "jun.is-pinoy.dev",
+        record: { type: "CNAME", value: "jun.vercel.app" },
+      },
+      {
+        type: "UPDATE",
+        id: "456",
+        fqdn: "bob.is-pinoy.dev",
+        record: { type: "CNAME", value: "new.vercel.app" },
+      },
+    ]);
+
+    // Both actions were attempted even though CREATE failed.
+    expect(cloudflare.createRecord).toHaveBeenCalledTimes(1);
+    expect(cloudflare.updateRecord).toHaveBeenCalledTimes(1);
+  });
 });
