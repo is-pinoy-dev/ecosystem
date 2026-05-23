@@ -19,6 +19,7 @@ export function validateDomains(dir?: string) {
       errors.push(`Filename mismatch: ${expectedFile} vs ${domain.file}`);
     }
 
+    // ResolvedDomain includes a `file` field not in domainSchema — Zod strips unknown keys, so this is safe.
     const result = validateDomain(domain);
     errors.push(...result.errors);
   }
