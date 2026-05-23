@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { MainNav } from "@/components/main-nav"
 import { ScanlineOverlay } from "@/components/scanline-overlay"
 
@@ -265,7 +266,7 @@ export default function Page() {
           }}>
             © 2026 is-pinoy-dev
             {" · "}
-            <a
+            <Link
               href="/tos"
               style={{
                 color: "#888888",
@@ -276,7 +277,7 @@ export default function Page() {
               onMouseLeave={(e) => { e.currentTarget.style.color = "#888888" }}
             >
               Terms of Service
-            </a>
+            </Link>
           </span>
         </footer>
       </main>
