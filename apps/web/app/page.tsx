@@ -16,10 +16,12 @@ function SubdomainInput() {
     <div style={{
       display: "flex",
       alignItems: "stretch",
-      boxShadow: "0 0 20px rgba(245,200,0,0.15)",
+      border: "3px solid #F5C800",
+      boxShadow: "6px 6px 0 #D4A800, 0 0 24px rgba(245,200,0,0.12)",
       maxWidth: "560px",
       width: "100%",
     }}>
+      {/* Text input */}
       <input
         type="text"
         placeholder="yourname"
@@ -29,30 +31,35 @@ function SubdomainInput() {
           fontSize: "13px",
           color: "#FAFAF5",
           backgroundColor: "#0D0D0D",
-          border: "3px solid #F5C800",
-          borderRight: "none",
-          padding: "16px",
+          border: "none",
+          padding: "18px 16px",
           flex: 1,
           minWidth: 0,
           outline: "none",
           caretColor: "#F5C800",
         }}
       />
+      {/* Suffix */}
       <div style={{
         fontFamily: "var(--font-mono)",
         fontSize: "13px",
-        color: "#888888",
+        color: "#555555",
         backgroundColor: "#0D0D0D",
-        border: "3px solid #F5C800",
-        borderLeft: "none",
-        borderRight: "none",
-        padding: "16px 8px 16px 0",
+        padding: "18px 0 18px 2px",
         display: "flex",
         alignItems: "center",
         whiteSpace: "nowrap",
+        userSelect: "none",
       }}>
         .is-pinoy.dev
       </div>
+      {/* Divider */}
+      <div style={{
+        width: "3px",
+        backgroundColor: "#F5C800",
+        flexShrink: 0,
+      }} />
+      {/* Claim button */}
       <button
         onClick={handleClaim}
         style={{
@@ -60,25 +67,19 @@ function SubdomainInput() {
           fontSize: "9px",
           color: "#0D0D0D",
           backgroundColor: "#F5C800",
-          border: "3px solid #0D0D0D",
-          padding: "16px 20px",
+          border: "none",
+          padding: "18px 24px",
           cursor: "pointer",
           letterSpacing: "0.05em",
-          boxShadow: "5px 5px 0 #FAFAF5",
-          transition: "all 0.1s ease",
+          transition: "background-color 0.1s ease",
           whiteSpace: "nowrap",
+          flexShrink: 0,
         }}
         onMouseEnter={(e) => {
-          const el = e.currentTarget
-          el.style.backgroundColor = "#FFE566"
-          el.style.boxShadow = "2px 2px 0 #FAFAF5"
-          el.style.transform = "translate(3px, 3px)"
+          e.currentTarget.style.backgroundColor = "#FFE566"
         }}
         onMouseLeave={(e) => {
-          const el = e.currentTarget
-          el.style.backgroundColor = "#F5C800"
-          el.style.boxShadow = "5px 5px 0 #FAFAF5"
-          el.style.transform = "translate(0, 0)"
+          e.currentTarget.style.backgroundColor = "#F5C800"
         }}
       >
         CLAIM
