@@ -1,0 +1,42 @@
+name: Publish CLI
+
+on:
+  push:
+    tags:
+      - "cli-v*"
+
+jobs:
+  publish:
+    name: Publish @is-pinoy/cli to npm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build schemas and registry
+        run: pnpm --filter @is-pinoy/schemas build && pnpm --filter @is-pinoy/registry build
+
+      - name: Build CLI
+        run: pnpm --filter @is-pinoy/cli build
+
+      - name: Publish
+        working-directory: packages/cli
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
