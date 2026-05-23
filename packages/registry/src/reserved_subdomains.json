@@ -1,0 +1,20 @@
+[
+  "www",
+  "api",
+  "admin",
+  "auth",
+  "community",
+  "app",
+  "dashboard",
+  "console",
+  "cdn",
+  "status",
+  "dev",
+  "staging",
+  "beta",
+  "oss",
+  "showcase",
+  "blog",
+  "docs",
+  "forum"
+]
