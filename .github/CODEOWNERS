@@ -1,0 +1,7 @@
+# Global owner — reviews all PRs by default
+* @is-pinoy-dev/maintainers
+
+# Package-specific
+packages/cli/     @is-pinoy-dev/cli-team
+packages/schemas/ @is-pinoy-dev/maintainers
+apps/web/         @is-pinoy-dev/web-team

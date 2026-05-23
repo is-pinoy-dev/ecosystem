@@ -1,21 +1,80 @@
-# shadcn/ui monorepo template
+# ispinoy.dev ecosystem
 
-This is a Next.js monorepo template with shadcn/ui.
+The tooling and infrastructure monorepo behind [ispinoy.dev](https://ispinoy.dev) — a free subdomain service for Filipino developers.
 
-## Adding components
+## Packages
 
-To add components to your app, run the following command at the root of your `web` app:
+| Package | Description |
+|---------|-------------|
+| `packages/cli` | `@is-pinoy/cli` — CLI for validating and syncing DNS records to Cloudflare |
+| `packages/registry` | `@is-pinoy/registry` — Core registry logic and Cloudflare provider |
+| `packages/schemas` | `@is-pinoy/schemas` — Zod schemas for domain and DNS record validation |
+| `packages/ui` | `@is-pinoy/ui` — Shared UI components |
+| `packages/eslint-config` | Shared ESLint config |
+| `packages/typescript-config` | Shared TypeScript config |
+
+## Apps
+
+| App | Description |
+|-----|-------------|
+| `apps/web` | Public-facing website |
+
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org) 22+
+- [pnpm](https://pnpm.io) 10+
+
+### Install dependencies
 
 ```bash
-pnpm dlx shadcn@latest add button -c apps/web
+pnpm install
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
+### Build all packages
 
-## Using components
-
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@workspace/ui/components/button";
+```bash
+pnpm build
 ```
+
+### Run the CLI
+
+```bash
+# From the repo root
+node packages/cli/dist/index.js --help
+```
+
+## CLI Usage
+
+The CLI manages DNS records in the [ispinoy.dev domains](https://github.com/is-pinoy-dev/domains) repository.
+
+```bash
+# Validate domain JSON files
+is-pinoy registry validate --dir ./subdomains
+
+# Show diff between local files and Cloudflare
+is-pinoy registry diff --dir ./subdomains
+
+# Sync changes to Cloudflare
+is-pinoy registry sync --dir ./subdomains
+```
+
+Environment variables (or use `--dotenv` to load a `.env` file):
+
+```
+CLOUDFLARE_API_TOKEN=
+CLOUDFLARE_ZONE_ID=
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Code of Conduct
+
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## License
+
+[MIT](LICENSE)
