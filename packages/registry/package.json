@@ -1,5 +1,5 @@
 {
-  "name": "@is-pinoy/registry",
+  "name": "@is-pinoy-dev/registry",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -12,7 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@is-pinoy/schemas": "workspace:*",
+    "@is-pinoy-dev/schemas": "workspace:*",
     "dotenv": "^17.4.2",
     "zod": "catalog:"
   },

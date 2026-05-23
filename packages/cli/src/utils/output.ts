@@ -1,6 +1,6 @@
 import { createRequire } from "module";
 import pc from "picocolors";
-import type { SchemaIssue } from "@is-pinoy/registry";
+import type { SchemaIssue } from "@is-pinoy-dev/registry";
 import type figletType from "figlet";
 
 const require = createRequire(import.meta.url);

@@ -1,4 +1,4 @@
-import { type DNSAction } from "@is-pinoy/schemas";
+import { type DNSAction } from "@is-pinoy-dev/schemas";
 import {
   createRecord,
   updateRecord,

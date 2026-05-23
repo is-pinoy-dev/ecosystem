@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@is-pinoy/registry/core/validate.js", () => ({
+vi.mock("@is-pinoy-dev/registry/core/validate.js", () => ({
   validateDomains: vi.fn(),
 }));
 
-import { validateDomains } from "@is-pinoy/registry/core/validate.js";
+import { validateDomains } from "@is-pinoy-dev/registry/core/validate.js";
 import { handleValidate } from "../commands/registry/validate.js";
 
 describe("handleValidate", () => {
