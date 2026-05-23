@@ -206,13 +206,29 @@ export default function Page() {
           {/* Headline */}
           <h1 style={{
             fontFamily: "var(--font-pixel)",
-            fontSize: "clamp(1rem, 3vw, 2.25rem)",
+            fontSize: "clamp(0.875rem, 2.5vw, 1.625rem)",
             color: "#FAFAF5",
             lineHeight: 1.6,
             margin: 0,
             maxWidth: "900px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "16px",
           }}>
-            YOUR NAME.IS-PINOY.DEV
+            <span>Claim your</span>
+            <span style={{
+              fontSize: "clamp(1.25rem, 4vw, 2.75rem)",
+              color: "#F5C800",
+              border: "3px solid #F5C800",
+              padding: "12px 28px",
+              boxShadow: "5px 5px 0 #D4A800, 8px 8px 0 rgba(212,168,0,0.3)",
+              letterSpacing: "0.05em",
+              display: "inline-block",
+            }}>
+              PINOY PRIDE
+            </span>
+            <span>on the Web.</span>
           </h1>
 
           {/* Subheadline */}
