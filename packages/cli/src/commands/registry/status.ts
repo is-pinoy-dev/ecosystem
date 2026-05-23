@@ -1,5 +1,5 @@
 import { resolveCloudflareCreds, setCloudflareEnv } from "../../utils/cloudflare.js";
-import { info, warning, success, divider } from "../../utils/output.js";
+import { divider } from "../../utils/output.js";
 import pc from "picocolors";
 
 export async function handleStatus(
