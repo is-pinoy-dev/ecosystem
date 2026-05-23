@@ -24,6 +24,7 @@ export async function handleSync(
   dir: string,
   credsOptions: { apiKey?: string; zoneId?: string },
   autoConfirm: boolean,
+  dryRun: boolean,
 ): Promise<void> {
   const creds = resolveCloudflareCreds(credsOptions);
   setCloudflareEnv(creds);
@@ -48,6 +49,11 @@ export async function handleSync(
   printActionTable(actions);
   divider();
 
+  if (dryRun) {
+    info("Dry run — no changes applied.");
+    process.exit(0);
+  }
+
   if (!autoConfirm) {
     const ok = await confirmAction(actions.length);
     if (!ok) {
@@ -58,4 +64,5 @@ export async function handleSync(
 
   await registry.sync(actions);
   success("Sync complete.");
+  process.exit(0);
 }
