@@ -7,6 +7,13 @@ export function resolveCloudflareCreds(options: {
   apiKey?: string;
   zoneId?: string;
 }): CloudflareCreds {
+  if (options.apiKey) {
+    console.warn(
+      "Warning: --api-key is visible to all users in process listings. " +
+      "Use the CLOUDFLARE_API_TOKEN environment variable instead.",
+    );
+  }
+
   const apiToken = options.apiKey ?? process.env.CLOUDFLARE_API_TOKEN;
   const zoneId = options.zoneId ?? process.env.CLOUDFLARE_ZONE_ID;
 

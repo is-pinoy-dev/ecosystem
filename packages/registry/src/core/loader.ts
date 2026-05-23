@@ -9,6 +9,7 @@ import {
 import type { ResolvedDomain, ResolvedDomains } from "@is-pinoy-dev/schemas";
 
 const DOMAIN_DIR = "domains";
+const MAX_FILE_SIZE = 64 * 1024; // 64 KB — domain files should never approach this
 
 export interface SchemaIssue {
   path: string;
@@ -49,14 +50,34 @@ function flattenIssues(
 }
 
 export function loadDomains(dir: string = DOMAIN_DIR): ResolvedDomains {
-  const files = fs.readdirSync(dir);
+  // Guard against symlinked or non-existent directories.
+  const dirStat = fs.lstatSync(dir, { throwIfNoEntry: false });
+  if (!dirStat?.isDirectory()) {
+    throw new Error(`Domains directory not found or not a directory: ${dir}`);
+  }
 
+  const files = fs.readdirSync(dir);
   const domains: ResolvedDomain[] = [];
 
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
 
-    const raw = fs.readFileSync(path.join(dir, file), "utf-8");
+    const filePath = path.join(dir, file);
+
+    // Reject symlinks to prevent symlink-based file reads outside the directory.
+    const stat = fs.lstatSync(filePath);
+    if (stat.isSymbolicLink()) {
+      throw new Error(`Symlinks are not permitted in the domains directory: ${file}`);
+    }
+
+    // Reject oversized files before parsing to prevent memory exhaustion.
+    if (stat.size > MAX_FILE_SIZE) {
+      throw new SchemaError(file, [
+        { path: "(root)", message: `File exceeds maximum allowed size of ${MAX_FILE_SIZE} bytes` },
+      ]);
+    }
+
+    const raw = fs.readFileSync(filePath, "utf-8");
     const json = JSON.parse(raw);
 
     const parsed = domainSchema.safeParse(json);
