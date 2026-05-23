@@ -10,7 +10,8 @@
     "README.md"
   ],
   "publishConfig": {
-    "access": "public"
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
   },
   "scripts": {
     "build": "tsup",
