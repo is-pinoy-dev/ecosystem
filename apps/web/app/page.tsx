@@ -85,7 +85,7 @@ function SubdomainInput() {
       </div>
 
       {/* Suffix */}
-      <div style={{
+      <div className="subdomain-suffix" style={{
         ...monoStyle,
         color: "#3A3A3A",
         backgroundColor: "#0D0D0D",
@@ -105,6 +105,7 @@ function SubdomainInput() {
       {/* Claim button */}
       <button
         onClick={handleClaim}
+        className="subdomain-claim-btn"
         style={{
           fontFamily: "var(--font-pixel)",
           fontSize: "9px",
@@ -136,7 +137,7 @@ export default function Page() {
 
       <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         {/* Hero Section */}
-        <section style={{
+        <section className="hero-section" style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
@@ -206,7 +207,7 @@ export default function Page() {
         </section>
 
         {/* Footer */}
-        <footer style={{
+        <footer className="footer-bar" style={{
           padding: "24px 40px",
           textAlign: "center",
           borderTop: "2px solid #1A1A1A",

@@ -1,8 +1,13 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Press_Start_2P, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google"
 import "@workspace/ui/globals.css"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://is-pinoy.dev"),
