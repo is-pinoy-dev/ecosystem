@@ -1,5 +1,5 @@
+import { validateDomain } from "@is-pinoy-dev/validate";
 import { loadDomains } from "./loader.js";
-import reservedSubdomains from "../reserved_subdomains.json" with { type: "json" };
 
 export function validateDomains(dir?: string) {
   const domains = loadDomains(dir);
@@ -19,19 +19,9 @@ export function validateDomains(dir?: string) {
       errors.push(`Filename mismatch: ${expectedFile} vs ${domain.file}`);
     }
 
-    if (reservedSubdomains.includes(domain.subdomain)) {
-      errors.push(`Reserved subdomain: ${domain.subdomain}`);
-    }
-
-    for (const records of Object.values(domain.records)) {
-      if (!records) continue;
-      const list = Array.isArray(records) ? records : [records];
-      for (const record of list) {
-        if (!record.value) {
-          errors.push(`${domain.subdomain}: empty record value`);
-        }
-      }
-    }
+    // ResolvedDomain includes a `file` field not in domainSchema — Zod strips unknown keys, so this is safe.
+    const result = validateDomain(domain);
+    errors.push(...result.errors);
   }
 
   return { ok: errors.length === 0, errors };
