@@ -1,5 +1,8 @@
 "use client"
 
+import Image from "next/image"
+import Link from "next/link"
+
 function SubdomainInput() {
   const handleClaim = () => {
     window.open("https://github.com/is-pinoy-dev/domains", "_blank", "noopener,noreferrer")
@@ -115,13 +118,15 @@ export default function Page() {
         backdropFilter: "blur(8px)",
         borderBottom: "3px solid #F5C800",
       }}>
-        <a href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-          <img
+        <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+          <Image
             src="/logo.png"
             alt="is-pinoy.dev logo"
+            width={48}
+            height={48}
             style={{ height: "48px", width: "auto", imageRendering: "pixelated" }}
           />
-        </a>
+        </Link>
 
         <a
           href="https://github.com/is-pinoy-dev/domains"
@@ -170,9 +175,11 @@ export default function Page() {
           gap: "32px",
         }}>
           {/* Floating jeepney logo */}
-          <img
+          <Image
             src="/logo.png"
             alt="is-pinoy.dev jeepney"
+            width={140}
+            height={140}
             style={{
               width: "140px",
               height: "auto",
@@ -193,7 +200,7 @@ export default function Page() {
             textTransform: "uppercase",
             animation: "glow-pulse 2s ease-in-out infinite",
           }}>
-            // FREE FOR FILIPINO DEVS
+            {"// FREE FOR FILIPINO DEVS"}
           </div>
 
           {/* Headline */}
