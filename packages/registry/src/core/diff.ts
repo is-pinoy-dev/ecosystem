@@ -8,11 +8,11 @@ import {
 import { env } from "./env.js";
 
 function toFQDN(subdomain: string) {
-  return `${subdomain}.${env({ key: "DOMAIN" })}`;
+  return `${subdomain}.${env("DOMAIN")}`;
 }
 
 function toTXTRecordFQDN(provider: string) {
-  return `_${provider}.${env({ key: "DOMAIN" })}`;
+  return `_${provider}.${env("DOMAIN")}`;
 }
 
 function normalizeTXTValue(record: DNSRecord): string {

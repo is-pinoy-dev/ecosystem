@@ -8,7 +8,7 @@ export const envSchema = z.object({
 
 type EnvVars = z.infer<typeof envSchema>;
 
-export function env({ key }: { key: keyof EnvVars }): string {
+export function env<K extends keyof EnvVars>(key: K): EnvVars[K] {
   const fieldSchema = envSchema.shape[key];
   const result = fieldSchema.safeParse(process.env[key]);
   if (!result.success) {
@@ -16,5 +16,5 @@ export function env({ key }: { key: keyof EnvVars }): string {
       `Missing required env var: ${key}. Set it in your environment or use --dotenv to load a .env file.`,
     );
   }
-  return result.data as string;
+  return result.data as EnvVars[K];
 }

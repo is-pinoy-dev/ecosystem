@@ -20,11 +20,11 @@ async function cfRequest(
   body?: Record<string, unknown>,
 ): Promise<CloudflareRecord[] | CloudflareRecord> {
   const res = await fetch(
-    `https://api.cloudflare.com/client/v4/zones/${env({ key: "CLOUDFLARE_ZONE_ID" })}/${path}`,
+    `https://api.cloudflare.com/client/v4/zones/${env("CLOUDFLARE_ZONE_ID")}/${path}`,
     {
       method,
       headers: {
-        Authorization: `Bearer ${env({ key: "CLOUDFLARE_API_TOKEN" })}`,
+        Authorization: `Bearer ${env("CLOUDFLARE_API_TOKEN")}`,
         "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
