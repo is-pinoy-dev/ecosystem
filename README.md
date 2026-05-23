@@ -1,6 +1,6 @@
-# ispinoy.dev ecosystem
+# is-pinoy.dev ecosystem
 
-The tooling and infrastructure monorepo behind [ispinoy.dev](https://ispinoy.dev) — a free subdomain service for Filipino developers.
+The tooling and infrastructure monorepo behind [is-pinoy.dev](https://is-pinoy.dev) — a free subdomain service for Filipino developers.
 
 ## Packages
 
@@ -47,7 +47,7 @@ node packages/cli/dist/index.js --help
 
 ## CLI Usage
 
-The CLI manages DNS records in the [ispinoy.dev domains](https://github.com/is-pinoy-dev/domains) repository.
+The CLI manages DNS records in the [is-pinoy.dev domains](https://github.com/is-pinoy-dev/domains) repository.
 
 ```bash
 # Validate domain JSON files

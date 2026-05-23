@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in contributing to the ispinoy.dev ecosystem!
+Thanks for your interest in contributing to the is-pinoy.dev ecosystem!
 
 ## Setup
 
