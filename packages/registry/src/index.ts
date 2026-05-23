@@ -1,3 +1,4 @@
+export * from "./core/env.js";
 export * from "./core/loader.js";
 export * from "./core/validate.js";
 export * from "./core/diff.js";

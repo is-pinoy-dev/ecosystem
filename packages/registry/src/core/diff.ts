@@ -5,13 +5,14 @@ import {
   type DNSAction,
   type CloudflareRecord,
 } from "@is-pinoy/schemas";
+import { env } from "./env.js";
 
 function toFQDN(subdomain: string) {
-  return `${subdomain}.${process.env.DOMAIN || "is-pinoy.dev"}`;
+  return `${subdomain}.${env({ key: "DOMAIN" })}`;
 }
 
 function toTXTRecordFQDN(provider: string) {
-  return `_${provider}.${process.env.DOMAIN || "is-pinoy.dev"}`;
+  return `_${provider}.${env({ key: "DOMAIN" })}`;
 }
 
 function normalizeTXTValue(record: DNSRecord): string {
