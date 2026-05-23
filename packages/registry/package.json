@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@is-pinoy-dev/schemas": "workspace:*",
+    "@is-pinoy-dev/validate": "workspace:*",
     "dotenv": "^17.4.2",
     "zod": "catalog:"
   },
