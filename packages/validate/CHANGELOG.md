@@ -1,5 +1,12 @@
 # @is-pinoy-dev/validate
 
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [da68b45]
+  - @is-pinoy-dev/schemas@0.3.1
+
 ## 0.3.2
 
 ### Patch Changes

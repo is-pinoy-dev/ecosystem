@@ -1,5 +1,13 @@
 # @is-pinoy-dev/registry
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [da68b45]
+  - @is-pinoy-dev/schemas@0.3.1
+  - @is-pinoy-dev/validate@0.3.3
+
 ## 0.0.5
 
 ### Patch Changes
