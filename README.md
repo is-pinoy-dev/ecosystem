@@ -6,10 +6,10 @@ The tooling and infrastructure monorepo behind [is-pinoy.dev](https://is-pinoy.d
 
 | Package | Description |
 |---------|-------------|
-| `packages/cli` | `@is-pinoy/cli` — CLI for validating and syncing DNS records to Cloudflare |
-| `packages/registry` | `@is-pinoy/registry` — Core registry logic and Cloudflare provider |
-| `packages/schemas` | `@is-pinoy/schemas` — Zod schemas for domain and DNS record validation |
-| `packages/ui` | `@is-pinoy/ui` — Shared UI components |
+| `packages/cli` | `@is-pinoy-dev/cli` — CLI for validating and syncing DNS records to Cloudflare |
+| `packages/registry` | `@is-pinoy-dev/registry` — Core registry logic and Cloudflare provider |
+| `packages/schemas` | `@is-pinoy-dev/schemas` — Zod schemas for domain and DNS record validation |
+| `packages/ui` | `@is-pinoy-dev/ui` — Shared UI components |
 | `packages/eslint-config` | Shared ESLint config |
 | `packages/typescript-config` | Shared TypeScript config |
 
