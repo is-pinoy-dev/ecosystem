@@ -21,7 +21,7 @@ export function DocLayout({ title, effectiveDate, children }: DocLayoutProps) {
       <main className="doc-main" style={{
         maxWidth: "700px",
         margin: "0 auto",
-        padding: "120px 40px 80px",
+        padding: "150px 40px 80px",
       }}>
         {/* Eyebrow badge */}
         <div style={{
