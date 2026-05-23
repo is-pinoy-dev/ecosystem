@@ -1,5 +1,13 @@
 # @is-pinoy-dev/registry
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [bdefedc]
+  - @is-pinoy-dev/validate@0.3.0
+  - @is-pinoy-dev/schemas@0.3.0
+
 ## 0.0.2
 
 ### Patch Changes
