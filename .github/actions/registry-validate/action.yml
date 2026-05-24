@@ -1,0 +1,90 @@
+name: Registry Validate
+description: >
+  Validates subdomain JSON files and posts a PR comment with errors on failure.
+  On subsequent pushes, updates the existing comment instead of adding a new one.
+
+inputs:
+  dir:
+    description: Path to the directory containing subdomain JSON files
+    required: false
+    default: ./subdomains
+  github-token:
+    description: >
+      GitHub token with pull-requests:write permission.
+      Also used to install @is-pinoy-dev/cli from GitHub Package Registry.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install CLI
+      shell: bash
+      run: |
+        npm config set @is-pinoy-dev:registry https://npm.pkg.github.com
+        npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
+        npm install -g @is-pinoy-dev/cli
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.github-token }}
+
+    - name: Run validation
+      id: validate
+      shell: bash
+      run: |
+        set +e
+        OUTPUT=$(is-pinoy registry validate --dir "$INPUT_DIR" 2>&1)
+        EXIT_CODE=$?
+        set -e
+
+        CLEAN=$(printf '%s' "$OUTPUT" | sed 's/\x1b\[[0-9;]*[mGKHFJ]//g')
+
+        DELIM="ghadelimiter_$(head -c 8 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 8)"
+        {
+          echo "output<<$DELIM"
+          printf '%s\n' "$CLEAN"
+          echo "$DELIM"
+        } >> "$GITHUB_OUTPUT"
+
+        echo "failed=$([ $EXIT_CODE -ne 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      env:
+        INPUT_DIR: ${{ inputs.dir }}
+
+    - name: Post failure comment
+      if: steps.validate.outputs.failed == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        VALIDATION_OUTPUT: ${{ steps.validate.outputs.output }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+      run: |
+        BODY="## ❌ Subdomain Validation Failed
+
+The following errors were found:
+
+\`\`\`
+$VALIDATION_OUTPUT
+\`\`\`
+
+Please fix the errors above and push again."
+
+        gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY" --edit-last 2>/dev/null \
+          || gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY"
+
+    - name: Update comment on success
+      if: steps.validate.outputs.failed == 'false' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+      run: |
+        gh pr comment "$PR_NUMBER" --repo "$REPO" \
+          --body "## ✅ Subdomain Validation Passed
+
+All subdomain files are valid." \
+          --edit-last 2>/dev/null || true
+
+    - name: Fail on validation errors
+      if: steps.validate.outputs.failed == 'true'
+      shell: bash
+      run: exit 1
