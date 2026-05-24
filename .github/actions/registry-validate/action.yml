@@ -57,18 +57,14 @@ runs:
         PR_NUMBER: ${{ github.event.pull_request.number }}
         REPO: ${{ github.repository }}
       run: |
-        BODY="## ❌ Subdomain Validation Failed
-
-The following errors were found:
-
-\`\`\`
-$VALIDATION_OUTPUT
-\`\`\`
-
-Please fix the errors above and push again."
-
-        gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY" --edit-last 2>/dev/null \
-          || gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY"
+        {
+          printf '## ❌ Subdomain Validation Failed\n\n'
+          printf 'The following errors were found:\n\n'
+          printf '```\n%s\n```\n\n' "$VALIDATION_OUTPUT"
+          printf 'Please fix the errors above and push again.'
+        } > /tmp/pr-comment.md
+        gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md --edit-last 2>/dev/null \
+          || gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md
 
     - name: Update comment on success
       if: steps.validate.outputs.failed == 'false' && github.event_name == 'pull_request'
@@ -78,10 +74,8 @@ Please fix the errors above and push again."
         PR_NUMBER: ${{ github.event.pull_request.number }}
         REPO: ${{ github.repository }}
       run: |
-        gh pr comment "$PR_NUMBER" --repo "$REPO" \
-          --body "## ✅ Subdomain Validation Passed
-
-All subdomain files are valid." \
+        printf '## ✅ Subdomain Validation Passed\n\nAll subdomain files are valid.' > /tmp/pr-comment.md
+        gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md \
           --edit-last 2>/dev/null || true
 
     - name: Fail on validation errors
