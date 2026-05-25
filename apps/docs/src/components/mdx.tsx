@@ -1,7 +1,10 @@
-import defaultMdxComponents from 'fumadocs-ui/mdx';
-import { Steps, Step } from 'fumadocs-ui/components/steps';
-import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
-import type { MDXComponents } from 'mdx/types';
+// apps/docs/src/components/mdx.tsx
+import defaultMdxComponents from 'fumadocs-ui/mdx'
+import { Steps, Step } from 'fumadocs-ui/components/steps'
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs'
+import type { MDXComponents } from 'mdx/types'
+import { SubdomainInput } from './subdomain-input'
+import { CustomPre, CustomCode } from './subdomain-code'
 
 export function getMDXComponents(components?: MDXComponents) {
   return {
@@ -10,12 +13,15 @@ export function getMDXComponents(components?: MDXComponents) {
     Step,
     Tabs,
     Tab,
+    SubdomainInput,
+    pre: CustomPre,
+    code: CustomCode,
     ...components,
-  } satisfies MDXComponents;
+  } satisfies MDXComponents
 }
 
-export const useMDXComponents = getMDXComponents;
+export const useMDXComponents = getMDXComponents
 
 declare global {
-  type MDXProvidedComponents = ReturnType<typeof getMDXComponents>;
+  type MDXProvidedComponents = ReturnType<typeof getMDXComponents>
 }
