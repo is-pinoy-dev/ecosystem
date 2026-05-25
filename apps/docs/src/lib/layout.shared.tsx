@@ -39,12 +39,13 @@ export function baseOptions(): BaseLayoutProps {
             alt="is-pinoy.dev"
             width={20}
             height={20}
-            className="[image-rendering:pixelated] grayscale opacity-60"
+            className="opacity-60 grayscale [image-rendering:pixelated]"
           />
         ),
         text: "Back to site",
         secondary: true,
       },
+
       {
         type: "icon",
         label: "Discord",
