@@ -1,0 +1,54 @@
+---
+title: Prerequisites
+description: Everything you need before you start the registration process.
+---
+
+Make sure you have all of the following before opening a pull request.
+
+## A GitHub account
+
+Registration is done by opening a pull request on GitHub. You need a GitHub account, and the `owner.github` field in your JSON file must match your GitHub username exactly.
+
+If you don't have one, [sign up at github.com](https://github.com/join).
+
+## A live, deployed portfolio website
+
+Your subdomain must point to something real and active. We don't accept:
+
+- Sites that are under construction or returning a 404
+- Placeholder pages with no content
+- Non-portfolio projects (for now — this will change in the future)
+
+Deploy your portfolio first, then come back to register your subdomain.
+
+## Your hosting provider's DNS values
+
+You'll need the CNAME record value (and sometimes a TXT verification record) from your hosting provider before you create your JSON file.
+
+See the [Provider Guides](/register/providers) section for step-by-step instructions on finding these values.
+
+## Git installed locally
+
+You'll need Git to clone your fork and push your changes.
+
+Check if it's installed:
+```bash
+git --version
+```
+
+If not installed, download it from [git-scm.com](https://git-scm.com).
+
+## Node.js installed locally
+
+The JSON validator runs via `npx`, which requires Node.js.
+
+Check if it's installed:
+```bash
+node --version
+```
+
+If not installed, download it from [nodejs.org](https://nodejs.org). Any version 18 or newer works.
+
+---
+
+Once you have everything above, continue to [Naming Rules](/register/getting-started/naming-rules).

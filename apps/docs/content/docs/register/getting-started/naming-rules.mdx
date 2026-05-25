@@ -1,0 +1,47 @@
+---
+title: Naming Rules
+description: Rules for choosing a valid is-pinoy.dev subdomain.
+---
+
+Your subdomain must follow these rules to pass validation and review.
+
+## Allowed characters
+
+| Rule | Valid | Invalid |
+|------|-------|---------|
+| Lowercase letters only | `juan` | `Juan` |
+| Numbers allowed | `juan2` | — |
+| Hyphens allowed | `juan-dev` | — |
+| No underscores | — | `juan_dev` |
+| No dots | — | `juan.dev` |
+| No leading hyphen | — | `-juan` |
+| No trailing hyphen | — | `juan-` |
+
+In regular expression form: `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`
+
+## Length
+
+Between **1 and 63 characters** (the standard DNS label limit).
+
+## One subdomain per person
+
+Each GitHub account may register one subdomain. If you already have one and want to change it, open a GitHub issue on the [domains repository](https://github.com/is-pinoy-dev/domains).
+
+## What gets rejected
+
+Pull requests will be closed if the subdomain:
+
+- **Does not point to a portfolio** — only portfolio websites are accepted for now
+- **Squats a name** — registering a subdomain you have no intention of using
+- **Impersonates someone** — using another person's name, handle, or brand
+- **Uses reserved names** — certain names are reserved by maintainers (e.g. `www`, `api`, `mail`)
+- **Has a mismatched owner** — `owner.github` must match the GitHub account opening the PR
+- **Fails schema validation** — records that don't pass the JSON schema
+
+## Tip: use your GitHub username
+
+Using your GitHub username as your subdomain (e.g. `juandelacruz.is-pinoy.dev` for GitHub user `juandelacruz`) makes review faster because the `owner.github` check passes trivially.
+
+---
+
+Ready to continue? Head to [Provider Guides](/register/providers) to find the DNS values for your hosting platform.
