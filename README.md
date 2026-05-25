@@ -1,8 +1,22 @@
-# is-pinoy.dev ecosystem
+<div align="center">
 
-The tooling and infrastructure monorepo behind [is-pinoy.dev](https://is-pinoy.dev) — a free subdomain service for Filipino developers.
+<img src="https://raw.githubusercontent.com/is-pinoy-dev/.github/main/assets/banner.gif" alt="is-pinoy.dev banner" width="100%" />
 
-## Packages
+# 🇵🇭 is-pinoy.dev — Ecosystem
+
+**The tooling and infrastructure monorepo behind [is-pinoy.dev](https://is-pinoy.dev).**
+
+A free subdomain service for Filipino developers.
+
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/is-pinoy-dev/ecosystem/pulls)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+[![Community](https://img.shields.io/badge/community-discord-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.com/channels/1507758007218471062/1507758194624299039)
+
+</div>
+
+---
+
+## 📦 Packages
 
 | Package | Description |
 |---------|-------------|
@@ -13,13 +27,17 @@ The tooling and infrastructure monorepo behind [is-pinoy.dev](https://is-pinoy.d
 | `packages/eslint-config` | Shared ESLint config |
 | `packages/typescript-config` | Shared TypeScript config |
 
-## Apps
+---
+
+## 🖥️ Apps
 
 | App | Description |
 |-----|-------------|
 | `apps/web` | Public-facing website |
 
-## Getting Started
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -45,7 +63,9 @@ pnpm build
 node packages/cli/dist/index.js --help
 ```
 
-## CLI Usage
+---
+
+## 🛠️ CLI Usage
 
 The CLI manages DNS records in the [is-pinoy.dev domains](https://github.com/is-pinoy-dev/domains) repository.
 
@@ -67,14 +87,20 @@ CLOUDFLARE_API_TOKEN=
 CLOUDFLARE_ZONE_ID=
 ```
 
-## Contributing
+---
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+## 🤝 Contributing
 
-## Code of Conduct
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
-See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Please also read our [Code of Conduct](CODE_OF_CONDUCT.md) before getting started.
 
-## License
+---
 
-[MIT](LICENSE)
+<div align="center">
+
+Made with 🤍 by Filipino developers, for Filipino developers.
+
+**[is-pinoy.dev](https://is-pinoy.dev)**
+
+</div>
