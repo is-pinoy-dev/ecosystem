@@ -1,5 +1,11 @@
 # @is-pinoy-dev/cli
 
+## 0.4.5
+
+### Patch Changes
+
+- ecdd7f2: Switch publish target from GitHub Packages to npmjs (public)
+
 ## 0.4.4
 
 ### Patch Changes
