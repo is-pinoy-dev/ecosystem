@@ -1,0 +1,193 @@
+@import "@is-pinoy-dev/ui/globals.css";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+/* Map fumadocs color tokens to the is-pinoy.dev design system */
+:root {
+  --color-fd-background: var(--background);
+  --color-fd-foreground: var(--foreground);
+  --color-fd-card: var(--background);
+  --color-fd-card-foreground: var(--foreground);
+  --color-fd-border: var(--border);
+  --color-fd-primary: var(--primary);
+  --color-fd-primary-foreground: var(--primary-foreground);
+  --color-fd-muted: var(--muted);
+  --color-fd-muted-foreground: var(--muted-foreground);
+  --color-fd-secondary: var(--secondary);
+  --color-fd-secondary-foreground: var(--secondary-foreground);
+  --color-fd-accent: var(--accent);
+  --color-fd-accent-foreground: var(--accent-foreground);
+  --color-fd-popover: var(--popover);
+  --color-fd-popover-foreground: var(--popover-foreground);
+  --color-fd-ring: var(--ring);
+}
+
+/* Brand fonts */
+code,
+pre,
+kbd,
+samp,
+.shiki {
+  font-family: var(--font-mono), monospace;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-pixel), monospace;
+}
+
+/* Zero border-radius everywhere — design system constraint */
+* {
+  border-radius: 0 !important;
+}
+
+/* Gold bottom border on fumadocs nav bar */
+#nd-nav {
+  border-bottom: 3px solid #f5c800;
+}
+
+/* Sidebar background matches content background, no divider */
+#nd-sidebar {
+  background: var(--background);
+  border-right: none;
+}
+
+/* Remove active-item highlight bar (1px cursor-like indicator) */
+#nd-sidebar [data-active="true"]::before {
+  display: none !important;
+}
+
+/* Sidebar bottom container (GitHub + theme toggle) */
+#nd-sidebar div.border {
+  border-width: 3px !important;
+  border-color: var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+/* Sidebar toggle button in nav */
+button[aria-label="Open Sidebar"] {
+  border: 3px solid transparent !important;
+  box-shadow: none;
+  transition:
+    border-color 100ms,
+    box-shadow 100ms;
+}
+
+button[aria-label="Open Sidebar"]:hover {
+  border-color: var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+@media (max-width: 768px) {
+  button[aria-label="Open Sidebar"] {
+    padding: 0.5rem !important;
+    margin-inline-start: 0.5rem;
+  }
+}
+
+/* Collapsed sidebar panel (shown when sidebar is collapsed) */
+[data-sidebar-panel] {
+  border: 3px solid var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark) !important;
+  background: transparent !important;
+}
+
+[data-sidebar-panel] [data-search],
+[data-sidebar-panel] [data-search-full] {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Sidebar collapse toggle */
+button[aria-label="Collapse Sidebar"] {
+  border: 3px solid transparent !important;
+  box-shadow: none;
+  transition:
+    border-color 100ms,
+    box-shadow 100ms;
+}
+
+button[aria-label="Collapse Sidebar"][data-collapsed="false"]:hover {
+  border-color: var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+/* Retro pixel shadows on docs components */
+
+/* Code blocks */
+.shiki {
+  border: 3px solid var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+/* Callout boxes */
+.prose .border {
+  border-width: 3px !important;
+  border-color: var(--border) !important;
+  box-shadow: 4px 4px 0 #747474;
+}
+
+/* Footer prev/next nav buttons */
+#nd-page > div > a.border {
+  border: 3px solid var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+  transition:
+    box-shadow 100ms,
+    transform 100ms;
+}
+
+#nd-page > div > a.border:hover {
+  box-shadow: 2px 2px 0 var(--primary-dark);
+  transform: translate(2px, 2px);
+}
+
+/* Search bar in nav */
+[data-search],
+[data-search-full] {
+  border: 3px solid var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+@media (max-width: 768px) {
+  [data-search],
+  [data-search-full] {
+    border-color: transparent !important;
+    box-shadow: none;
+    transition:
+      border-color 100ms,
+      box-shadow 100ms;
+  }
+
+  [data-search]:hover,
+  [data-search-full]:hover {
+    border-color: var(--border) !important;
+    box-shadow: 4px 4px 0 var(--primary-dark);
+  }
+}
+
+/* Search dialog */
+[role="dialog"] {
+  border: 3px solid var(--border) !important;
+  box-shadow: 6px 6px 0 var(--primary-dark) !important;
+}
+
+/* Scrollbar and scroll-lock fixes */
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+/* Editable subdomain token: pencil icon hidden on touch devices */
+@media (pointer: coarse) {
+  [data-editable-subdomain-icon] {
+    display: none !important;
+  }
+}

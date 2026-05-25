@@ -1,0 +1,13 @@
+diff --git a/css/lib/base.css b/css/lib/base.css
+index 610f471cc26365f0df95c2f5c52d6246a2f64903..645e3d05a05b85ea12f66c210d96b09ce90e09b4 100644
+--- a/css/lib/base.css
++++ b/css/lib/base.css
+@@ -258,7 +258,7 @@
+     line-height: 1.25rem;
+     display: flex;
+     position: absolute;
+-    @apply size-8 -inset-s-4 rounded-full;
++    width: 2rem; height: 2rem; inset-inline-start: -1rem; border-radius: 9999px;
+   }
+ }
+ 

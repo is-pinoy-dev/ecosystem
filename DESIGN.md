@@ -178,7 +178,7 @@ components:
 
 ## Component Library
 
-All UI components live in `packages/ui` (`@workspace/ui`). Always import from there — never build one-off components in app code.
+All UI components live in `packages/ui` (`@is-pinoy-dev/ui`). Always import from there — never build one-off components in app code.
 
 **Adding a new component:**
 

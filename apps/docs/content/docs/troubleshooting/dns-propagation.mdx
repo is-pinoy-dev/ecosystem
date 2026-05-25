@@ -1,0 +1,41 @@
+---
+title: DNS Propagation
+description: What to do if your subdomain isn't resolving after your PR was merged.
+---
+
+## Vercel shows "Invalid Configuration"
+
+After your PR is merged but before DNS has propagated, Vercel's dashboard will show an **"Invalid Configuration"** warning on your domain. This is expected — Vercel is checking whether the CNAME record exists in DNS, and it hasn't propagated yet.
+
+**You don't need to do anything.** Wait for DNS to propagate and the warning will go away automatically.
+
+## How long does propagation take?
+
+DNS changes typically propagate within **a few minutes** after your PR is merged and the Cloudflare sync runs. In rare cases it can take **up to 48 hours** depending on your DNS resolver's TTL and cache.
+
+## How to check propagation
+
+Use `dig` to query the CNAME record directly:
+
+```bash
+dig yourname.is-pinoy.dev CNAME
+```
+
+A propagated record looks like this:
+
+```text
+;; ANSWER SECTION:
+yourname.is-pinoy.dev.  300  IN  CNAME  <your-cname-target>.
+```
+
+If the ANSWER SECTION is empty, the record hasn't propagated to your resolver yet.
+
+You can also use [whatsmydns.net](https://www.whatsmydns.net) to check propagation from multiple geographic locations simultaneously.
+
+## Still not live after 48 hours?
+
+If more than 48 hours have passed since your PR was merged and your subdomain still isn't resolving, open an issue on the [domains repository](https://github.com/is-pinoy-dev/domains/issues) with:
+
+- Your subdomain (e.g. `yourname.is-pinoy.dev`)
+- A link to your merged PR
+- The output of `dig yourname.is-pinoy.dev CNAME`
