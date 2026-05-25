@@ -35,11 +35,11 @@ Check whether your subdomain has propagated using `dig`:
 dig yourname.is-pinoy.dev CNAME
 ```
 
-You should see your CNAME value in the ANSWER SECTION:
+You should see your CNAME value in the ANSWER SECTION (the exact target will match what you put in your JSON file):
 
 ```text
 ;; ANSWER SECTION:
-yourname.is-pinoy.dev.  300  IN  CNAME  xxxxxxxxxxxxxxxx.vercel-dns-017.com.
+yourname.is-pinoy.dev.  300  IN  CNAME  <your-cname-target>.
 ```
 
 Alternatively, use a web-based tool like [whatsmydns.net](https://www.whatsmydns.net) to check propagation from multiple locations.
