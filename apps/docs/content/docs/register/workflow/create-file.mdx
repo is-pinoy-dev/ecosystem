@@ -1,0 +1,78 @@
+---
+title: Create Your JSON File
+description: Steps 3–4 — Create subdomains/<name>.json and fill in your DNS records.
+---
+
+## Step 3: Find your DNS values
+
+Before creating your file, you need the CNAME value (and sometimes a TXT value) from your hosting provider.
+
+See the [Provider Guides](/register/providers) section and follow the guide for your platform. Come back here once you have your values.
+
+---
+
+## Step 4: Create your subdomain file
+
+Create a new file at `subdomains/<your-subdomain>.json` inside the repository you cloned.
+
+```bash
+touch subdomains/yourname.json
+```
+
+Replace `yourname` with the subdomain you want (e.g. `juan` for `juan.is-pinoy.dev`).
+
+Open the file and fill it in:
+
+<Tabs items={["CNAME only", "CNAME + TXT"]}>
+  <Tab value="CNAME only">
+    ```json
+    {
+      "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/schemas/v1/subdomain.schema.json",
+      "subdomain": "yourname",
+      "owner": {
+        "github": "your-github-username"
+      },
+      "records": {
+        "CNAME": {
+          "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab value="CNAME + TXT">
+    ```json
+    {
+      "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/schemas/v1/subdomain.schema.json",
+      "subdomain": "yourname",
+      "owner": {
+        "github": "your-github-username"
+      },
+      "records": {
+        "CNAME": {
+          "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
+        },
+        "TXT": {
+          "value": "vc-domain-verify=yourname.is-pinoy.dev,abc123",
+          "provider": "vercel"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+Replace `yourname`, `your-github-username`, and the record values with your actual information.
+
+## Before you continue — checklist
+
+<Callout type="warn">
+  Double-check all three of these before running the validator:
+  - The **filename** (`yourname.json`) matches the **`subdomain` field** (`"subdomain": "yourname"`) exactly
+  - **`owner.github`** matches your GitHub username exactly (case-sensitive)
+  - The **CNAME value ends with a trailing dot** (`.`)
+</Callout>
+
+---
+
+Next: [Validate](/register/workflow/validate)

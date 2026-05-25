@@ -1,0 +1,43 @@
+---
+title: Validate
+description: Step 5 — Run the validator to catch errors before opening a PR.
+---
+
+## Step 5: Validate your file
+
+Run the validator against your JSON file:
+
+```bash
+npx @is-pinoy-dev/validate ./subdomains/yourname.json
+```
+
+Replace `yourname` with your subdomain.
+
+## What success looks like
+
+```
+✔ Schema valid
+✔ Subdomain matches filename
+✔ owner.github present
+✔ Records valid
+
+yourname.is-pinoy.dev is ready to submit.
+```
+
+If you see output like this, your file is valid. Move on to [Open a PR](/register/workflow/open-pr).
+
+## What failure looks like
+
+```
+✖ CNAME value must end with a trailing dot (e.g. "yoursite.vercel.app.")
+```
+
+The validator outputs one error per line with a description of what's wrong. Fix each error and re-run the validator until it passes.
+
+<Callout type="info">
+  For a full list of validation errors and how to fix them, see [Common Errors](/register/troubleshooting/common-errors).
+</Callout>
+
+---
+
+Next: [Open a PR](/register/workflow/open-pr)
