@@ -1291,7 +1291,7 @@ These are the most common errors reported by `npx @is-pinoy-dev/validate` and by
 
 **Error:**
 ```
-✖ CNAME value must end with a trailing dot (e.g. "yoursite.vercel.app.")
+❌ CNAME value must end with a trailing dot (e.g. "yoursite.vercel.app.")
 ```
 
 **Fix:** Add a `.` at the end of your CNAME value:
@@ -1308,7 +1308,7 @@ These are the most common errors reported by `npx @is-pinoy-dev/validate` and by
 
 **Error:**
 ```
-✖ Filename "juan-dev.json" does not match subdomain field "juan"
+❌ Filename "juan-dev.json" does not match subdomain field "juan"
 ```
 
 **Fix:** The filename (without `.json`) and the `subdomain` field must be identical. Either rename the file or update the field:
@@ -1328,7 +1328,7 @@ mv subdomains/juan.json subdomains/juan-dev.json
 
 **Error:**
 ```
-✖ owner.github is required
+❌ owner.github is required
 ```
 
 or from CI:
@@ -1351,7 +1351,7 @@ or from CI:
 
 **Error:**
 ```
-✖ records.TXT.provider is required when TXT value starts with "vc-domain-verify"
+❌ records.TXT.provider is required when TXT value starts with "vc-domain-verify"
 ```
 
 **Fix:** Add `"provider": "vercel"` to your TXT record:
@@ -1369,7 +1369,7 @@ or from CI:
 
 **Error:**
 ```
-✖ records cannot contain both A and CNAME
+❌ records cannot contain both A and CNAME
 ```
 
 **Fix:** Use one or the other. If your site is on a hosted platform (Vercel, Netlify, GitHub Pages), use CNAME. If you're pointing to an IP address, use A:
@@ -1388,7 +1388,7 @@ or from CI:
 
 **Error:**
 ```
-✖ subdomain must match pattern ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$
+❌ subdomain must match pattern ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$
 ```
 
 **Fix:** Use only lowercase letters, numbers, and hyphens. No uppercase, no underscores, no dots. No leading or trailing hyphens:

@@ -31,6 +31,10 @@ export const metadata: Metadata = {
   openGraph: {
     siteName: 'is-pinoy.dev docs',
     type: 'website',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
   },
   icons: {
     icon: [
@@ -43,10 +47,19 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 };
 
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'is-pinoy.dev',
+  url: 'https://docs.is-pinoy.dev',
+  sameAs: ['https://discord.gg/MVrgEfFExh'],
+};
+
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`flex flex-col min-h-screen ${pixelFont.variable} ${sansFont.variable} ${monoFont.variable}`}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <RootProvider>{children}</RootProvider>
       </body>
     </html>
