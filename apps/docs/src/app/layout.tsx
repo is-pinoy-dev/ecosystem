@@ -15,19 +15,15 @@ const sansFont = IBM_Plex_Sans({
 });
 
 const monoFont = IBM_Plex_Mono({
-  weight: ['400'],
+  weight: ['400', '500', '600'],
   subsets: ['latin'],
   variable: '--font-mono',
 });
 
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
-    <html
-      lang="en"
-      className={`dark ${pixelFont.variable} ${sansFont.variable} ${monoFont.variable}`}
-      suppressHydrationWarning
-    >
-      <body className="flex flex-col min-h-screen">
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className={`flex flex-col min-h-screen ${pixelFont.variable} ${sansFont.variable} ${monoFont.variable}`}>
         <RootProvider>{children}</RootProvider>
       </body>
     </html>

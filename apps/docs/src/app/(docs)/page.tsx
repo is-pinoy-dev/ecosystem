@@ -1,5 +1,5 @@
 import { source } from '@/lib/source';
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 import type { Node } from 'fumadocs-core/page-tree';
 
 function findFirstUrl(nodes: Node[]): string | undefined {
@@ -15,5 +15,6 @@ function findFirstUrl(nodes: Node[]): string | undefined {
 
 export default function HomePage() {
   const url = findFirstUrl(source.pageTree.children);
-  redirect(url ?? '/');
+  if (!url) notFound();
+  redirect(url);
 }
