@@ -8,13 +8,6 @@ CLI for managing [is-pinoy.dev](https://is-pinoy.dev) subdomains — validate JS
 npm install -g @is-pinoy-dev/cli
 ```
 
-> Requires authentication to GitHub Packages. Add this to your `~/.npmrc`:
->
-> ```
-> @is-pinoy-dev:registry=https://npm.pkg.github.com
-> //npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
-> ```
-
 ## Commands
 
 ### `registry validate`

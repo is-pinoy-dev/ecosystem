@@ -9,9 +9,7 @@ inputs:
     required: false
     default: ./subdomains
   github-token:
-    description: >
-      GitHub token with pull-requests:write permission.
-      Also used to install @is-pinoy-dev/cli from GitHub Package Registry.
+    description: GitHub token with pull-requests:write permission.
     required: true
 
 runs:
@@ -19,12 +17,7 @@ runs:
   steps:
     - name: Install CLI
       shell: bash
-      run: |
-        npm config set @is-pinoy-dev:registry https://npm.pkg.github.com
-        npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
-        npm install -g @is-pinoy-dev/cli
-      env:
-        NODE_AUTH_TOKEN: ${{ inputs.github-token }}
+      run: npm install -g @is-pinoy-dev/cli
 
     - name: Run validation
       id: validate
