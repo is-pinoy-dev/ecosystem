@@ -5,12 +5,17 @@ import { useEffect, useRef, useState } from 'react'
 
 export function SubdomainInput() {
   const { name, setName } = useSubdomainStore()
-  const [draft, setDraft] = useState(name === 'yourname' ? '' : name)
+  const [mounted, setMounted] = useState(false)
+  const [draft, setDraft] = useState('')
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
-    if (name !== 'yourname') setDraft(name)
-  }, [name])
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted && name !== 'yourname') setDraft(name)
+  }, [mounted, name])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.toLowerCase()
@@ -19,7 +24,7 @@ export function SubdomainInput() {
     timer.current = setTimeout(() => setName(val), 300)
   }
 
-  const display = draft || 'yourname'
+  const display = mounted ? (draft || 'yourname') : 'yourname'
 
   return (
     <div
