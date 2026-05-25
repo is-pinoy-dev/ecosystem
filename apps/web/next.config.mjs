@@ -10,7 +10,7 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@workspace/ui"],
+  transpilePackages: ["@is-pinoy-dev/ui"],
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   async headers() {
     return [

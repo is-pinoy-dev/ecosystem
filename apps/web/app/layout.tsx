@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Press_Start_2P, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google"
-import "@workspace/ui/globals.css"
+import "@is-pinoy-dev/ui/globals.css"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 

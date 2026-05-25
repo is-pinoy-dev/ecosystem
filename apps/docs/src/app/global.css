@@ -6,8 +6,8 @@
 :root {
   --color-fd-background: var(--background);
   --color-fd-foreground: var(--foreground);
-  --color-fd-card: var(--card);
-  --color-fd-card-foreground: var(--card-foreground);
+  --color-fd-card: var(--background);
+  --color-fd-card-foreground: var(--foreground);
   --color-fd-border: var(--border);
   --color-fd-primary: var(--primary);
   --color-fd-primary-foreground: var(--primary-foreground);
@@ -22,12 +22,14 @@
   --color-fd-ring: var(--ring);
 }
 
-/* Pixel-grid background — matches apps/web */
-body {
-  background-image:
-    linear-gradient(rgba(245, 200, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245, 200, 0, 0.03) 1px, transparent 1px);
-  background-size: 24px 24px;
+
+/* Brand fonts */
+code, pre, kbd, samp, .shiki {
+  font-family: var(--font-mono), monospace;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-pixel), monospace;
 }
 
 /* Zero border-radius everywhere — design system constraint */
@@ -38,6 +40,116 @@ body {
 /* Gold bottom border on fumadocs nav bar */
 #nd-nav {
   border-bottom: 3px solid #F5C800;
+}
+
+/* Sidebar background matches content background, no divider */
+#nd-sidebar {
+  background: var(--background);
+  border-right: none;
+}
+
+/* Sidebar bottom container (GitHub + theme toggle) */
+#nd-sidebar div.border {
+  border-width: 3px !important;
+  border-color: var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+/* Sidebar toggle button in nav */
+button[aria-label="Open Sidebar"] {
+  border: 3px solid transparent !important;
+  box-shadow: none;
+  transition: border-color 100ms, box-shadow 100ms;
+}
+
+button[aria-label="Open Sidebar"]:hover {
+  border-color: var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+@media (max-width: 768px) {
+  button[aria-label="Open Sidebar"] {
+    padding: 0.5rem !important;
+    margin-inline-start: 0.5rem;
+  }
+}
+
+/* Collapsed sidebar panel (shown when sidebar is collapsed) */
+[data-sidebar-panel] {
+  border: 3px solid var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark) !important;
+  background: transparent !important;
+}
+
+[data-sidebar-panel] [data-search],
+[data-sidebar-panel] [data-search-full] {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Sidebar collapse toggle */
+button[aria-label="Collapse Sidebar"] {
+  border: 3px solid transparent !important;
+  box-shadow: none;
+  transition: border-color 100ms, box-shadow 100ms;
+}
+
+button[aria-label="Collapse Sidebar"][data-collapsed="false"]:hover {
+  border-color: var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+/* Retro pixel shadows on docs components */
+
+/* Code blocks */
+.shiki {
+  border: 3px solid var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+/* Callout boxes */
+article.prose .border {
+  border-width: 3px !important;
+  border-color: var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+/* Footer prev/next nav buttons */
+#nd-page > div > a[href] {
+  border: 3px solid var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+  transition: box-shadow 100ms, transform 100ms;
+}
+
+#nd-page > div > a[href]:hover {
+  box-shadow: 2px 2px 0 var(--primary-dark);
+  transform: translate(2px, 2px);
+}
+
+/* Search bar in nav */
+[data-search], [data-search-full] {
+  border: 3px solid var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark);
+}
+
+@media (max-width: 768px) {
+  [data-search], [data-search-full] {
+    border-color: transparent !important;
+    box-shadow: none;
+    transition: border-color 100ms, box-shadow 100ms;
+  }
+
+  [data-search]:hover, [data-search-full]:hover {
+    border-color: var(--border) !important;
+    box-shadow: 4px 4px 0 var(--primary-dark);
+  }
+}
+
+
+/* Search dialog */
+[role="dialog"] {
+  border: 3px solid var(--border) !important;
+  box-shadow: 6px 6px 0 var(--primary-dark) !important;
 }
 
 /* Scrollbar and scroll-lock fixes */
