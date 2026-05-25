@@ -26,6 +26,9 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
-    ]
+    ],
+    "patchedDependencies": {
+      "fumadocs-ui@16.9.1": "patches/fumadocs-ui@16.9.1.patch"
+    }
   }
 }

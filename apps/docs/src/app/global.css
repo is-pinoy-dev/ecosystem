@@ -1,6 +1,6 @@
-@import '@is-pinoy-dev/ui/globals.css';
-@import 'fumadocs-ui/css/neutral.css';
-@import 'fumadocs-ui/css/preset.css';
+@import "@is-pinoy-dev/ui/globals.css";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
 
 /* Map fumadocs color tokens to the is-pinoy.dev design system */
 :root {
@@ -22,13 +22,21 @@
   --color-fd-ring: var(--ring);
 }
 
-
 /* Brand fonts */
-code, pre, kbd, samp, .shiki {
+code,
+pre,
+kbd,
+samp,
+.shiki {
   font-family: var(--font-mono), monospace;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-pixel), monospace;
 }
 
@@ -39,13 +47,18 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Gold bottom border on fumadocs nav bar */
 #nd-nav {
-  border-bottom: 3px solid #F5C800;
+  border-bottom: 3px solid #f5c800;
 }
 
 /* Sidebar background matches content background, no divider */
 #nd-sidebar {
   background: var(--background);
   border-right: none;
+}
+
+/* Remove active-item highlight bar (1px cursor-like indicator) */
+#nd-sidebar [data-active="true"]::before {
+  display: none !important;
 }
 
 /* Sidebar bottom container (GitHub + theme toggle) */
@@ -59,7 +72,9 @@ h1, h2, h3, h4, h5, h6 {
 button[aria-label="Open Sidebar"] {
   border: 3px solid transparent !important;
   box-shadow: none;
-  transition: border-color 100ms, box-shadow 100ms;
+  transition:
+    border-color 100ms,
+    box-shadow 100ms;
 }
 
 button[aria-label="Open Sidebar"]:hover {
@@ -91,7 +106,9 @@ button[aria-label="Open Sidebar"]:hover {
 button[aria-label="Collapse Sidebar"] {
   border: 3px solid transparent !important;
   box-shadow: none;
-  transition: border-color 100ms, box-shadow 100ms;
+  transition:
+    border-color 100ms,
+    box-shadow 100ms;
 }
 
 button[aria-label="Collapse Sidebar"][data-collapsed="false"]:hover {
@@ -108,43 +125,49 @@ button[aria-label="Collapse Sidebar"][data-collapsed="false"]:hover {
 }
 
 /* Callout boxes */
-article.prose .border {
+.prose .border {
   border-width: 3px !important;
   border-color: var(--border) !important;
-  box-shadow: 4px 4px 0 var(--primary-dark);
+  box-shadow: 4px 4px 0 #747474;
 }
 
 /* Footer prev/next nav buttons */
-#nd-page > div > a[href] {
+#nd-page > div > a.border {
   border: 3px solid var(--border) !important;
   box-shadow: 4px 4px 0 var(--primary-dark);
-  transition: box-shadow 100ms, transform 100ms;
+  transition:
+    box-shadow 100ms,
+    transform 100ms;
 }
 
-#nd-page > div > a[href]:hover {
+#nd-page > div > a.border:hover {
   box-shadow: 2px 2px 0 var(--primary-dark);
   transform: translate(2px, 2px);
 }
 
 /* Search bar in nav */
-[data-search], [data-search-full] {
+[data-search],
+[data-search-full] {
   border: 3px solid var(--border) !important;
   box-shadow: 4px 4px 0 var(--primary-dark);
 }
 
 @media (max-width: 768px) {
-  [data-search], [data-search-full] {
+  [data-search],
+  [data-search-full] {
     border-color: transparent !important;
     box-shadow: none;
-    transition: border-color 100ms, box-shadow 100ms;
+    transition:
+      border-color 100ms,
+      box-shadow 100ms;
   }
 
-  [data-search]:hover, [data-search-full]:hover {
+  [data-search]:hover,
+  [data-search-full]:hover {
     border-color: var(--border) !important;
     box-shadow: 4px 4px 0 var(--primary-dark);
   }
 }
-
 
 /* Search dialog */
 [role="dialog"] {

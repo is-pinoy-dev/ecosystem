@@ -1,0 +1,3 @@
+{
+  "pages": ["fork-and-clone", "create-file", "validate", "open-pr", "after-merge"]
+}
