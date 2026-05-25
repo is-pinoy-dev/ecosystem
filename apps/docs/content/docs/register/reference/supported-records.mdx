@@ -1,0 +1,99 @@
+---
+title: Supported Records
+description: DNS record types you can use in your subdomain JSON file.
+---
+
+Your `records` object can contain one or more of the following DNS record types.
+
+## Overview
+
+| Type | Use case | Example value |
+|------|----------|---------------|
+| `CNAME` | Hosted platforms (Vercel, Netlify, GitHub Pages) | `yoursite.vercel.app.` |
+| `A` | Custom server or VPS | `203.0.113.1` |
+| `TXT` | Domain verification (e.g. Google Search Console, Vercel) | `google-site-verification=...` |
+
+## CNAME
+
+Use this when your portfolio is hosted on a platform like Vercel, Netlify, or GitHub Pages. The platform gives you a hostname to point at.
+
+```json
+"records": {
+  "CNAME": {
+    "value": "yoursite.vercel.app."
+  }
+}
+```
+
+<Callout type="warn">
+  The CNAME value **must end with a trailing dot** (`.`). This is standard DNS notation for a fully-qualified domain name. Your hosting provider will show the value with the dot — keep it.
+</Callout>
+
+## A record
+
+Use this when your portfolio is running on a custom server or VPS and you want to point the subdomain directly at an IP address.
+
+```json
+"records": {
+  "A": {
+    "value": "203.0.113.1"
+  }
+}
+```
+
+The value must be a valid IPv4 address.
+
+<Callout type="info">
+  A records do not get a trailing dot. Only CNAME values use the trailing dot.
+</Callout>
+
+## TXT
+
+Used for domain verification — most commonly when a platform (like Vercel or Google) needs to confirm you own the domain before it will serve traffic.
+
+```json
+"records": {
+  "TXT": {
+    "value": "google-site-verification=abc123"
+  }
+}
+```
+
+When the TXT record comes from Vercel, you must also include the `provider` field:
+
+```json
+"records": {
+  "TXT": {
+    "value": "vc-domain-verify=yourname.is-pinoy.dev,abc123",
+    "provider": "vercel"
+  }
+}
+```
+
+<Callout type="warn">
+  The `"provider": "vercel"` field is **required** whenever you add a TXT record from Vercel. The validator will fail without it.
+</Callout>
+
+## Combining records
+
+You can include multiple record types in one file. The most common combination is CNAME + TXT for platforms that require domain verification alongside the primary DNS record.
+
+```json
+"records": {
+  "CNAME": {
+    "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
+  },
+  "TXT": {
+    "value": "vc-domain-verify=yourname.is-pinoy.dev,abc123",
+    "provider": "vercel"
+  }
+}
+```
+
+## What you cannot combine
+
+You **cannot** use `A` and `CNAME` together on the same subdomain. These record types are mutually exclusive in DNS — a name can either be an alias (CNAME) or a direct address (A), not both.
+
+If you try to include both, the validator will reject your file.
+
+---

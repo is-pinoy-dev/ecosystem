@@ -1,0 +1,103 @@
+---
+title: JSON Format
+description: Complete reference for the subdomain JSON file format.
+---
+
+Each subdomain is described by a single JSON file at `subdomains/<your-subdomain>.json` in the [domains repository](https://github.com/is-pinoy-dev/domains).
+
+## Full example
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/schemas/v1/subdomain.schema.json",
+  "subdomain": "yourname",
+  "owner": {
+    "github": "your-github-username",
+    "email": "you@example.com"
+  },
+  "records": {
+    "CNAME": {
+      "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
+    }
+  }
+}
+```
+
+## Field reference
+
+### `$schema`
+
+```json
+"$schema": "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/schemas/v1/subdomain.schema.json"
+```
+
+Optional but recommended. Adding this field enables JSON schema validation in editors like VS Code — you'll see inline errors as you type.
+
+---
+
+### `subdomain`
+
+```json
+"subdomain": "yourname"
+```
+
+**Required.** The name you want before `.is-pinoy.dev`. Must:
+- Match the filename exactly (e.g. `yourname.json` → `"subdomain": "yourname"`)
+- Be lowercase alphanumeric with hyphens only
+- Be between 1 and 63 characters
+
+See [Naming Rules](/register/getting-started/naming-rules) for the full character rules.
+
+---
+
+### `owner.github`
+
+```json
+"owner": {
+  "github": "your-github-username"
+}
+```
+
+**Required.** Must exactly match the GitHub username of the account opening the pull request. CI will reject the PR if these don't match.
+
+<Callout type="warn">
+  This is case-sensitive. `JuanDeLaCruz` and `juandelacruz` are different values. Use your username exactly as it appears on GitHub.
+</Callout>
+
+---
+
+### `owner.email`
+
+```json
+"owner": {
+  "github": "your-github-username",
+  "email": "you@example.com"
+}
+```
+
+**Optional.** Used by maintainers to contact you if there's an issue with your subdomain. Never exposed publicly.
+
+---
+
+### `records`
+
+```json
+"records": {
+  "CNAME": {
+    "value": "yoursite.vercel.app."
+  }
+}
+```
+
+**Required.** Must contain at least one valid record. Supported keys: `CNAME`, `A`, `TXT`. See [Supported Records](/register/reference/supported-records) for details on each type.
+
+## Common mistakes
+
+| Mistake | Example of wrong value | Correct value |
+|---------|----------------------|---------------|
+| Filename doesn't match `subdomain` field | File: `juan.json`, field: `"subdomain": "juan-dev"` | File and field must both be `juan` or both `juan-dev` |
+| `owner.github` is wrong casing | `"github": "JuanDeLaCruz"` when GitHub username is `juandelacruz` | Match exactly as shown on GitHub |
+| Missing trailing dot on CNAME | `"value": "yoursite.vercel.app"` | `"value": "yoursite.vercel.app."` |
+| `email` field in wrong place | `"email": "..."` at top level | Must be inside `"owner": {}` |
+
+---
