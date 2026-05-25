@@ -1,0 +1,51 @@
+@import '@is-pinoy-dev/ui/globals.css';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/* Map fumadocs color tokens to the is-pinoy.dev design system */
+:root {
+  --color-fd-background: var(--background);
+  --color-fd-foreground: var(--foreground);
+  --color-fd-card: var(--card);
+  --color-fd-card-foreground: var(--card-foreground);
+  --color-fd-border: var(--border);
+  --color-fd-primary: var(--primary);
+  --color-fd-primary-foreground: var(--primary-foreground);
+  --color-fd-muted: var(--muted);
+  --color-fd-muted-foreground: var(--muted-foreground);
+  --color-fd-secondary: var(--secondary);
+  --color-fd-secondary-foreground: var(--secondary-foreground);
+  --color-fd-accent: var(--accent);
+  --color-fd-accent-foreground: var(--accent-foreground);
+  --color-fd-popover: var(--popover);
+  --color-fd-popover-foreground: var(--popover-foreground);
+  --color-fd-ring: var(--ring);
+}
+
+/* Pixel-grid background — matches apps/web */
+body {
+  background-image:
+    linear-gradient(rgba(245, 200, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 200, 0, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Zero border-radius everywhere — design system constraint */
+* {
+  border-radius: 0 !important;
+}
+
+/* Gold bottom border on fumadocs nav bar */
+#nd-nav {
+  border-bottom: 3px solid #F5C800;
+}
+
+/* Scrollbar and scroll-lock fixes */
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
