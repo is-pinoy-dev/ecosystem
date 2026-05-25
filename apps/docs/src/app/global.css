@@ -184,3 +184,10 @@ html > body[data-scroll-locked] {
   margin-right: 0px !important;
   --removed-body-scroll-bar-size: 0px !important;
 }
+
+/* Editable subdomain token: pencil icon hidden on touch devices */
+@media (pointer: coarse) {
+  [data-editable-subdomain-icon] {
+    display: none !important;
+  }
+}
