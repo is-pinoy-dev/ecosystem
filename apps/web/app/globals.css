@@ -168,6 +168,10 @@ body {
   .docs-grid {
     grid-template-columns: 1fr !important;
   }
+
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 479px) {
