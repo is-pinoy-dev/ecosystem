@@ -1,14 +1,4 @@
-"use client"
-
 import Link from "next/link"
-
-const pixelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-pixel)",
-}
-
-const sansStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-}
 
 interface DocCard {
   icon: string
@@ -44,76 +34,26 @@ function DocCard({ card }: { card: DocCard }) {
       href={card.href}
       target="_blank"
       rel="noopener noreferrer"
-      style={{ textDecoration: "none" }}
+      className="no-underline group"
     >
-      <div
-        style={{
-          border: "3px solid #2A2A2A",
-          boxShadow: "5px 5px 0 #000",
-          backgroundColor: "#0D0D0D",
-          padding: "28px 24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          height: "100%",
-          minHeight: "160px",
-          position: "relative",
-          transition: "box-shadow 0.1s ease, transform 0.1s ease, border-color 0.1s ease",
-          cursor: "pointer",
-        }}
-        onMouseEnter={(e) => {
-          const el = e.currentTarget as HTMLElement
-          el.style.borderColor = "#F5C800"
-          el.style.boxShadow = "6px 6px 0 #D4A800"
-          el.style.transform = "translate(-1px, -1px)"
-        }}
-        onMouseLeave={(e) => {
-          const el = e.currentTarget as HTMLElement
-          el.style.borderColor = "#2A2A2A"
-          el.style.boxShadow = "5px 5px 0 #000"
-          el.style.transform = "translate(0, 0)"
-        }}
-      >
+      <div className="border-[3px] border-[#2A2A2A] shadow-[5px_5px_0_#000] bg-[#0D0D0D] p-7 flex flex-col gap-4 h-full min-h-[160px] relative transition-all duration-100 cursor-pointer group-hover:border-[#F5C800] group-hover:shadow-[6px_6px_0_#D4A800] group-hover:-translate-x-px group-hover:-translate-y-px">
         {/* Icon */}
-        <span style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "18px",
-          color: "#F5C800",
-          lineHeight: 1,
-        }}>
+        <span className="font-[family-name:var(--font-mono)] text-[18px] text-[#F5C800] leading-none">
           {card.icon}
         </span>
 
         {/* Title */}
-        <span style={{
-          ...pixelStyle,
-          fontSize: "0.6rem",
-          color: "#FAFAF5",
-          lineHeight: 1.6,
-          letterSpacing: "0.03em",
-        }}>
+        <span className="font-[family-name:var(--font-pixel)] text-[0.6rem] text-[#FAFAF5] leading-[1.6] tracking-[0.03em]">
           {card.title}
         </span>
 
         {/* Description */}
-        <span style={{
-          ...sansStyle,
-          fontSize: "14px",
-          color: "#888888",
-          lineHeight: 1.7,
-        }}>
+        <span className="font-[family-name:var(--font-sans)] text-[14px] text-[#888888] leading-[1.7]">
           {card.description}
         </span>
 
         {/* Arrow */}
-        <span style={{
-          position: "absolute",
-          bottom: "20px",
-          right: "20px",
-          fontFamily: "var(--font-mono)",
-          fontSize: "16px",
-          color: "#F5C800",
-        }}>
+        <span className="absolute bottom-5 right-5 font-[family-name:var(--font-mono)] text-[16px] text-[#F5C800]">
           →
         </span>
       </div>
@@ -123,30 +63,17 @@ function DocCard({ card }: { card: DocCard }) {
 
 export function DocsSection() {
   return (
-    <section style={{
-      width: "100%",
-      maxWidth: "960px",
-      margin: "0 auto",
-      padding: "0 40px 80px",
-    }}>
+    <section className="w-full max-w-[960px] mx-auto px-10 pb-20">
       {/* Heading */}
-      <h2 style={{
-        fontFamily: "var(--font-pixel)",
-        fontSize: "clamp(0.5rem, 1.5vw, 0.75rem)",
-        color: "#F5C800",
-        letterSpacing: "0.1em",
-        marginBottom: "40px",
-        lineHeight: 1.6,
-      }}>
+      <h2
+        className="font-[family-name:var(--font-pixel)] text-[#F5C800] tracking-[0.1em] mb-10 leading-[1.6]"
+        style={{ fontSize: "clamp(0.5rem, 1.5vw, 0.75rem)" }}
+      >
         {"// DOCUMENTATION"}
       </h2>
 
       {/* Grid */}
-      <div className="docs-grid" style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
-        gap: "16px",
-      }}>
+      <div className="grid grid-cols-3 gap-4 max-sm:grid-cols-1">
         {DOCS.map((doc) => (
           <DocCard key={doc.href} card={doc} />
         ))}

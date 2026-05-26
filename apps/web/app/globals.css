@@ -144,10 +144,6 @@ body {
     padding-bottom: 48px !important;
   }
 
-  .docs-grid {
-    grid-template-columns: 1fr !important;
-  }
-
   .footer-grid {
     grid-template-columns: 1fr !important;
   }
