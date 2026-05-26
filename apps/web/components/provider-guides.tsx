@@ -1,11 +1,9 @@
+"use client"
+
 import Link from "next/link"
 
 const pixelStyle: React.CSSProperties = {
   fontFamily: "var(--font-pixel)",
-}
-
-const sansStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
 }
 
 interface Provider {
