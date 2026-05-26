@@ -11,20 +11,6 @@ interface SubdomainRecord {
   records: { CNAME?: { value: string } }
 }
 
-const monoStyle: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: "13px",
-  lineHeight: 1,
-}
-
-const pixelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-pixel)",
-}
-
-const sansStyle: React.CSSProperties = {
-  fontFamily: "var(--font-sans)",
-}
-
 function ResultCard({ status, subdomain, record }: {
   status: "taken" | "available" | "error"
   subdomain: string
@@ -32,19 +18,8 @@ function ResultCard({ status, subdomain, record }: {
 }) {
   if (status === "error") {
     return (
-      <div style={{
-        marginTop: "16px",
-        padding: "16px 20px",
-        border: "3px solid #444444",
-        boxShadow: "5px 5px 0 #000",
-        backgroundColor: "#0D0D0D",
-        maxWidth: "560px",
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-      }}>
-        <span style={{ ...monoStyle, color: "#888888" }}>
+      <div className="mt-4 px-5 py-4 border-[3px] border-[#444444] shadow-[5px_5px_0_#000] bg-[#0D0D0D] max-w-[560px] w-full flex items-center gap-3">
+        <span className="font-[family-name:var(--font-mono)] text-[13px] leading-none text-[#888888]">
           Unable to check — try again.
         </span>
       </div>
@@ -53,31 +28,20 @@ function ResultCard({ status, subdomain, record }: {
 
   if (status === "taken" && record) {
     return (
-      <div style={{
-        marginTop: "16px",
-        padding: "16px 20px",
-        border: "3px solid #F5C800",
-        boxShadow: "5px 5px 0 #000",
-        backgroundColor: "#0D0D0D",
-        maxWidth: "560px",
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: "16px",
-      }}>
+      <div className="mt-4 px-5 py-4 border-[3px] border-[#F5C800] shadow-[5px_5px_0_#000] bg-[#0D0D0D] max-w-[560px] w-full flex items-center gap-4">
         <Image
           src={`https://github.com/${record.owner.github}.png?size=48`}
           alt={record.owner.github}
           width={48}
           height={48}
-          style={{ imageRendering: "pixelated", border: "2px solid #F5C800", flexShrink: 0 }}
+          className="[image-rendering:pixelated] border-[2px] border-[#F5C800] shrink-0"
           unoptimized
         />
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <span style={{ ...monoStyle, color: "#FAFAF5", fontSize: "14px" }}>
+        <div className="flex flex-col gap-[6px]">
+          <span className="font-[family-name:var(--font-mono)] text-[14px] leading-none text-[#FAFAF5]">
             @{record.owner.github}
           </span>
-          <span style={{ ...sansStyle, fontSize: "13px", color: "#888888" }}>
+          <span className="font-[family-name:var(--font-sans)] text-[13px] text-[#888888]">
             {subdomain}.is-pinoy.dev is already claimed.
           </span>
         </div>
@@ -87,57 +51,15 @@ function ResultCard({ status, subdomain, record }: {
 
   // available
   return (
-    <div style={{
-      marginTop: "16px",
-      padding: "20px 24px",
-      border: "3px solid #F5C800",
-      boxShadow: "5px 5px 0 #D4A800",
-      backgroundColor: "rgba(245,200,0,0.06)",
-      maxWidth: "560px",
-      width: "100%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: "16px",
-      flexWrap: "wrap",
-    }}>
-      <span style={{
-        ...pixelStyle,
-        fontSize: "9px",
-        color: "#F5C800",
-        lineHeight: 1.6,
-      }}>
+    <div className="mt-4 px-6 py-5 border-[3px] border-[#F5C800] shadow-[5px_5px_0_#D4A800] bg-[rgba(245,200,0,0.06)] max-w-[560px] w-full flex items-center justify-between gap-4 flex-wrap">
+      <span className="font-[family-name:var(--font-pixel)] text-[9px] text-[#F5C800] leading-[1.6]">
         ✓ {subdomain}.is-pinoy.dev is available!
       </span>
       <a
         href="https://docs.is-pinoy.dev"
         target="_blank"
         rel="noopener noreferrer"
-        style={{
-          ...pixelStyle,
-          fontSize: "9px",
-          color: "#0D0D0D",
-          backgroundColor: "#F5C800",
-          border: "none",
-          padding: "12px 20px",
-          cursor: "pointer",
-          letterSpacing: "0.05em",
-          textDecoration: "none",
-          display: "inline-block",
-          transition: "background-color 0.1s ease, box-shadow 0.1s ease, transform 0.1s ease",
-          boxShadow: "3px 3px 0 #D4A800",
-          whiteSpace: "nowrap",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "#FFE566"
-          e.currentTarget.style.boxShadow = "1px 1px 0 #D4A800"
-          e.currentTarget.style.transform = "translate(2px, 2px)"
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "#F5C800"
-          e.currentTarget.style.boxShadow = "3px 3px 0 #D4A800"
-          e.currentTarget.style.transform = "translate(0, 0)"
-        }}
+        className="font-[family-name:var(--font-pixel)] text-[9px] text-[#0D0D0D] bg-[#F5C800] px-5 py-3 cursor-pointer tracking-[0.05em] no-underline inline-block shadow-[3px_3px_0_#D4A800] whitespace-nowrap transition-all duration-100 hover:bg-[#FFE566] hover:shadow-[1px_1px_0_#D4A800] hover:translate-x-[2px] hover:translate-y-[2px]"
       >
         CLAIM IT →
       </a>
@@ -189,109 +111,45 @@ export function SubdomainChecker() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "560px" }}>
+    <div className="flex flex-col items-center w-full max-w-[560px]">
       {/* Input row */}
-      <div style={{
-        display: "flex",
-        alignItems: "stretch",
-        border: "3px solid #F5C800",
-        boxShadow: "6px 6px 0 #FAFAF5, 0 0 24px rgba(245,200,0,0.12)",
-        width: "100%",
-      }}>
+      <div className="flex items-stretch border-[3px] border-[#F5C800] shadow-[6px_6px_0_#FAFAF5,0_0_24px_rgba(245,200,0,0.12)] w-full">
         {/* Input zone */}
-        <div style={{
-          position: "relative",
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          alignItems: "center",
-          backgroundColor: "#0D0D0D",
-        }}>
+        <div className="relative flex-1 min-w-0 flex items-center bg-[#0D0D0D]">
           <input
             type="text"
             aria-label="Subdomain"
             value={value}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            style={{
-              ...monoStyle,
-              color: "#FAFAF5",
-              backgroundColor: "transparent",
-              border: "none",
-              padding: "18px 8px 18px 16px",
-              width: "100%",
-              outline: "none",
-              caretColor: "#F5C800",
-              position: "relative",
-              zIndex: 1,
-            }}
+            className="font-[family-name:var(--font-mono)] text-[13px] leading-none text-[#FAFAF5] bg-transparent border-none py-[18px] pr-2 pl-4 w-full outline-none caret-[#F5C800] relative z-[1]"
           />
           {value === "" && (
             <div
               aria-hidden="true"
-              style={{
-                ...monoStyle,
-                position: "absolute",
-                left: "16px",
-                top: 0,
-                bottom: 0,
-                display: "flex",
-                alignItems: "center",
-                pointerEvents: "none",
-                color: "#444444",
-                zIndex: 0,
-                gap: "1px",
-              }}
+              className="font-[family-name:var(--font-mono)] text-[13px] leading-none absolute left-4 top-0 bottom-0 flex items-center pointer-events-none text-[#444444] z-0 gap-px"
             >
               <span>yourname</span>
-              <span className="blink" style={{ color: "#F5C800" }}>█</span>
+              <span className="blink text-[#F5C800]">█</span>
             </div>
           )}
         </div>
 
         {/* Suffix */}
-        <div className="subdomain-suffix" style={{
-          ...monoStyle,
-          color: "#3A3A3A",
-          backgroundColor: "#0D0D0D",
-          padding: "18px 12px 18px 0",
-          display: "flex",
-          alignItems: "center",
-          whiteSpace: "nowrap",
-          userSelect: "none",
-          flexShrink: 0,
-        }}>
+        <div className="font-[family-name:var(--font-mono)] text-[13px] leading-none text-[#3A3A3A] bg-[#0D0D0D] py-[18px] pr-3 sm:pr-[12px] pl-0 flex items-center whitespace-nowrap select-none shrink-0 max-[639px]:pr-1">
           .is-pinoy.dev
         </div>
 
         {/* Divider */}
-        <div style={{ width: "3px", backgroundColor: "#F5C800", flexShrink: 0 }} />
+        <div className="w-[3px] bg-[#F5C800] shrink-0" />
 
         {/* Check button */}
         <button
           aria-label={status === "loading" ? "Checking availability" : "Check availability"}
           onClick={handleCheck}
           disabled={status === "loading"}
-          className="subdomain-claim-btn"
-          style={{
-            ...pixelStyle,
-            fontSize: "9px",
-            color: "#0D0D0D",
-            backgroundColor: status === "loading" ? "#D4A800" : "#F5C800",
-            border: "none",
-            padding: "18px 24px",
-            cursor: status === "loading" ? "not-allowed" : "pointer",
-            letterSpacing: "0.05em",
-            transition: "background-color 0.1s ease",
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            if (status !== "loading") e.currentTarget.style.backgroundColor = "#FFE566"
-          }}
-          onMouseLeave={(e) => {
-            if (status !== "loading") e.currentTarget.style.backgroundColor = "#F5C800"
-          }}
+          className={`font-[family-name:var(--font-pixel)] text-[9px] text-[#0D0D0D] border-none py-[18px] px-6 max-[639px]:px-[14px] tracking-[0.05em] transition-colors duration-100 whitespace-nowrap shrink-0 hover:enabled:bg-[#FFE566] ${status === "loading" ? "cursor-not-allowed" : "cursor-pointer"}`}
+          style={{ backgroundColor: status === "loading" ? "#D4A800" : "#F5C800" }}
         >
           {status === "loading" ? "..." : "CHECK"}
         </button>

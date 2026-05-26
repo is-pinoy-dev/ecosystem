@@ -131,15 +131,6 @@ body {
     padding-right: 10px !important;
   }
 
-  /* Subdomain widget: tighter claim button and suffix */
-  .subdomain-claim-btn {
-    padding-left: 14px !important;
-    padding-right: 14px !important;
-  }
-  .subdomain-suffix {
-    padding-right: 4px !important;
-  }
-
   /* Footer: less horizontal padding */
   .footer-bar {
     padding-left: 20px !important;
