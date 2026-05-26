@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod"
 
 export const cloudflareRecordSchema = z.object({
   type: z.string(),
@@ -7,6 +7,6 @@ export const cloudflareRecordSchema = z.object({
   name: z.string(),
   proxied: z.boolean().optional(),
   ttl: z.number().optional(),
-});
+})
 
-export type CloudflareRecord = z.infer<typeof cloudflareRecordSchema>;
+export type CloudflareRecord = z.infer<typeof cloudflareRecordSchema>

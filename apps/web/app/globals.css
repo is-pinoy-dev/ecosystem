@@ -131,28 +131,6 @@ body {
     padding-right: 10px !important;
   }
 
-  /* Hero: less horizontal padding on phone */
-  .hero-section {
-    padding-left: 20px !important;
-    padding-right: 20px !important;
-    padding-bottom: 60px !important;
-  }
-
-  /* Subdomain widget: tighter claim button and suffix */
-  .subdomain-claim-btn {
-    padding-left: 14px !important;
-    padding-right: 14px !important;
-  }
-  .subdomain-suffix {
-    padding-right: 4px !important;
-  }
-
-  /* Footer: less horizontal padding */
-  .footer-bar {
-    padding-left: 20px !important;
-    padding-right: 20px !important;
-  }
-
   /* Doc pages: less horizontal padding */
   .doc-main {
     padding-left: 20px !important;
@@ -163,14 +141,6 @@ body {
 
 @media (max-width: 479px) {
   /* Extra-small screens: even tighter */
-  .hero-section {
-    padding-left: 14px !important;
-    padding-right: 14px !important;
-  }
-  .footer-bar {
-    padding-left: 14px !important;
-    padding-right: 14px !important;
-  }
   .doc-main {
     padding-left: 14px !important;
     padding-right: 14px !important;

@@ -21,7 +21,7 @@ function buildSchemas(page: ReturnType<typeof source.getPage> & object) {
     ...page.slugs.map((_, i) => ({
       name: i === page.slugs.length - 1
         ? page.data.title
-        : page.slugs[i].replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        : (page.slugs[i] ?? '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
       url: `${base}/${page.slugs.slice(0, i + 1).join('/')}`,
     })),
   ]
