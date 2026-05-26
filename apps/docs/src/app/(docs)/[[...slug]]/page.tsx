@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/security/noDangerouslySetInnerHtml: <explanation> */
 import { getPageImage, getPageMarkdownUrl, source } from "@/lib/source"
 import {
   DocsBody,
@@ -13,24 +14,27 @@ import type { Metadata } from "next"
 import { createRelativeLink } from "fumadocs-ui/mdx"
 import { gitConfig } from "@/lib/shared"
 
-const base = 'https://docs.is-pinoy.dev'
+const base = "https://docs.is-pinoy.dev"
 
 function buildSchemas(page: ReturnType<typeof source.getPage> & object) {
   const breadcrumbItems = [
-    { name: 'Docs', url: base },
+    { name: "Docs", url: base },
     ...page.slugs.map((_, i) => ({
-      name: i === page.slugs.length - 1
-        ? page.data.title
-        : (page.slugs[i] ?? '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-      url: `${base}/${page.slugs.slice(0, i + 1).join('/')}`,
+      name:
+        i === page.slugs.length - 1
+          ? page.data.title
+          : (page.slugs[i] ?? "")
+              .replace(/-/g, " ")
+              .replace(/\b\w/g, (c) => c.toUpperCase()),
+      url: `${base}/${page.slugs.slice(0, i + 1).join("/")}`,
     })),
   ]
 
   const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
     itemListElement: breadcrumbItems.map((item, i) => ({
-      '@type': 'ListItem',
+      "@type": "ListItem",
       position: i + 1,
       name: item.name,
       item: item.url,
@@ -38,12 +42,12 @@ function buildSchemas(page: ReturnType<typeof source.getPage> & object) {
   }
 
   const articleSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'TechArticle',
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
     headline: page.data.title,
     description: page.data.description,
     url: `${base}${page.url}`,
-    isPartOf: { '@type': 'WebSite', name: 'is-pinoy.dev docs', url: base },
+    isPartOf: { "@type": "WebSite", name: "is-pinoy.dev docs", url: base },
   }
 
   return { breadcrumbSchema, articleSchema }
@@ -60,8 +64,14 @@ export default async function Page(props: PageProps<"/[[...slug]]">) {
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-0">
         {page.data.description}
@@ -103,11 +113,11 @@ export async function generateMetadata(
     },
     openGraph: {
       url: `${base}${page.url}`,
-      type: 'article',
+      type: "article",
       images: getPageImage(page).url,
     },
     twitter: {
-      card: 'summary_large_image',
+      card: "summary_large_image",
     },
   }
 }

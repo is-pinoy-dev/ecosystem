@@ -1,50 +1,63 @@
-import type { Tab } from "../lib/types";
-import { Button } from "@is-pinoy-dev/ui/components/button";
+import type { Tab } from "../lib/types"
+import { Button } from "@is-pinoy-dev/ui/components/button"
 
 interface NavBarProps {
-  tab: Tab;
-  onTabChange: (tab: Tab) => void;
-  onRerun: () => void;
-  auditedAt?: string;
-  loading: boolean;
+  tab: Tab
+  onTabChange: (tab: Tab) => void
+  onRerun: () => void
+  auditedAt?: string
+  loading: boolean
 }
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "overview", label: "Overview" },
+  { id: "overview", label: "OVERVIEW" },
   { id: "seo", label: "SEO" },
-  { id: "og", label: "Open Graph" },
-];
+  { id: "og", label: "OG" },
+]
 
 function formatTimestamp(iso: string): string {
   return new Date(iso).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-  });
+  })
 }
 
-export function NavBar({ tab, onTabChange, onRerun, auditedAt, loading }: NavBarProps) {
+export function NavBar({
+  tab,
+  onTabChange,
+  onRerun,
+  auditedAt,
+  loading,
+}: NavBarProps) {
   return (
-    <nav
-      className="flex items-center justify-between px-6 h-14 bg-card border-b-2 border-border"
-      style={{ boxShadow: "0 4px 0px #000" }}
-    >
-      {/* Logo */}
-      <span className="font-pixel text-primary text-xs tracking-tight whitespace-nowrap">
-        is-pinoy.dev
-      </span>
+    <nav className="fixed top-0 right-0 left-0 z-50 flex h-16 items-center justify-between border-b-1 border-b-muted bg-background/85 px-6 backdrop-blur">
+      {/* Logo + banner */}
+      <div className="flex shrink-0 items-center gap-3">
+        <img
+          src="/logo.png"
+          alt="is-pinoy.dev logo"
+          className="h-8 w-auto [image-rendering:pixelated] hover:animate-spin"
+        />
+        <img
+          src="/site-audit-banner.gif"
+          alt="Site Audit — is-pinoy.dev"
+          className="-ml-3 hidden h-7 w-auto md:block"
+        />
+      </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-0">
+      <div className="flex items-center border-2 border-border bg-background/60 shadow-[4px_4px_0_var(--color-muted)]">
         {TABS.map(({ id, label }) => (
           <button
+            type="button"
             key={id}
             onClick={() => onTabChange(id)}
             className={[
-              "font-pixel text-[10px] px-4 h-14 border-x border-border transition-colors",
+              "border-r-2 border-border px-5 py-2.5 font-pixel text-[11px] transition-colors last:border-r-0",
               tab === id
-                ? "text-primary border-b-2 border-b-primary bg-background"
-                : "text-muted-foreground hover:text-foreground border-b-2 border-b-transparent",
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
             ].join(" ")}
           >
             {label}
@@ -53,23 +66,22 @@ export function NavBar({ tab, onTabChange, onRerun, auditedAt, loading }: NavBar
       </div>
 
       {/* Right: timestamp + re-run */}
-      <div className="flex items-center gap-4">
+      <div className="flex shrink-0 items-center gap-4">
         {auditedAt && (
-          <span className="font-pixel text-[8px] text-muted-foreground hidden sm:block">
+          <span className="hidden font-pixel text-[11px] text-muted-foreground sm:block">
             {formatTimestamp(auditedAt)}
           </span>
         )}
         <Button
           onClick={onRerun}
           disabled={loading}
-          variant="outline"
+          variant="outline-shadow"
           size="sm"
-          className="font-pixel text-[9px] border-primary text-primary disabled:opacity-40"
-          style={{ boxShadow: loading ? "none" : "3px 3px 0px #000" }}
+          className={loading ? "opacity-40" : ""}
         >
           {loading ? "SCANNING..." : "RE-RUN"}
         </Button>
       </div>
     </nav>
-  );
+  )
 }

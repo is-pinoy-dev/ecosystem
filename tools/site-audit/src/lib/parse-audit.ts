@@ -31,6 +31,21 @@ export function parseAudit(html: string, url: string): AuditResult {
     doc.querySelector('link[rel="canonical"]')?.getAttribute("href") ?? null;
   const robots = getMeta(doc, "robots");
   const h1s = doc.querySelectorAll("h1");
+  const htmlLang = doc.documentElement.getAttribute("lang");
+  const viewportMeta = getMeta(doc, "viewport");
+  const charsetMeta =
+    doc.querySelector("meta[charset]")?.getAttribute("charset") ??
+    getMeta(doc, "charset");
+  const hasJsonLd = doc.querySelector('script[type="application/ld+json"]') !== null;
+  const favicon =
+    doc.querySelector('link[rel="icon"]')?.getAttribute("href") ??
+    doc.querySelector('link[rel="shortcut icon"]')?.getAttribute("href") ??
+    null;
+  const author = getMeta(doc, "author");
+  const images = Array.from(doc.querySelectorAll("img"));
+  const imagesWithoutAlt = images.filter(
+    (img) => !img.getAttribute("alt") && img.getAttribute("alt") !== ""
+  );
 
   const seoFields: AuditField[] = [
     ((): AuditField => {
@@ -80,8 +95,8 @@ export function parseAudit(html: string, url: string): AuditResult {
       : {
           label: "Robots",
           value: null,
-          status: "fail",
-          message: "Missing robots meta tag",
+          status: "warn",
+          message: "No robots meta — search engines will use defaults",
         },
     ((): AuditField => {
       if (h1s.length === 0)
@@ -98,7 +113,79 @@ export function parseAudit(html: string, url: string): AuditResult {
           status: "warn",
           message: `${h1s.length} H1 tags found (expected 1)`,
         };
-      return { label: "H1 Tag", value: h1s[0].textContent ?? "", status: "pass" };
+      return { label: "H1 Tag", value: h1s[0]?.textContent ?? "", status: "pass" };
+    })(),
+    ((): AuditField => {
+      if (!htmlLang)
+        return {
+          label: "HTML lang",
+          value: null,
+          status: "fail",
+          message: "Missing lang attribute on <html>",
+        };
+      return { label: "HTML lang", value: htmlLang, status: "pass" };
+    })(),
+    ((): AuditField => {
+      if (!viewportMeta)
+        return {
+          label: "Viewport",
+          value: null,
+          status: "fail",
+          message: "Missing viewport meta tag",
+        };
+      return { label: "Viewport", value: viewportMeta, status: "pass" };
+    })(),
+    ((): AuditField => {
+      if (!charsetMeta)
+        return {
+          label: "Charset",
+          value: null,
+          status: "warn",
+          message: "Missing charset declaration",
+        };
+      return { label: "Charset", value: charsetMeta, status: "pass" };
+    })(),
+    ((): AuditField => {
+      if (!hasJsonLd)
+        return {
+          label: "Structured Data",
+          value: null,
+          status: "warn",
+          message: "No JSON-LD structured data found",
+        };
+      return { label: "Structured Data", value: "JSON-LD present", status: "pass" };
+    })(),
+    favicon
+      ? { label: "Favicon", value: favicon, status: "pass" }
+      : {
+          label: "Favicon",
+          value: null,
+          status: "warn",
+          message: "No favicon link found",
+        },
+    author
+      ? { label: "Author", value: author, status: "pass" }
+      : {
+          label: "Author",
+          value: null,
+          status: "warn",
+          message: "No author meta tag",
+        },
+    ((): AuditField => {
+      if (images.length === 0)
+        return { label: "Image Alt Texts", value: "No images", status: "pass" };
+      if (imagesWithoutAlt.length > 0)
+        return {
+          label: "Image Alt Texts",
+          value: `${imagesWithoutAlt.length}/${images.length} missing`,
+          status: imagesWithoutAlt.length === images.length ? "fail" : "warn",
+          message: `${imagesWithoutAlt.length} image(s) missing alt attribute`,
+        };
+      return {
+        label: "Image Alt Texts",
+        value: `${images.length} image(s) all have alt`,
+        status: "pass",
+      };
     })(),
   ];
 
@@ -108,11 +195,19 @@ export function parseAudit(html: string, url: string): AuditResult {
     "og:image",
     "og:url",
     "og:type",
+    "og:locale",
+    "og:site_name",
   ].map((prop): AuditField => {
     const value = getOg(doc, prop);
+    const optional = prop === "og:locale" || prop === "og:site_name";
     return value
       ? { label: prop, value, status: "pass" }
-      : { label: prop, value: null, status: "fail", message: `Missing ${prop}` };
+      : {
+          label: prop,
+          value: null,
+          status: optional ? "warn" : "fail",
+          message: `Missing ${prop}`,
+        };
   });
 
   const twitterFields: AuditField[] = [
@@ -120,14 +215,16 @@ export function parseAudit(html: string, url: string): AuditResult {
     "twitter:title",
     "twitter:description",
     "twitter:image",
+    "twitter:site",
   ].map((name): AuditField => {
     const value = getMeta(doc, name);
+    const optional = name === "twitter:site";
     return value
       ? { label: name, value, status: "pass" }
       : {
           label: name,
           value: null,
-          status: "fail",
+          status: optional ? "warn" : "fail",
           message: `Missing ${name}`,
         };
   });

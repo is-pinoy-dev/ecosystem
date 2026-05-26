@@ -64,7 +64,7 @@ export default function Home() {
         loading={state.status === "loading"}
       />
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
+      <main className="max-w-4xl mx-auto px-6 pt-24 pb-8">
         {state.status === "loading" && (
           <p className="font-pixel text-primary text-xs animate-pulse">
             SCANNING...
@@ -78,9 +78,7 @@ export default function Home() {
             </p>
             <Button
               onClick={() => runAudit()}
-              variant="outline"
-              className="font-pixel text-[9px] border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-              style={{ boxShadow: "3px 3px 0px #000" }}
+              variant="outline-shadow"
             >
               RETRY
             </Button>
@@ -100,7 +98,7 @@ export default function Home() {
             )}
             {tab === "seo" && (
               <div className="space-y-4">
-                <p className="font-pixel text-[9px] text-muted-foreground">
+                <p className="font-pixel text-[11px] text-muted-foreground">
                   SEO — {result.seo.fields.filter((f) => f.status === "pass").length}/
                   {result.seo.fields.length} PASSED
                 </p>
@@ -109,7 +107,7 @@ export default function Home() {
             )}
             {tab === "og" && (
               <div className="space-y-4">
-                <p className="font-pixel text-[9px] text-muted-foreground">
+                <p className="font-pixel text-[11px] text-muted-foreground">
                   OPEN GRAPH — {result.og.fields.filter((f) => f.status === "pass").length}/
                   {result.og.fields.length} PASSED
                 </p>

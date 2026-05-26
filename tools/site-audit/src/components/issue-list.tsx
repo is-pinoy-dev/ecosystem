@@ -1,46 +1,55 @@
-import type { AuditCategory } from "@is-pinoy-dev/schemas";
-import { StatusBadge } from "./status-badge";
+import type { AuditCategory } from "@is-pinoy-dev/schemas"
+import { StatusBadge } from "./status-badge"
 
 interface IssueListProps {
-  seo: AuditCategory;
-  og: AuditCategory;
+  seo: AuditCategory
+  og: AuditCategory
 }
 
 export function IssueList({ seo, og }: IssueListProps) {
   const issues = [
-    ...seo.fields.filter((f) => f.status !== "pass").map((f) => ({ ...f, category: "SEO" })),
-    ...og.fields.filter((f) => f.status !== "pass").map((f) => ({ ...f, category: "OG" })),
-  ];
+    ...seo.fields
+      .filter((f) => f.status !== "pass")
+      .map((f) => ({ ...f, category: "SEO" })),
+    ...og.fields
+      .filter((f) => f.status !== "pass")
+      .map((f) => ({ ...f, category: "OG" })),
+  ]
 
   if (issues.length === 0) {
     return (
       <div
-        className="bg-card border-2 border-primary p-6 text-center"
-        style={{ boxShadow: "4px 4px 0px #D4A800" }}
+        className="border-2 border-primary bg-card p-6 text-center"
+        style={{ boxShadow: "4px 4px 0 var(--color-primary-dark)" }}
       >
-        <p className="font-pixel text-primary text-xs">ALL CHECKS PASSED</p>
+        <p className="font-pixel text-xs text-primary">ALL CHECKS PASSED</p>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="bg-card border-2 border-border" style={{ boxShadow: "4px 4px 0px #000" }}>
+    <div className="border-2 border-border bg-card shadow-[4px_4px_0_var(--color-muted)]">
       <div className="border-b-2 border-border px-4 py-3">
-        <p className="font-pixel text-[9px] text-foreground">
+        <p className="font-pixel text-[11px] text-foreground">
           ISSUES ({issues.length})
         </p>
       </div>
       <ul className="divide-y divide-border">
         {issues.map((issue) => (
-          <li key={`${issue.category}-${issue.label}`} className="flex items-start gap-4 px-4 py-3">
+          <li
+            key={`${issue.category}-${issue.label}`}
+            className="flex items-start gap-4 px-4 py-3"
+          >
             <StatusBadge status={issue.status} />
-            <div className="flex-1 min-w-0">
-              <p className="font-pixel text-[9px] text-foreground">
-                <span className="text-muted-foreground">[{issue.category}]</span>{" "}
+            <div className="min-w-0 flex-1">
+              <p className="font-pixel text-[11px] text-foreground">
+                <span className="text-muted-foreground">
+                  [{issue.category}]
+                </span>{" "}
                 {issue.label}
               </p>
               {issue.message && (
-                <p className="font-pixel text-[8px] text-muted-foreground mt-1">
+                <p className="mt-1 font-pixel text-[11px] text-muted-foreground">
                   {issue.message}
                 </p>
               )}
@@ -49,5 +58,5 @@ export function IssueList({ seo, og }: IssueListProps) {
         ))}
       </ul>
     </div>
-  );
+  )
 }
