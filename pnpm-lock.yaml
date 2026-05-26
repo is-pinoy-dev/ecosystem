@@ -149,6 +149,9 @@ importers:
       '@is-pinoy-dev/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@is-pinoy-dev/validate':
+        specifier: workspace:*
+        version: link:../../packages/validate
       '@mdx-js/loader':
         specifier: ^3.1.1
         version: 3.1.1

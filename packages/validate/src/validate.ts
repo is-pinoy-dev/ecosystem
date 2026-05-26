@@ -1,5 +1,5 @@
 import { Domain, domainSchema } from "@is-pinoy-dev/schemas"
-import reservedSubdomains from "./reserved_subdomains.json" with { type: "json" }
+import { RESERVED_SUBDOMAINS as reservedSubdomains } from "./reserved.js"
 
 export function validateDomain(json: Partial<Domain>): {
   ok: boolean

@@ -15,7 +15,7 @@ export default function Page() {
 
       <main className="min-h-screen flex flex-col">
         {/* Hero Section */}
-        <section className="flex-1 flex flex-col items-center justify-center pt-[160px] px-10 pb-[100px] text-center gap-8 sm:pt-[130px] sm:px-5 sm:pb-[60px] xs:px-3.5">
+        <section className="flex-1 flex flex-col items-center justify-center pt-[220px] px-10 pb-[100px] text-center gap-8 sm:pt-[180px] sm:px-5 sm:pb-[60px] xs:px-3.5">
           {/* Eyebrow badge */}
           <div
             className="font-[family-name:var(--font-pixel)] text-[8px] text-[#F5C800] bg-[rgba(245,200,0,0.1)] border-2 border-[#F5C800] px-4 py-2 tracking-[0.1875em] uppercase"
