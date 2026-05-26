@@ -1,4 +1,6 @@
 import Link from "next/link"
+import { Card, CardContent } from "@is-pinoy-dev/ui/components/card"
+import { Badge } from "@is-pinoy-dev/ui/components/badge"
 
 interface Provider {
   name: string
@@ -68,61 +70,58 @@ const PROVIDERS: Provider[] = [
 ]
 
 function ProviderCard({ provider }: { provider: Provider }) {
-  const cardContent = (
-    <div
-      className={`border-[3px] bg-[#0D0D0D] flex flex-col items-center gap-4 p-7 relative transition-all duration-100 ${
+  const card = (
+    <Card
+      className={`border-[3px] bg-background flex flex-col items-center gap-4 p-7 relative transition-all duration-100 ${
         provider.active
-          ? "border-[#F5C800] shadow-[5px_5px_0_#D4A800] cursor-pointer hover:shadow-[6px_6px_0_#D4A800] hover:-translate-x-px hover:-translate-y-px"
-          : "border-[#2A2A2A] shadow-[5px_5px_0_#111] opacity-40 cursor-not-allowed"
+          ? "border-primary shadow-[5px_5px_0_var(--color-primary-dark)] cursor-pointer hover:shadow-[6px_6px_0_var(--color-primary-dark)] hover:-translate-x-px hover:-translate-y-px"
+          : "border-card shadow-[5px_5px_0_#111] opacity-40 cursor-not-allowed"
       }`}
     >
-      {/* Coming soon badge */}
-      {!provider.active && (
-        <div className="absolute top-[10px] right-[10px] font-[family-name:var(--font-pixel)] text-[7px] text-[#888888] border border-[#444] px-[6px] py-[3px] tracking-[0.05em]">
-          COMING SOON
+      <CardContent className="flex flex-col items-center gap-4 p-0 w-full relative">
+        {!provider.active && (
+          <Badge
+            variant="outline"
+            className="absolute top-0 right-0 font-pixel text-[7px] text-muted-foreground border-border px-[6px] py-[3px] tracking-[0.05em]"
+          >
+            COMING SOON
+          </Badge>
+        )}
+        <div className="h-9 flex items-center justify-center">
+          {provider.logo}
         </div>
-      )}
-
-      {/* Logo */}
-      <div className="h-9 flex items-center justify-center">
-        {provider.logo}
-      </div>
-
-      {/* Name */}
-      <span className={`font-[family-name:var(--font-pixel)] text-[8px] tracking-[0.05em] leading-[1.6] text-center ${
-        provider.active ? "text-[#FAFAF5]" : "text-[#888888]"
-      }`}>
-        {provider.name}
-      </span>
-    </div>
+        <span
+          className={`font-pixel text-[8px] tracking-[0.05em] leading-[1.6] text-center ${
+            provider.active ? "text-foreground" : "text-muted-foreground"
+          }`}
+        >
+          {provider.name}
+        </span>
+      </CardContent>
+    </Card>
   )
 
   if (provider.active && provider.href) {
     return (
       <Link href={provider.href} target="_blank" rel="noopener noreferrer" className="no-underline">
-        {cardContent}
+        {card}
       </Link>
     )
   }
 
-  return cardContent
+  return card
 }
 
 export function ProviderGuides() {
   return (
     <section className="w-full max-w-[960px] mx-auto py-20 px-10">
-      {/* Divider */}
-      <div className="h-[2px] bg-[#F5C800] mb-16 shadow-[0_2px_0_#D4A800]" />
-
-      {/* Heading */}
+      <div className="h-[2px] bg-primary mb-16 shadow-[0_2px_0_var(--color-primary-dark)]" />
       <h2
-        className="font-[family-name:var(--font-pixel)] text-[#F5C800] tracking-[0.1em] mb-10 leading-[1.6]"
+        className="font-pixel text-primary tracking-[0.1em] mb-10 leading-[1.6]"
         style={{ fontSize: "clamp(0.5rem, 1.5vw, 0.75rem)" }}
       >
         {"// PROVIDER GUIDES"}
       </h2>
-
-      {/* Grid */}
       <div className="grid grid-cols-4 gap-4 max-sm:grid-cols-2">
         {PROVIDERS.map((p) => (
           <ProviderCard key={p.name} provider={p} />
