@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { Button } from "@is-pinoy-dev/ui/components/button";
 import type { AuditResult } from "@is-pinoy-dev/schemas";
 import type { Tab } from "../lib/types";
 import { parseAudit } from "../lib/parse-audit";
@@ -23,9 +24,9 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("overview");
   const [state, setState] = useState<State>({ status: "loading" });
 
-  async function runAudit(signal?: AbortSignal) {
+  const runAudit = useCallback(async (signal?: AbortSignal) => {
     setState({ status: "loading" });
-    const target = `https://${window.location.hostname}`;
+    const target = window.location.origin;
     try {
       const res = await fetch(
         `/audit-proxy?url=${encodeURIComponent(target)}`,
@@ -41,7 +42,7 @@ export default function Home() {
         message: err instanceof Error ? err.message : "Unknown error",
       });
     }
-  }
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,13 +74,14 @@ export default function Home() {
             <p className="font-pixel text-destructive text-xs">
               ERROR: {state.message}
             </p>
-            <button
+            <Button
               onClick={() => runAudit()}
-              className="font-pixel text-[9px] px-4 py-2 border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+              variant="outline"
+              className="font-pixel text-[9px] border-primary text-primary hover:bg-primary hover:text-primary-foreground"
               style={{ boxShadow: "3px 3px 0px #000" }}
             >
               RETRY
-            </button>
+            </Button>
           </div>
         )}
 

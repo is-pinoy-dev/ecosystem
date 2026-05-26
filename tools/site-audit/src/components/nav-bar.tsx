@@ -1,4 +1,5 @@
 import type { Tab } from "../lib/types";
+import { Button } from "@is-pinoy-dev/ui/components/button";
 
 interface NavBarProps {
   tab: Tab;
@@ -58,14 +59,16 @@ export function NavBar({ tab, onTabChange, onRerun, auditedAt, loading }: NavBar
             {formatTimestamp(auditedAt)}
           </span>
         )}
-        <button
+        <Button
           onClick={onRerun}
           disabled={loading}
-          className="font-pixel text-[9px] px-3 py-2 border-2 border-primary text-primary disabled:opacity-40 hover:bg-primary hover:text-primary-foreground transition-colors"
+          variant="outline"
+          size="sm"
+          className="font-pixel text-[9px] border-primary text-primary disabled:opacity-40"
           style={{ boxShadow: loading ? "none" : "3px 3px 0px #000" }}
         >
           {loading ? "SCANNING..." : "RE-RUN"}
-        </button>
+        </Button>
       </div>
     </nav>
   );
