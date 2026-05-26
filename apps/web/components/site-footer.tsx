@@ -1,62 +1,70 @@
 import Link from "next/link"
+import { Button } from "@is-pinoy-dev/ui/components/button"
 import { GitHubIcon, DiscordIcon } from "@/components/icons"
 
-function FooterLink({ href, external, children }: {
+function FooterLink({
+  href,
+  external,
+  children,
+}: {
   href: string
   external?: boolean
   children: React.ReactNode
 }) {
-  const linkClass = "font-[family-name:var(--font-sans)] text-[13px] text-[#888888] no-underline leading-[1.7] transition-colors duration-100 hover:text-[#F5C800]"
+  const linkClass =
+    "font-sans text-[13px] text-muted-foreground no-underline leading-[1.7] transition-colors duration-100 hover:text-primary h-auto p-0 justify-start"
 
   if (external) {
     return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={linkClass}
-      >
-        {children}
-      </a>
+      <Button asChild variant="link" className={linkClass}>
+        <a href={href} target="_blank" rel="noopener noreferrer">
+          {children}
+        </a>
+      </Button>
     )
   }
 
   return (
-    <Link href={href} className={linkClass}>
-      {children}
-    </Link>
+    <Button asChild variant="link" className={linkClass}>
+      <Link href={href}>{children}</Link>
+    </Button>
   )
 }
 
-function IconLink({ href, label, children }: {
+function IconLink({
+  href,
+  label,
+  children,
+}: {
   href: string
   label: string
   children: React.ReactNode
 }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Button
+      asChild
+      variant="ghost"
+      size="icon"
+      className="border-2 border-card text-muted-foreground bg-background shadow-[3px_3px_0_#111] transition-all duration-100 hover:border-primary hover:text-primary hover:bg-background"
       aria-label={label}
-      className="inline-flex items-center justify-center w-9 h-9 border-2 border-[#2A2A2A] text-[#888888] bg-[#0D0D0D] shadow-[3px_3px_0_#111] transition-all duration-100 hover:border-[#F5C800] hover:text-[#F5C800]"
     >
-      {children}
-    </a>
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    </Button>
   )
 }
 
 export function SiteFooter() {
   return (
-    <footer className="border-t-2 border-[#F5C800] bg-[#0D0D0D]">
-      {/* Main footer grid */}
+    <footer className="border-t-2 border-primary bg-background">
       <div className="max-w-[960px] mx-auto py-12 px-10 grid grid-cols-3 gap-10 items-start max-sm:grid-cols-1">
         {/* Left: Logo + tagline */}
         <div className="flex flex-col gap-4">
-          <span className="font-[family-name:var(--font-pixel)] text-[0.65rem] text-[#F5C800] leading-[1.6] tracking-[0.05em]">
+          <span className="font-pixel text-[0.65rem] text-primary leading-[1.6] tracking-[0.05em]">
             is-pinoy.dev
           </span>
-          <span className="font-[family-name:var(--font-sans)] text-[13px] text-[#888888] leading-[1.7] max-w-[220px]">
+          <span className="font-sans text-[13px] text-muted-foreground leading-[1.7] max-w-[220px]">
             Free subdomains for Filipino developers. Open source, community-driven, forever free.
           </span>
         </div>
@@ -64,7 +72,7 @@ export function SiteFooter() {
         {/* Center: Link groups */}
         <div className="flex gap-10">
           <div className="flex flex-col gap-3">
-            <span className="font-[family-name:var(--font-pixel)] text-[7px] text-[#FAFAF5] tracking-[0.1em] leading-[1.6] mb-1">
+            <span className="font-pixel text-[7px] text-foreground tracking-[0.1em] leading-[1.6] mb-1">
               PRODUCT
             </span>
             <FooterLink href="https://docs.is-pinoy.dev" external>Docs</FooterLink>
@@ -73,7 +81,7 @@ export function SiteFooter() {
           </div>
 
           <div className="flex flex-col gap-3">
-            <span className="font-[family-name:var(--font-pixel)] text-[7px] text-[#FAFAF5] tracking-[0.1em] leading-[1.6] mb-1">
+            <span className="font-pixel text-[7px] text-foreground tracking-[0.1em] leading-[1.6] mb-1">
               LEGAL
             </span>
             <FooterLink href="/tos">Terms of Service</FooterLink>
@@ -91,7 +99,7 @@ export function SiteFooter() {
               <GitHubIcon />
             </IconLink>
           </div>
-          <span className="font-[family-name:var(--font-sans)] text-[12px] text-[#888888] leading-[1.7]">
+          <span className="font-sans text-[12px] text-muted-foreground leading-[1.7]">
             Made with pride 🇵🇭
           </span>
         </div>
@@ -99,7 +107,7 @@ export function SiteFooter() {
 
       {/* Bottom bar */}
       <div className="border-t border-[#1A1A1A] py-4 px-10 text-center max-sm:px-5 max-[479px]:px-3.5">
-        <span className="font-[family-name:var(--font-mono)] text-[11px] text-[#444444] tracking-[0.0625em] uppercase">
+        <span className="font-mono text-[11px] text-muted tracking-[0.0625em] uppercase">
           © 2026 is-pinoy.dev
         </span>
       </div>
