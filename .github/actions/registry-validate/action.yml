@@ -17,7 +17,7 @@ runs:
   steps:
     - name: Install CLI
       shell: bash
-      run: npm install -g @is-pinoy-dev/cli
+      run: npm install -g @is-pinoy-dev/cli@latest
 
     - name: Run validation
       id: validate
