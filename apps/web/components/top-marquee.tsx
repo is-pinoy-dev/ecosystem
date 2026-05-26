@@ -1,50 +1,34 @@
 export function TopMarquee() {
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 101,
-      backgroundColor: "#F5C800",
-      borderBottom: "3px solid #0D0D0D",
-      overflow: "hidden",
-      padding: "14px 0",
-    }}>
-      <div style={{
-        display: "flex",
-        width: "max-content",
-        animation: "marquee-scroll 20s linear infinite",
-      }}>
+    <div className="fixed top-0 right-0 left-0 z-[101] overflow-hidden bg-primary border-b-[3px] border-b-background py-[14px]">
+      <div
+        className="flex w-max"
+        style={{ animation: "marquee-scroll 20s linear infinite" }}
+      >
         {[0, 1].map((i) => (
           <span
             key={i}
-            style={{
-              fontFamily: "var(--font-pixel)",
-              fontSize: "10px",
-              color: "#0D0D0D",
-              whiteSpace: "nowrap",
-            }}
+            className="font-pixel text-[10px] text-background whitespace-nowrap"
           >
-            <span style={{ color: "#D4A800" }}>★</span>
+            <span className="text-primary-dark">★</span>
             {" LIBRE "}
-            <span style={{ color: "#D4A800" }}>★</span>
+            <span className="text-primary-dark">★</span>
             {" PARA SA MGA PINOY DEVELOPER "}
-            <span style={{ color: "#D4A800" }}>★</span>
+            <span className="text-primary-dark">★</span>
             {" FREE SUBDOMAINS "}
-            <span style={{ color: "#D4A800" }}>★</span>
+            <span className="text-primary-dark">★</span>
             {" IS-PINOY.DEV "}
-            <span style={{ color: "#D4A800" }}>★</span>
+            <span className="text-primary-dark">★</span>
             {" CLAIM YOURS NOW "}
-            <span style={{ color: "#D4A800" }}>★</span>
+            <span className="text-primary-dark">★</span>
             {" LIBRE "}
-            <span style={{ color: "#D4A800" }}>★</span>
+            <span className="text-primary-dark">★</span>
             {" PARA SA MGA PINOY DEVELOPER "}
-            <span style={{ color: "#D4A800" }}>★</span>
+            <span className="text-primary-dark">★</span>
             {" FREE SUBDOMAINS "}
-            <span style={{ color: "#D4A800" }}>★</span>
+            <span className="text-primary-dark">★</span>
             {" IS-PINOY.DEV "}
-            <span style={{ color: "#D4A800" }}>★</span>
+            <span className="text-primary-dark">★</span>
             {" CLAIM YOURS NOW "}
           </span>
         ))}
