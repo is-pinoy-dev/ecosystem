@@ -99,7 +99,7 @@ describe("diff", () => {
     expect(result).toHaveLength(0);
   });
 
-  it("TXT records use _{provider}.{domain} naming", () => {
+  it("TXT records use _{provider}.{subdomain}.{domain} naming", () => {
     const desired: Domain[] = [
       {
         subdomain: "test",
@@ -116,10 +116,10 @@ describe("diff", () => {
     const result = diff(desired, actual);
     expect(result).toHaveLength(1);
     expect(result[0]?.type).toBe("CREATE");
-    expect(result[0]?.fqdn).toBe("_vercel.is-pinoy.dev");
+    expect(result[0]?.fqdn).toBe("_vercel.test.is-pinoy.dev");
   });
 
-  it("TXT records match existing _{provider}.{domain} records", () => {
+  it("TXT records match existing _{provider}.{subdomain}.{domain} records", () => {
     const desired: Domain[] = [
       {
         subdomain: "test",
@@ -135,7 +135,7 @@ describe("diff", () => {
     const actual: CloudflareRecord[] = [
       {
         id: "456",
-        name: "_vercel.is-pinoy.dev",
+        name: "_vercel.test.is-pinoy.dev",
         type: "TXT",
         content: '"vc-domain-verify=test.is-pinoy.dev,abc123"',
       },
@@ -160,7 +160,7 @@ describe("diff", () => {
     const actual: CloudflareRecord[] = [
       {
         id: "456",
-        name: "_vercel.is-pinoy.dev",
+        name: "_vercel.test.is-pinoy.dev",
         type: "TXT",
         content: '"vc-domain-verify=test.is-pinoy.dev,abc123"',
       },
@@ -374,7 +374,7 @@ describe("diff", () => {
       },
       {
         id: "2",
-        name: "_vercel.is-pinoy.dev",
+        name: "_vercel.test.is-pinoy.dev",
         type: "TXT",
         content: '"vc-domain-verify=test.is-pinoy.dev,abc123"',
       },
