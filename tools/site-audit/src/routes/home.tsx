@@ -26,7 +26,9 @@ export default function Home() {
 
   const runAudit = useCallback(async (signal?: AbortSignal) => {
     setState({ status: "loading" });
-    const target = window.location.origin;
+    const target = import.meta.env.DEV
+      ? (import.meta.env.VITE_AUDIT_TARGET ?? window.location.origin)
+      : window.location.origin;
     try {
       const res = await fetch(
         `/audit-proxy?url=${encodeURIComponent(target)}`,

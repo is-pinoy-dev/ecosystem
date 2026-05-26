@@ -24,9 +24,11 @@ export async function loader({ request }: Route.LoaderArgs) {
     return new Response("Only http and https URLs are allowed", { status: 400 });
   }
 
-  const hostname = parsedTarget.hostname.replace(/^\[|\]$/g, "");
-  if (BLOCKED_HOSTNAME_RE.test(hostname)) {
-    return new Response("Private and loopback addresses are not allowed", { status: 400 });
+  if (!import.meta.env.DEV) {
+    const hostname = parsedTarget.hostname.replace(/^\[|\]$/g, "");
+    if (BLOCKED_HOSTNAME_RE.test(hostname)) {
+      return new Response("Private and loopback addresses are not allowed", { status: 400 });
+    }
   }
 
   try {
