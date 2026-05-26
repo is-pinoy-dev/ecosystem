@@ -209,6 +209,7 @@ export function SubdomainChecker() {
         }}>
           <input
             type="text"
+            aria-label="Subdomain"
             value={value}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
@@ -268,6 +269,7 @@ export function SubdomainChecker() {
 
         {/* Check button */}
         <button
+          aria-label={status === "loading" ? "Checking availability" : "Check availability"}
           onClick={handleCheck}
           disabled={status === "loading"}
           className="subdomain-claim-btn"

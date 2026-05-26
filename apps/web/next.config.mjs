@@ -12,6 +12,11 @@ const securityHeaders = [
 const nextConfig = {
   transpilePackages: ["@is-pinoy-dev/ui"],
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "github.com", pathname: "/*.png" },
+    ],
+  },
   async headers() {
     return [
       {
