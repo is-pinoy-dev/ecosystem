@@ -159,6 +159,11 @@ body {
     padding-right: 20px !important;
     padding-bottom: 48px !important;
   }
+
+  /* Provider guides grid: 2 columns on mobile */
+  .provider-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
 
 @media (max-width: 479px) {
