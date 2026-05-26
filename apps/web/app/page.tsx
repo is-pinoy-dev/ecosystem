@@ -1,132 +1,10 @@
-"use client"
-
-import { useState } from "react"
-import Link from "next/link"
 import { MainNav } from "@/components/main-nav"
 import { ScanlineOverlay } from "@/components/scanline-overlay"
 import { TopMarquee } from "@/components/top-marquee"
-
-function SubdomainInput() {
-  const [value, setValue] = useState("")
-
-  const handleClaim = () => {
-    window.open("https://github.com/is-pinoy-dev/domains", "_blank", "noopener,noreferrer")
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleClaim()
-  }
-
-  const monoStyle: React.CSSProperties = {
-    fontFamily: "var(--font-mono)",
-    fontSize: "13px",
-    lineHeight: 1,
-  }
-
-  return (
-    <div style={{
-      display: "flex",
-      alignItems: "stretch",
-      border: "3px solid #F5C800",
-      boxShadow: "6px 6px 0 #FAFAF5, 0 0 24px rgba(245,200,0,0.12)",
-      maxWidth: "560px",
-      width: "100%",
-    }}>
-      {/* Input zone: input + suffix share one dark background */}
-      <div style={{
-        position: "relative",
-        flex: 1,
-        minWidth: 0,
-        display: "flex",
-        alignItems: "center",
-        backgroundColor: "#0D0D0D",
-      }}>
-        {/* Real input — placeholder hidden, replaced by overlay below */}
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          style={{
-            ...monoStyle,
-            color: "#FAFAF5",
-            backgroundColor: "transparent",
-            border: "none",
-            padding: "18px 8px 18px 16px",
-            width: "100%",
-            outline: "none",
-            caretColor: "#F5C800",
-            position: "relative",
-            zIndex: 1,
-          }}
-        />
-        {/* Animated placeholder — visible only when input is empty */}
-        {value === "" && (
-          <div
-            aria-hidden="true"
-            style={{
-              ...monoStyle,
-              position: "absolute",
-              left: "16px",
-              top: 0,
-              bottom: 0,
-              display: "flex",
-              alignItems: "center",
-              pointerEvents: "none",
-              color: "#444444",
-              zIndex: 0,
-              gap: "1px",
-            }}
-          >
-            <span>yourname</span>
-            <span className="blink" style={{ color: "#F5C800" }}>█</span>
-          </div>
-        )}
-      </div>
-
-      {/* Suffix */}
-      <div className="subdomain-suffix" style={{
-        ...monoStyle,
-        color: "#3A3A3A",
-        backgroundColor: "#0D0D0D",
-        padding: "18px 12px 18px 0",
-        display: "flex",
-        alignItems: "center",
-        whiteSpace: "nowrap",
-        userSelect: "none",
-        flexShrink: 0,
-      }}>
-        .is-pinoy.dev
-      </div>
-
-      {/* Divider */}
-      <div style={{ width: "3px", backgroundColor: "#F5C800", flexShrink: 0 }} />
-
-      {/* Claim button */}
-      <button
-        onClick={handleClaim}
-        className="subdomain-claim-btn"
-        style={{
-          fontFamily: "var(--font-pixel)",
-          fontSize: "9px",
-          color: "#0D0D0D",
-          backgroundColor: "#F5C800",
-          border: "none",
-          padding: "18px 24px",
-          cursor: "pointer",
-          letterSpacing: "0.05em",
-          transition: "background-color 0.1s ease",
-          whiteSpace: "nowrap",
-          flexShrink: 0,
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#FFE566" }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#F5C800" }}
-      >
-        CLAIM
-      </button>
-    </div>
-  )
-}
+import { SubdomainChecker } from "@/components/subdomain-checker"
+import { ProviderGuides } from "@/components/provider-guides"
+import { DocsSection } from "@/components/docs-section"
+import { SiteFooter } from "@/components/site-footer"
 
 export default function Page() {
   return (
@@ -202,44 +80,18 @@ export default function Page() {
             A free subdomain for every Filipino developer. Open source, community-driven, forever free.
           </p>
 
-          {/* Subdomain input */}
-          <SubdomainInput />
+          {/* Subdomain checker */}
+          <SubdomainChecker />
         </section>
 
+        {/* Provider Guides */}
+        <ProviderGuides />
+
+        {/* Documentation */}
+        <DocsSection />
+
         {/* Footer */}
-        <footer className="footer-bar" style={{
-          padding: "24px 40px",
-          textAlign: "center",
-          borderTop: "2px solid #1A1A1A",
-        }}>
-          <span style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "11px",
-            color: "#444444",
-            letterSpacing: "0.0625em",
-            textTransform: "uppercase",
-          }}>
-            © 2026 is-pinoy-dev
-            {" · "}
-            <Link
-              href="/tos"
-              style={{ color: "#888888", textDecoration: "none", transition: "color 0.1s ease" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#F5C800" }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "#888888" }}
-            >
-              Terms of Service
-            </Link>
-            {" · "}
-            <Link
-              href="/privacy"
-              style={{ color: "#888888", textDecoration: "none", transition: "color 0.1s ease" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#F5C800" }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "#888888" }}
-            >
-              Privacy Policy
-            </Link>
-          </span>
-        </footer>
+        <SiteFooter />
       </main>
     </>
   )
