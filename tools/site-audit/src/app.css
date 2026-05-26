@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #0D0D0D;
+  --foreground: #FAFAF5;
+  --card: #2A2A2A;
+  --card-foreground: #FAFAF5;
+  --primary: #F5C800;
+  --primary-foreground: #0D0D0D;
+  --secondary: #2A2A2A;
+  --secondary-foreground: #FAFAF5;
+  --muted: #444444;
+  --muted-foreground: #888888;
+  --accent: #444444;
+  --accent-foreground: #FAFAF5;
+  --destructive: #E63946;
+  --border: #444444;
+  --ring: #F5C800;
+  --radius: 0rem;
+  --accent-green: #39D353;
+  --accent-red: #E63946;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-accent-green: var(--accent-green);
+  --color-accent-red: var(--accent-red);
+  --radius-sm: 0rem;
+  --radius-md: 0rem;
+  --radius-lg: 0rem;
+  --font-pixel: "Press Start 2P", monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Scanline overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
