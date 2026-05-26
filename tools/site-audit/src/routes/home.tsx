@@ -59,7 +59,7 @@ export default function Home() {
       <NavBar
         tab={tab}
         onTabChange={setTab}
-        onRerun={runAudit}
+        onRerun={() => runAudit()}
         auditedAt={result?.auditedAt}
         loading={state.status === "loading"}
       />
