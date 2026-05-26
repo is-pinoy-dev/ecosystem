@@ -1,23 +1,8 @@
 import type { AuditField } from "@is-pinoy-dev/schemas";
+import { StatusBadge } from "./status-badge";
 
 interface AuditTableProps {
   fields: AuditField[];
-}
-
-function StatusBadge({ status }: { status: AuditField["status"] }) {
-  const styles = {
-    pass: "bg-primary text-primary-foreground",
-    warn: "bg-yellow-400 text-black",
-    fail: "bg-destructive text-white",
-  };
-  return (
-    <span
-      className={`font-pixel text-[7px] px-2 py-1 whitespace-nowrap ${styles[status]}`}
-      style={{ boxShadow: "2px 2px 0px #000" }}
-    >
-      {status.toUpperCase()}
-    </span>
-  );
 }
 
 function truncate(value: string, max = 60): string {
@@ -36,9 +21,9 @@ export function AuditTable({ fields }: AuditTableProps) {
         <p className="font-pixel text-[8px] text-muted-foreground">STATUS</p>
       </div>
       <ul className="divide-y divide-border">
-        {fields.map((field, i) => (
+        {fields.map((field) => (
           <li
-            key={i}
+            key={field.label}
             className="grid grid-cols-[1fr_2fr_auto] items-center gap-4 px-4 py-3"
           >
             <p className="font-pixel text-[9px] text-foreground">{field.label}</p>

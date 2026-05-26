@@ -1,24 +1,9 @@
-import type { AuditCategory, AuditField } from "@is-pinoy-dev/schemas";
+import type { AuditCategory } from "@is-pinoy-dev/schemas";
+import { StatusBadge } from "./status-badge";
 
 interface IssueListProps {
   seo: AuditCategory;
   og: AuditCategory;
-}
-
-function StatusBadge({ status }: { status: AuditField["status"] }) {
-  const styles = {
-    pass: "bg-primary text-primary-foreground",
-    warn: "bg-yellow-400 text-black",
-    fail: "bg-destructive text-white",
-  };
-  return (
-    <span
-      className={`font-pixel text-[7px] px-2 py-1 ${styles[status]}`}
-      style={{ boxShadow: "2px 2px 0px #000" }}
-    >
-      {status.toUpperCase()}
-    </span>
-  );
 }
 
 export function IssueList({ seo, og }: IssueListProps) {
@@ -46,8 +31,8 @@ export function IssueList({ seo, og }: IssueListProps) {
         </p>
       </div>
       <ul className="divide-y divide-border">
-        {issues.map((issue, i) => (
-          <li key={i} className="flex items-start gap-4 px-4 py-3">
+        {issues.map((issue) => (
+          <li key={`${issue.category}-${issue.label}`} className="flex items-start gap-4 px-4 py-3">
             <StatusBadge status={issue.status} />
             <div className="flex-1 min-w-0">
               <p className="font-pixel text-[9px] text-foreground">
