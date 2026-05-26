@@ -74,7 +74,7 @@ export default function Home() {
               ERROR: {state.message}
             </p>
             <button
-              onClick={runAudit}
+              onClick={() => runAudit()}
               className="font-pixel text-[9px] px-4 py-2 border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
               style={{ boxShadow: "3px 3px 0px #000" }}
             >
