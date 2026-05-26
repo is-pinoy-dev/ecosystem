@@ -23,17 +23,19 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("overview");
   const [state, setState] = useState<State>({ status: "loading" });
 
-  async function runAudit() {
+  async function runAudit(signal?: AbortSignal) {
     setState({ status: "loading" });
     const target = `https://${window.location.hostname}`;
     try {
       const res = await fetch(
-        `/audit-proxy?url=${encodeURIComponent(target)}`
+        `/audit-proxy?url=${encodeURIComponent(target)}`,
+        signal ? { signal } : undefined
       );
       if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
       const html = await res.text();
       setState({ status: "result", data: parseAudit(html, target) });
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setState({
         status: "error",
         message: err instanceof Error ? err.message : "Unknown error",
@@ -42,7 +44,9 @@ export default function Home() {
   }
 
   useEffect(() => {
-    runAudit();
+    const controller = new AbortController();
+    runAudit(controller.signal);
+    return () => controller.abort();
   }, []);
 
   const result = state.status === "result" ? state.data : undefined;
