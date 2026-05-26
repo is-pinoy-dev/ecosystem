@@ -144,11 +144,6 @@ body {
     padding-bottom: 48px !important;
   }
 
-  /* Provider guides grid: 2 columns on mobile */
-  .provider-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-
   .docs-grid {
     grid-template-columns: 1fr !important;
   }

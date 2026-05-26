@@ -1,10 +1,4 @@
-"use client"
-
 import Link from "next/link"
-
-const pixelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-pixel)",
-}
 
 interface Provider {
   name: string
@@ -76,65 +70,28 @@ const PROVIDERS: Provider[] = [
 function ProviderCard({ provider }: { provider: Provider }) {
   const cardContent = (
     <div
-      style={{
-        border: "3px solid",
-        borderColor: provider.active ? "#F5C800" : "#2A2A2A",
-        boxShadow: provider.active ? "5px 5px 0 #D4A800" : "5px 5px 0 #111",
-        backgroundColor: "#0D0D0D",
-        padding: "28px 20px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "16px",
-        position: "relative",
-        opacity: provider.active ? 1 : 0.4,
-        cursor: provider.active ? "pointer" : "not-allowed",
-        transition: provider.active
-          ? "box-shadow 0.1s ease, transform 0.1s ease"
-          : undefined,
-      }}
-      onMouseEnter={provider.active ? (e) => {
-        const el = e.currentTarget as HTMLElement
-        el.style.boxShadow = "6px 6px 0 #D4A800"
-        el.style.transform = "translate(-1px, -1px)"
-      } : undefined}
-      onMouseLeave={provider.active ? (e) => {
-        const el = e.currentTarget as HTMLElement
-        el.style.boxShadow = "5px 5px 0 #D4A800"
-        el.style.transform = "translate(0, 0)"
-      } : undefined}
+      className={`border-[3px] bg-[#0D0D0D] flex flex-col items-center gap-4 p-7 relative transition-all duration-100 ${
+        provider.active
+          ? "border-[#F5C800] shadow-[5px_5px_0_#D4A800] cursor-pointer hover:shadow-[6px_6px_0_#D4A800] hover:-translate-x-px hover:-translate-y-px"
+          : "border-[#2A2A2A] shadow-[5px_5px_0_#111] opacity-40 cursor-not-allowed"
+      }`}
     >
       {/* Coming soon badge */}
       {!provider.active && (
-        <div style={{
-          position: "absolute",
-          top: "10px",
-          right: "10px",
-          ...pixelStyle,
-          fontSize: "7px",
-          color: "#888888",
-          border: "1px solid #444",
-          padding: "3px 6px",
-          letterSpacing: "0.05em",
-        }}>
+        <div className="absolute top-[10px] right-[10px] font-[family-name:var(--font-pixel)] text-[7px] text-[#888888] border border-[#444] px-[6px] py-[3px] tracking-[0.05em]">
           COMING SOON
         </div>
       )}
 
       {/* Logo */}
-      <div style={{ height: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="h-9 flex items-center justify-center">
         {provider.logo}
       </div>
 
       {/* Name */}
-      <span style={{
-        ...pixelStyle,
-        fontSize: "8px",
-        color: provider.active ? "#FAFAF5" : "#888888",
-        letterSpacing: "0.05em",
-        lineHeight: 1.6,
-        textAlign: "center",
-      }}>
+      <span className={`font-[family-name:var(--font-pixel)] text-[8px] tracking-[0.05em] leading-[1.6] text-center ${
+        provider.active ? "text-[#FAFAF5]" : "text-[#888888]"
+      }`}>
         {provider.name}
       </span>
     </div>
@@ -142,7 +99,7 @@ function ProviderCard({ provider }: { provider: Provider }) {
 
   if (provider.active && provider.href) {
     return (
-      <Link href={provider.href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+      <Link href={provider.href} target="_blank" rel="noopener noreferrer" className="no-underline">
         {cardContent}
       </Link>
     )
@@ -153,38 +110,20 @@ function ProviderCard({ provider }: { provider: Provider }) {
 
 export function ProviderGuides() {
   return (
-    <section style={{
-      width: "100%",
-      maxWidth: "960px",
-      margin: "0 auto",
-      padding: "80px 40px",
-    }}>
+    <section className="w-full max-w-[960px] mx-auto py-20 px-10">
       {/* Divider */}
-      <div style={{
-        height: "2px",
-        backgroundColor: "#F5C800",
-        marginBottom: "64px",
-        boxShadow: "0 2px 0 #D4A800",
-      }} />
+      <div className="h-[2px] bg-[#F5C800] mb-16 shadow-[0_2px_0_#D4A800]" />
 
       {/* Heading */}
-      <h2 style={{
-        fontFamily: "var(--font-pixel)",
-        fontSize: "clamp(0.5rem, 1.5vw, 0.75rem)",
-        color: "#F5C800",
-        letterSpacing: "0.1em",
-        marginBottom: "40px",
-        lineHeight: 1.6,
-      }}>
+      <h2
+        className="font-[family-name:var(--font-pixel)] text-[#F5C800] tracking-[0.1em] mb-10 leading-[1.6]"
+        style={{ fontSize: "clamp(0.5rem, 1.5vw, 0.75rem)" }}
+      >
         {"// PROVIDER GUIDES"}
       </h2>
 
       {/* Grid */}
-      <div className="provider-grid" style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        gap: "16px",
-      }}>
+      <div className="grid grid-cols-4 gap-4 max-sm:grid-cols-2">
         {PROVIDERS.map((p) => (
           <ProviderCard key={p.name} provider={p} />
         ))}
