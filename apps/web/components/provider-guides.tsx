@@ -78,15 +78,15 @@ function ProviderCard({ provider }: { provider: Provider }) {
           : "border-card shadow-[5px_5px_0_#111] opacity-40 cursor-not-allowed"
       }`}
     >
-      <CardContent className="flex flex-col items-center gap-4 p-0 w-full relative">
-        {!provider.active && (
-          <Badge
-            variant="outline"
-            className="absolute top-0 right-0 font-pixel text-[7px] text-muted-foreground border-border px-[6px] py-[3px] tracking-[0.05em]"
-          >
-            COMING SOON
-          </Badge>
-        )}
+      {!provider.active && (
+        <Badge
+          variant="outline"
+          className="absolute top-[10px] right-[10px] font-pixel text-[7px] text-muted-foreground border-border px-[6px] py-[3px] tracking-[0.05em]"
+        >
+          COMING SOON
+        </Badge>
+      )}
+      <CardContent className="flex flex-col items-center gap-4 p-0 w-full">
         <div className="h-9 flex items-center justify-center">
           {provider.logo}
         </div>

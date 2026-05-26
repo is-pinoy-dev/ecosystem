@@ -77,14 +77,22 @@ The UI follows a strict **retro pixel-art** aesthetic (see `DESIGN.md`):
 - Borders: hard pixel borders with pixel-offset box shadows (e.g., `4px 4px 0px #000`)
 - Component variants live in `packages/ui`; Tailwind v4 CSS variables drive tokens
 
+## Component Rules
+
+**Always prefer `@is-pinoy-dev/ui` (shadcn) components** over native HTML tags. Use `Button`, `Card`, `Badge`, etc. from `packages/ui` instead of `<button>`, `<div>`, `<span>`. Fall back to a native tag only when no shadcn component exists for the use case.
+
 ## Styling Rules
 
 **Always prefer Tailwind CSS utility classes** over inline styles (`style={{...}}`) or native CSS classes in `globals.css`. Use inline styles or globals only when a utility class is not available (e.g., complex `clamp()` expressions, dynamic values that depend on runtime state, or CSS animations/keyframes).
 
+**Within Tailwind, prefer shadcn CSS variable tokens** over arbitrary values or raw color literals. Use semantic utilities like `text-primary`, `bg-background`, `border-border`, `text-muted-foreground` rather than `text-[#F5C800]` or `bg-[var(--color-gold)]`. Only use arbitrary values when no token maps to the required value.
+
 Priority order:
-1. **Tailwind utility classes** — default choice for all styling
-2. **Inline `style={{}}`** — only for dynamic/runtime values (e.g., a color derived from a prop)
-3. **`globals.css`** — only for keyframe animations or styles that cannot be expressed in Tailwind
+1. **shadcn/ui components from `@is-pinoy-dev/ui`** — default choice for all UI elements
+2. **Tailwind utility classes with shadcn CSS variable tokens** — e.g., `text-primary`, `bg-card`
+3. **Tailwind utility classes with static scale values** — e.g., `text-sm`, `p-4`
+4. **Inline `style={{}}`** — only for dynamic/runtime values (e.g., a color derived from a prop)
+5. **`globals.css`** — only for keyframe animations or styles that cannot be expressed in Tailwind
 
 ## Commits & PRs
 

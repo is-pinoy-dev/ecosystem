@@ -11,21 +11,21 @@ interface DocCard {
 const DOCS: DocCard[] = [
   {
     icon: "▶",
-    title: "Getting Started",
-    description: "Set up your subdomain in minutes.",
-    href: "https://docs.is-pinoy.dev",
+    title: "Prerequisites",
+    description: "What you need before you start: GitHub account, DNS values, and more.",
+    href: "https://docs.is-pinoy.dev/getting-started/prerequisites",
   },
   {
-    icon: "$_",
-    title: "CLI Reference",
-    description: "Validate, diff, and sync via terminal.",
-    href: "https://docs.is-pinoy.dev/cli",
+    icon: "01",
+    title: "Step-by-Step Workflow",
+    description: "Fork, create your JSON file, validate, and open a PR.",
+    href: "https://docs.is-pinoy.dev/workflow",
   },
   {
     icon: "{ }",
-    title: "Registry Schema",
-    description: "Understand the JSON record format.",
-    href: "https://docs.is-pinoy.dev/registry",
+    title: "JSON Format",
+    description: "Full reference for the subdomain JSON file format and DNS record types.",
+    href: "https://docs.is-pinoy.dev/reference/json-format",
   },
 ]
 
@@ -59,12 +59,13 @@ function DocCard({ card }: { card: DocCard }) {
 
 export function DocsSection() {
   return (
-    <section className="w-full max-w-[960px] mx-auto px-10 pb-20">
+    <section className="w-full max-w-[960px] mx-auto px-10 pt-20 pb-20">
+      <div className="h-[2px] bg-primary mb-16 shadow-[0_2px_0_var(--color-primary-dark)]" />
       <h2
         className="font-pixel text-primary tracking-[0.1em] mb-10 leading-[1.6]"
         style={{ fontSize: "clamp(0.5rem, 1.5vw, 0.75rem)" }}
       >
-        {"// DOCUMENTATION"}
+        {"// HOW TO REGISTER"}
       </h2>
       <div className="grid grid-cols-3 gap-4 max-sm:grid-cols-1">
         {DOCS.map((doc) => (
