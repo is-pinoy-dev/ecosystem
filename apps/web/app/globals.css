@@ -131,30 +131,16 @@ body {
     padding-right: 10px !important;
   }
 
-  /* Footer: less horizontal padding */
-  .footer-bar {
-    padding-left: 20px !important;
-    padding-right: 20px !important;
-  }
-
   /* Doc pages: less horizontal padding */
   .doc-main {
     padding-left: 20px !important;
     padding-right: 20px !important;
     padding-bottom: 48px !important;
   }
-
-  .footer-grid {
-    grid-template-columns: 1fr !important;
-  }
 }
 
 @media (max-width: 479px) {
   /* Extra-small screens: even tighter */
-  .footer-bar {
-    padding-left: 14px !important;
-    padding-right: 14px !important;
-  }
   .doc-main {
     padding-left: 14px !important;
     padding-right: 14px !important;

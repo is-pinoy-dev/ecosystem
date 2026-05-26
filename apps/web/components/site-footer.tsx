@@ -1,5 +1,3 @@
-"use client"
-
 import Link from "next/link"
 import { GitHubIcon, DiscordIcon } from "@/components/icons"
 
@@ -8,14 +6,7 @@ function FooterLink({ href, external, children }: {
   external?: boolean
   children: React.ReactNode
 }) {
-  const linkStyle: React.CSSProperties = {
-    fontFamily: "var(--font-sans)",
-    fontSize: "13px",
-    color: "#888888",
-    textDecoration: "none",
-    transition: "color 0.1s ease",
-    lineHeight: 1.7,
-  }
+  const linkClass = "font-[family-name:var(--font-sans)] text-[13px] text-[#888888] no-underline leading-[1.7] transition-colors duration-100 hover:text-[#F5C800]"
 
   if (external) {
     return (
@@ -23,9 +14,7 @@ function FooterLink({ href, external, children }: {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        style={linkStyle}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "#F5C800" }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "#888888" }}
+        className={linkClass}
       >
         {children}
       </a>
@@ -33,12 +22,7 @@ function FooterLink({ href, external, children }: {
   }
 
   return (
-    <Link
-      href={href}
-      style={linkStyle}
-      onMouseEnter={(e) => { e.currentTarget.style.color = "#F5C800" }}
-      onMouseLeave={(e) => { e.currentTarget.style.color = "#888888" }}
-    >
+    <Link href={href} className={linkClass}>
       {children}
     </Link>
   )
@@ -55,26 +39,7 @@ function IconLink({ href, label, children }: {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "36px",
-        height: "36px",
-        border: "2px solid #2A2A2A",
-        color: "#888888",
-        backgroundColor: "#0D0D0D",
-        transition: "border-color 0.1s ease, color 0.1s ease",
-        boxShadow: "3px 3px 0 #111",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "#F5C800"
-        e.currentTarget.style.color = "#F5C800"
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "#2A2A2A"
-        e.currentTarget.style.color = "#888888"
-      }}
+      className="inline-flex items-center justify-center w-9 h-9 border-2 border-[#2A2A2A] text-[#888888] bg-[#0D0D0D] shadow-[3px_3px_0_#111] transition-all duration-100 hover:border-[#F5C800] hover:text-[#F5C800]"
     >
       {children}
     </a>
@@ -83,50 +48,23 @@ function IconLink({ href, label, children }: {
 
 export function SiteFooter() {
   return (
-    <footer style={{ borderTop: "2px solid #F5C800", backgroundColor: "#0D0D0D" }}>
+    <footer className="border-t-2 border-[#F5C800] bg-[#0D0D0D]">
       {/* Main footer grid */}
-      <div className="footer-grid" style={{
-        maxWidth: "960px",
-        margin: "0 auto",
-        padding: "48px 40px",
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr 1fr",
-        gap: "40px",
-        alignItems: "start",
-      }}>
+      <div className="max-w-[960px] mx-auto py-12 px-10 grid grid-cols-3 gap-10 items-start max-sm:grid-cols-1">
         {/* Left: Logo + tagline */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <span style={{
-            fontFamily: "var(--font-pixel)",
-            fontSize: "0.65rem",
-            color: "#F5C800",
-            lineHeight: 1.6,
-            letterSpacing: "0.05em",
-          }}>
+        <div className="flex flex-col gap-4">
+          <span className="font-[family-name:var(--font-pixel)] text-[0.65rem] text-[#F5C800] leading-[1.6] tracking-[0.05em]">
             is-pinoy.dev
           </span>
-          <span style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "13px",
-            color: "#888888",
-            lineHeight: 1.7,
-            maxWidth: "220px",
-          }}>
+          <span className="font-[family-name:var(--font-sans)] text-[13px] text-[#888888] leading-[1.7] max-w-[220px]">
             Free subdomains for Filipino developers. Open source, community-driven, forever free.
           </span>
         </div>
 
         {/* Center: Link groups */}
-        <div style={{ display: "flex", gap: "40px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <span style={{
-              fontFamily: "var(--font-pixel)",
-              fontSize: "7px",
-              color: "#FAFAF5",
-              letterSpacing: "0.1em",
-              lineHeight: 1.6,
-              marginBottom: "4px",
-            }}>
+        <div className="flex gap-10">
+          <div className="flex flex-col gap-3">
+            <span className="font-[family-name:var(--font-pixel)] text-[7px] text-[#FAFAF5] tracking-[0.1em] leading-[1.6] mb-1">
               PRODUCT
             </span>
             <FooterLink href="https://docs.is-pinoy.dev" external>Docs</FooterLink>
@@ -134,15 +72,8 @@ export function SiteFooter() {
             <FooterLink href="https://docs.is-pinoy.dev/registry" external>Registry Schema</FooterLink>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <span style={{
-              fontFamily: "var(--font-pixel)",
-              fontSize: "7px",
-              color: "#FAFAF5",
-              letterSpacing: "0.1em",
-              lineHeight: 1.6,
-              marginBottom: "4px",
-            }}>
+          <div className="flex flex-col gap-3">
+            <span className="font-[family-name:var(--font-pixel)] text-[7px] text-[#FAFAF5] tracking-[0.1em] leading-[1.6] mb-1">
               LEGAL
             </span>
             <FooterLink href="/tos">Terms of Service</FooterLink>
@@ -151,8 +82,8 @@ export function SiteFooter() {
         </div>
 
         {/* Right: Social + pride */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", alignItems: "flex-end" }}>
-          <div style={{ display: "flex", gap: "8px" }}>
+        <div className="flex flex-col gap-4 items-end">
+          <div className="flex gap-2">
             <IconLink href={process.env.NEXT_PUBLIC_DISCORD_LINK ?? "#"} label="Join Discord">
               <DiscordIcon />
             </IconLink>
@@ -160,30 +91,15 @@ export function SiteFooter() {
               <GitHubIcon />
             </IconLink>
           </div>
-          <span style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "12px",
-            color: "#888888",
-            lineHeight: 1.7,
-          }}>
+          <span className="font-[family-name:var(--font-sans)] text-[12px] text-[#888888] leading-[1.7]">
             Made with pride 🇵🇭
           </span>
         </div>
       </div>
 
       {/* Bottom bar */}
-      <div className="footer-bar" style={{
-        borderTop: "1px solid #1A1A1A",
-        padding: "16px 40px",
-        textAlign: "center",
-      }}>
-        <span style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "11px",
-          color: "#444444",
-          letterSpacing: "0.0625em",
-          textTransform: "uppercase",
-        }}>
+      <div className="border-t border-[#1A1A1A] py-4 px-10 text-center max-sm:px-5 max-[479px]:px-3.5">
+        <span className="font-[family-name:var(--font-mono)] text-[11px] text-[#444444] tracking-[0.0625em] uppercase">
           © 2026 is-pinoy.dev
         </span>
       </div>
