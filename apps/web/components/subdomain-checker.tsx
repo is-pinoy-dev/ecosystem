@@ -179,7 +179,7 @@ export function SubdomainChecker() {
           }
           onClick={handleCheck}
           disabled={status === "loading"}
-          className={`shrink-0 border-none px-6 py-[18px] font-pixel text-[9px] tracking-[0.05em] whitespace-nowrap text-background transition-colors duration-100 hover:enabled:bg-primary-light h-auto max-[639px]:px-[14px] ${
+          className={`shrink-0 border-none px-6 py-[18px] font-pixel text-[9px] tracking-[0.05em] whitespace-nowrap text-background transition-colors duration-100 hover:not-disabled:bg-primary-light h-auto max-[639px]:px-[14px] ${
             status === "loading" ? "bg-primary-dark" : "bg-primary"
           }`}
         >

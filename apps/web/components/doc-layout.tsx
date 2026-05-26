@@ -1,5 +1,3 @@
-"use client"
-
 import Link from "next/link"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { MainNav } from "@/components/main-nav"
