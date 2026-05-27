@@ -6,9 +6,13 @@ export const metadata: Metadata = {
   description: "Privacy Policy for the is-pinoy.dev free subdomain service.",
 }
 
-export default function PrivacyLayout({ children }: { children: React.ReactNode }) {
+export default function PrivacyLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <DocLayout title="Privacy Policy" effectiveDate="May 23, 2026">
+    <DocLayout title="Privacy Policy" effectiveDate="May 28, 2026">
       {children}
     </DocLayout>
   )
