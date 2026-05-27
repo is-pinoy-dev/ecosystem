@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "../build/client"
+binding = "ASSETS"
 
 [[routes]]
 pattern = "is-pinoy.dev/_tools/site-audit*"
