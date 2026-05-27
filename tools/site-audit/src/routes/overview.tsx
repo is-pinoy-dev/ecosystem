@@ -3,12 +3,20 @@ import { Button } from "@is-pinoy-dev/ui/components/button";
 import type { AuditContext } from "./layout";
 import { ScoreCard } from "../components/score-card";
 import { IssueList } from "../components/issue-list";
+import type { AuditCategory } from "@is-pinoy-dev/schemas";
 
 export function meta() {
   return [
     { title: "Overview — Site Audit | is-pinoy.dev" },
     { name: "description", content: "SEO and OpenGraph audit overview" },
   ];
+}
+
+function buildOverallCategory(seo: AuditCategory, og: AuditCategory): AuditCategory {
+  return {
+    score: Math.round((seo.score + og.score) / 2),
+    fields: [...seo.fields, ...og.fields],
+  }
 }
 
 export default function Overview() {
@@ -36,9 +44,11 @@ export default function Overview() {
   }
 
   const { seo, og } = state.data;
+  const overall = buildOverallCategory(seo, og);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <ScoreCard label="Overall Score" category={overall} size="large" />
       <div className="grid grid-cols-2 gap-4">
         <ScoreCard label="SEO Score" category={seo} />
         <ScoreCard label="Open Graph Score" category={og} />
