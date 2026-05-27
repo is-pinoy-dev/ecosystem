@@ -8,6 +8,7 @@ on:
       - "tools/site-audit/**"
       - "packages/ui/**"
       - "packages/schemas/**"
+  workflow_dispatch:
 
 jobs:
   deploy:
