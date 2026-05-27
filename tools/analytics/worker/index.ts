@@ -1,0 +1,36 @@
+export interface Env {
+  ANALYTICS: AnalyticsEngineDataset;
+}
+
+function isNavigationRequest(request: Request): boolean {
+  const accept = request.headers.get("Accept") ?? "";
+  return accept.includes("text/html");
+}
+
+function extractSubdomain(hostname: string): string | null {
+  const parts = hostname.split(".");
+  // Only subdomains (e.g. juan.is-pinoy.dev) — skip apex
+  if (parts.length <= 2) return null;
+  return parts.slice(0, parts.length - 2).join(".");
+}
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    if (isNavigationRequest(request)) {
+      const url = new URL(request.url);
+      const subdomain = extractSubdomain(url.hostname);
+      if (subdomain) {
+        const country = (request.cf?.country as string | undefined) ?? "XX";
+        ctx.waitUntil(
+          Promise.resolve(
+            env.ANALYTICS.writeDataPoint({
+              indexes: [subdomain],
+              blobs: [country],
+            })
+          )
+        );
+      }
+    }
+    return fetch(request);
+  },
+} satisfies ExportedHandler<Env>;
