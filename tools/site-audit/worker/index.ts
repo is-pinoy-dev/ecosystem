@@ -1,8 +1,8 @@
-import { createRequestHandler } from "@react-router/cloudflare";
+import { createPagesFunctionHandler } from "@react-router/cloudflare";
 // @ts-ignore - build/server is generated at compile time and won't exist during typecheck
 import * as build from "../build/server";
 
-const handler = createRequestHandler({ build });
+const handler = createPagesFunctionHandler({ build });
 
 export interface Env {}
 

@@ -13,7 +13,6 @@
   "dependencies": {
     "@is-pinoy-dev/schemas": "workspace:*",
     "@is-pinoy-dev/ui": "workspace:*",
-    "@react-router/cloudflare": "7.15.1",
     "@react-router/node": "7.15.1",
     "@react-router/serve": "7.15.1",
     "isbot": "^5.1.36",
@@ -32,6 +31,7 @@
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "^8.0.3",
+    "@react-router/cloudflare": "7.15.1",
     "wrangler": "^4.95.0"
   }
 }
