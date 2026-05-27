@@ -1,0 +1,43 @@
+---
+title: Tools
+description: Platform tools available on your is-pinoy.dev subdomain.
+---
+
+is-pinoy.dev provides built-in tools accessible at `/_tools/*` on any subdomain. Tools are **opt-in** — they are disabled by default and must be enabled per subdomain in your JSON file.
+
+## Available tools
+
+| Tool | Path | Description |
+|------|------|-------------|
+| [Site Audit](/tools/site-audit) | `/_tools/site-audit` | SEO and OpenGraph audit for your portfolio |
+
+## Requirements
+
+All tools require your DNS record to have `"proxy": true` so that Cloudflare can intercept requests at the `/_tools/` path before they reach your origin.
+
+```json
+"records": {
+  "CNAME": {
+    "value": "yoursite.vercel.app.",
+    "proxy": true
+  }
+}
+```
+
+<Callout type="info">
+  The `/_tools/` path is reserved by the platform. Requests to `yourname.is-pinoy.dev/_tools/*` are always handled by is-pinoy.dev infrastructure and never forwarded to your origin.
+</Callout>
+
+## Enabling tools
+
+Add a `features` block to your subdomain JSON:
+
+```json
+"features": {
+  "tools": {
+    "site-audit": true
+  }
+}
+```
+
+Each tool is a separate boolean flag. Omitting the field or setting it to `false` disables the tool.
