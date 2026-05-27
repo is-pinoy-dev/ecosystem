@@ -3,8 +3,10 @@ export interface Env {
 }
 
 function isNavigationRequest(request: Request): boolean {
-  const accept = request.headers.get("Accept") ?? "";
-  return accept.includes("text/html");
+  return (
+    request.headers.get("Sec-Fetch-Mode") === "navigate" &&
+    request.headers.get("Sec-Fetch-Dest") === "document"
+  );
 }
 
 function extractSubdomain(hostname: string): string | null {
