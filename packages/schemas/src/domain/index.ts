@@ -7,6 +7,12 @@ import {
   dnsRecordSchema,
 } from "./records.js"
 
+export const domainFeaturesSchema = z.object({
+  tools: z.object({
+    "site-audit": z.boolean(),
+  }).partial().optional(),
+}).partial().optional()
+
 export const domainSchema = z.object({
   subdomain: z
     .string()
@@ -27,6 +33,7 @@ export const domainSchema = z.object({
       (r) => Object.keys(r).length > 0,
       "At least one record type required"
     ),
+  features: domainFeaturesSchema,
   destroy: z.boolean().optional(),
 })
 
@@ -39,6 +46,7 @@ export const ResolvedDomainsSchema = z.array(resolvedDomainSchema)
 export type ResolvedDomain = z.infer<typeof resolvedDomainSchema>
 export type ResolvedDomains = z.infer<typeof ResolvedDomainsSchema>
 export type Domain = z.infer<typeof domainSchema>
+export type DomainFeatures = z.infer<typeof domainFeaturesSchema>
 export type DNSRecord = z.infer<typeof dnsRecordSchema>
 
 export * from "./records.js"

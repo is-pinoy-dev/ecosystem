@@ -90,6 +90,32 @@ You can include multiple record types in one file. The most common combination i
 }
 ```
 
+## Cloudflare proxy (`proxied`)
+
+`A` and `CNAME` records accept an optional `proxied` field that controls whether Cloudflare proxies traffic through its network (the "orange cloud" in Cloudflare's dashboard). `TXT` records are never proxied and do not support this field.
+
+```json
+"records": {
+  "CNAME": {
+    "value": "yoursite.vercel.app.",
+    "proxied": true
+  }
+}
+```
+
+| Value | Behaviour |
+|-------|-----------|
+| `true` | Traffic passes through Cloudflare. Your origin IP is hidden and Cloudflare features (DDoS protection, caching, Workers) are active. |
+| `false` (default) | DNS-only. Cloudflare returns the raw DNS record. Traffic goes directly to your origin. |
+
+<Callout type="info">
+  **When should I enable proxy?** Enable it if you want platform tools like [Site Audit](/tools/site-audit) to work on your subdomain, or if you want Cloudflare's DDoS protection and CDN caching in front of your site.
+</Callout>
+
+<Callout type="warn">
+  Some platforms (e.g. Vercel) perform SSL certificate validation by querying DNS directly. Enabling the Cloudflare proxy can interfere with this process. If your hosting provider shows an "Invalid Configuration" or SSL error after you enable proxy, check their documentation for Cloudflare compatibility.
+</Callout>
+
 ## What you cannot combine
 
 You **cannot** use `A` and `CNAME` together on the same subdomain. These record types are mutually exclusive in DNS — a name can either be an alias (CNAME) or a direct address (A), not both.

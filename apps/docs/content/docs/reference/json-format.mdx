@@ -17,7 +17,13 @@ Each subdomain is described by a single JSON file at `subdomains/<your-subdomain
   },
   "records": {
     "CNAME": {
-      "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
+      "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com.",
+      "proxied": true
+    }
+  },
+  "features": {
+    "tools": {
+      "site-audit": true
     }
   }
 }
@@ -75,7 +81,7 @@ See [Naming Rules](/getting-started/naming-rules) for the full character rules.
 }
 ```
 
-**Optional.** Used by maintainers to contact you if there's an issue with your subdomain. Never exposed publicly.
+**Optional.** Used by maintainers to contact you if there's an issue with your subdomain. Because the domains repository is public, your email will be **publicly visible** if you include it — only add it if you are comfortable with that.
 
 ---
 
@@ -90,6 +96,28 @@ See [Naming Rules](/getting-started/naming-rules) for the full character rules.
 ```
 
 **Required.** Must contain at least one valid record. Supported keys: `CNAME`, `A`, `TXT`. See [Supported Records](/reference/supported-records) for details on each type.
+
+### `features`
+
+```json
+"features": {
+  "tools": {
+    "site-audit": true
+  }
+}
+```
+
+**Optional.** Enables platform tools for your subdomain. All tools are opt-in and disabled by default.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `features.tools.site-audit` | boolean | `false` | Enables the [Site Audit](/tools/site-audit) tool at `yourname.is-pinoy.dev/_tools/site-audit` |
+
+<Callout type="info">
+  Tools require `"proxied": true` on your DNS record. See [Cloudflare proxy](/reference/supported-records#cloudflare-proxy-proxy) for details.
+</Callout>
+
+---
 
 ## Common mistakes
 

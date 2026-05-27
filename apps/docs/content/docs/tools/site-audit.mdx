@@ -1,0 +1,71 @@
+---
+title: Site Audit
+description: Audit your portfolio's SEO and OpenGraph tags directly from your subdomain.
+---
+
+Site Audit is a built-in tool that inspects your portfolio's SEO and OpenGraph metadata and surfaces issues you might have missed. Access it at `yourname.is-pinoy.dev/_tools/site-audit`.
+
+## What it checks
+
+| Category | Checks |
+|----------|--------|
+| **SEO** | `<title>`, meta description, canonical URL, heading structure (`h1`–`h6`), robots meta, Open Search |
+| **OpenGraph** | `og:title`, `og:description`, `og:image`, `og:url`, `og:type`, Twitter card tags |
+
+Each check returns a **pass**, **warning**, or **fail** status with a short explanation of what to fix.
+
+## Prerequisites
+
+- Your subdomain DNS record has `"proxied": true`
+- You have enabled the tool in your subdomain JSON
+
+<Callout type="warn">
+  Site Audit will not work if your DNS record is set to DNS-only (no proxy). Cloudflare must proxy your subdomain for the `/_tools/` path to be intercepted. See [Cloudflare proxy](/reference/supported-records#cloudflare-proxy-proxy).
+</Callout>
+
+## Enabling Site Audit
+
+Add `features.tools.site-audit: true` to your subdomain JSON and open a pull request:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/schemas/v1/subdomain.schema.json",
+  "subdomain": "yourname",
+  "owner": {
+    "github": "your-github-username"
+  },
+  "records": {
+    "CNAME": {
+      "value": "yoursite.vercel.app.",
+      "proxied": true
+    }
+  },
+  "features": {
+    "tools": {
+      "site-audit": true
+    }
+  }
+}
+```
+
+Once your PR is merged and DNS has propagated, visit `yourname.is-pinoy.dev/_tools/site-audit` — the audit runs automatically on page load.
+
+## Enabling the Cloudflare proxy
+
+If your record currently has no `proxied` field (or `"proxied": false`), you need to add `"proxied": true` at the same time as enabling the tool.
+
+<Callout type="warn">
+  Enabling the Cloudflare proxy may affect platforms that validate SSL certificates via direct DNS queries (such as Vercel). If Vercel shows an "Invalid Configuration" warning after enabling proxy, this is a known limitation — see [Vercel and Cloudflare proxy](#vercel-and-cloudflare-proxy) below.
+</Callout>
+
+### Vercel and Cloudflare proxy
+
+Vercel verifies custom domains by checking for a specific DNS record. When the Cloudflare proxy is active, Vercel may not be able to complete this check and will show **"Invalid Configuration"** on your domain.
+
+This warning is cosmetic for sites already deployed — your portfolio will continue to serve traffic normally. Vercel only needs to re-verify if you reassign the domain or rotate certificates.
+
+If Vercel's warning concerns you, you can disable the proxy (`"proxied": false`) and Site Audit will show a [not enabled page](/_tools/site-audit) instead.
+
+## Disabling Site Audit
+
+Set the flag to `false` or remove the `features` block entirely and open a pull request with the change. The tool will show a "not enabled" page within 5 minutes of your PR merging (Cloudflare caches the feature flag for up to 5 minutes).

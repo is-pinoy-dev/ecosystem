@@ -6,6 +6,7 @@ export const baseRecord = z.object({
 
 export const aRecord = baseRecord.extend({
   value: z.ipv4(),
+  proxied: z.boolean().optional(),
 });
 
 export const aaaaRecord = baseRecord.extend({

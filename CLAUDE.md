@@ -53,6 +53,8 @@ packages/
   ui/           @is-pinoy-dev/ui — shadcn/ui + Radix UI component library
   eslint-config/ @workspace/eslint-config — shared ESLint rules
   typescript-config/ @workspace/typescript-config — shared tsconfig bases
+tools/
+  site-audit/   Standalone React Router 7 + Vite app for Lighthouse auditing (not published)
 ```
 
 **Dependency chain:** `cli` → `registry` → `schemas` + `validate` → `schemas`
@@ -60,6 +62,12 @@ packages/
 **Build:** `cli` is bundled with `tsup` (ESM, Node22 target). Other packages use `tsc`. Turbo handles build ordering via `"dependsOn": ["^build"]`.
 
 **Environment variables required for build:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID` (declared in `turbo.json`).
+
+**pnpm catalog:** Shared dependency versions are pinned in `pnpm-workspace.yaml` under the `catalog:` key. Add new shared deps there rather than per-package.
+
+**CLI → Registry pattern:** CLI commands call `import("@is-pinoy-dev/registry")` dynamically at runtime. The registry owns all Cloudflare API interaction; the CLI handles I/O, confirmation prompts, and output formatting.
+
+**CI custom action:** `.github/actions/registry-validate/` runs on PRs that touch subdomain JSON files. It validates records against schemas and posts a comment summary. All packages are published to npm with `access: public` via Changesets on merge to `main`.
 
 ## Key Tech
 
@@ -73,8 +81,9 @@ packages/
 
 The UI follows a strict **retro pixel-art** aesthetic (see `DESIGN.md`):
 - Primary color: gold `#F5C800` on dark backgrounds
-- Font: **Press Start 2P** for headings/UI; no rounded corners
-- Borders: hard pixel borders with pixel-offset box shadows (e.g., `4px 4px 0px #000`)
+- Font: **Press Start 2P** for headings/UI; **zero border-radius everywhere** (no `rounded-*` classes)
+- Borders: hard pixel borders with pixel-offset box shadows — **no blur** (e.g., `4px 4px 0px #000`, never `shadow-md`)
+- Scanline overlay is a required global effect (defined in `globals.css`)
 - Component variants live in `packages/ui`; Tailwind v4 CSS variables drive tokens
 
 ## Component Rules

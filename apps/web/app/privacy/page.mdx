@@ -12,7 +12,7 @@ When you register a subdomain, we collect only the information you voluntarily s
 - Your chosen **subdomain name**
 - Your **DNS records** (the targets your subdomain points to)
 - The **date** of your registration
-- Your **email address** *(optional — only if you choose to provide it, used solely to contact you about your subdomain)*
+- Your **email address** *(optional — only if you choose to provide it; if included, it will be **publicly visible** in the repository)*
 
 We do not collect passwords, payment information, or any other personal data beyond what is visible in your GitHub pull request.
 
@@ -29,16 +29,22 @@ We do not sell, rent, or share your information with third parties for marketing
 
 ## 4. Public Nature of Registrations
 
-All subdomain registrations are made via pull requests to a **public GitHub repository** ([is-pinoy-dev/domains](https://github.com/is-pinoy-dev/domains)). By submitting a registration, you acknowledge that your GitHub username and subdomain name will be publicly visible in that repository's history.
+All subdomain registrations are made via pull requests to a **public GitHub repository** ([is-pinoy-dev/domains](https://github.com/is-pinoy-dev/domains)). By submitting a registration, you acknowledge that your GitHub username, subdomain name, DNS records, feature flags, and any optional fields you include (such as your email address) will be publicly visible in that repository and its history.
 
 ## 5. Third-Party Services
 
 The service relies on the following third-party platforms, each governed by their own privacy policies:
 
 - **GitHub** — pull request and repository hosting ([github.com/privacy](https://github.com/privacy))
-- **Cloudflare** or equivalent DNS provider — DNS record hosting and resolution
+- **Cloudflare** — DNS record hosting, traffic proxying (when `"proxied": true` is set on your record), and Worker infrastructure for built-in tools ([cloudflare.com/privacypolicy](https://www.cloudflare.com/privacypolicy/))
 
-We have no control over the data practices of these third parties.
+When your DNS record is proxied through Cloudflare, visitor traffic to your subdomain passes through Cloudflare's network. This is subject to Cloudflare's privacy policy, not ours.
+
+## 5a. Built-in Tools and Site Fetching
+
+If you opt in to built-in tools (such as Site Audit), our infrastructure will make server-side HTTP requests to your subdomain to retrieve and analyze its content (HTML, metadata, and response headers). By enabling a tool, you consent to this. No data from your site's responses is stored beyond what is necessary to display results within the tool session.
+
+We have no control over the data practices of third-party platforms listed above.
 
 ## 6. Data Retention
 
@@ -58,7 +64,7 @@ To exercise any of these rights, open an issue at [github.com/is-pinoy-dev](http
 
 ## 8. Security
 
-Subdomain records are stored in a public GitHub repository. While we follow responsible open source practices, we cannot guarantee the security of publicly hosted data. Do not submit sensitive personal information beyond your GitHub username.
+Subdomain records are stored in a public GitHub repository. While we follow responsible open source practices, we cannot guarantee the security of publicly hosted data. Do not submit sensitive personal information. Your GitHub username and any optional fields you include (such as your email address) will be publicly visible.
 
 ## 9. Children's Privacy
 
