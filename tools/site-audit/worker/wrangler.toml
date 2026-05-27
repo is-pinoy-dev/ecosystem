@@ -1,4 +1,4 @@
-name = "site-audit"
+name = "tools-site-audit"
 main = "index.ts"
 compatibility_date = "2026-05-27"
 compatibility_flags = ["nodejs_compat"]
@@ -26,6 +26,6 @@ persist = true
 invocation_logs = true
 
 [observability.traces]
-enabled = false
+enabled = true
 persist = true
 head_sampling_rate = 1
