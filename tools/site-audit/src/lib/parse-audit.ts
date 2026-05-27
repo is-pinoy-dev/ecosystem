@@ -1,4 +1,4 @@
-import type { AuditResult, AuditField, AuditCategory } from "@is-pinoy-dev/schemas";
+import type { AuditResult, AuditField, AuditCategory, HeadingItem, LinkItem } from "@is-pinoy-dev/schemas";
 
 function getMeta(doc: Document, name: string): string | null {
   return (
@@ -22,7 +22,7 @@ function scoreCategory(fields: AuditField[]): AuditCategory {
   };
 }
 
-export function parseAudit(html: string, url: string): AuditResult {
+export function parseAudit(html: string, url: string, xRobotsTag: string | null = null): AuditResult {
   const doc = new DOMParser().parseFromString(html, "text/html");
 
   const titleText = doc.querySelector("title")?.textContent ?? null;
@@ -30,7 +30,6 @@ export function parseAudit(html: string, url: string): AuditResult {
   const canonical =
     doc.querySelector('link[rel="canonical"]')?.getAttribute("href") ?? null;
   const robots = getMeta(doc, "robots");
-  const h1s = doc.querySelectorAll("h1");
   const htmlLang = doc.documentElement.getAttribute("lang");
   const viewportMeta = getMeta(doc, "viewport");
   const charsetMeta =
@@ -42,10 +41,6 @@ export function parseAudit(html: string, url: string): AuditResult {
     doc.querySelector('link[rel="shortcut icon"]')?.getAttribute("href") ??
     null;
   const author = getMeta(doc, "author");
-  const images = Array.from(doc.querySelectorAll("img"));
-  const imagesWithoutAlt = images.filter(
-    (img) => !img.getAttribute("alt") && img.getAttribute("alt") !== ""
-  );
 
   const themeColor = getMeta(doc, "theme-color");
   const appleTouchIcon =
@@ -76,7 +71,76 @@ export function parseAudit(html: string, url: string): AuditResult {
     }
   }
 
+  const keywords = getMeta(doc, "keywords");
+  const publisher = getMeta(doc, "publisher");
+  const wordCount = (() => {
+    const bodyText = doc.body?.textContent ?? "";
+    const words = bodyText.trim().split(/\s+/).filter((w) => w.length > 0);
+    return words.length;
+  })();
+
+  const headingTags = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
+  const headings: HeadingItem[] = [];
+  const headingCounts: Record<string, number> = { h1: 0, h2: 0, h3: 0, h4: 0, h5: 0, h6: 0 };
+  for (const tag of headingTags) {
+    const els = doc.querySelectorAll(tag);
+    headingCounts[tag] = els.length;
+    for (const el of Array.from(els)) {
+      headings.push({ tag, text: (el.textContent ?? "").trim() });
+    }
+  }
+
+  const pageOrigin = (() => { try { return new URL(url).origin; } catch { return null; } })();
+  const internalLinks: LinkItem[] = [];
+  const externalLinks: LinkItem[] = [];
+  const seenHrefs = new Set<string>();
+  for (const a of Array.from(doc.querySelectorAll("a[href]"))) {
+    const href = a.getAttribute("href") ?? "";
+    if (!href || href.startsWith("#") || href.startsWith("javascript:") || href.startsWith("mailto:") || href.startsWith("tel:")) continue;
+    try {
+      const resolved = new URL(href, url);
+      const normalizedHref = resolved.href;
+      const item = { href: normalizedHref, text: (a.textContent ?? "").trim().slice(0, 120), rel: a.getAttribute("rel") };
+      if (pageOrigin && resolved.origin === pageOrigin) { internalLinks.push(item); } else { externalLinks.push(item); }
+      seenHrefs.add(normalizedHref);
+    } catch {
+      internalLinks.push({ href, text: (a.textContent ?? "").trim().slice(0, 120), rel: a.getAttribute("rel") });
+      seenHrefs.add(href);
+    }
+  }
+  const links = { total: internalLinks.length + externalLinks.length, unique: seenHrefs.size, internal: internalLinks.length, external: externalLinks.length, internalLinks, externalLinks };
+
+  const imageList = Array.from(doc.querySelectorAll("img")).map((img) => ({
+    src: img.getAttribute("src") ?? "",
+    alt: img.getAttribute("alt"),
+    title: img.getAttribute("title"),
+  }));
+  const imagesData = {
+    total: imageList.length,
+    withoutAlt: imageList.filter((i) => i.alt === null).length,
+    withoutTitle: imageList.filter((i) => i.title === null).length,
+    list: imageList,
+  };
+
+  const jsonLdSchemas = Array.from(doc.querySelectorAll('script[type="application/ld+json"]')).map((script) => {
+    const raw = script.textContent ?? "";
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      const first = Array.isArray(parsed) ? (parsed[0] as Record<string, unknown>) : (parsed as Record<string, unknown>);
+      const type = typeof first?.["@type"] === "string" ? first["@type"] : null;
+      return { raw, type, isValid: true, parsed };
+    } catch {
+      return { raw, type: null, isValid: false, parsed: null };
+    }
+  });
+
+  const hreflangLinks = Array.from(doc.querySelectorAll('link[rel="alternate"][hreflang]')).map((link) => ({
+    lang: link.getAttribute("hreflang") ?? "",
+    href: link.getAttribute("href") ?? "",
+  }));
+
   const seoFields: AuditField[] = [
+    { label: "URL", value: url, status: "pass" },
     ((): AuditField => {
       if (!titleText)
         return {
@@ -127,23 +191,36 @@ export function parseAudit(html: string, url: string): AuditResult {
           status: "warn",
           message: "No robots meta — search engines will use defaults",
         },
+    xRobotsTag
+      ? { label: "X-Robots-Tag", value: xRobotsTag, status: "pass" }
+      : { label: "X-Robots-Tag", value: null, status: "warn", message: "No X-Robots-Tag header found" },
+    keywords
+      ? { label: "Keywords", value: keywords, status: "pass" }
+      : { label: "Keywords", value: null, status: "warn", message: "No keywords meta tag" },
+    publisher
+      ? { label: "Publisher", value: publisher, status: "pass" }
+      : { label: "Publisher", value: null, status: "warn", message: "No publisher meta tag" },
     ((): AuditField => {
-      if (h1s.length === 0)
-        return {
-          label: "H1 Tag",
-          value: null,
-          status: "fail",
-          message: "No H1 found",
-        };
-      if (h1s.length > 1)
-        return {
-          label: "H1 Tag",
-          value: `${h1s.length} found`,
-          status: "warn",
-          message: `${h1s.length} H1 tags found (expected 1)`,
-        };
-      return { label: "H1 Tag", value: h1s[0]?.textContent ?? "", status: "pass" };
+      return {
+        label: "Word Count",
+        value: String(wordCount),
+        status: wordCount > 300 ? "pass" : wordCount > 0 ? "warn" : "fail",
+        message: wordCount <= 300 ? "Low word count — aim for 300+ words" : undefined,
+      };
     })(),
+    ((): AuditField => {
+      const count = headingCounts.h1 ?? 0;
+      if (count === 0)
+        return { label: "H1 Count", value: "0", status: "fail", message: "No H1 found" };
+      if (count > 1)
+        return { label: "H1 Count", value: String(count), status: "warn", message: `${count} H1 tags found (expected 1)` };
+      return { label: "H1 Count", value: String(count), status: "pass" };
+    })(),
+    { label: "H2 Count", value: String(headingCounts.h2 ?? 0), status: "pass" },
+    { label: "H3 Count", value: String(headingCounts.h3 ?? 0), status: "pass" },
+    { label: "H4 Count", value: String(headingCounts.h4 ?? 0), status: "pass" },
+    { label: "H5 Count", value: String(headingCounts.h5 ?? 0), status: "pass" },
+    { label: "H6 Count", value: String(headingCounts.h6 ?? 0), status: "pass" },
     ((): AuditField => {
       if (!htmlLang)
         return {
@@ -201,18 +278,18 @@ export function parseAudit(html: string, url: string): AuditResult {
           message: "No author meta tag",
         },
     ((): AuditField => {
-      if (images.length === 0)
+      if (imagesData.total === 0)
         return { label: "Image Alt Texts", value: "No images", status: "pass" };
-      if (imagesWithoutAlt.length > 0)
+      if (imagesData.withoutAlt > 0)
         return {
           label: "Image Alt Texts",
-          value: `${imagesWithoutAlt.length}/${images.length} missing`,
-          status: imagesWithoutAlt.length === images.length ? "fail" : "warn",
-          message: `${imagesWithoutAlt.length} image(s) missing alt attribute`,
+          value: `${imagesData.withoutAlt}/${imagesData.total} missing`,
+          status: imagesData.withoutAlt === imagesData.total ? "fail" : "warn",
+          message: `${imagesData.withoutAlt} image(s) missing alt attribute`,
         };
       return {
         label: "Image Alt Texts",
-        value: `${images.length} image(s) all have alt`,
+        value: `${imagesData.total} image(s) all have alt`,
         status: "pass",
       };
     })(),
@@ -293,5 +370,17 @@ export function parseAudit(html: string, url: string): AuditResult {
     auditedAt: new Date().toISOString(),
     seo: scoreCategory(seoFields),
     og: scoreCategory([...ogFields, ...twitterFields]),
+    details: {
+      wordCount,
+      keywords,
+      publisher,
+      xRobotsTag,
+      headings,
+      headingCounts,
+      links,
+      images: imagesData,
+      jsonLdSchemas,
+      hreflangLinks,
+    },
   };
 }

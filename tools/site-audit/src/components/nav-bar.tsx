@@ -10,14 +10,6 @@ interface NavBarProps {
 const TABS = [
   { to: "/", label: "OVERVIEW", end: true },
   { to: "/seo", label: "SEO", end: false },
-  {
-    to: "/og",
-    label: {
-      mobile: "OG",
-      default: "Open Graph",
-    },
-    end: false,
-  },
 ]
 
 function formatTimestamp(iso: string): string {
@@ -64,14 +56,7 @@ export function NavBar({ onRerun, auditedAt, loading }: NavBarProps) {
               ].join(" ")
             }
           >
-            {typeof label === "string" ? (
-              label
-            ) : (
-              <>
-                <span className="md:hidden">{label.mobile}</span>
-                <span className="hidden md:inline">{label.default}</span>
-              </>
-            )}
+            {label}
           </NavLink>
         ))}
       </div>

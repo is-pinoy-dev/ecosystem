@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noCommentText: <explanation> */
 interface OgPreviewsProps {
   ogImage: string | null
   ogTitle: string | null
@@ -22,7 +23,7 @@ function hostname(url: string | null): string | null {
 
 function PlatformLabel({ name }: { name: string }) {
   return (
-    <p className="font-pixel text-[9px] text-muted-foreground uppercase tracking-wider mb-1">
+    <p className="mb-1 font-pixel text-[9px] tracking-wider text-muted-foreground uppercase">
       {name}
     </p>
   )
@@ -31,12 +32,14 @@ function PlatformLabel({ name }: { name: string }) {
 function NoPreview() {
   return (
     <div className="border-2 border-dashed border-border px-3 py-4 text-center">
-      <p className="font-pixel text-[9px] text-muted-foreground">NO OG IMAGE SET</p>
+      <p className="font-pixel text-[9px] text-muted-foreground">
+        NO OG IMAGE SET
+      </p>
     </div>
   )
 }
 
-function FacebookCard({
+export function FacebookCard({
   image,
   title,
   description,
@@ -56,24 +59,30 @@ function FacebookCard({
       <img
         src={image}
         alt="og preview"
-        className="w-full aspect-[1.91/1] object-cover border-b-2 border-border"
+        className="aspect-[1.91/1] w-full border-b-2 border-border object-cover"
       />
-      <div className="px-3 py-2 space-y-0.5 bg-[#f0f2f5]">
+      <div className="space-y-0.5 bg-[#f0f2f5] px-3 py-2">
         {site && (
-          <p className="text-[10px] text-[#606770] uppercase tracking-wide">{site}</p>
+          <p className="text-[10px] tracking-wide text-[#606770] uppercase">
+            {site}
+          </p>
         )}
         {title && (
-          <p className="text-[12px] font-bold text-[#1c1e21] leading-snug line-clamp-2">{title}</p>
+          <p className="line-clamp-2 text-[12px] leading-snug font-bold text-[#1c1e21]">
+            {title}
+          </p>
         )}
         {description && (
-          <p className="text-[11px] text-[#606770] line-clamp-2">{description}</p>
+          <p className="line-clamp-2 text-[11px] text-[#606770]">
+            {description}
+          </p>
         )}
       </div>
     </div>
   )
 }
 
-function TwitterLargeCard({
+export function TwitterLargeCard({
   image,
   title,
   description,
@@ -90,24 +99,26 @@ function TwitterLargeCard({
       <img
         src={image}
         alt="twitter preview"
-        className="w-full aspect-[1.91/1] object-cover border-b-2 border-[#2f3336]"
+        className="aspect-[1.91/1] w-full border-b-2 border-[#2f3336] object-cover"
       />
-      <div className="px-3 py-2 space-y-0.5">
+      <div className="space-y-0.5 px-3 py-2">
         {title && (
-          <p className="text-[12px] font-bold text-white leading-snug line-clamp-1">{title}</p>
+          <p className="line-clamp-1 text-[12px] leading-snug font-bold text-white">
+            {title}
+          </p>
         )}
         {description && (
-          <p className="text-[11px] text-[#71767b] line-clamp-2">{description}</p>
+          <p className="line-clamp-2 text-[11px] text-[#71767b]">
+            {description}
+          </p>
         )}
-        {site && (
-          <p className="text-[10px] text-[#71767b]">{site}</p>
-        )}
+        {site && <p className="text-[10px] text-[#71767b]">{site}</p>}
       </div>
     </div>
   )
 }
 
-function TwitterSummaryCard({
+export function TwitterSummaryCard({
   image,
   title,
   description,
@@ -119,30 +130,32 @@ function TwitterSummaryCard({
   site: string | null
 }) {
   return (
-    <div className="border-2 border-[#2f3336] bg-black shadow-[3px_3px_0_var(--color-foreground)] flex gap-3 p-3">
+    <div className="flex gap-3 border-2 border-[#2f3336] bg-black p-3 shadow-[3px_3px_0_var(--color-foreground)]">
       {image && (
         <img
           src={image}
           alt="twitter summary preview"
-          className="w-16 h-16 object-cover shrink-0 border-2 border-[#2f3336]"
+          className="h-16 w-16 shrink-0 border-2 border-[#2f3336] object-cover"
         />
       )}
       <div className="min-w-0 space-y-0.5">
         {title && (
-          <p className="text-[12px] font-bold text-white leading-snug line-clamp-1">{title}</p>
+          <p className="line-clamp-1 text-[12px] leading-snug font-bold text-white">
+            {title}
+          </p>
         )}
         {description && (
-          <p className="text-[11px] text-[#71767b] line-clamp-2">{description}</p>
+          <p className="line-clamp-2 text-[11px] text-[#71767b]">
+            {description}
+          </p>
         )}
-        {site && (
-          <p className="text-[10px] text-[#71767b]">{site}</p>
-        )}
+        {site && <p className="text-[10px] text-[#71767b]">{site}</p>}
       </div>
     </div>
   )
 }
 
-function LinkedInCard({
+export function LinkedInCard({
   image,
   title,
   siteName,
@@ -160,14 +173,18 @@ function LinkedInCard({
       <img
         src={image}
         alt="linkedin preview"
-        className="w-full aspect-[1.91/1] object-cover border-b-2 border-[#d0ccc8]"
+        className="aspect-[1.91/1] w-full border-b-2 border-[#d0ccc8] object-cover"
       />
-      <div className="px-3 py-2 space-y-0.5 bg-[#edf3f8]">
+      <div className="space-y-0.5 bg-[#edf3f8] px-3 py-2">
         {title && (
-          <p className="text-[12px] font-bold text-[#000000e6] leading-snug line-clamp-2">{title}</p>
+          <p className="line-clamp-2 text-[12px] leading-snug font-bold text-[#000000e6]">
+            {title}
+          </p>
         )}
         {site && (
-          <p className="text-[10px] text-[#00000099] uppercase tracking-wide">{site}</p>
+          <p className="text-[10px] tracking-wide text-[#00000099] uppercase">
+            {site}
+          </p>
         )}
       </div>
     </div>
@@ -193,21 +210,25 @@ function DiscordCard({
       className="border-2 border-[#1e1f22] bg-[#2b2d31] shadow-[3px_3px_0_var(--color-foreground)]"
       style={{ borderLeft: "4px solid #5865f2" }}
     >
-      <div className="px-3 py-2 space-y-1">
+      <div className="space-y-1 px-3 py-2">
         {site && (
-          <p className="text-[10px] text-[#5865f2] font-semibold">{site}</p>
+          <p className="text-[10px] font-semibold text-[#5865f2]">{site}</p>
         )}
         {title && (
-          <p className="text-[12px] font-bold text-[#5865f2] leading-snug line-clamp-2">{title}</p>
+          <p className="line-clamp-2 text-[12px] leading-snug font-bold text-[#5865f2]">
+            {title}
+          </p>
         )}
         {description && (
-          <p className="text-[11px] text-[#dbdee1] line-clamp-3">{description}</p>
+          <p className="line-clamp-3 text-[11px] text-[#dbdee1]">
+            {description}
+          </p>
         )}
         {image && (
           <img
             src={image}
             alt="discord preview"
-            className="w-full aspect-[1.91/1] object-cover mt-2 border-2 border-[#1e1f22]"
+            className="mt-2 aspect-[1.91/1] w-full border-2 border-[#1e1f22] object-cover"
           />
         )}
       </div>
@@ -233,10 +254,10 @@ export function OgPreviews({
   const isLargeCard = !twitterCard || twitterCard === "summary_large_image"
 
   return (
-    <div className="space-y-3">
-      <p className="font-pixel text-[11px] text-muted-foreground">// SOCIAL PREVIEWS</p>
+    <div className="mt-20 space-y-4">
+      <p className="font-pixel text-[11px] text-primary">// SOCIAL PREVIEWS</p>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div>
           <PlatformLabel name="Facebook" />
           <FacebookCard
@@ -249,7 +270,9 @@ export function OgPreviews({
         </div>
 
         <div>
-          <PlatformLabel name={`Twitter / X — ${isLargeCard ? "large card" : "summary"}`} />
+          <PlatformLabel
+            name={`Twitter / X — ${isLargeCard ? "large card" : "summary"}`}
+          />
           {isLargeCard ? (
             <TwitterLargeCard
               image={twImage}

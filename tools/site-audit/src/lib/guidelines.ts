@@ -1,6 +1,38 @@
 type Guideline = { guideline: string; impact: string }
 
 export const GUIDELINES: Record<string, Guideline> = {
+  "URL": {
+    guideline: "The page URL should be clean, descriptive, and use hyphens as separators.",
+    impact: "Clean URLs improve click-through rates in search results and are easier to share.",
+  },
+  "X-Robots-Tag": {
+    guideline: "The X-Robots-Tag HTTP response header controls indexing at the server level.",
+    impact: "Takes precedence over meta robots for server-rendered responses; useful for non-HTML resources.",
+  },
+  "Keywords": {
+    guideline: "The keywords meta is largely ignored by Google but may be used by other search engines.",
+    impact: "Minimal SEO impact today but can help with internal site search and legacy systems.",
+  },
+  "Publisher": {
+    guideline: "Add <meta name=\"publisher\" content=\"...\"> to identify the publishing organisation.",
+    impact: "Contributes to E-E-A-T signals and is used by some aggregators and news sites.",
+  },
+  "Word Count": {
+    guideline: "Aim for at least 300 words of meaningful content per page.",
+    impact: "Longer, high-quality content tends to rank better — Google uses content depth as a quality signal.",
+  },
+  "H1 Count": {
+    guideline: "Every page should have exactly one H1 that matches the page topic.",
+    impact: "The H1 is a strong relevance signal for search engines.",
+  },
+  "H2 Count": {
+    guideline: "Use H2 headings to organise major sections of the page.",
+    impact: "Structured headings help search engines understand content hierarchy.",
+  },
+  "H3 Count": { guideline: "Use H3 headings for sub-sections within H2 sections.", impact: "Contributes to content hierarchy and readability signals." },
+  "H4 Count": { guideline: "Use H4 for deeper nesting when necessary.", impact: "Rarely impacts SEO directly but supports content structure." },
+  "H5 Count": { guideline: "Use H5 sparingly — deep nesting can reduce clarity.", impact: "Minimal SEO impact." },
+  "H6 Count": { guideline: "Use H6 only when deeper nesting is truly needed.", impact: "Minimal SEO impact." },
   // SEO — existing
   "Title": {
     guideline: "Should be 10–60 characters and describe the page clearly.",
