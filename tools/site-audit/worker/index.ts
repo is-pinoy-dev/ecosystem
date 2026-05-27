@@ -22,9 +22,17 @@ export default {
     const assetUrl = url.toString();
     console.log("[site-audit] asset lookup", assetUrl);
 
-    const assetResponse = await env.ASSETS.fetch(new Request(assetUrl, request));
-    console.log("[site-audit] asset status", assetResponse.status);
-    if (assetResponse.status !== 404) return assetResponse;
+    if (!env.ASSETS) {
+      console.error("[site-audit] ASSETS binding not available — check wrangler.toml binding = 'ASSETS'");
+    } else {
+      try {
+        const assetResponse = await env.ASSETS.fetch(new Request(assetUrl, request));
+        console.log("[site-audit] asset status", assetResponse.status);
+        if (assetResponse.status !== 404) return assetResponse;
+      } catch (assetErr) {
+        console.error("[site-audit] ASSETS fetch threw:", assetErr instanceof Error ? assetErr.message : String(assetErr));
+      }
+    }
 
     console.log("[site-audit] falling through to React Router");
     try {
