@@ -42,14 +42,14 @@ export function IssueList({ seo, og }: IssueListProps) {
           >
             <StatusBadge status={issue.status} />
             <div className="min-w-0 flex-1">
-              <p className="font-pixel text-[11px] text-foreground">
+              <p className="text-[11px] text-foreground">
                 <span className="text-muted-foreground">
                   [{issue.category}]
                 </span>{" "}
                 {issue.label}
               </p>
               {issue.message && (
-                <p className="mt-1 font-pixel text-[11px] text-muted-foreground">
+                <p className="mt-1 font-mono text-[11px] text-muted-foreground">
                   {issue.message}
                 </p>
               )}

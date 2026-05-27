@@ -1,14 +1,14 @@
 @import "@is-pinoy-dev/ui/globals.css";
-@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400&display=swap");
+@import "@fontsource/press-start-2p/400.css";
+@import "@fontsource/ibm-plex-mono/400.css";
 
-/* Resolve the font variables that Next.js would normally inject */
-:root {
+@source "../**/*.{ts,tsx}";
+
+@theme inline {
   --font-pixel: "Press Start 2P", monospace;
   --font-sans: "IBM Plex Mono", monospace;
   --font-mono: "IBM Plex Mono", monospace;
 }
-
-@source "../**/*.{ts,tsx}";
 
 /* Scanline overlay */
 body::after {

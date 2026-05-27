@@ -499,15 +499,18 @@ importers:
 
   tools/site-audit:
     dependencies:
+      '@fontsource/ibm-plex-mono':
+        specifier: ^5.2.7
+        version: 5.2.7
+      '@fontsource/press-start-2p':
+        specifier: ^5.2.7
+        version: 5.2.7
       '@is-pinoy-dev/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
       '@is-pinoy-dev/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@react-router/cloudflare':
-        specifier: ^7.15.1
-        version: 7.15.1(@cloudflare/workers-types@4.20260527.1)(react-router@7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(typescript@6.0.3)
       '@react-router/node':
         specifier: 7.15.1
         version: 7.15.1(react-router@7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(typescript@6.0.3)
@@ -530,6 +533,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^4.20260527.1
         version: 4.20260527.1
+      '@react-router/cloudflare':
+        specifier: 7.15.1
+        version: 7.15.1(@cloudflare/workers-types@4.20260527.1)(react-router@7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(typescript@6.0.3)
       '@react-router/dev':
         specifier: 7.15.1
         version: 7.15.1(@react-router/serve@7.15.1(react-router@7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(typescript@6.0.3))(@types/node@25.9.1)(jiti@2.6.1)(lightningcss@1.32.0)(react-router@7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(tsx@4.21.0)(typescript@6.0.3)(vite@8.0.14(@types/node@25.9.1)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0))(wrangler@4.95.0(@cloudflare/workers-types@4.20260527.1))
@@ -1223,6 +1229,12 @@ packages:
 
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
+
+  '@fontsource/ibm-plex-mono@5.2.7':
+    resolution: {integrity: sha512-MKAb8qV+CaiMQn2B0dIi1OV3565NYzp3WN5b4oT6LTkk+F0jR6j0ZN+5BKJiIhffDC3rtBULsYZE65+0018z9w==}
+
+  '@fontsource/press-start-2p@5.2.7':
+    resolution: {integrity: sha512-ezSxYRchANoteja170ZHh2Tt4oejmVEvX42VFPOVVvERSZ68pcuZFjbhHfrK/sNjYmaGg656y7B3431ojO9PCQ==}
 
   '@fumadocs/tailwind@0.0.5':
     resolution: {integrity: sha512-ENKPWUDRmriccsrUDE4bDBq3FNr/ms3BP2rWlsAEMV1yP23pcCaan+ceGfeBUsAQjw7sj9Q3R4Kl3g/TCStPzQ==}
@@ -7788,6 +7800,10 @@ snapshots:
       react-dom: 19.2.6(react@19.2.6)
 
   '@floating-ui/utils@0.2.11': {}
+
+  '@fontsource/ibm-plex-mono@5.2.7': {}
+
+  '@fontsource/press-start-2p@5.2.7': {}
 
   '@fumadocs/tailwind@0.0.5(@tailwindcss/oxide@4.3.0)(tailwindcss@4.3.0)':
     optionalDependencies:

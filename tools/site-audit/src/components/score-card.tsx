@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noCommentText: <explanation> */
 import { useEffect, useState } from "react"
 import type { AuditCategory } from "@is-pinoy-dev/schemas"
 
@@ -9,7 +10,10 @@ interface ScoreCardProps {
 
 type ScoreLevel = "pass" | "warn" | "fail"
 
-const SCORE_STYLES: Record<ScoreLevel, { border: string; text: string; shadow: string; bar: string }> = {
+const SCORE_STYLES: Record<
+  ScoreLevel,
+  { border: string; text: string; shadow: string; bar: string }
+> = {
   pass: {
     border: "border-green-400",
     text: "text-green-400",
@@ -77,7 +81,11 @@ function ProgressBar({ value, level }: { value: number; level: ScoreLevel }) {
   )
 }
 
-export function ScoreCard({ label, category, size = "default" }: ScoreCardProps) {
+export function ScoreCard({
+  label,
+  category,
+  size = "default",
+}: ScoreCardProps) {
   const passed = category.fields.filter((f) => f.status === "pass").length
   const total = category.fields.length
   const level = getScoreLevel(category.score)
@@ -90,14 +98,16 @@ export function ScoreCard({ label, category, size = "default" }: ScoreCardProps)
       style={{ boxShadow: shadow }}
     >
       <p className="font-pixel text-[11px] tracking-widest text-muted-foreground uppercase">
-        {label}
+        // {label}
       </p>
-      <p className={`font-pixel ${size === "large" ? "text-6xl" : "text-4xl"} ${text}`}>
+      <p
+        className={`font-pixel ${size === "large" ? "text-6xl" : "text-4xl"} ${text}`}
+      >
         {count}
         <span className={size === "large" ? "text-2xl" : "text-lg"}>%</span>
       </p>
       <ProgressBar value={category.score} level={level} />
-      <p className="font-pixel text-[11px] text-muted-foreground">
+      <p className="text-[11px] text-muted-foreground">
         {passed}/{total} CHECKS PASSED
       </p>
     </div>

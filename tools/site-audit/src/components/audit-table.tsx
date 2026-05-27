@@ -23,10 +23,8 @@ export function AuditTable({ fields }: AuditTableProps) {
             key={field.label}
             className="grid grid-cols-[1fr_2fr_auto] items-center gap-4 px-4 py-3"
           >
-            <p className="font-pixel text-[11px] text-foreground">
-              {field.label}
-            </p>
-            <p className="font-pixel text-[11px] break-all text-muted-foreground">
+            <p className="text-[11px] text-foreground">{field.label}</p>
+            <p className="font-mono text-[11px] break-all text-muted-foreground">
               {field.value ? (
                 truncate(field.value)
               ) : (
