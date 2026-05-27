@@ -17,4 +17,6 @@ export const RESERVED_SUBDOMAINS = [
   "blog",
   "docs",
   "forum",
+  // Platform tooling namespace — /_tools/* paths are intercepted by Cloudflare Workers
+  "_tools",
 ];
