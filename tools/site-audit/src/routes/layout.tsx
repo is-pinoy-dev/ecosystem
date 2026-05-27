@@ -24,7 +24,7 @@ export default function Layout() {
       : window.location.origin;
     try {
       const res = await fetch(
-        `/audit-proxy?url=${encodeURIComponent(target)}`,
+        `/_tools/site-audit/audit-proxy?url=${encodeURIComponent(target)}`,
         signal ? { signal } : undefined
       );
       if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
