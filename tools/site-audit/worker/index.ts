@@ -4,12 +4,13 @@ import * as build from "../build/server";
 
 const handleRequest = createRequestHandler({
   build,
-  getLoadContext: ({ request, context }) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getLoadContext: ({ request, context }: any) => ({
     cloudflare: {
       env: context.cloudflare.env,
-      cf: (request as Request & { cf?: IncomingRequestCfProperties }).cf,
+      cf: request.cf,
       ctx: context.cloudflare.ctx,
-      caches: typeof caches !== "undefined" ? caches : undefined,
+      caches,
     },
   }),
 });
@@ -150,7 +151,8 @@ export default {
 
     try {
       const cfContext = {
-        request: request as Request & { cf?: IncomingRequestCfProperties },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        request: request as any,
         functionPath: "",
         waitUntil: ctx.waitUntil.bind(ctx),
         passThroughOnException: ctx.passThroughOnException.bind(ctx),
