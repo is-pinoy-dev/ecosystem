@@ -1,0 +1,44 @@
+name: Deploy site-audit
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/site-audit/**"
+      - "packages/ui/**"
+      - "packages/schemas/**"
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare Workers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace dependencies
+        run: pnpm --filter @is-pinoy-dev/schemas build && pnpm --filter @is-pinoy-dev/ui build
+
+      - name: Deploy
+        working-directory: tools/site-audit
+        run: pnpm deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
