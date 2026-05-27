@@ -9,8 +9,7 @@ const STATUS_STYLES: Record<AuditField["status"], string> = {
 export function StatusBadge({ status }: { status: AuditField["status"] }) {
   return (
     <span
-      className={`px-2 py-1 text-[11px] whitespace-nowrap ${STATUS_STYLES[status]}`}
-      style={{ boxShadow: "2px 2px 0 var(--color-foreground)" }}
+      className={`px-2 py-1 text-[11px] whitespace-nowrap shadow-[2px_2px_0_var(--color-foreground)] ${STATUS_STYLES[status]}`}
     >
       {status.toUpperCase()}
     </span>
