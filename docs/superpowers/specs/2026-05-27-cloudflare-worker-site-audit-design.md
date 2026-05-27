@@ -34,12 +34,12 @@ Registers two Cloudflare routes and binds the client build as static assets.
 
 ```toml
 name = "site-audit"
-main = "worker/index.ts"
+main = "index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]
-directory = "./build/client"
+directory = "../build/client"
 
 [[routes]]
 pattern = "is-pinoy.dev/_tools/site-audit*"
@@ -68,6 +68,30 @@ if (!import.meta.env.DEV) { /* SSRF check */ }
 if (import.meta.env.MODE !== "development") { /* SSRF check */ }
 ```
 
+### `src/routes.ts`
+
+Move the audit-proxy route under the `/_tools/site-audit` prefix so the Worker intercepts it:
+
+```ts
+// before
+route("/audit-proxy", "routes/audit-proxy.tsx"),
+
+// after
+route("/_tools/site-audit/audit-proxy", "routes/audit-proxy.tsx"),
+```
+
+### `src/routes/layout.tsx`
+
+Update the fetch URL to match the new route:
+
+```ts
+// before
+fetch(`/audit-proxy?url=${encodeURIComponent(target)}`, ...)
+
+// after
+fetch(`/_tools/site-audit/audit-proxy?url=${encodeURIComponent(target)}`, ...)
+```
+
 ### `package.json`
 
 - Add `@react-router/cloudflare` to `dependencies`
@@ -81,14 +105,19 @@ if (import.meta.env.MODE !== "development") { /* SSRF check */ }
 2. Cloudflare route match: *.is-pinoy.dev/_tools/site-audit*
 3. Worker → createRequestHandler → React Router SSR renders layout shell
 4. HTML → browser, React hydrates
-5. layout.tsx useEffect → fetch /audit-proxy?url=https://john.is-pinoy.dev
+5. layout.tsx useEffect → fetch /_tools/site-audit/audit-proxy?url=https://john.is-pinoy.dev
    (window.location.origin = https://john.is-pinoy.dev)
-6. Worker intercepts /audit-proxy → audit-proxy.tsx loader runs on Cloudflare edge
+6. Worker intercepts /_tools/site-audit/audit-proxy → audit-proxy.tsx loader runs on Cloudflare edge
 7. Edge fetches https://john.is-pinoy.dev → parses HTML → returns to client
 8. Client renders audit dashboard
 ```
 
-The `/_tools/site-audit` path prefix is matched by the Wrangler route pattern. React Router sees the full path and serves accordingly — no route config changes needed.
+**Important:** The client fetch for the audit proxy must be under the `/_tools/site-audit*` route pattern so the Worker intercepts it. The `/audit-proxy` route is moved to `/_tools/site-audit/audit-proxy` — this requires two small changes:
+
+- `src/routes.ts`: change `route("/audit-proxy", ...)` → `route("/_tools/site-audit/audit-proxy", ...)`
+- `src/routes/layout.tsx`: change the fetch URL from `/audit-proxy?url=...` → `/_tools/site-audit/audit-proxy?url=...`
+
+Without this, the client-side fetch to `/audit-proxy` would hit the subdomain's actual site instead of the Worker.
 
 ## Error Handling
 
