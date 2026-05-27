@@ -41,8 +41,8 @@ export async function loader({ request }: Route.LoaderArgs) {
     const slice = buffer.byteLength > MAX_BYTES ? buffer.slice(0, MAX_BYTES) : buffer;
     const html = new TextDecoder().decode(slice);
 
-    return new Response(html, {
-      headers: { "Content-Type": "text/html" },
+    return new Response(JSON.stringify({ html, xRobotsTag: response.headers.get("x-robots-tag") }), {
+      headers: { "Content-Type": "application/json" },
     });
   } catch {
     return new Response("Failed to fetch target URL", { status: 502 });

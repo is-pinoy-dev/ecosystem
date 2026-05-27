@@ -8,7 +8,7 @@ import type { AuditCategory } from "@is-pinoy-dev/schemas"
 export function meta() {
   return [
     { title: "Overview — Site Audit | is-pinoy.dev" },
-    { name: "description", content: "SEO and OpenGraph audit overview" },
+    { name: "description", content: "SEO and social audit overview" },
   ]
 }
 
@@ -54,9 +54,9 @@ export default function Overview() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <ScoreCard label="Overall Score" category={overall} size="large" />
         <ScoreCard label="SEO" category={seo} />
-        <ScoreCard label="Open Graph" category={og} />
+        <ScoreCard label="Social" category={og} />
       </div>
-      <IssueList seo={seo} og={og} />
+      <IssueList seo={seo} og={og} limit={5} />
     </div>
   )
 }
