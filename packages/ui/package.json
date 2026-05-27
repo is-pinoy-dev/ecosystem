@@ -35,7 +35,10 @@
     "typescript": "catalog:"
   },
   "exports": {
-    "./globals.css": "./src/styles/globals.css",
+    "./globals.css": {
+      "types": "./globals.css.d.ts",
+      "default": "./src/styles/globals.css"
+    },
     "./postcss.config": "./postcss.config.mjs",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
