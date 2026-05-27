@@ -47,6 +47,30 @@ export function parseAudit(html: string, url: string): AuditResult {
     (img) => !img.getAttribute("alt") && img.getAttribute("alt") !== ""
   );
 
+  const themeColor = getMeta(doc, "theme-color");
+  const appleTouchIcon =
+    doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href") ?? null;
+  const manifest =
+    doc.querySelector('link[rel="manifest"]')?.getAttribute("href") ?? null;
+  const hreflang =
+    doc.querySelector('link[rel="alternate"][hreflang]')?.getAttribute("hreflang") ?? null;
+  const preloadHint =
+    doc.querySelector('link[rel="preload"]')?.getAttribute("href") ?? null;
+
+  const jsonLdScript = doc.querySelector('script[type="application/ld+json"]');
+  const jsonLdText = jsonLdScript?.textContent ?? null;
+  let jsonLdType: string | null = null;
+  let jsonLdIsValid = false;
+  if (jsonLdText) {
+    try {
+      const parsed = JSON.parse(jsonLdText) as Record<string, unknown>;
+      jsonLdIsValid = true;
+      jsonLdType = typeof parsed["@type"] === "string" ? parsed["@type"] : null;
+    } catch {
+      jsonLdIsValid = false;
+    }
+  }
+
   const seoFields: AuditField[] = [
     ((): AuditField => {
       if (!titleText)
@@ -186,6 +210,36 @@ export function parseAudit(html: string, url: string): AuditResult {
         value: `${images.length} image(s) all have alt`,
         status: "pass",
       };
+    })(),
+    themeColor
+      ? { label: "theme-color", value: themeColor, status: "pass" }
+      : { label: "theme-color", value: null, status: "fail", message: "Missing theme-color meta tag" },
+    appleTouchIcon
+      ? { label: "apple-touch-icon", value: appleTouchIcon, status: "pass" }
+      : { label: "apple-touch-icon", value: null, status: "fail", message: "Missing apple-touch-icon link" },
+    manifest
+      ? { label: "manifest", value: manifest, status: "pass" }
+      : { label: "manifest", value: null, status: "fail", message: "Missing web app manifest link" },
+    hreflang
+      ? { label: "hreflang", value: hreflang, status: "pass" }
+      : { label: "hreflang", value: null, status: "warn", message: "No hreflang alternate links — add if serving multiple languages/regions" },
+    preloadHint
+      ? { label: "preload hints", value: preloadHint, status: "pass" }
+      : { label: "preload hints", value: null, status: "warn", message: "No preload hints found — consider preloading critical fonts or images" },
+    ((): AuditField => {
+      const KNOWN_TYPES = ["Article", "FAQPage", "Product", "WebSite", "Organization", "LocalBusiness", "BreadcrumbList"];
+      if (!jsonLdText)
+        return { label: "JSON-LD type", value: null, status: "fail", message: "No JSON-LD found — add structured data first" };
+      if (!jsonLdType || !KNOWN_TYPES.includes(jsonLdType))
+        return { label: "JSON-LD type", value: jsonLdType ?? "unknown", status: "warn", message: `@type "${jsonLdType ?? "not set"}" is not a recognised rich-result type` };
+      return { label: "JSON-LD type", value: jsonLdType, status: "pass" };
+    })(),
+    ((): AuditField => {
+      if (!jsonLdText)
+        return { label: "JSON-LD valid", value: null, status: "fail", message: "No JSON-LD script found" };
+      if (!jsonLdIsValid)
+        return { label: "JSON-LD valid", value: null, status: "fail", message: "JSON-LD script contains invalid JSON" };
+      return { label: "JSON-LD valid", value: "Valid JSON", status: "pass" };
     })(),
   ];
 
