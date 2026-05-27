@@ -46,7 +46,13 @@ export async function handleSync(
 
   warning(`${actions.length} change(s) to apply:`);
   divider();
-  printActionTable(actions);
+  printActionTable(
+    actions.map((a) => ({
+      type: a.type,
+      fqdn: a.fqdn,
+      details: "record" in a ? `${a.record.type} ${a.record.value}` : undefined,
+    })),
+  );
   divider();
 
   if (dryRun) {

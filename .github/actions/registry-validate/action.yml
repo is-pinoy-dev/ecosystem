@@ -11,6 +11,12 @@ inputs:
   github-token:
     description: GitHub token with pull-requests:write permission.
     required: true
+  cloudflare-api-token:
+    description: Cloudflare API token. Required to run sync dry-run after validation.
+    required: false
+  cloudflare-zone-id:
+    description: Cloudflare zone ID. Required to run sync dry-run after validation.
+    required: false
 
 runs:
   using: composite
@@ -59,6 +65,28 @@ runs:
         gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md --edit-last 2>/dev/null \
           || gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md
 
+    - name: Run sync dry-run
+      id: dry-run
+      if: steps.validate.outputs.failed == 'false' && inputs.cloudflare-api-token != '' && inputs.cloudflare-zone-id != ''
+      shell: bash
+      run: |
+        set +e
+        OUTPUT=$(is-pinoy registry sync --dir "$INPUT_DIR" --dry-run 2>&1)
+        set -e
+
+        CLEAN=$(printf '%s' "$OUTPUT" | sed 's/\x1b\[[0-9;]*[mGKHFJ]//g')
+
+        DELIM="ghadelimiter_$(head -c 8 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 8)"
+        {
+          echo "output<<$DELIM"
+          printf '%s\n' "$CLEAN"
+          echo "$DELIM"
+        } >> "$GITHUB_OUTPUT"
+      env:
+        INPUT_DIR: ${{ inputs.dir }}
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ZONE_ID: ${{ inputs.cloudflare-zone-id }}
+
     - name: Update comment on success
       if: steps.validate.outputs.failed == 'false' && github.event_name == 'pull_request'
       shell: bash
@@ -66,8 +94,15 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
         REPO: ${{ github.repository }}
+        DRY_RUN_OUTPUT: ${{ steps.dry-run.outputs.output }}
       run: |
-        printf '## ✅ Subdomain Validation Passed\n\nAll subdomain files are valid.' > /tmp/pr-comment.md
+        {
+          printf '## ✅ Subdomain Validation Passed\n\nAll subdomain files are valid.\n'
+          if [ -n "$DRY_RUN_OUTPUT" ]; then
+            printf '\n### 🔍 Sync Dry-Run\n\n'
+            printf '```\n%s\n```\n' "$DRY_RUN_OUTPUT"
+          fi
+        } > /tmp/pr-comment.md
         gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md \
           --edit-last 2>/dev/null || true
 
