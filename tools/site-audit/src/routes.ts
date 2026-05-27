@@ -6,5 +6,5 @@ export default [
     route("/seo", "routes/seo.tsx"),
     route("/og", "routes/og.tsx"),
   ]),
-  route("/_tools/site-audit/audit-proxy", "routes/audit-proxy.tsx"),
+  route("/audit-proxy", "routes/audit-proxy.tsx"),
 ] satisfies RouteConfig;
