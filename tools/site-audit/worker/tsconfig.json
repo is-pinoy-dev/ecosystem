@@ -4,5 +4,5 @@
     "types": ["@cloudflare/workers-types"]
   },
   "include": ["./**/*"],
-  "exclude": []
+  "exclude": ["node_modules"]
 }

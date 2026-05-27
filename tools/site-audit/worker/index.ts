@@ -7,9 +7,9 @@ const handler = createRequestHandler({ build });
 export interface Env {}
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  fetch(request: Request, env: Env, ctx: ExecutionContext): Response | Promise<Response> {
     return handler({
-      request: request as unknown as EventContext<Env, string, Record<string, unknown>>["request"],
+      request: request as Request & { cf?: IncomingRequestCfProperties },
       functionPath: "",
       waitUntil: ctx.waitUntil.bind(ctx),
       passThroughOnException: ctx.passThroughOnException.bind(ctx),
