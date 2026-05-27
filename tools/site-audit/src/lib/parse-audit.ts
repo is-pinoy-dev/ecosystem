@@ -54,8 +54,12 @@ export function parseAudit(html: string, url: string): AuditResult {
     doc.querySelector('link[rel="manifest"]')?.getAttribute("href") ?? null;
   const hreflang =
     doc.querySelector('link[rel="alternate"][hreflang]')?.getAttribute("hreflang") ?? null;
-  const preloadHint =
-    doc.querySelector('link[rel="preload"]')?.getAttribute("href") ?? null;
+  const preloadHints = doc.querySelectorAll('link[rel="preload"]');
+  const preloadHint = preloadHints.length > 0
+    ? preloadHints.length === 1
+      ? (preloadHints[0]?.getAttribute("href") ?? "1 preload hint found")
+      : `${preloadHints.length} preload hints found`
+    : null;
 
   const jsonLdScript = doc.querySelector('script[type="application/ld+json"]');
   const jsonLdText = jsonLdScript?.textContent ?? null;
@@ -63,9 +67,10 @@ export function parseAudit(html: string, url: string): AuditResult {
   let jsonLdIsValid = false;
   if (jsonLdText) {
     try {
-      const parsed = JSON.parse(jsonLdText) as Record<string, unknown>;
+      const parsed = JSON.parse(jsonLdText) as Record<string, unknown> | unknown[];
       jsonLdIsValid = true;
-      jsonLdType = typeof parsed["@type"] === "string" ? parsed["@type"] : null;
+      const first = Array.isArray(parsed) ? (parsed[0] as Record<string, unknown>) : parsed;
+      jsonLdType = typeof first["@type"] === "string" ? first["@type"] : null;
     } catch {
       jsonLdIsValid = false;
     }
