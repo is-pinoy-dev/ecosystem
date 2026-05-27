@@ -39,6 +39,6 @@ jobs:
 
       - name: Deploy
         working-directory: tools/site-audit
-        run: pnpm deploy
+        run: pnpm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
