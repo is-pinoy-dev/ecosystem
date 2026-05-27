@@ -1,43 +1,98 @@
 ## 1. Acceptance of Terms
 
-By registering or using a subdomain on **is-pinoy.dev**, you agree to be bound by these Terms of Service. If you do not agree, do not use this service.
+By registering or using a subdomain on **is-pinoy.dev**, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service ("Terms"). If you do not agree, you may not use this service.
 
-## 2. What We Provide
+For questions or concerns about these Terms, open an issue at [github.com/is-pinoy-dev](https://github.com/is-pinoy-dev).
 
-is-pinoy.dev offers free `yourname.is-pinoy.dev` subdomains for developers. This is a community-operated service run by the **is-pinoy-dev** open source organization on GitHub. We provide no uptime guarantee, SLA, or warranty of any kind. The service may be modified, suspended, or discontinued at any time.
+## 2. Eligibility
 
-## 3. Who Can Use This
+To use is-pinoy.dev, you must:
 
-The service is open to all developers who agree to these terms. You do not need to be Filipino to register — but you do need to be a developer using the subdomain for a real project.
+- Be at least 13 years old
+- Register the subdomain to an **individual** GitHub account — organizations may not be the registered owner of a subdomain
+- Use the service for lawful purposes only
+- Provide accurate and truthful information when registering
 
-## 4. Subdomain Rules
+By using is-pinoy.dev, you represent and warrant that you meet these requirements.
+
+## 3. What We Provide
+
+is-pinoy.dev offers free `yourname.is-pinoy.dev` subdomains to developers. This is a community-operated service run by the **is-pinoy-dev** open source organization on GitHub. We provide no uptime guarantee, SLA, or warranty of any kind. The service may be modified, suspended, or discontinued at any time.
+
+## 4. Acceptable Use
+
+Subdomains must point to a real developer project — a portfolio, open source tool, personal API, or similar. Commercial, for-profit, and political use is not permitted.
 
 You may **not** register or use a subdomain for:
 
+- Illegal activities of any kind
 - Impersonating any person, brand, company, or organization
-- Phishing, malware distribution, spam, or any illegal activity
+- Phishing, malware distribution, spam, or unsolicited communications
+- Content that is hateful, abusive, discriminatory, or promotes violence
+- Sexually explicit material
+- Cryptocurrency or blockchain mining
+- Proxy or VPN services unrelated to your developer project
 - Squatting — registering names you do not actively use within 30 days of registration
-- Content that is hateful, abusive, or violates applicable law
-- Reserved system names (e.g. `www`, `api`, `mail`, `admin`, `help`, `support`, `status`)
+- Degrading the performance or availability of the service or its infrastructure
+- Abusive automation against the service
 
-Your subdomain must point to a real developer project: a portfolio, application, API, open source tool, or similar.
+This list is not exhaustive and may be updated at any time at our discretion. You must also comply with [GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service) where applicable.
 
-## 5. Registration Process
+Violation of this section may result in immediate subdomain removal without notice.
 
-Subdomains are registered by opening a pull request to the [is-pinoy-dev/domains](https://github.com/is-pinoy-dev/domains) GitHub repository. Maintainers may reject any request at their discretion, including names deemed inappropriate, misleading, or in conflict with existing entries. There is no appeal process.
+## 5. Reserved Names and Paths
 
-## 6. Revocation
+Certain subdomain names are reserved for platform use and may not be registered. This includes but is not limited to: `www`, `api`, `admin`, `auth`, `app`, `dashboard`, `status`, `docs`, `blog`, `cdn`, `_tools`, and other system names.
 
-The is-pinoy-dev maintainers reserve the right to remove any subdomain at any time, with or without prior notice, if it violates these terms or is otherwise deemed harmful to the community or the service.
+The path prefix `/_tools/` is reserved across all subdomains for platform-operated tooling. Requests to `yourname.is-pinoy.dev/_tools/*` are handled by is-pinoy.dev infrastructure and are never forwarded to your origin, regardless of your DNS configuration.
 
-## 7. No Warranty
+## 6. Registration Process
 
-This service is provided **as-is**, with no guarantees of availability, reliability, or continued operation. The is-pinoy-dev organization and its contributors are not liable for any direct, indirect, or consequential damages arising from your use of, or inability to use, this service.
+Subdomains are registered by opening a pull request to the [is-pinoy-dev/domains](https://github.com/is-pinoy-dev/domains) repository. Maintainers may reject any request at their discretion, including names deemed inappropriate, misleading, or in conflict with existing entries. There is no appeal process.
 
-## 8. Changes to These Terms
+## 7. Built-in Tools
 
-We may update these terms at any time. Continued use of your subdomain after changes are published constitutes acceptance of the updated terms. Changes will be announced via the [is-pinoy-dev GitHub organization](https://github.com/is-pinoy-dev).
+is-pinoy.dev provides opt-in platform tools accessible at `/_tools/*` on your subdomain (for example, Site Audit at `/_tools/site-audit`). These tools are **disabled by default** and must be explicitly enabled in your subdomain JSON file.
 
-## 9. Contact
+By enabling a built-in tool, you acknowledge and agree that:
 
-For questions, abuse reports, or subdomain removal requests, open an issue at [github.com/is-pinoy-dev](https://github.com/is-pinoy-dev).
+- **Your site will be fetched by our infrastructure.** Tools such as Site Audit make server-side HTTP requests to your subdomain to analyze its content (HTML, metadata, headers). By opting in, you grant us permission to do so.
+- **The Cloudflare proxy must be active.** Tools require your DNS record to have `"proxied": true`, which routes your subdomain's traffic through Cloudflare's network. Enabling this is your responsibility and may affect how your hosting provider validates your domain.
+- **Tools are provided as-is.** Results are informational and we make no guarantee of accuracy, completeness, or fitness for any purpose.
+- **You can opt out at any time** by removing the `features` block from your subdomain JSON and opening a pull request.
+
+## 8. Ownership and Intellectual Property
+
+is-pinoy.dev retains all rights, title, and interest in the `is-pinoy.dev` domain and associated infrastructure.
+
+You retain ownership of any content you host on your subdomain. Your hosted content must not infringe third-party intellectual property rights.
+
+By registering a subdomain, you grant us permission to use your registration data (subdomain name, GitHub username, DNS records, and feature flags) solely to operate the service.
+
+## 9. Termination
+
+The is-pinoy-dev maintainers reserve the right to remove any subdomain at any time, with or without prior notice, if it violates these Terms or is otherwise deemed harmful to the community or the service.
+
+## 10. Privacy
+
+We do not collect or process personal data beyond what is necessary to operate the service. Registration data stored in the [is-pinoy-dev/domains](https://github.com/is-pinoy-dev/domains) repository is public by nature of it being an open source repository — do not include sensitive information in your subdomain JSON file.
+
+For privacy-related inquiries, open an issue at [github.com/is-pinoy-dev](https://github.com/is-pinoy-dev).
+
+## 11. Disclaimer and Limitation of Liability
+
+This service is provided **as-is** and **as available**, with no guarantees of availability, reliability, or continued operation. The is-pinoy-dev organization and its contributors make no warranties, expressed or implied, regarding the service's functionality, reliability, or suitability for any particular purpose.
+
+You use the service at your own risk.
+
+## 12. Indemnification
+
+You agree to indemnify and hold harmless is-pinoy.dev, its maintainers, and contributors from any claims, losses, liabilities, or expenses arising from your use of the service or your violation of these Terms.
+
+## 13. Governing Law
+
+These Terms are governed by the laws of the **Republic of the Philippines**. Any disputes arising from these Terms shall be subject to the jurisdiction of Philippine courts.
+
+## 14. Changes to These Terms
+
+We may update these Terms at any time. Continued use of your subdomain after changes are published constitutes acceptance of the updated terms. Changes will be announced via the [is-pinoy-dev GitHub organization](https://github.com/is-pinoy-dev).
