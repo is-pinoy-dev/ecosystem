@@ -1,0 +1,15 @@
+name = "site-audit"
+main = "index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "../build/client"
+
+[[routes]]
+pattern = "is-pinoy.dev/_tools/site-audit*"
+zone_name = "is-pinoy.dev"
+
+[[routes]]
+pattern = "*.is-pinoy.dev/_tools/site-audit*"
+zone_name = "is-pinoy.dev"
