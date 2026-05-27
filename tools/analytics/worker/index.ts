@@ -21,16 +21,12 @@ export default {
     if (isNavigationRequest(request)) {
       const url = new URL(request.url);
       const subdomain = extractSubdomain(url.hostname);
-      if (subdomain) {
+      if (subdomain && !url.pathname.startsWith("/_tools/")) {
         const country = (request.cf?.country as string | undefined) ?? "XX";
-        ctx.waitUntil(
-          Promise.resolve(
-            env.ANALYTICS.writeDataPoint({
-              indexes: [subdomain],
-              blobs: [country],
-            })
-          )
-        );
+        env.ANALYTICS.writeDataPoint({
+          indexes: [subdomain],
+          blobs: [country],
+        });
       }
     }
     return fetch(request);
