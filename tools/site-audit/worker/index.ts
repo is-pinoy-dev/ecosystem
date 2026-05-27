@@ -27,17 +27,22 @@ export default {
     if (assetResponse.status !== 404) return assetResponse;
 
     console.log("[site-audit] falling through to React Router");
-    const rrResponse = await handler({
-      request: request as Request & { cf?: IncomingRequestCfProperties },
-      functionPath: "",
-      waitUntil: ctx.waitUntil.bind(ctx),
-      passThroughOnException: ctx.passThroughOnException.bind(ctx),
-      next: () => Promise.resolve(new Response("Not Found", { status: 404 })),
-      env,
-      params: {},
-      data: {},
-    });
-    console.log("[site-audit] React Router response status", rrResponse.status);
-    return rrResponse;
+    try {
+      const rrResponse = await handler({
+        request: request as Request & { cf?: IncomingRequestCfProperties },
+        functionPath: "",
+        waitUntil: ctx.waitUntil.bind(ctx),
+        passThroughOnException: ctx.passThroughOnException.bind(ctx),
+        next: () => Promise.resolve(new Response("Not Found", { status: 404 })),
+        env,
+        params: {},
+        data: {},
+      });
+      console.log("[site-audit] React Router response status", rrResponse.status);
+      return rrResponse;
+    } catch (err) {
+      console.error("[site-audit] React Router threw:", err instanceof Error ? err.stack : String(err));
+      return new Response("Internal Server Error", { status: 500 });
+    }
   },
 } satisfies ExportedHandler<Env>;
