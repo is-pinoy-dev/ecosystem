@@ -35,12 +35,12 @@ export function NavBar({ onRerun, auditedAt, loading }: NavBarProps) {
       {/* Logo + banner */}
       <NavLink to="/" className="group flex shrink-0 items-center">
         <img
-          src="/logo.png"
+          src={`${import.meta.env.BASE_URL}logo.png`}
           alt="is-pinoy.dev logo"
           className="h-8 w-auto [image-rendering:pixelated] group-hover:animate-spin"
         />
         <img
-          src="/site-audit-banner.gif"
+          src={`${import.meta.env.BASE_URL}site-audit-banner.gif`}
           alt="Site Audit — is-pinoy.dev"
           className="hidden h-7 w-auto md:block"
         />

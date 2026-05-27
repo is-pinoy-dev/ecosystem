@@ -11,11 +11,11 @@ import type { Route } from "./+types/root";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
-  { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
-  { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-  { rel: "icon", type: "image/png", sizes: "96x96", href: "/favicon-96x96.png" },
-  { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
-  { rel: "manifest", href: "/site.webmanifest" },
+  { rel: "icon", type: "image/x-icon", href: `${import.meta.env.BASE_URL}favicon.ico` },
+  { rel: "icon", type: "image/svg+xml", href: `${import.meta.env.BASE_URL}favicon.svg` },
+  { rel: "icon", type: "image/png", sizes: "96x96", href: `${import.meta.env.BASE_URL}favicon-96x96.png` },
+  { rel: "apple-touch-icon", sizes: "180x180", href: `${import.meta.env.BASE_URL}apple-touch-icon.png` },
+  { rel: "manifest", href: `${import.meta.env.BASE_URL}site.webmanifest` },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
