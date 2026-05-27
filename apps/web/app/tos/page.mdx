@@ -44,7 +44,7 @@ Violation of this section may result in immediate subdomain removal without noti
 
 Certain subdomain names are reserved for platform use and may not be registered. This includes but is not limited to: `www`, `api`, `admin`, `auth`, `app`, `dashboard`, `status`, `docs`, `blog`, `cdn`, `_tools`, and other system names.
 
-The path prefix `/_tools/` is reserved across all subdomains for platform-operated tooling. Requests to `yourname.is-pinoy.dev/_tools/*` are handled by is-pinoy.dev infrastructure and are never forwarded to your origin, regardless of your DNS configuration.
+The path prefix `/_tools/` is reserved across all subdomains for platform-operated tooling. When your DNS record has `"proxied": true`, requests to `yourname.is-pinoy.dev/_tools/*` are intercepted by is-pinoy.dev infrastructure before reaching your origin. You must not use the `/_tools/` path on your origin for any purpose, as future platform tooling may conflict with it.
 
 ## 6. Registration Process
 
