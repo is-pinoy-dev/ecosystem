@@ -16,6 +16,7 @@ export type AuditContext = {
 };
 
 function getOrigin(): string {
+  if (typeof window === "undefined") return "";
   const base = import.meta.env.DEV
     ? (import.meta.env.VITE_AUDIT_TARGET ?? window.location.origin)
     : window.location.origin;
@@ -27,6 +28,7 @@ function getOrigin(): string {
 }
 
 function getHost(): string {
+  if (typeof window === "undefined") return "";
   const base = import.meta.env.DEV
     ? (import.meta.env.VITE_AUDIT_TARGET ?? window.location.origin)
     : window.location.origin;
