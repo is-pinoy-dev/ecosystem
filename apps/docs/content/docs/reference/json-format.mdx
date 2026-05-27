@@ -18,7 +18,7 @@ Each subdomain is described by a single JSON file at `subdomains/<your-subdomain
   "records": {
     "CNAME": {
       "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com.",
-      "proxy": true
+      "proxied": true
     }
   },
   "features": {
@@ -114,7 +114,7 @@ See [Naming Rules](/getting-started/naming-rules) for the full character rules.
 | `features.tools.site-audit` | boolean | `false` | Enables the [Site Audit](/tools/site-audit) tool at `yourname.is-pinoy.dev/_tools/site-audit` |
 
 <Callout type="info">
-  Tools require `"proxy": true` on your DNS record. See [Cloudflare proxy](/reference/supported-records#cloudflare-proxy-proxy) for details.
+  Tools require `"proxied": true` on your DNS record. See [Cloudflare proxy](/reference/supported-records#cloudflare-proxy-proxy) for details.
 </Callout>
 
 ---

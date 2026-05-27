@@ -13,13 +13,13 @@ is-pinoy.dev provides built-in tools accessible at `/_tools/*` on any subdomain.
 
 ## Requirements
 
-All tools require your DNS record to have `"proxy": true` so that Cloudflare can intercept requests at the `/_tools/` path before they reach your origin.
+All tools require your DNS record to have `"proxied": true` so that Cloudflare can intercept requests at the `/_tools/` path before they reach your origin.
 
 ```json
 "records": {
   "CNAME": {
     "value": "yoursite.vercel.app.",
-    "proxy": true
+    "proxied": true
   }
 }
 ```

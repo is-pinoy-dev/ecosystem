@@ -90,15 +90,15 @@ You can include multiple record types in one file. The most common combination i
 }
 ```
 
-## Cloudflare proxy (`proxy`)
+## Cloudflare proxy (`proxied`)
 
-Any record type accepts an optional `proxy` field that controls whether Cloudflare proxies traffic through its network (the "orange cloud" in Cloudflare's dashboard).
+`A` and `CNAME` records accept an optional `proxied` field that controls whether Cloudflare proxies traffic through its network (the "orange cloud" in Cloudflare's dashboard). `TXT` records are never proxied and do not support this field.
 
 ```json
 "records": {
   "CNAME": {
     "value": "yoursite.vercel.app.",
-    "proxy": true
+    "proxied": true
   }
 }
 ```

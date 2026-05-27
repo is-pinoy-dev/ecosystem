@@ -16,7 +16,7 @@ Each check returns a **pass**, **warning**, or **fail** status with a short expl
 
 ## Prerequisites
 
-- Your subdomain DNS record has `"proxy": true`
+- Your subdomain DNS record has `"proxied": true`
 - You have enabled the tool in your subdomain JSON
 
 <Callout type="warn">
@@ -37,7 +37,7 @@ Add `features.tools.site-audit: true` to your subdomain JSON and open a pull req
   "records": {
     "CNAME": {
       "value": "yoursite.vercel.app.",
-      "proxy": true
+      "proxied": true
     }
   },
   "features": {
@@ -52,7 +52,7 @@ Once your PR is merged and DNS has propagated, visit `yourname.is-pinoy.dev/_too
 
 ## Enabling the Cloudflare proxy
 
-If your record currently has no `proxy` field (or `"proxy": false`), you need to add `"proxy": true` at the same time as enabling the tool.
+If your record currently has no `proxied` field (or `"proxied": false`), you need to add `"proxied": true` at the same time as enabling the tool.
 
 <Callout type="warn">
   Enabling the Cloudflare proxy may affect platforms that validate SSL certificates via direct DNS queries (such as Vercel). If Vercel shows an "Invalid Configuration" warning after enabling proxy, this is a known limitation — see [Vercel and Cloudflare proxy](#vercel-and-cloudflare-proxy) below.
@@ -64,7 +64,7 @@ Vercel verifies custom domains by checking for a specific DNS record. When the C
 
 This warning is cosmetic for sites already deployed — your portfolio will continue to serve traffic normally. Vercel only needs to re-verify if you reassign the domain or rotate certificates.
 
-If Vercel's warning concerns you, you can disable the proxy (`"proxy": false`) and Site Audit will show a [not enabled page](/_tools/site-audit) instead.
+If Vercel's warning concerns you, you can disable the proxy (`"proxied": false`) and Site Audit will show a [not enabled page](/_tools/site-audit) instead.
 
 ## Disabling Site Audit
 
