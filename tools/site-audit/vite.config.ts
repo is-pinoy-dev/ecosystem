@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  base: "/_tools/site-audit/",
   plugins: [cloudflareDevProxy(), tailwindcss(), reactRouter()],
   resolve: {
     tsconfigPaths: true,
