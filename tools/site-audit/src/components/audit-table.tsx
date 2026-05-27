@@ -27,7 +27,7 @@ export function AuditTable({ fields }: AuditTableProps) {
       <Accordion type="multiple" className="divide-y divide-border">
         {fields.map((field) => (
           <AccordionItem key={field.label} value={field.label} className="border-b-0">
-            <AccordionTrigger className="px-4 py-3 items-center hover:no-underline hover:bg-muted/30 [&>svg]:ml-4 [&>svg]:shrink-0">
+            <AccordionTrigger className="px-4 py-3 items-center hover:no-underline hover:bg-muted/30 [&>svg]:!ml-4 [&>svg]:shrink-0">
               <div className="grid grid-cols-[1fr_2fr_auto] items-center gap-4 w-full">
                 <p className="text-[11px] text-foreground text-left">{field.label}</p>
                 <p className="font-mono text-[11px] break-all text-muted-foreground text-left">
