@@ -1,3 +1,4 @@
 {
-  "pages": ["index", "site-audit"]
+  "title": "Tools",
+  "pages": ["site-audit"]
 }
