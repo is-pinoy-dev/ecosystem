@@ -1,5 +1,7 @@
 import createMDX from "@next/mdx"
 
+const sha = (process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 7)
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -21,7 +23,7 @@ const nextConfig = {
     return [
       {
         source: "/:path*",
-        headers: securityHeaders,
+        headers: [...securityHeaders, { key: "X-Commit-SHA", value: sha }],
       },
     ]
   },
