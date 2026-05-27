@@ -62,11 +62,16 @@ export function NavBar({ onRerun, auditedAt, loading }: NavBarProps) {
       </div>
 
       {/* Right: timestamp */}
-      <div className="ml-auto flex shrink-0 items-center">
+      <div className="ml-auto flex shrink-0 flex-col items-end">
         {auditedAt && (
-          <span className="hidden font-pixel text-[9px] text-muted-foreground sm:block">
-            {formatTimestamp(auditedAt)}
-          </span>
+          <>
+            <span className="hidden font-pixel text-[7px] text-muted-foreground/60 sm:block">
+              LAST SCAN
+            </span>
+            <span className="hidden font-pixel text-[9px] text-muted-foreground sm:block">
+              {formatTimestamp(auditedAt)}
+            </span>
+          </>
         )}
       </div>
     </nav>

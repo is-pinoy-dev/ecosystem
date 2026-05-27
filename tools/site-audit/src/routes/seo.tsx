@@ -12,6 +12,7 @@ import type { AuditResult } from "@is-pinoy-dev/schemas"
 import type { AuditContext } from "./layout"
 import { AuditTable } from "../components/audit-table"
 import { StatusBadge } from "../components/status-badge"
+import { IssueList } from "../components/issue-list"
 import {
   FacebookCard,
   TwitterLargeCard,
@@ -19,12 +20,13 @@ import {
   LinkedInCard,
 } from "../components/og-previews"
 
-type SeoTab = "overview" | "headings" | "links" | "images" | "schema" | "social"
+type SeoTab = "overview" | "issues" | "headings" | "links" | "images" | "schema" | "social"
 type SocialTab = "og" | "twitter" | "linkedin" | "facebook"
 type LinkFilter = "all" | "internal" | "external"
 
 const SEO_TABS: { id: SeoTab; label: string }[] = [
   { id: "overview", label: "OVERVIEW" },
+  { id: "issues", label: "ISSUES" },
   { id: "headings", label: "HEADINGS" },
   { id: "links", label: "LINKS" },
   { id: "images", label: "IMAGES" },
@@ -93,7 +95,7 @@ function StatBox({
   )
 }
 
-const OVERVIEW_LABELS = [
+const CORE_LABELS = [
   "URL",
   "Title",
   "Meta Description",
@@ -106,22 +108,26 @@ const OVERVIEW_LABELS = [
   "HTML lang",
 ]
 
+const HEADING_LABELS = ["H1 Count", "H2 Count", "H3 Count", "H4 Count", "H5 Count", "H6 Count"]
+
 const H_TAGS = ["h1", "h2", "h3", "h4", "h5", "h6"] as const
 
 function OverviewTab({ data }: { data: AuditResult }) {
-  const overviewFields = data.seo.fields.filter((f) =>
-    OVERVIEW_LABELS.includes(f.label)
+  const coreFields = data.seo.fields.filter((f) => CORE_LABELS.includes(f.label))
+  const technicalFields = data.seo.fields.filter(
+    (f) => !CORE_LABELS.includes(f.label) && !HEADING_LABELS.includes(f.label)
   )
   const counts = data.details.headingCounts
 
   return (
     <div className="space-y-6">
-      <AuditTable fields={overviewFields} />
+      <div className="space-y-2">
+        <p className="font-pixel text-[11px] text-primary">// CORE</p>
+        <AuditTable fields={coreFields} />
+      </div>
 
       <div className="space-y-2">
-        <p className="font-pixel text-[11px] text-primary">
-          // HEADING STRUCTURE
-        </p>
+        <p className="font-pixel text-[11px] text-primary">// HEADING STRUCTURE</p>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {H_TAGS.map((tag) => {
             const count = counts[tag] ?? 0
@@ -144,6 +150,11 @@ function OverviewTab({ data }: { data: AuditResult }) {
           <StatBox label="IMAGES" value={data.details.images.total} />
           <StatBox label="LINKS" value={data.details.links.total} />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="font-pixel text-[11px] text-primary">// TECHNICAL</p>
+        <AuditTable fields={technicalFields} />
       </div>
     </div>
   )
@@ -615,6 +626,7 @@ export default function Seo() {
       />
 
       {activeTab === "overview" && <OverviewTab data={state.data} />}
+      {activeTab === "issues" && <IssueList seo={state.data.seo} og={state.data.og} />}
       {activeTab === "headings" && <HeadingsTab data={state.data} />}
       {activeTab === "links" && <LinksTab data={state.data} />}
       {activeTab === "images" && <ImagesTab data={state.data} />}

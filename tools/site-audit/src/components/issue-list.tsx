@@ -4,17 +4,16 @@ import { StatusBadge } from "./status-badge"
 interface IssueListProps {
   seo: AuditCategory
   og: AuditCategory
+  limit?: number
 }
 
-export function IssueList({ seo, og }: IssueListProps) {
+const PRIORITY = { fail: 0, warn: 1, pass: 2 }
+
+export function IssueList({ seo, og, limit }: IssueListProps) {
   const issues = [
-    ...seo.fields
-      .filter((f) => f.status !== "pass")
-      .map((f) => ({ ...f, category: "SEO" })),
-    ...og.fields
-      .filter((f) => f.status !== "pass")
-      .map((f) => ({ ...f, category: "OG" })),
-  ]
+    ...seo.fields.filter((f) => f.status !== "pass").map((f) => ({ ...f, category: "SEO" })),
+    ...og.fields.filter((f) => f.status !== "pass").map((f) => ({ ...f, category: "SOCIAL" })),
+  ].sort((a, b) => PRIORITY[a.status] - PRIORITY[b.status])
 
   if (issues.length === 0) {
     return (
@@ -27,6 +26,9 @@ export function IssueList({ seo, og }: IssueListProps) {
     )
   }
 
+  const shown = limit ? issues.slice(0, limit) : issues
+  const extra = issues.length - shown.length
+
   return (
     <div className="border-2 border-border bg-card shadow-[4px_4px_0_var(--color-muted)]">
       <div className="border-b-2 border-border px-4 py-3">
@@ -35,7 +37,7 @@ export function IssueList({ seo, og }: IssueListProps) {
         </p>
       </div>
       <ul className="divide-y divide-border">
-        {issues.map((issue) => (
+        {shown.map((issue) => (
           <li
             key={`${issue.category}-${issue.label}`}
             className="flex items-start gap-4 px-4 py-3"
@@ -43,9 +45,7 @@ export function IssueList({ seo, og }: IssueListProps) {
             <StatusBadge status={issue.status} />
             <div className="min-w-0 flex-1">
               <p className="text-[11px] text-foreground">
-                <span className="text-muted-foreground">
-                  [{issue.category}]
-                </span>{" "}
+                <span className="text-muted-foreground">[{issue.category}]</span>{" "}
                 {issue.label}
               </p>
               {issue.message && (
@@ -57,6 +57,13 @@ export function IssueList({ seo, og }: IssueListProps) {
           </li>
         ))}
       </ul>
+      {extra > 0 && (
+        <div className="border-t-2 border-border px-4 py-3">
+          <p className="font-pixel text-[9px] text-muted-foreground">
+            +{extra} MORE ISSUES — SEE SEO → ISSUES TAB
+          </p>
+        </div>
+      )}
     </div>
   )
 }
