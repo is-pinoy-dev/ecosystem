@@ -1,18 +1,24 @@
-import type { Tab } from "../lib/types"
+import { NavLink } from "react-router"
 import { Button } from "@is-pinoy-dev/ui/components/button"
+import pkg from "../../package.json"
 
 interface NavBarProps {
-  tab: Tab
-  onTabChange: (tab: Tab) => void
   onRerun: () => void
   auditedAt?: string
   loading: boolean
 }
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "overview", label: "OVERVIEW" },
-  { id: "seo", label: "SEO" },
-  { id: "og", label: "OG" },
+const TABS = [
+  { to: "/", label: "OVERVIEW", end: true },
+  { to: "/seo", label: "SEO", end: false },
+  {
+    to: "/og",
+    label: {
+      mobile: "OG",
+      default: "Open Graph",
+    },
+    end: false,
+  },
 ]
 
 function formatTimestamp(iso: string): string {
@@ -23,52 +29,58 @@ function formatTimestamp(iso: string): string {
   })
 }
 
-export function NavBar({
-  tab,
-  onTabChange,
-  onRerun,
-  auditedAt,
-  loading,
-}: NavBarProps) {
+export function NavBar({ onRerun, auditedAt, loading }: NavBarProps) {
   return (
-    <nav className="fixed top-0 right-0 left-0 z-50 flex h-16 items-center justify-between border-b-1 border-b-muted bg-background/85 px-6 backdrop-blur">
+    <nav className="fixed top-0 right-0 left-0 z-50 flex h-16 items-center border-b-1 border-b-muted bg-background/85 px-6 backdrop-blur">
       {/* Logo + banner */}
-      <div className="flex shrink-0 items-center gap-3">
+      <NavLink to="/" className="group flex shrink-0 items-center">
         <img
           src="/logo.png"
           alt="is-pinoy.dev logo"
-          className="h-8 w-auto [image-rendering:pixelated] hover:animate-spin"
+          className="h-8 w-auto [image-rendering:pixelated] group-hover:animate-spin"
         />
         <img
           src="/site-audit-banner.gif"
           alt="Site Audit — is-pinoy.dev"
-          className="-ml-3 hidden h-7 w-auto md:block"
+          className="hidden h-7 w-auto md:block"
         />
-      </div>
+        <span className="mt-3.5 -ml-1.5 hidden font-pixel text-[9px] text-muted-foreground md:block">
+          v{pkg.version}
+        </span>
+      </NavLink>
 
       {/* Tabs */}
-      <div className="flex items-center border-2 border-border bg-background/60 shadow-[4px_4px_0_var(--color-muted)]">
-        {TABS.map(({ id, label }) => (
-          <button
-            type="button"
-            key={id}
-            onClick={() => onTabChange(id)}
-            className={[
-              "border-r-2 border-border px-5 py-2.5 font-pixel text-[11px] transition-colors last:border-r-0",
-              tab === id
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            ].join(" ")}
+      <div className="absolute left-1/2 flex -translate-x-1/2 items-center border-2 border-border bg-background/60 shadow-[4px_4px_0_var(--color-muted)]">
+        {TABS.map(({ to, label, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            className={({ isActive }) =>
+              [
+                "border-r-2 border-border px-5 py-2.5 font-pixel text-[11px] uppercase transition-colors last:border-r-0",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              ].join(" ")
+            }
           >
-            {label}
-          </button>
+            {typeof label === "string" ? (
+              label
+            ) : (
+              <>
+                <span className="md:hidden">{label.mobile}</span>
+                <span className="hidden md:inline">{label.default}</span>
+              </>
+            )}
+          </NavLink>
         ))}
       </div>
 
       {/* Right: timestamp + re-run */}
-      <div className="flex shrink-0 items-center gap-4">
+      <div className="ml-auto flex shrink-0 items-center gap-4">
         {auditedAt && (
-          <span className="hidden font-pixel text-[11px] text-muted-foreground sm:block">
+          <span className="hidden font-pixel text-[9px] text-muted-foreground sm:block">
             {formatTimestamp(auditedAt)}
           </span>
         )}
