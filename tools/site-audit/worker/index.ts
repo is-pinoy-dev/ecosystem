@@ -12,17 +12,22 @@ export interface Env {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    // Strip the sub-path prefix when fetching static assets so that
-    // /_tools/site-audit/assets/main.js resolves to build/client/assets/main.js
+    const originalUrl = request.url;
+    console.log("[site-audit] fetch", request.method, originalUrl);
+
     const url = new URL(request.url);
     if (url.pathname.startsWith(PREFIX)) {
       url.pathname = url.pathname.slice(PREFIX.length) || "/";
     }
-    const assetResponse = await env.ASSETS.fetch(new Request(url.toString(), request));
+    const assetUrl = url.toString();
+    console.log("[site-audit] asset lookup", assetUrl);
+
+    const assetResponse = await env.ASSETS.fetch(new Request(assetUrl, request));
+    console.log("[site-audit] asset status", assetResponse.status);
     if (assetResponse.status !== 404) return assetResponse;
 
-    // Pass the original request URL to React Router so basename stripping works
-    return handler({
+    console.log("[site-audit] falling through to React Router");
+    const rrResponse = await handler({
       request: request as Request & { cf?: IncomingRequestCfProperties },
       functionPath: "",
       waitUntil: ctx.waitUntil.bind(ctx),
@@ -32,5 +37,7 @@ export default {
       params: {},
       data: {},
     });
+    console.log("[site-audit] React Router response status", rrResponse.status);
+    return rrResponse;
   },
 } satisfies ExportedHandler<Env>;
