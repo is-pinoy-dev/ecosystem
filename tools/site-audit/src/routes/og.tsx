@@ -48,25 +48,20 @@ export default function Og() {
         // OPEN GRAPH — {passed}/{og.fields.length} PASSED
       </p>
 
-      <div className="flex gap-6 items-start">
-        <div className="flex-1 min-w-0">
-          <AuditTable fields={og.fields} />
-        </div>
-        <div className="w-72 shrink-0">
-          <OgPreviews
-            ogImage={getValue("og:image")}
-            ogTitle={getValue("og:title")}
-            ogDescription={getValue("og:description")}
-            ogSiteName={getValue("og:site_name")}
-            ogUrl={getValue("og:url")}
-            twitterCard={getValue("twitter:card")}
-            twitterImage={getValue("twitter:image")}
-            twitterTitle={getValue("twitter:title")}
-            twitterDescription={getValue("twitter:description")}
-            twitterSite={getValue("twitter:site")}
-          />
-        </div>
-      </div>
+      <AuditTable fields={og.fields} />
+
+      <OgPreviews
+        ogImage={getValue("og:image")}
+        ogTitle={getValue("og:title")}
+        ogDescription={getValue("og:description")}
+        ogSiteName={getValue("og:site_name")}
+        ogUrl={getValue("og:url")}
+        twitterCard={getValue("twitter:card")}
+        twitterImage={getValue("twitter:image")}
+        twitterTitle={getValue("twitter:title")}
+        twitterDescription={getValue("twitter:description")}
+        twitterSite={getValue("twitter:site")}
+      />
     </div>
   )
 }

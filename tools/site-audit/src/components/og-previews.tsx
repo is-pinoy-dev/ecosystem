@@ -233,58 +233,60 @@ export function OgPreviews({
   const isLargeCard = !twitterCard || twitterCard === "summary_large_image"
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <p className="font-pixel text-[11px] text-muted-foreground">// SOCIAL PREVIEWS</p>
 
-      <div>
-        <PlatformLabel name="Facebook" />
-        <FacebookCard
-          image={ogImage}
-          title={ogTitle}
-          description={ogDescription}
-          siteName={ogSiteName}
-          url={ogUrl}
-        />
-      </div>
-
-      <div>
-        <PlatformLabel name={`Twitter / X — ${isLargeCard ? "large card" : "summary"}`} />
-        {isLargeCard ? (
-          <TwitterLargeCard
-            image={twImage}
-            title={twTitle}
-            description={twDescription}
-            site={twitterSite}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div>
+          <PlatformLabel name="Facebook" />
+          <FacebookCard
+            image={ogImage}
+            title={ogTitle}
+            description={ogDescription}
+            siteName={ogSiteName}
+            url={ogUrl}
           />
-        ) : (
-          <TwitterSummaryCard
-            image={twImage}
-            title={twTitle}
-            description={twDescription}
-            site={twitterSite}
+        </div>
+
+        <div>
+          <PlatformLabel name={`Twitter / X — ${isLargeCard ? "large card" : "summary"}`} />
+          {isLargeCard ? (
+            <TwitterLargeCard
+              image={twImage}
+              title={twTitle}
+              description={twDescription}
+              site={twitterSite}
+            />
+          ) : (
+            <TwitterSummaryCard
+              image={twImage}
+              title={twTitle}
+              description={twDescription}
+              site={twitterSite}
+            />
+          )}
+        </div>
+
+        <div>
+          <PlatformLabel name="LinkedIn" />
+          <LinkedInCard
+            image={ogImage}
+            title={ogTitle}
+            siteName={ogSiteName}
+            url={ogUrl}
           />
-        )}
-      </div>
+        </div>
 
-      <div>
-        <PlatformLabel name="LinkedIn" />
-        <LinkedInCard
-          image={ogImage}
-          title={ogTitle}
-          siteName={ogSiteName}
-          url={ogUrl}
-        />
-      </div>
-
-      <div>
-        <PlatformLabel name="Discord" />
-        <DiscordCard
-          image={ogImage}
-          title={ogTitle}
-          description={ogDescription}
-          siteName={ogSiteName}
-          url={ogUrl}
-        />
+        <div>
+          <PlatformLabel name="Discord" />
+          <DiscordCard
+            image={ogImage}
+            title={ogTitle}
+            description={ogDescription}
+            siteName={ogSiteName}
+            url={ogUrl}
+          />
+        </div>
       </div>
     </div>
   )
