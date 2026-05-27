@@ -1,5 +1,13 @@
 # @is-pinoy-dev/registry
 
+## 0.0.9
+
+### Patch Changes
+
+- 7dc7edb: Fix TXT record FQDN to include subdomain: `_vercel.{subdomain}.is-pinoy.dev` instead of `_vercel.is-pinoy.dev`. Previously synced records at the wrong FQDN will need to be manually removed from Cloudflare.
+
+  The `registry-validate` CI action now also runs a sync dry-run after validation passes, posting the expected changes as a PR comment. Pass `cloudflare-api-token` and `cloudflare-zone-id` inputs to enable it.
+
 ## 0.0.8
 
 ### Patch Changes
