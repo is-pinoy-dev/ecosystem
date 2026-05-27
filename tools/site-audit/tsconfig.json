@@ -5,9 +5,12 @@
     "**/.client/**/*",
     ".react-router/types/**/*"
   ],
+  "exclude": [
+    "worker"
+  ],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "types": ["node", "vite/client", "@cloudflare/workers-types"],
+    "types": ["node", "vite/client"],
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
