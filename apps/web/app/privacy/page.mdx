@@ -36,7 +36,7 @@ All subdomain registrations are made via pull requests to a **public GitHub repo
 The service relies on the following third-party platforms, each governed by their own privacy policies:
 
 - **GitHub** — pull request and repository hosting ([github.com/privacy](https://github.com/privacy))
-- **Cloudflare** — DNS record hosting, traffic proxying (when `"proxied": true` is set on your record), and Worker infrastructure for built-in tools ([cloudflare.com/privacypolicy](https://www.cloudflare.com/privacypolicy/))
+- **Cloudflare** — DNS record hosting, traffic proxying (when `"proxied": true` is set on your record), Worker infrastructure for built-in tools, and Analytics Engine for platform visit metrics ([cloudflare.com/privacypolicy](https://www.cloudflare.com/privacypolicy/))
 
 When your DNS record is proxied through Cloudflare, visitor traffic to your subdomain passes through Cloudflare's network. This is subject to Cloudflare's privacy policy, not ours.
 
@@ -46,11 +46,29 @@ If you opt in to built-in tools (such as Site Audit), our infrastructure will ma
 
 We have no control over the data practices of third-party platforms listed above.
 
-## 6. Data Retention
+## 6. Platform Analytics
+
+To monitor platform health and understand aggregate traffic patterns, we passively log visits to proxied subdomains on `*.is-pinoy.dev`.
+
+**What we log per visit:**
+
+- The **subdomain name** (e.g. `juan` from `juan.is-pinoy.dev`)
+- The visitor's **country** (ISO 2-letter code, derived from Cloudflare edge metadata — no geolocation lookup is performed and no IP address is stored)
+- A **timestamp** (provided automatically by Cloudflare Analytics Engine)
+
+We do **not** log paths, query strings, IP addresses, user-agent strings, referrers, or any other request details at the platform level.
+
+**This logging only applies to proxied subdomains.** If your DNS record has `"proxied": false` (DNS-only mode), your subdomain's traffic goes directly to your origin and is never intercepted by our infrastructure — no visit data is collected for DNS-only subdomains.
+
+Platform traffic requests to `/_tools/*` paths (such as Site Audit) are handled by separate tool workers and are not logged by the platform analytics system.
+
+Visit data is stored in **Cloudflare Analytics Engine** and is subject to [Cloudflare's privacy policy](https://www.cloudflare.com/privacypolicy/). Data is used solely for aggregate platform reporting and is not shared, sold, or used for advertising purposes. This processing is carried out in compliance with the **Philippine Data Privacy Act of 2012 (RA 10173)**.
+
+## 7. Data Retention
 
 Your subdomain record is retained for as long as your subdomain remains active. If your subdomain is removed — by your request or by the maintainers — your DNS record will be deleted from the active configuration. Historical git commits in the public repository may still reference your username as part of the immutable repository history.
 
-## 7. Your Rights
+## 8. Your Rights
 
 Under RA 10173, you have the right to:
 
@@ -62,18 +80,18 @@ Under RA 10173, you have the right to:
 
 To exercise any of these rights, open an issue at [github.com/is-pinoy-dev](https://github.com/is-pinoy-dev) with your request.
 
-## 8. Security
+## 9. Security
 
 Subdomain records are stored in a public GitHub repository. While we follow responsible open source practices, we cannot guarantee the security of publicly hosted data. Do not submit sensitive personal information. Your GitHub username and any optional fields you include (such as your email address) will be publicly visible.
 
-## 9. Children's Privacy
+## 10. Children's Privacy
 
 This service is intended for developers and is not directed at children under 13. We do not knowingly collect information from minors.
 
-## 10. Changes to This Policy
+## 11. Changes to This Policy
 
 We may update this policy as the service evolves. Changes will be published in this document and announced via the [is-pinoy-dev GitHub organization](https://github.com/is-pinoy-dev). Continued use of your subdomain after changes are published constitutes acceptance of the updated policy.
 
-## 11. Contact
+## 12. Contact
 
 For privacy-related concerns, data subject requests, or questions about this policy, open an issue at [github.com/is-pinoy-dev](https://github.com/is-pinoy-dev).

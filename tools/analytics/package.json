@@ -1,0 +1,16 @@
+{
+  "name": "analytics",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev -c worker/wrangler.toml",
+    "deploy": "wrangler deploy -c worker/wrangler.toml",
+    "typecheck": "tsc -p worker/tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260527.1",
+    "typescript": "catalog:",
+    "wrangler": "^4.95.0"
+  }
+}

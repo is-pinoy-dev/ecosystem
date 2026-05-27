@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function TosLayout({ children }: { children: React.ReactNode }) {
   return (
-    <DocLayout title="Terms of Service" effectiveDate="May 23, 2026">
+    <DocLayout title="Terms of Service" effectiveDate="May 28, 2026">
       {children}
     </DocLayout>
   )

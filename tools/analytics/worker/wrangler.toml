@@ -1,0 +1,21 @@
+name = "tools-analytics"
+main = "index.ts"
+compatibility_date = "2026-05-27"
+
+[[routes]]
+pattern = "*.is-pinoy.dev/*"
+zone_name = "is-pinoy.dev"
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "subdomain_visits"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
