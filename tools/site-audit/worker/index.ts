@@ -1,8 +1,18 @@
-import { createPagesFunctionHandler } from "@react-router/cloudflare";
+import { createRequestHandler } from "@react-router/cloudflare";
 // @ts-ignore - build/server is generated at compile time and won't exist during typecheck
 import * as build from "../build/server";
 
-const handler = createPagesFunctionHandler({ build });
+const handleRequest = createRequestHandler({
+  build,
+  getLoadContext: ({ request, context }) => ({
+    cloudflare: {
+      env: context.cloudflare.env,
+      cf: (request as Request & { cf?: IncomingRequestCfProperties }).cf,
+      ctx: context.cloudflare.ctx,
+      caches: typeof caches !== "undefined" ? caches : undefined,
+    },
+  }),
+});
 
 const PREFIX = "/_tools/site-audit";
 
@@ -12,31 +22,22 @@ export interface Env {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const originalUrl = request.url;
-    console.log("[site-audit] fetch", request.method, originalUrl);
-
     const url = new URL(request.url);
     if (url.pathname.startsWith(PREFIX)) {
       url.pathname = url.pathname.slice(PREFIX.length) || "/";
     }
     const assetUrl = url.toString();
-    console.log("[site-audit] asset lookup", assetUrl);
 
-    if (!env.ASSETS) {
-      console.error("[site-audit] ASSETS binding not available — check wrangler.toml binding = 'ASSETS'");
-    } else {
+    if (env.ASSETS) {
       try {
         const assetResponse = await env.ASSETS.fetch(new Request(assetUrl, request));
-        console.log("[site-audit] asset status", assetResponse.status);
         if (assetResponse.status !== 404) return assetResponse;
-      } catch (assetErr) {
-        console.error("[site-audit] ASSETS fetch threw:", assetErr instanceof Error ? assetErr.message : String(assetErr));
+      } catch {
+        // fall through to SSR
       }
     }
-
-    console.log("[site-audit] falling through to React Router");
     try {
-      const rrResponse = await handler({
+      const cfContext = {
         request: request as Request & { cf?: IncomingRequestCfProperties },
         functionPath: "",
         waitUntil: ctx.waitUntil.bind(ctx),
@@ -45,9 +46,8 @@ export default {
         env,
         params: {},
         data: {},
-      });
-      console.log("[site-audit] React Router response status", rrResponse.status);
-      return rrResponse;
+      };
+      return await handleRequest(cfContext);
     } catch (err) {
       console.error("[site-audit] React Router threw:", err instanceof Error ? err.stack : String(err));
       return new Response("Internal Server Error", { status: 500 });

@@ -17,7 +17,7 @@ export default async function handleRequest(
     {
       signal: request.signal,
       onError(error: unknown) {
-        console.error("[site-audit] renderToReadableStream error:", error);
+        console.error("[site-audit] SSR error:", error instanceof Error ? error.stack : String(error));
         status = 500;
       },
     }
