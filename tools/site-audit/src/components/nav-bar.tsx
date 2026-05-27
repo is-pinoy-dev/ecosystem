@@ -1,5 +1,4 @@
 import { NavLink } from "react-router"
-import { Button } from "@is-pinoy-dev/ui/components/button"
 import pkg from "../../package.json"
 
 interface NavBarProps {
@@ -58,7 +57,7 @@ export function NavBar({ onRerun, auditedAt, loading }: NavBarProps) {
             end={end}
             className={({ isActive }) =>
               [
-                "border-r-2 border-border px-5 py-2.5 font-pixel text-[11px] uppercase transition-colors last:border-r-0",
+                "border-r-2 border-border px-3 py-1.5 font-pixel text-[8px] uppercase transition-colors last:border-r-0 md:px-5 md:py-2.5 md:text-[11px]",
                 isActive
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -77,22 +76,13 @@ export function NavBar({ onRerun, auditedAt, loading }: NavBarProps) {
         ))}
       </div>
 
-      {/* Right: timestamp + re-run */}
-      <div className="ml-auto flex shrink-0 items-center gap-4">
+      {/* Right: timestamp */}
+      <div className="ml-auto flex shrink-0 items-center">
         {auditedAt && (
           <span className="hidden font-pixel text-[9px] text-muted-foreground sm:block">
             {formatTimestamp(auditedAt)}
           </span>
         )}
-        <Button
-          onClick={onRerun}
-          disabled={loading}
-          variant="outline-shadow"
-          size="sm"
-          className={loading ? "opacity-40" : ""}
-        >
-          {loading ? "SCANNING..." : "RE-RUN"}
-        </Button>
       </div>
     </nav>
   )
