@@ -7,11 +7,13 @@
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsc",
+    "deploy": "react-router build && wrangler deploy -c worker/wrangler.toml"
   },
   "dependencies": {
     "@is-pinoy-dev/schemas": "workspace:*",
     "@is-pinoy-dev/ui": "workspace:*",
+    "@react-router/cloudflare": "^7.15.1",
     "@react-router/node": "7.15.1",
     "@react-router/serve": "7.15.1",
     "isbot": "^5.1.36",
@@ -20,6 +22,7 @@
     "react-router": "7.15.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260527.1",
     "@react-router/dev": "7.15.1",
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "catalog:",
@@ -28,6 +31,7 @@
     "@workspace/typescript-config": "workspace:*",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vite": "^8.0.3"
+    "vite": "^8.0.3",
+    "wrangler": "^4.95.0"
   }
 }
