@@ -63,7 +63,7 @@ runs:
           printf 'Please fix the errors above and push again.'
         } > /tmp/pr-comment.md
         gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md --edit-last 2>/dev/null \
-          || gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md
+          || gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md || true
 
     - name: Run sync dry-run
       id: dry-run
