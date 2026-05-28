@@ -22,7 +22,7 @@ function makeD1Mock() {
     batch,
   } as unknown as D1Database;
 
-  return { db, stmts, batch };
+  return { db, batch };
 }
 
 describe("persistSnapshots", () => {
@@ -80,5 +80,22 @@ describe("persistSnapshots", () => {
     const calls = batch.mock.calls[0][0] as MockStmt[];
     // 1 total + 1 country = 2 (only juan)
     expect(calls).toHaveLength(2);
+  });
+
+  it("uses correct INSERT OR REPLACE SQL for both tables", async () => {
+    const { db, batch } = makeD1Mock();
+    const rows: AnalyticsRow[] = [
+      { host: "juan.is-pinoy.dev", country: "PH", requests: 10 },
+    ];
+    await persistSnapshots(db, ["juan"], rows, "2026-05-28");
+    const calls = batch.mock.calls[0][0] as MockStmt[];
+    const totalStmt = calls.find((s) => !s.sql.includes("by_country"))!;
+    const countryStmt = calls.find((s) => s.sql.includes("by_country"))!;
+    expect(totalStmt.sql).toBe(
+      "INSERT OR REPLACE INTO visits_daily (subdomain, date, visits) VALUES (?, ?, ?)"
+    );
+    expect(countryStmt.sql).toBe(
+      "INSERT OR REPLACE INTO visits_daily_by_country (subdomain, date, country, visits) VALUES (?, ?, ?, ?)"
+    );
   });
 });
