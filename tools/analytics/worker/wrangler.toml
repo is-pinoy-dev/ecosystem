@@ -2,13 +2,14 @@ name = "tools-analytics"
 main = "index.ts"
 compatibility_date = "2026-05-27"
 
-[[routes]]
-pattern = "*.is-pinoy.dev/*"
-zone_name = "is-pinoy.dev"
+[triggers]
+crons = ["0 1 * * *"]
 
-[[analytics_engine_datasets]]
-binding = "ANALYTICS"
-dataset = "subdomain_visits"
+[[d1_databases]]
+binding = "ANALYTICS_DB"
+database_name = "analytics-db"
+database_id = "PLACEHOLDER"
+migrations_dir = "migrations"
 
 [observability]
 enabled = true
