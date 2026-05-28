@@ -7,7 +7,8 @@
     "dev": "wrangler dev -c worker/wrangler.toml",
     "deploy": "wrangler deploy -c worker/wrangler.toml",
     "typecheck": "tsc -p worker/tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260527.1",
