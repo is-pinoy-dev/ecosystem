@@ -1,4 +1,5 @@
 {
   "title": "Built-in Tools",
-  "pages": ["site-audit"]
+  "root": true,
+  "pages": ["index", "site-audit"]
 }

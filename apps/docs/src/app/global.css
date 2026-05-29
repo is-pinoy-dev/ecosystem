@@ -61,6 +61,17 @@ h6 {
   display: none !important;
 }
 
+/* Tab dropdown trigger — ghost variant */
+#nd-sidebar button.border {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+#nd-sidebar button.border[data-state="open"] {
+  border-color: var(--border) !important;
+}
+
 /* Sidebar bottom container (GitHub + theme toggle) */
 #nd-sidebar div.border {
   border-width: 3px !important;
@@ -145,27 +156,18 @@ button[aria-label="Collapse Sidebar"][data-collapsed="false"]:hover {
   transform: translate(2px, 2px);
 }
 
-/* Search bar in nav */
+/* Search bar in nav — ghost variant */
 [data-search],
 [data-search-full] {
   border: 3px solid var(--border) !important;
-  box-shadow: 4px 4px 0 var(--primary-dark);
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 @media (max-width: 768px) {
   [data-search],
   [data-search-full] {
     border-color: transparent !important;
-    box-shadow: none;
-    transition:
-      border-color 100ms,
-      box-shadow 100ms;
-  }
-
-  [data-search]:hover,
-  [data-search-full]:hover {
-    border-color: var(--border) !important;
-    box-shadow: 4px 4px 0 var(--primary-dark);
   }
 }
 
@@ -173,6 +175,26 @@ button[aria-label="Collapse Sidebar"][data-collapsed="false"]:hover {
 [role="dialog"] {
   border: 3px solid var(--border) !important;
   box-shadow: 6px 6px 0 var(--primary-dark) !important;
+}
+
+/* Show tab description in dropdown trigger on desktop (fumadocs hides it with md:hidden) */
+@media (min-width: 768px) {
+  #nd-sidebar button.border > div > p {
+    display: block;
+  }
+
+  #nd-sidebar button.border > div > p:last-child,
+  .p-1\.5 > div:last-of-type > p:last-child {
+    font-size: 0.65rem;
+  }
+}
+
+/* Center icon in tab dropdown option items (override fumadocs md:mb-auto which top-aligns icons) */
+@media (min-width: 768px) {
+  .p-1\.5 > div:first-child {
+    margin-bottom: 0;
+    align-self: center;
+  }
 }
 
 /* Scrollbar and scroll-lock fixes */
