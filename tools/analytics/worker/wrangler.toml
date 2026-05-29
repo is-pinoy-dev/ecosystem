@@ -1,6 +1,8 @@
 name = "tools-analytics"
 main = "index.ts"
 compatibility_date = "2026-05-27"
+workers_dev = false
+preview_urls = false
 
 [triggers]
 crons = ["0 1 * * *"]
@@ -8,7 +10,7 @@ crons = ["0 1 * * *"]
 [[d1_databases]]
 binding = "ANALYTICS_DB"
 database_name = "analytics-db"
-database_id = "PLACEHOLDER"
+database_id = "e76f34ea-c2d0-4e5f-995c-d717b87ee221"
 migrations_dir = "migrations"
 
 [observability]
