@@ -5,7 +5,11 @@ import { BadgeCheck, BookOpen, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 function TabIcon({ Icon }: { Icon: LucideIcon }) {
-  return <Icon className="size-full text-muted-foreground" />;
+  return (
+    <div className="flex size-full items-center justify-center">
+      <Icon className="size-5 shrink-0 text-muted-foreground" />
+    </div>
+  );
 }
 
 export default function Layout({ children }: LayoutProps<'/'>) {
