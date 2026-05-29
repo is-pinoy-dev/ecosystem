@@ -1,0 +1,28 @@
+{
+  "name": "@is-pinoy-dev/badge-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate:font": "node --experimental-strip-types scripts/generate-font.ts",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@jsquash/webp": "^1.4.0",
+    "@resvg/resvg-wasm": "^2.6.2",
+    "hono": "^4.7.11"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260527.1",
+    "@fontsource/press-start-2p": "^5.2.7",
+    "@types/node": "catalog:",
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "^4.95.0"
+  }
+}
