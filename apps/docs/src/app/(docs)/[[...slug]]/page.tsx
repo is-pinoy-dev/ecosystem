@@ -12,13 +12,13 @@ import { notFound } from "next/navigation"
 import { getMDXComponents } from "@/components/mdx"
 import type { Metadata } from "next"
 import { createRelativeLink } from "fumadocs-ui/mdx"
-import { gitConfig } from "@/lib/shared"
+import { baseUrl, gitConfig } from "@/lib/shared"
 
-const base = "https://docs.is-pinoy.dev"
+const org = { '@type': 'Organization', name: 'is-pinoy.dev', url: 'https://is-pinoy.dev' } as const;
 
 function buildSchemas(page: ReturnType<typeof source.getPage> & object) {
   const breadcrumbItems = [
-    { name: "Docs", url: base },
+    { name: "Docs", url: baseUrl },
     ...page.slugs.map((_, i) => ({
       name:
         i === page.slugs.length - 1
@@ -26,7 +26,7 @@ function buildSchemas(page: ReturnType<typeof source.getPage> & object) {
           : (page.slugs[i] ?? "")
               .replace(/-/g, " ")
               .replace(/\b\w/g, (c) => c.toUpperCase()),
-      url: `${base}/${page.slugs.slice(0, i + 1).join("/")}`,
+      url: `${baseUrl}/${page.slugs.slice(0, i + 1).join("/")}`,
     })),
   ]
 
@@ -46,8 +46,10 @@ function buildSchemas(page: ReturnType<typeof source.getPage> & object) {
     "@type": "TechArticle",
     headline: page.data.title,
     description: page.data.description,
-    url: `${base}${page.url}`,
-    isPartOf: { "@type": "WebSite", name: "is-pinoy.dev docs", url: base },
+    url: `${baseUrl}${page.url}`,
+    author: org,
+    publisher: org,
+    isPartOf: { "@type": "WebSite", name: "is-pinoy.dev docs", url: baseUrl },
   }
 
   return { breadcrumbSchema, articleSchema }
@@ -109,10 +111,12 @@ export async function generateMetadata(
     title: page.data.title,
     description: page.data.description,
     alternates: {
-      canonical: `${base}${page.url}`,
+      canonical: `${baseUrl}${page.url}`,
     },
     openGraph: {
-      url: `${base}${page.url}`,
+      title: page.data.title,
+      description: page.data.description,
+      url: `${baseUrl}${page.url}`,
       type: "article",
       images: getPageImage(page).url,
     },
