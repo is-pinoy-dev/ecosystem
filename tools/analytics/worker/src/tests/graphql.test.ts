@@ -4,11 +4,11 @@ import { fetchAnalytics } from "../graphql";
 const MOCK_GROUPS = [
   {
     dimensions: { clientRequestHTTPHost: "juan.is-pinoy.dev", clientCountryName: "PH" },
-    sum: { requests: 42 },
+    sum: { visits:42 },
   },
   {
     dimensions: { clientRequestHTTPHost: "juan.is-pinoy.dev", clientCountryName: "US" },
-    sum: { requests: 8 },
+    sum: { visits:8 },
   },
 ];
 

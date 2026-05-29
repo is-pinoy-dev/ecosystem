@@ -15,7 +15,7 @@ const QUERY = `
             clientCountryName
           }
           sum {
-            requests
+            visits
           }
         }
       }
@@ -25,7 +25,7 @@ const QUERY = `
 
 interface GQLGroup {
   dimensions: { clientRequestHTTPHost: string; clientCountryName: string };
-  sum: { requests: number };
+  sum: { visits: number };
 }
 
 interface GQLResponse {
@@ -56,6 +56,6 @@ export async function fetchAnalytics(
   return groups.map((g) => ({
     host: g.dimensions.clientRequestHTTPHost,
     country: g.dimensions.clientCountryName,
-    requests: g.sum.requests,
+    requests: g.sum.visits,
   }));
 }
