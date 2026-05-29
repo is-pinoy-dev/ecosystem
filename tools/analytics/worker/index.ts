@@ -1,34 +1,29 @@
+import { fetchSubdomains } from "./src/github";
+import { fetchAnalytics } from "./src/graphql";
+import { persistSnapshots } from "./src/db";
+
 export interface Env {
-  ANALYTICS: AnalyticsEngineDataset;
+  ANALYTICS_DB: D1Database;
+  CF_API_TOKEN: string;
+  CF_ZONE_ID: string;
 }
 
-function isNavigationRequest(request: Request): boolean {
-  return (
-    request.headers.get("Sec-Fetch-Mode") === "navigate" &&
-    request.headers.get("Sec-Fetch-Dest") === "document"
-  );
-}
-
-function extractSubdomain(hostname: string): string | null {
-  const parts = hostname.split(".");
-  // Only subdomains (e.g. juan.is-pinoy.dev) — skip apex
-  if (parts.length <= 2) return null;
-  return parts.slice(0, parts.length - 2).join(".");
+function yesterday(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    if (isNavigationRequest(request)) {
-      const url = new URL(request.url);
-      const subdomain = extractSubdomain(url.hostname);
-      if (subdomain && !url.pathname.startsWith("/_tools/")) {
-        const country = (request.cf?.country as string | undefined) ?? "XX";
-        env.ANALYTICS.writeDataPoint({
-          indexes: [subdomain],
-          blobs: [country],
-        });
-      }
+  async scheduled(_event: ScheduledController, env: Env, _ctx: ExecutionContext): Promise<void> {
+    const date = yesterday();
+
+    const subdomains = await fetchSubdomains();
+    if (subdomains.length === 0) {
+      throw new Error("Empty subdomain list from GitHub — aborting to avoid data loss");
     }
-    return fetch(request);
+
+    const rows = await fetchAnalytics(env.CF_API_TOKEN, env.CF_ZONE_ID, date);
+    await persistSnapshots(env.ANALYTICS_DB, subdomains, rows, date);
   },
 } satisfies ExportedHandler<Env>;
