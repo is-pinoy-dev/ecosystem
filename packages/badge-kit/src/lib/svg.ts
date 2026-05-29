@@ -1,4 +1,4 @@
-import { PRESS_START_2P_WOFF2_BASE64 } from './font.ts'
+import { PRESS_START_2P_WOFF2_BASE64, IBM_PLEX_MONO_WOFF2_BASE64 } from './font.ts'
 
 export type BadgeVariant = 'default' | 'outline' | 'flat' | 'pixel'
 export type PresetType = 'powered-by' | 'filipino-dev'
@@ -11,114 +11,155 @@ export interface BadgeOptions {
 }
 
 interface VariantStyle {
-  background: string
+  bg: string
   stroke: string | null
   shadow: string | null
+  sunColor: string
   textColor: string
-  separatorColor: string | null
+  eyebrowColor: string
+  separatorColor: string
 }
 
-const VARIANT_STYLES: Record<BadgeVariant, VariantStyle> = {
+// Design tokens from DESIGN.md
+const STYLES: Record<BadgeVariant, VariantStyle> = {
   default: {
-    background: '#0D0D0D',
+    bg: '#0D0D0D',
     stroke: '#F5C800',
     shadow: '#000000',
+    sunColor: '#F5C800',
     textColor: '#FAFAF5',
-    separatorColor: '#F5C800',
-  },
-  outline: {
-    background: 'transparent',
-    stroke: '#F5C800',
-    shadow: null,
-    textColor: '#F5C800',
-    separatorColor: '#F5C800',
-  },
-  flat: {
-    background: '#F5C800',
-    stroke: null,
-    shadow: null,
-    textColor: '#0D0D0D',
-    separatorColor: '#0D0D0D',
+    eyebrowColor: '#888888',
+    separatorColor: '#444444',
   },
   pixel: {
-    background: '#0D0D0D',
+    bg: '#0D0D0D',
     stroke: '#F5C800',
-    shadow: '#F5C800',
+    // Gold-dark shadow for the retro/pixel double-depth effect
+    shadow: '#D4A800',
+    sunColor: '#F5C800',
     textColor: '#FAFAF5',
-    separatorColor: '#F5C800',
+    eyebrowColor: '#888888',
+    separatorColor: '#444444',
+  },
+  flat: {
+    bg: '#F5C800',
+    stroke: '#0D0D0D',
+    shadow: null,
+    sunColor: '#0D0D0D',
+    textColor: '#0D0D0D',
+    eyebrowColor: '#6b5200',
+    separatorColor: '#0D0D0D',
+  },
+  outline: {
+    bg: 'transparent',
+    stroke: '#F5C800',
+    shadow: null,
+    sunColor: '#F5C800',
+    textColor: '#F5C800',
+    eyebrowColor: '#888888',
+    separatorColor: '#444444',
   },
 }
 
-function fontFaceStyle(): string {
-  return `<style>@font-face{font-family:'Press Start 2P';src:url('data:font/woff2;base64,${PRESS_START_2P_WOFF2_BASE64}') format('woff2');}</style>`
+function fontFaceStyles(): string {
+  return (
+    `@font-face{font-family:'Press Start 2P';src:url('data:font/woff2;base64,${PRESS_START_2P_WOFF2_BASE64}') format('woff2');}` +
+    `@font-face{font-family:'IBM Plex Mono';src:url('data:font/woff2;base64,${IBM_PLEX_MONO_WOFF2_BASE64}') format('woff2');}`
+  )
+}
+
+// 8-ray pixel sun: 4 crossing rects at 0/45/90/135° on a shared center point
+function pixelSun(cx: number, cy: number, size: number, color: string): string {
+  const hw = Math.ceil(size * 0.14)
+  return [0, 45, 90, 135]
+    .map(a =>
+      `<rect x="${cx - hw}" y="${cy - Math.floor(size / 2)}" width="${hw * 2}" height="${size}" fill="${color}" transform="rotate(${a},${cx},${cy})"/>`
+    )
+    .join('')
 }
 
 export function generateBadgeSvg(opts: BadgeOptions): string {
   const { subdomain, variant, notFound } = opts
-  const style = VARIANT_STYLES[variant]
-  const label = notFound ? 'not found' : `${subdomain}.is-pinoy.dev`
-  const textColor = notFound ? '#888888' : style.textColor
+  const s = STYLES[variant]
 
-  const shadowRect = style.shadow
-    ? `<rect x="4" y="4" width="280" height="56" fill="${style.shadow}"/>`
+  const shadowRect = s.shadow
+    ? `<rect x="5" y="5" width="280" height="56" fill="${s.shadow}"/>`
     : ''
+  const strokeAttr = s.stroke ? `stroke="${s.stroke}" stroke-width="2"` : ''
 
-  const border = style.stroke
-    ? `stroke="${style.stroke}" stroke-width="2"`
-    : ''
+  const sun = pixelSun(22, 28, 24, notFound ? '#444444' : s.sunColor)
 
-  const separator = style.separatorColor
-    ? `<line x1="42" y1="8" x2="42" y2="48" stroke="${style.separatorColor}" stroke-width="2"/>`
-    : ''
+  if (notFound) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="284" height="60">
+  <defs><style>${fontFaceStyles()}</style></defs>
+  ${shadowRect}
+  <rect x="0" y="0" width="280" height="56" fill="${s.bg}" ${strokeAttr}/>
+  ${sun}
+  <line x1="44" y1="6" x2="44" y2="50" stroke="${s.separatorColor}" stroke-width="1"/>
+  <text x="52" y="33" font-family="'Press Start 2P',monospace" font-size="8" fill="#888888">not found</text>
+</svg>`
+  }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="284" height="60">
-  <defs>${fontFaceStyle()}</defs>
+  <defs><style>${fontFaceStyles()}</style></defs>
   ${shadowRect}
-  <rect x="0" y="0" width="280" height="56" fill="${style.background}" ${border}/>
-  ${separator}
-  <text x="21" y="36" font-size="20" text-anchor="middle">🇵🇭</text>
-  <text x="50" y="32" font-family="'Press Start 2P',monospace" font-size="7" fill="${textColor}">${label}</text>
+  <rect x="0" y="0" width="280" height="56" fill="${s.bg}" ${strokeAttr}/>
+  ${sun}
+  <line x1="44" y1="6" x2="44" y2="50" stroke="${s.separatorColor}" stroke-width="1"/>
+  <text x="52" y="19" font-family="'IBM Plex Mono',monospace" font-size="7" fill="${s.eyebrowColor}">DEPLOYED ON</text>
+  <text x="52" y="38" font-family="'Press Start 2P',monospace" font-size="8" fill="${s.textColor}">${subdomain}.is-pinoy.dev</text>
 </svg>`
 }
 
 export function generatePresetSvg(type: PresetType, variant: BadgeVariant): string {
-  const style = VARIANT_STYLES[variant]
+  const s = STYLES[variant]
 
-  const shadowRect = style.shadow
-    ? `<rect x="4" y="4" width="280" height="56" fill="${style.shadow}"/>`
+  const shadowRect = s.shadow
+    ? `<rect x="5" y="5" width="280" height="56" fill="${s.shadow}"/>`
     : ''
+  const strokeAttr = s.stroke ? `stroke="${s.stroke}" stroke-width="2"` : ''
+  const sun = pixelSun(22, 28, 24, s.sunColor)
 
-  const border = style.stroke
-    ? `stroke="${style.stroke}" stroke-width="2"`
-    : ''
-
-  const separator = style.separatorColor
-    ? `<line x1="42" y1="8" x2="42" y2="48" stroke="${style.separatorColor}" stroke-width="2"/>`
-    : ''
-
-  const [line1, line2] =
-    type === 'powered-by'
-      ? ['Powered by', 'is-pinoy.dev']
-      : ['🇵🇭', 'Filipino Dev']
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="284" height="60">
-  <defs>${fontFaceStyle()}</defs>
+  if (type === 'powered-by') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="284" height="60">
+  <defs><style>${fontFaceStyles()}</style></defs>
   ${shadowRect}
-  <rect x="0" y="0" width="280" height="56" fill="${style.background}" ${border}/>
-  ${separator}
-  <text x="21" y="36" font-size="20" text-anchor="middle">🇵🇭</text>
-  <text x="50" y="26" font-family="'Press Start 2P',monospace" font-size="6" fill="${style.textColor}">${line1}</text>
-  <text x="50" y="40" font-family="'Press Start 2P',monospace" font-size="7" fill="${style.textColor}">${line2}</text>
+  <rect x="0" y="0" width="280" height="56" fill="${s.bg}" ${strokeAttr}/>
+  ${sun}
+  <line x1="44" y1="6" x2="44" y2="50" stroke="${s.separatorColor}" stroke-width="1"/>
+  <text x="52" y="19" font-family="'IBM Plex Mono',monospace" font-size="7" fill="${s.eyebrowColor}">BUILT WITH</text>
+  <text x="52" y="38" font-family="'Press Start 2P',monospace" font-size="8" fill="${s.textColor}">is-pinoy.dev</text>
+</svg>`
+  }
+
+  // filipino-dev → proud pinoy dev identity badge
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="284" height="60">
+  <defs><style>${fontFaceStyles()}</style></defs>
+  ${shadowRect}
+  <rect x="0" y="0" width="280" height="56" fill="${s.bg}" ${strokeAttr}/>
+  ${sun}
+  <line x1="44" y1="6" x2="44" y2="50" stroke="${s.separatorColor}" stroke-width="1"/>
+  <text x="52" y="19" font-family="'IBM Plex Mono',monospace" font-size="7" fill="${s.eyebrowColor}">PROUD</text>
+  <text x="52" y="38" font-family="'Press Start 2P',monospace" font-size="8" fill="${s.textColor}">PINOY DEV</text>
 </svg>`
 }
 
 export function generateBannerSvg(subdomain: string): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="644" height="164">
-  <defs>${fontFaceStyle()}</defs>
-  <rect x="4" y="4" width="640" height="160" fill="#F5C800"/>
-  <rect x="0" y="0" width="640" height="160" fill="#0D0D0D" stroke="#F5C800" stroke-width="2"/>
-  <text x="40" y="70" font-family="'Press Start 2P',monospace" font-size="32" fill="#F5C800">🇵🇭</text>
-  <text x="40" y="104" font-family="'Press Start 2P',monospace" font-size="14" fill="#FAFAF5">${subdomain}.is-pinoy.dev</text>
-  <text x="40" y="128" font-family="'Press Start 2P',monospace" font-size="8" fill="#888888">is-pinoy.dev — free subdomains for Filipino devs</text>
+  const sun = pixelSun(50, 44, 44, '#F5C800')
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="645" height="93">
+  <defs>
+    <style>${fontFaceStyles()}</style>
+    <pattern id="sl" x="0" y="0" width="1" height="4" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="1" height="2" fill="rgba(0,0,0,0.05)"/>
+    </pattern>
+  </defs>
+  <rect x="5" y="5" width="640" height="88" fill="#D4A800"/>
+  <rect x="0" y="0" width="640" height="88" fill="#0D0D0D" stroke="#F5C800" stroke-width="2"/>
+  <rect x="0" y="0" width="640" height="88" fill="url(#sl)"/>
+  ${sun}
+  <line x1="100" y1="8" x2="100" y2="80" stroke="#444444" stroke-width="1"/>
+  <text x="116" y="30" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#888888">SUBDOMAIN</text>
+  <text x="116" y="54" font-family="'Press Start 2P',monospace" font-size="14" fill="#FAFAF5">${subdomain}.is-pinoy.dev</text>
+  <text x="116" y="74" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#888888">is-pinoy.dev — free subdomains for Filipino devs</text>
 </svg>`
 }

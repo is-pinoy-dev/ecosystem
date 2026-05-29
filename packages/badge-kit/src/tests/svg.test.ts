@@ -48,9 +48,9 @@ describe('generatePresetSvg', () => {
     expect(svg).toContain('is-pinoy.dev')
   })
 
-  it('filipino-dev contains Filipino Dev label', () => {
+  it('filipino-dev contains proud pinoy dev label', () => {
     const svg = generatePresetSvg('filipino-dev', 'pixel')
-    expect(svg).toContain('Filipino Dev')
+    expect(svg).toContain('PINOY DEV')
   })
 })
 
