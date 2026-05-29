@@ -1,7 +1,7 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
 import { Press_Start_2P, IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
 const pixelFont = Press_Start_2P({
   weight: '400',
@@ -21,6 +21,11 @@ const monoFont = IBM_Plex_Mono({
   variable: '--font-mono',
 });
 
+export const viewport: Viewport = {
+  themeColor: '#F5C800',
+  colorScheme: 'dark',
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://docs.is-pinoy.dev'),
   title: {
@@ -28,6 +33,9 @@ export const metadata: Metadata = {
     default: 'is-pinoy.dev docs',
   },
   description: 'Documentation for the is-pinoy.dev ecosystem.',
+  keywords: ['Filipino developers', 'free subdomain', 'is-pinoy.dev', 'portfolio subdomain', 'Pilipinas'],
+  category: 'technology',
+  creator: 'is-pinoy.dev',
   openGraph: {
     siteName: 'is-pinoy.dev docs',
     type: 'website',
@@ -47,19 +55,28 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 };
 
-const organizationSchema = {
+const websiteSchema = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'is-pinoy.dev',
+  '@type': 'WebSite',
+  name: 'is-pinoy.dev docs',
   url: 'https://docs.is-pinoy.dev',
-  sameAs: ['https://discord.gg/MVrgEfFExh'],
+  isPartOf: {
+    '@type': 'Organization',
+    name: 'is-pinoy.dev',
+    url: 'https://is-pinoy.dev',
+    sameAs: [
+      'https://is-pinoy.dev',
+      'https://github.com/is-pinoy-dev/ecosystem',
+      'https://discord.gg/MVrgEfFExh',
+    ],
+  },
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`flex flex-col min-h-screen ${pixelFont.variable} ${sansFont.variable} ${monoFont.variable}`}>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
         <RootProvider>{children}</RootProvider>
       </body>
     </html>
