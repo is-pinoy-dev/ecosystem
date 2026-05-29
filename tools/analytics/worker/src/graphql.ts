@@ -3,11 +3,11 @@ import type { AnalyticsRow } from "./types";
 const GRAPHQL_URL = "https://api.cloudflare.com/client/v4/graphql";
 
 const QUERY = `
-  query VisitsBySubdomain($zoneTag: String!, $date: String!) {
+  query VisitsBySubdomain($zoneTag: String!, $date: Date!) {
     viewer {
       zones(filter: { zoneTag: $zoneTag }) {
         httpRequestsAdaptiveGroups(
-          filter: { date: $date }
+          filter: { date_geq: $date, date_leq: $date }
           limit: 10000
         ) {
           dimensions {
