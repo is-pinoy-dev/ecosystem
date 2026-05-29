@@ -3,10 +3,6 @@ main = "src/index.ts"
 compatibility_date = "2026-05-29"
 compatibility_flags = ["nodejs_compat"]
 
-[wasm_modules]
-RESVG_WASM = "node_modules/@resvg/resvg-wasm/index_bg.wasm"
-WEBP_ENC_WASM = "node_modules/@jsquash/webp/codec/enc/webp_enc_simd.wasm"
-
 [[routes]]
 pattern = "badges.is-pinoy.dev/*"
 zone_name = "is-pinoy.dev"

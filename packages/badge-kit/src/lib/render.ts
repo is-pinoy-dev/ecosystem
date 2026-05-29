@@ -1,23 +1,22 @@
 import { initWasm as initResvg, Resvg } from '@resvg/resvg-wasm'
+import resvgWasm from '@resvg/resvg-wasm/index_bg.wasm'
 import encodeWebp, { init as initWebpEnc } from '@jsquash/webp/encode'
-
-// Injected by Wrangler from wrangler.toml [wasm_modules]
-declare const RESVG_WASM: WebAssembly.Module
-declare const WEBP_ENC_WASM: WebAssembly.Module
+import webpEncWasm from '@jsquash/webp/codec/enc/webp_enc_simd.wasm'
 
 let resvgReady = false
 let webpReady = false
 
 async function ensureResvg(): Promise<void> {
   if (!resvgReady) {
-    await initResvg(RESVG_WASM)
+    await initResvg(resvgWasm)
     resvgReady = true
   }
 }
 
 async function ensureWebp(): Promise<void> {
   if (!webpReady) {
-    await initWebpEnc(WEBP_ENC_WASM)
+    // initWebpEnc types are incomplete — actual signature is (module, options?)
+    await (initWebpEnc as unknown as (m: WebAssembly.Module) => Promise<void>)(webpEncWasm)
     webpReady = true
   }
 }
