@@ -1,16 +1,28 @@
 import type { Hono } from 'hono'
-import type { BadgeVariant, OutputFormat } from '../lib/svg.ts'
-import { generateBadgeSvg } from '../lib/svg.ts'
+import type { BadgeType, Theme, OutputFormat } from '../lib/svg.ts'
+import { generateBadgeSvg, DEFAULT_BADGE_THEME, VALID_BADGE_THEMES } from '../lib/svg.ts'
 import { isSubdomainRegistered } from '../lib/registry.ts'
 import { svgToPng, svgToWebp } from '../lib/render.ts'
 import { badgeCacheHeaders } from '../lib/cache.ts'
 import type { Env } from '../index.ts'
 
-const VALID_VARIANTS = new Set<BadgeVariant>(['default', 'outline', 'flat', 'pixel'])
+const VALID_TYPES = new Set<BadgeType>([
+  'deployed-on',
+  'built-by',
+  'proud-pinoy-dev',
+  'certified',
+  'member',
+  'pinoy-made',
+])
 const VALID_FORMATS = new Set<OutputFormat>(['svg', 'png', 'webp'])
 
-function parseVariant(raw: string | undefined): BadgeVariant {
-  return VALID_VARIANTS.has(raw as BadgeVariant) ? (raw as BadgeVariant) : 'default'
+function parseBadgeType(raw: string | undefined): BadgeType {
+  return VALID_TYPES.has(raw as BadgeType) ? (raw as BadgeType) : 'deployed-on'
+}
+
+function parseTheme(raw: string | undefined, type: BadgeType): Theme {
+  const valid = VALID_BADGE_THEMES[type] as Theme[]
+  return valid.includes(raw as Theme) ? (raw as Theme) : DEFAULT_BADGE_THEME[type]
 }
 
 function parseFormat(raw: string | undefined): OutputFormat {
@@ -34,14 +46,26 @@ async function respond(svg: string, format: OutputFormat): Promise<Response> {
 }
 
 export function registerBadgeRoute(app: Hono<{ Bindings: Env }>): void {
-  app.get('/:subdomain/badge', async (c) => {
+  // GET /badge/:subdomain?type=...&theme=...&format=...
+  app.get('/badge/:subdomain', async (c) => {
     const subdomain = c.req.param('subdomain')
-    const variant = parseVariant(c.req.query('variant'))
+    const type = parseBadgeType(c.req.query('type'))
+    const theme = parseTheme(c.req.query('theme'), type)
     const format = parseFormat(c.req.query('format'))
 
     const registered = await isSubdomainRegistered(subdomain, c.env)
-    const svg = generateBadgeSvg({ subdomain, variant, notFound: !registered })
+    const svg = generateBadgeSvg({ subdomain, type, theme, notFound: !registered })
 
+    return respond(svg, format)
+  })
+
+  // GET /badge?type=pinoy-made&theme=...&format=...
+  app.get('/badge', async (c) => {
+    const type = parseBadgeType(c.req.query('type'))
+    const theme = parseTheme(c.req.query('theme'), type)
+    const format = parseFormat(c.req.query('format'))
+
+    const svg = generateBadgeSvg({ subdomain: '', type, theme, notFound: false })
     return respond(svg, format)
   })
 }

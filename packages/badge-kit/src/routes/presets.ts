@@ -1,15 +1,15 @@
 import type { Hono } from 'hono'
-import type { BadgeVariant, OutputFormat } from '../lib/svg.ts'
-import { generatePresetSvg, generateBannerSvg } from '../lib/svg.ts'
+import type { BannerType, Theme, OutputFormat } from '../lib/svg.ts'
+import { generateBannerSvg, DEFAULT_BANNER_THEME, VALID_BANNER_THEMES } from '../lib/svg.ts'
 import { svgToPng, svgToWebp } from '../lib/render.ts'
 import { badgeCacheHeaders } from '../lib/cache.ts'
 import type { Env } from '../index.ts'
 
-const VALID_VARIANTS = new Set<BadgeVariant>(['default', 'outline', 'flat', 'pixel'])
 const VALID_FORMATS = new Set<OutputFormat>(['svg', 'png', 'webp'])
 
-function parseVariant(raw: string | undefined, defaultVal: BadgeVariant): BadgeVariant {
-  return VALID_VARIANTS.has(raw as BadgeVariant) ? (raw as BadgeVariant) : defaultVal
+function parseTheme(raw: string | undefined, type: BannerType): Theme {
+  const valid = VALID_BANNER_THEMES[type] as Theme[]
+  return valid.includes(raw as Theme) ? (raw as Theme) : DEFAULT_BANNER_THEME[type]
 }
 
 function parseFormat(raw: string | undefined): OutputFormat {
@@ -33,24 +33,15 @@ async function respond(svg: string, format: OutputFormat): Promise<Response> {
 }
 
 export function registerPresetRoutes(app: Hono<{ Bindings: Env }>): void {
-  app.get('/powered-by', async (c) => {
-    const variant = parseVariant(c.req.query('variant'), 'pixel')
-    const format = parseFormat(c.req.query('format'))
-    const svg = generatePresetSvg('powered-by', variant)
-    return respond(svg, format)
-  })
-
-  app.get('/filipino-dev', async (c) => {
-    const variant = parseVariant(c.req.query('variant'), 'pixel')
-    const format = parseFormat(c.req.query('format'))
-    const svg = generatePresetSvg('filipino-dev', variant)
-    return respond(svg, format)
-  })
-
+  // GET /banner/:subdomain?type=readme|profile&theme=...&format=...
   app.get('/banner/:subdomain', async (c) => {
     const subdomain = c.req.param('subdomain')
+    const rawType = c.req.query('type')
+    const type: BannerType = rawType === 'profile' ? 'profile' : 'readme'
+    const theme = parseTheme(c.req.query('theme'), type)
     const format = parseFormat(c.req.query('format'))
-    const svg = generateBannerSvg(subdomain)
+
+    const svg = generateBannerSvg({ subdomain, type, theme })
     return respond(svg, format)
   })
 }
