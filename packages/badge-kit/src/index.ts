@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { registerPresetRoutes } from './routes/presets.ts'
+import { registerBannerRoute } from './routes/banner.ts'
 import { registerBadgeRoute } from './routes/badge.ts'
 
 export interface Env {
@@ -9,11 +9,11 @@ export interface Env {
 
 const app = new Hono<{ Bindings: Env }>()
 
-registerPresetRoutes(app)
 registerBadgeRoute(app)
+registerBannerRoute(app)
 
 app.get('/', (c) =>
-  c.text('badges.is-pinoy.dev — embed a badge: /{subdomain}/badge?variant=pixel')
+  c.text('badges.is-pinoy.dev — GET /badge/:subdomain?type=...&theme=...&format=...')
 )
 
 export default app

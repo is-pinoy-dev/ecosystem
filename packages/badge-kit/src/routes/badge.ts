@@ -1,32 +1,34 @@
 import type { Hono } from 'hono'
-import type { BadgeType, Theme, OutputFormat } from '../lib/svg.ts'
-import { generateBadgeSvg, DEFAULT_BADGE_THEME, VALID_BADGE_THEMES } from '../lib/svg.ts'
+import type { Theme, OutputFormat } from '../lib/svg.ts'
+import {
+  generateBadgeSvg,
+  DEFAULT_BADGE_THEME,
+  VALID_BADGE_THEMES,
+  DEFAULT_SUBDOMAIN_LABEL,
+  LABEL_MAX_LENGTH,
+} from '../lib/svg.ts'
 import { isSubdomainRegistered } from '../lib/registry.ts'
 import { svgToPng, svgToWebp } from '../lib/render.ts'
 import { badgeCacheHeaders } from '../lib/cache.ts'
 import type { Env } from '../index.ts'
 
-const VALID_TYPES = new Set<BadgeType>([
-  'deployed-on',
-  'built-by',
-  'proud-pinoy-dev',
-  'certified',
-  'member',
-  'pinoy-made',
-])
+const SUBDOMAIN_TYPES = new Set(['subdomain', 'member'])
+const PLATFORM_TYPES = new Set(['pinoy-made', 'certified'])
 const VALID_FORMATS = new Set<OutputFormat>(['svg', 'png', 'webp'])
 
-function parseBadgeType(raw: string | undefined): BadgeType {
-  return VALID_TYPES.has(raw as BadgeType) ? (raw as BadgeType) : 'deployed-on'
-}
-
-function parseTheme(raw: string | undefined, type: BadgeType): Theme {
-  const valid = VALID_BADGE_THEMES[type] as Theme[]
-  return valid.includes(raw as Theme) ? (raw as Theme) : DEFAULT_BADGE_THEME[type]
+function parseTheme(raw: string | undefined, type: string): Theme {
+  const valid = VALID_BADGE_THEMES[type as keyof typeof VALID_BADGE_THEMES] as Theme[] | undefined
+  if (!valid) return 'dark'
+  return valid.includes(raw as Theme) ? (raw as Theme) : DEFAULT_BADGE_THEME[type as keyof typeof DEFAULT_BADGE_THEME]
 }
 
 function parseFormat(raw: string | undefined): OutputFormat {
   return VALID_FORMATS.has(raw as OutputFormat) ? (raw as OutputFormat) : 'svg'
+}
+
+function parseLabel(raw: string | undefined): string {
+  const label = (raw ?? DEFAULT_SUBDOMAIN_LABEL).toUpperCase().trim()
+  return label.slice(0, LABEL_MAX_LENGTH)
 }
 
 async function respond(svg: string, format: OutputFormat): Promise<Response> {
@@ -46,22 +48,26 @@ async function respond(svg: string, format: OutputFormat): Promise<Response> {
 }
 
 export function registerBadgeRoute(app: Hono<{ Bindings: Env }>): void {
-  // GET /badge/:subdomain?type=...&theme=...&format=...
+  // GET /badge/:subdomain?type=subdomain|member&label=...&theme=...&format=...
   app.get('/badge/:subdomain', async (c) => {
     const subdomain = c.req.param('subdomain')
-    const type = parseBadgeType(c.req.query('type'))
+    const rawType = c.req.query('type')
+    const type = SUBDOMAIN_TYPES.has(rawType as string) ? (rawType as 'subdomain' | 'member') : 'subdomain'
     const theme = parseTheme(c.req.query('theme'), type)
     const format = parseFormat(c.req.query('format'))
+    const label = parseLabel(c.req.query('label'))
 
-    const registered = await isSubdomainRegistered(subdomain, c.env)
-    const svg = generateBadgeSvg({ subdomain, type, theme, notFound: !registered })
+    const preview = c.req.query('preview') === 'true'
+    const registered = preview || await isSubdomainRegistered(subdomain)
+    const svg = generateBadgeSvg({ subdomain, type, theme, notFound: !registered, label })
 
     return respond(svg, format)
   })
 
-  // GET /badge?type=pinoy-made&theme=...&format=...
+  // GET /badge?type=pinoy-made|certified&theme=...&format=...
   app.get('/badge', async (c) => {
-    const type = parseBadgeType(c.req.query('type'))
+    const rawType = c.req.query('type')
+    const type = PLATFORM_TYPES.has(rawType as string) ? (rawType as 'pinoy-made' | 'certified') : 'pinoy-made'
     const theme = parseTheme(c.req.query('theme'), type)
     const format = parseFormat(c.req.query('format'))
 

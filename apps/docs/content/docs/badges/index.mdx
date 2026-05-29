@@ -1,0 +1,54 @@
+---
+title: Badges
+description: Embed an is-pinoy.dev badge or banner in your README, portfolio, or website.
+---
+
+Once your subdomain is registered, you can add a badge to your README, GitHub profile, or any webpage to show it off.
+
+All badges are served from `badges.is-pinoy.dev` as SVG, PNG, or WebP.
+
+Click any theme to select it and copy the embed code.
+
+## Member Badge
+
+A compact inline identity badge — your subdomain next to the is-pinoy.dev brand.
+
+<BadgeThemes basePath="/badge/yourname?type=member" themes={["dark", "gold", "light", "outlined"]} alt="member badge" />
+
+## Subdomain Badge
+
+The general-purpose badge. Shows your subdomain with a customizable eyebrow label (max 20 characters, defaults to `DEPLOYED ON`).
+
+<BadgeThemes basePath="/badge/yourname" themes={["dark", "gold", "light", "outlined"]} alt="subdomain badge" />
+
+Custom label via `?label=`:
+
+<BadgeThemes basePath="/badge/yourname?label=BUILT+BY" themes={["dark", "gold", "light", "outlined"]} alt="subdomain badge with custom label" />
+
+## Platform Badges
+
+Standalone marks — no subdomain needed.
+
+### Pinoy Made
+
+<BadgeThemes basePath="/badge?type=pinoy-made" themes={["dark", "gold", "light", "outlined"]} alt="pinoy-made badge" />
+
+### Certified Pinoy Dev
+
+<BadgeThemes basePath="/badge?type=certified" themes={["dark", "gold", "light", "outlined"]} alt="certified badge" />
+
+## Banners
+
+Wider assets for README headers and GitHub profiles.
+
+### README banner (646px)
+
+<BadgeThemes basePath="/banner/yourname?type=readme" themes={["dark", "gold"]} alt="readme banner" />
+
+### Profile banner (726px)
+
+<BadgeThemes basePath="/banner/yourname?type=profile" themes={["gold", "dark"]} alt="profile banner" />
+
+## Not found state
+
+If your subdomain is not registered, the badge shows a greyed-out "not found" state instead of your handle. Register your subdomain first via the [workflow](/workflow).

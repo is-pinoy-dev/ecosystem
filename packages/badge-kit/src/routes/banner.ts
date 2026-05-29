@@ -32,7 +32,7 @@ async function respond(svg: string, format: OutputFormat): Promise<Response> {
   return new Response(svg, { headers: { ...headers, 'Content-Type': 'image/svg+xml' } })
 }
 
-export function registerPresetRoutes(app: Hono<{ Bindings: Env }>): void {
+export function registerBannerRoute(app: Hono<{ Bindings: Env }>): void {
   // GET /banner/:subdomain?type=readme|profile&theme=...&format=...
   app.get('/banner/:subdomain', async (c) => {
     const subdomain = c.req.param('subdomain')

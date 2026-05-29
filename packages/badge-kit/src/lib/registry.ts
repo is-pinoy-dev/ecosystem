@@ -1,29 +1,19 @@
-export interface RegistryEnv {
-  CLOUDFLARE_API_TOKEN: string
-  CLOUDFLARE_ZONE_ID: string
+const DOMAINS_RAW_BASE =
+  'https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains'
+
+interface SubdomainRecord {
+  destroy?: boolean
 }
 
-interface DnsListResponse {
-  success: boolean
-  result: Array<{ id: string; type: string }>
-}
-
-export async function isSubdomainRegistered(
-  subdomain: string,
-  env: RegistryEnv
-): Promise<boolean> {
-  const url = `https://api.cloudflare.com/client/v4/zones/${env.CLOUDFLARE_ZONE_ID}/dns_records?type=TXT&name=${subdomain}.is-pinoy.dev`
+export async function isSubdomainRegistered(subdomain: string): Promise<boolean> {
+  const url = `${DOMAINS_RAW_BASE}/${subdomain}.json`
 
   try {
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    })
+    const res = await fetch(url)
+    if (!res.ok) return false
 
-    const json = (await res.json()) as DnsListResponse
-    return json.success && json.result.length > 0
+    const json = (await res.json()) as SubdomainRecord
+    return json.destroy !== true
   } catch {
     return false
   }

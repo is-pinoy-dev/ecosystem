@@ -1,62 +1,49 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { isSubdomainRegistered } from '../lib/registry.ts'
 
-const mockEnv = {
-  CLOUDFLARE_API_TOKEN: 'test-token',
-  CLOUDFLARE_ZONE_ID: 'test-zone-id',
-}
-
 describe('isSubdomainRegistered', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('returns true when DNS record exists', async () => {
+  it('returns true when file exists and destroy is not set', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: true, result: [{ id: 'abc', type: 'TXT' }] }),
+      json: () => Promise.resolve({ subdomain: 'juan' }),
     }))
 
-    const result = await isSubdomainRegistered('juan', mockEnv)
+    const result = await isSubdomainRegistered('juan')
     expect(result).toBe(true)
   })
 
-  it('returns false when DNS record is absent', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ success: true, result: [] }),
-    }))
+  it('returns false when file does not exist (404)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
-    const result = await isSubdomainRegistered('nobody', mockEnv)
+    const result = await isSubdomainRegistered('nobody')
     expect(result).toBe(false)
   })
 
-  it('returns false when API returns an error', async () => {
+  it('returns false when destroy=true', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: false, result: [], errors: [{ message: 'Unauthorized' }] }),
+      json: () => Promise.resolve({ destroy: true }),
     }))
 
-    const result = await isSubdomainRegistered('juan', mockEnv)
+    const result = await isSubdomainRegistered('juan')
     expect(result).toBe(false)
   })
 
-  it('calls Cloudflare DNS API with correct URL', async () => {
+  it('fetches the correct GitHub raw URL', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: true, result: [] }),
+      json: () => Promise.resolve({}),
     })
     vi.stubGlobal('fetch', mockFetch)
 
-    await isSubdomainRegistered('juan', mockEnv)
+    await isSubdomainRegistered('juan')
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.cloudflare.com/client/v4/zones/test-zone-id/dns_records?type=TXT&name=juan.is-pinoy.dev',
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: 'Bearer test-token',
-        }),
-      })
+      'https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains/juan.json'
     )
   })
 })
