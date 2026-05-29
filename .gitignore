@@ -36,3 +36,6 @@ npm-debug.log*
 *.pem
 tools/site-audit/.env
 .worktrees
+.dev.vars
+.wrangler
+.test
