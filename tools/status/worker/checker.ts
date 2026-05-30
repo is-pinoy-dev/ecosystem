@@ -34,16 +34,19 @@ export async function checkDns(fqdn: string): Promise<DnsStatus> {
   }
 }
 
+const UP_STATUSES = new Set([401, 403]);
+
 export async function checkHttp(fqdn: string): Promise<HttpStatus> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
   try {
-    await fetch(`https://${fqdn}`, {
+    const res = await fetch(`https://${fqdn}`, {
       method: "HEAD",
       redirect: "follow",
       signal: controller.signal,
     });
-    return "up";
+    if (res.ok || UP_STATUSES.has(res.status)) return "up";
+    return "down";
   } catch {
     return "down";
   } finally {
