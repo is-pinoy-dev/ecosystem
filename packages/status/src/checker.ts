@@ -93,6 +93,8 @@ export async function checkSsl(
       return { status: "unknown", expiresAt: null, issuer: null };
     }
 
+    // crt.sh emits timezone-less not_after (e.g. "2026-08-28T23:59:59"), which
+    // Date parses as local time. Correct only because the Worker runtime is UTC.
     const latest = entries.reduce((a, b) =>
       new Date(b.not_after).getTime() > new Date(a.not_after).getTime() ? b : a
     );
