@@ -6,6 +6,7 @@ import { ProviderGuides } from "@/components/provider-guides"
 import { DocsSection } from "@/components/docs-section"
 import { FAQSection } from "@/components/faq-section"
 import { CTASection } from "@/components/cta-section"
+import { ReportAbuseSection } from "@/components/report-abuse-section"
 import { SubdomainMarquee } from "@/components/subdomain-marquee"
 import { SiteFooter } from "@/components/site-footer"
 
@@ -67,6 +68,9 @@ export default function Page() {
 
         {/* FAQ */}
         {/*<FAQSection />*/}
+
+        {/* Report Abuse */}
+        <ReportAbuseSection />
 
         {/* CTA */}
         <CTASection />
