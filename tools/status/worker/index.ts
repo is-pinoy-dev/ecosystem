@@ -72,6 +72,19 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
 
+    if (url.pathname === "/api/statuses" && request.method === "GET") {
+      const overall = url.searchParams.get("overall");
+      const query = overall
+        ? "SELECT * FROM subdomain_status WHERE overall = ? ORDER BY subdomain ASC"
+        : "SELECT * FROM subdomain_status ORDER BY subdomain ASC";
+      const { results } = overall
+        ? await env.STATUS_DB.prepare(query).bind(overall).all()
+        : await env.STATUS_DB.prepare(query).all();
+      return Response.json(results, {
+        headers: { "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
     if (url.pathname === "/api/refresh" && request.method === "POST") {
       try {
         const COOLDOWN_MS = 2 * 60 * 1000;

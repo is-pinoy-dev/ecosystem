@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@is-pinoy-dev/status": "workspace:*",
     "@is-pinoy-dev/ui": "workspace:*",
     "@react-router/node": "7.15.1",
     "@react-router/serve": "7.15.1",
