@@ -4,6 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [cloudflareDevProxy(), tailwindcss(), reactRouter()],
+  plugins: [cloudflareDevProxy({ configPath: "./worker/wrangler.toml" }), tailwindcss(), reactRouter()],
   resolve: { tsconfigPaths: true },
 });

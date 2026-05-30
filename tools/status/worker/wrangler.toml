@@ -10,7 +10,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "STATUS_DB"
 database_name = "status-db"
-database_id = "REPLACE_AFTER_RUNNING: wrangler d1 create status-db -c worker/wrangler.toml"
+database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
 
 [triggers]

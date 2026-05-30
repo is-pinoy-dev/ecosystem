@@ -1,8 +1,10 @@
 import { useLoaderData } from "react-router";
 import { useState } from "react";
-import { StatusBadge } from "~/components/status-badge";
+import { DnsBadge, HttpBadge, StatusBadge } from "~/components/status-badge";
+import { NavBar } from "~/components/nav-bar";
+import { StatusInfoPopover } from "~/components/status-info-popover";
 import type { Route } from "./+types/_index";
-import type { SubdomainStatus } from "~/types";
+import type { OverallStatus, SubdomainStatus } from "~/types";
 
 export const meta: Route.MetaFunction = () => [
   { title: "is-pinoy.dev — Status" },
@@ -15,17 +17,6 @@ export async function loader({ context }: Route.LoaderArgs) {
   return { statuses: results };
 }
 
-const DNS_LABEL: Record<SubdomainStatus["dns_status"], string> = {
-  live: "✅ Live",
-  propagating: "⏳ Propagating",
-  error: "❌ Error",
-};
-
-const HTTP_LABEL: Record<SubdomainStatus["http_status"], string> = {
-  up: "✅ Up",
-  down: "❌ Down",
-  unchecked: "—",
-};
 
 function formatRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -40,10 +31,13 @@ function formatRelative(iso: string): string {
 export default function StatusPage() {
   const { statuses } = useLoaderData<typeof loader>();
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<OverallStatus | null>(null);
 
-  const filtered = statuses.filter((s) =>
-    s.subdomain.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = statuses.filter((s) => {
+    const matchesSearch = s.subdomain.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === null || s.overall === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const counts = {
     operational: statuses.filter((s) => s.overall === "operational").length,
@@ -60,24 +54,44 @@ export default function StatusPage() {
       : null;
 
   return (
-    <main className="min-h-screen bg-background text-foreground p-6 md:p-10">
-      <h1 className="font-pixel text-primary text-sm md:text-base mb-8 leading-loose">
-        [ IS-PINOY.DEV STATUS ]
-      </h1>
-
-      <div className="flex flex-wrap gap-6 mb-8 font-pixel text-[9px]">
+    <div className="min-h-screen bg-background text-foreground">
+      <NavBar />
+      <main className="pt-20 px-6 pb-6 md:px-10 md:pb-10 max-w-7xl mx-auto">
+      <div className="flex flex-wrap gap-6 mb-8 mt-4 font-pixel text-[9px]">
         <span className="text-green-400">{counts.operational} OPERATIONAL</span>
         <span className="text-primary">{counts.propagating} PROPAGATING</span>
         <span className="text-red-400">{counts.degraded} DEGRADED</span>
       </div>
 
-      <input
-        type="text"
-        placeholder="SEARCH SUBDOMAIN..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full max-w-sm mb-6 px-4 py-2 bg-card border-2 border-border text-foreground font-pixel text-[9px] outline-none focus:border-primary"
-      />
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <input
+          type="text"
+          placeholder="SEARCH SUBDOMAIN..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full max-w-xs px-4 py-2 bg-card border-2 border-border text-foreground font-pixel text-[9px] outline-none focus:border-primary"
+        />
+        {(
+          [
+            { value: null, label: "ALL" },
+            { value: "operational" as const, label: "OPERATIONAL" },
+            { value: "propagating" as const, label: "PROPAGATING" },
+            { value: "degraded" as const, label: "DEGRADED" },
+          ] satisfies { value: OverallStatus | null; label: string }[]
+        ).map(({ value, label }) => (
+          <button
+            key={label}
+            onClick={() => setStatusFilter(value)}
+            className={`px-3 py-2 font-pixel text-[8px] border-2 transition-colors cursor-pointer ${
+              statusFilter === value
+                ? "bg-primary text-black border-primary"
+                : "bg-transparent text-muted-foreground border-border hover:border-primary hover:text-primary"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       {filtered.length === 0 ? (
         <p className="font-pixel text-muted-foreground text-[9px]">
@@ -100,7 +114,10 @@ export default function StatusPage() {
                   SITE
                 </th>
                 <th className="text-left p-4 text-muted-foreground font-normal">
-                  STATUS
+                  <span className="inline-flex items-center gap-2">
+                    STATUS
+                    <StatusInfoPopover />
+                  </span>
                 </th>
                 <th className="text-left p-4 text-muted-foreground font-normal">
                   SINCE
@@ -113,19 +130,19 @@ export default function StatusPage() {
                   key={s.subdomain}
                   className="border-b border-border hover:bg-card/50 transition-colors"
                 >
-                  <td className="p-4 text-foreground">
+                  <td className="p-4 text-foreground font-mono text-xs">
                     {s.subdomain}.is-pinoy.dev
                   </td>
-                  <td className="p-4 text-muted-foreground">
-                    {DNS_LABEL[s.dns_status]}
+                  <td className="p-4">
+                    <DnsBadge status={s.dns_status} />
                   </td>
-                  <td className="p-4 text-muted-foreground">
-                    {HTTP_LABEL[s.http_status]}
+                  <td className="p-4">
+                    <HttpBadge status={s.http_status} />
                   </td>
                   <td className="p-4">
                     <StatusBadge status={s.overall} />
                   </td>
-                  <td className="p-4 text-muted-foreground">
+                  <td className="p-4 text-muted-foreground font-mono text-xs">
                     {formatRelative(s.since)}
                   </td>
                 </tr>
@@ -135,11 +152,7 @@ export default function StatusPage() {
         </div>
       )}
 
-      {lastChecked && (
-        <p className="mt-8 font-pixel text-muted-foreground text-[8px]">
-          LAST CHECKED: {formatRelative(lastChecked)}
-        </p>
-      )}
-    </main>
+      </main>
+    </div>
   );
 }
