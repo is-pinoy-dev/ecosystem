@@ -103,7 +103,9 @@ describe("checkHttp", () => {
 describe("checkSsl", () => {
   beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
-  function crtResponse(entries: { not_after: string; issuer_name: string }[]) {
+  function certSpotterResponse(
+    entries: { not_after: string; issuer?: { friendly_name?: string; name?: string } }[]
+  ) {
     return { ok: true, status: 200, json: async () => entries } as Response;
   }
 
@@ -116,7 +118,7 @@ describe("checkSsl", () => {
   it("returns valid for a cert far from expiry", async () => {
     const future = new Date(Date.now() + 90 * 86_400_000).toISOString();
     vi.mocked(fetch).mockResolvedValueOnce(
-      crtResponse([{ not_after: future, issuer_name: "Let's Encrypt" }])
+      certSpotterResponse([{ not_after: future, issuer: { friendly_name: "Let's Encrypt" } }])
     );
     const result = await checkSsl("foo.is-pinoy.dev", true);
     expect(result.status).toBe("valid");
@@ -124,10 +126,20 @@ describe("checkSsl", () => {
     expect(result.expiresAt).not.toBeNull();
   });
 
+  it("falls back to issuer name when friendly_name is absent", async () => {
+    const future = new Date(Date.now() + 90 * 86_400_000).toISOString();
+    vi.mocked(fetch).mockResolvedValueOnce(
+      certSpotterResponse([{ not_after: future, issuer: { name: "C=US, O=Let's Encrypt, CN=R13" } }])
+    );
+    expect((await checkSsl("foo.is-pinoy.dev", true)).issuer).toBe(
+      "C=US, O=Let's Encrypt, CN=R13"
+    );
+  });
+
   it("returns expiring when under 14 days remain", async () => {
     const soon = new Date(Date.now() + 5 * 86_400_000).toISOString();
     vi.mocked(fetch).mockResolvedValueOnce(
-      crtResponse([{ not_after: soon, issuer_name: "Let's Encrypt" }])
+      certSpotterResponse([{ not_after: soon, issuer: { friendly_name: "Let's Encrypt" } }])
     );
     expect((await checkSsl("foo.is-pinoy.dev", true)).status).toBe("expiring");
   });
@@ -135,7 +147,7 @@ describe("checkSsl", () => {
   it("returns expired when not_after is in the past", async () => {
     const past = new Date(Date.now() - 86_400_000).toISOString();
     vi.mocked(fetch).mockResolvedValueOnce(
-      crtResponse([{ not_after: past, issuer_name: "Let's Encrypt" }])
+      certSpotterResponse([{ not_after: past, issuer: { friendly_name: "Let's Encrypt" } }])
     );
     expect((await checkSsl("foo.is-pinoy.dev", true)).status).toBe("expired");
   });
@@ -144,9 +156,9 @@ describe("checkSsl", () => {
     const older = new Date(Date.now() + 10 * 86_400_000).toISOString();
     const newer = new Date(Date.now() + 100 * 86_400_000).toISOString();
     vi.mocked(fetch).mockResolvedValueOnce(
-      crtResponse([
-        { not_after: older, issuer_name: "Old" },
-        { not_after: newer, issuer_name: "New" },
+      certSpotterResponse([
+        { not_after: older, issuer: { friendly_name: "Old" } },
+        { not_after: newer, issuer: { friendly_name: "New" } },
       ])
     );
     const result = await checkSsl("foo.is-pinoy.dev", true);
@@ -154,13 +166,13 @@ describe("checkSsl", () => {
     expect(result.issuer).toBe("New");
   });
 
-  it("returns unknown when crt.sh returns a non-OK status", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 502 } as Response);
+  it("returns unknown when the API returns a non-OK status", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 429 } as Response);
     expect((await checkSsl("foo.is-pinoy.dev", true)).status).toBe("unknown");
   });
 
-  it("returns unknown when crt.sh returns an empty array", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(crtResponse([]));
+  it("returns unknown when the API returns an empty array", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(certSpotterResponse([]));
     expect((await checkSsl("foo.is-pinoy.dev", true)).status).toBe("unknown");
   });
 
