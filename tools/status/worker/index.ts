@@ -34,8 +34,10 @@ interface PriorSsl {
 
 function shouldRefreshSsl(prev: PriorSsl | null): boolean {
   if (!prev || !prev.ssl_checked_at) return true;
-  if (prev.ssl_status === "expiring" || prev.ssl_status === "expired")
-    return true;
+  // Re-check anything not currently "valid" on every run. "unknown" means we
+  // have no data (transient API failure or a site that just came up), so don't
+  // wait 12h to retry. Down sites short-circuit in checkSsl before any query.
+  if (prev.ssl_status !== "valid") return true;
   return Date.now() - new Date(prev.ssl_checked_at).getTime() > SSL_REFRESH_MS;
 }
 
