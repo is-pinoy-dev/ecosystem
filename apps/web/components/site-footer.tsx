@@ -94,6 +94,9 @@ export function SiteFooter() {
             <FooterLink href="https://docs.is-pinoy.dev" external>
               Documentation
             </FooterLink>
+            <FooterLink href="https://status.is-pinoy.dev" external>
+              Operational Status
+            </FooterLink>
           </div>
           <div className="flex flex-col gap-3">
             <span className="mb-1 font-pixel text-[7px] leading-[1.6] tracking-[0.1em] text-foreground">
@@ -101,6 +104,9 @@ export function SiteFooter() {
             </span>
             <FooterLink href="/tos">Terms of Service</FooterLink>
             <FooterLink href="/privacy">Privacy Policy</FooterLink>
+            <FooterLink href="https://github.com/is-pinoy-dev/domains/issues/new?template=abuse-report.md&title=%5BABUSE%5D+" external>
+              Report Abuse
+            </FooterLink>
           </div>
         </div>
 
