@@ -48,7 +48,7 @@ function MetricCard({
   return (
     <div className="flex flex-col gap-3 border-2 border-border p-5 shadow-[4px_4px_0px_#000]">
       <span className="font-pixel text-[8px] text-muted-foreground">{label}</span>
-      <span className={`font-mono text-2xl font-bold ${accentClass}`}>{value}</span>
+      <span className={`font-pixel text-lg ${accentClass}`}>{value}</span>
       {sub && (
         <span className="font-pixel text-[8px] text-muted-foreground">{sub}</span>
       )}
