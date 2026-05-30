@@ -11,7 +11,7 @@
   --color-fd-border: var(--border);
   --color-fd-primary: var(--primary);
   --color-fd-primary-foreground: var(--primary-foreground);
-  --color-fd-muted: var(--muted);
+  --color-fd-muted: #2a2a2a;
   --color-fd-muted-foreground: var(--muted-foreground);
   --color-fd-secondary: var(--secondary);
   --color-fd-secondary-foreground: var(--secondary-foreground);
