@@ -1,11 +1,8 @@
-import { Link, useLoaderData, useNavigate } from "react-router";
-import { useState } from "react";
-import { ChevronRight, ExternalLink } from "lucide-react";
-import { DnsBadge, HttpBadge, StatusBadge, SslBadge } from "~/components/status-badge";
+import { useLoaderData } from "react-router";
 import { NavBar } from "~/components/nav-bar";
-import { StatusInfoPopover } from "~/components/status-info-popover";
+import { StatusBadge } from "~/components/status-badge";
 import type { Route } from "./+types/_index";
-import type { OverallStatus, SubdomainStatus } from "~/types";
+import type { SubdomainStatus } from "~/types";
 
 export const meta: Route.MetaFunction = () => [
   { title: "is-pinoy.dev — Status" },
@@ -18,7 +15,6 @@ export async function loader({ context }: Route.LoaderArgs) {
   return { statuses: results };
 }
 
-
 function formatRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60_000);
@@ -29,23 +25,49 @@ function formatRelative(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function MetricCard({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  accent?: "green" | "red" | "yellow" | "muted";
+}) {
+  const accentClass =
+    accent === "green"
+      ? "text-green-400"
+      : accent === "red"
+        ? "text-red-400"
+        : accent === "yellow"
+          ? "text-primary"
+          : "text-foreground";
+
+  return (
+    <div className="flex flex-col gap-3 border-2 border-border p-5 shadow-[4px_4px_0px_#000]">
+      <span className="font-pixel text-[8px] text-muted-foreground">{label}</span>
+      <span className={`font-mono text-2xl font-bold ${accentClass}`}>{value}</span>
+      {sub && (
+        <span className="font-pixel text-[8px] text-muted-foreground">{sub}</span>
+      )}
+    </div>
+  );
+}
+
 export default function StatusPage() {
   const { statuses } = useLoaderData<typeof loader>();
-  const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<OverallStatus | null>(null);
 
-  const filtered = statuses.filter((s) => {
-    const matchesSearch = s.subdomain.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === null || s.overall === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const counts = {
-    operational: statuses.filter((s) => s.overall === "operational").length,
-    propagating: statuses.filter((s) => s.overall === "propagating").length,
-    degraded: statuses.filter((s) => s.overall === "degraded").length,
-  };
+  const total = statuses.length;
+  const operational = statuses.filter((s) => s.overall === "operational").length;
+  const degraded = statuses.filter((s) => s.overall === "degraded").length;
+  const propagating = statuses.filter((s) => s.overall === "propagating").length;
+  const sslValid = statuses.filter((s) => s.ssl_status === "valid").length;
+  const sslExpiring = statuses.filter((s) => s.ssl_status === "expiring").length;
+  const sslExpired = statuses.filter((s) => s.ssl_status === "expired").length;
+  const uptimePct =
+    total > 0 ? Math.round((operational / total) * 100) : 0;
 
   const lastChecked =
     statuses.length > 0
@@ -55,141 +77,86 @@ export default function StatusPage() {
         )
       : null;
 
+  const overallHealthy = degraded === 0 && propagating === 0;
+  const overallStatus =
+    degraded > 0
+      ? "degraded"
+      : propagating > 0
+        ? "propagating"
+        : total > 0
+          ? "operational"
+          : ("propagating" as const);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <NavBar />
-      <main className="pt-20 px-6 pb-6 md:px-10 md:pb-10 max-w-7xl mx-auto">
-      <div className="flex flex-wrap items-center gap-6 mb-8 mt-4 font-pixel text-[9px]">
-        <span className="text-green-400">{counts.operational} OPERATIONAL</span>
-        <span className="text-primary">{counts.propagating} PROPAGATING</span>
-        <span className="text-red-400">{counts.degraded} DEGRADED</span>
-        {lastChecked && (
-          <span className="text-muted-foreground sm:ml-auto">
-            UPDATED {formatRelative(lastChecked)}
-          </span>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <input
-          type="text"
-          placeholder="SEARCH SUBDOMAIN..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-xs px-4 py-2 bg-card border-2 border-border text-foreground font-pixel text-[9px] outline-none focus:border-primary"
-        />
-        {(
-          [
-            { value: null, label: "ALL" },
-            { value: "operational" as const, label: "OPERATIONAL" },
-            { value: "propagating" as const, label: "PROPAGATING" },
-            { value: "degraded" as const, label: "DEGRADED" },
-          ] satisfies { value: OverallStatus | null; label: string }[]
-        ).map(({ value, label }) => (
-          <button
-            key={label}
-            onClick={() => setStatusFilter(value)}
-            className={`px-3 py-2 font-pixel text-[8px] border-2 transition-colors cursor-pointer ${
-              statusFilter === value
-                ? "bg-primary text-black border-primary"
-                : "bg-transparent text-muted-foreground border-border hover:border-primary hover:text-primary"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {filtered.length === 0 ? (
-        <p className="font-pixel text-muted-foreground text-[9px]">
-          {statuses.length === 0
-            ? "NO DATA YET — FIRST CHECK PENDING"
-            : "NO RESULTS"}
-        </p>
-      ) : (
-        <div className="overflow-x-auto border-2 border-border shadow-[4px_4px_0px_#000]">
-          <table className="w-full text-[9px] font-pixel">
-            <thead>
-              <tr className="border-b-2 border-border bg-card">
-                <th className="text-left p-4 text-muted-foreground font-normal">
-                  SUBDOMAIN
-                </th>
-                <th className="text-left p-4 text-muted-foreground font-normal">
-                  DNS
-                </th>
-                <th className="text-left p-4 text-muted-foreground font-normal">
-                  SITE
-                </th>
-                <th className="text-left p-4 text-muted-foreground font-normal">
-                  SSL
-                </th>
-                <th className="text-left p-4 text-muted-foreground font-normal">
-                  <span className="inline-flex items-center gap-2">
-                    STATUS
-                    <StatusInfoPopover />
-                  </span>
-                </th>
-                <th className="text-left p-4 text-muted-foreground font-normal">
-                  SINCE
-                </th>
-                <th className="p-4">
-                  <span className="sr-only">Details</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((s) => (
-                <tr
-                  key={s.subdomain}
-                  onClick={() => navigate(`/${s.subdomain}`)}
-                  className="group border-b border-border hover:bg-card/50 transition-colors cursor-pointer"
-                >
-                  <td className="p-4 font-mono text-xs">
-                    <span className="inline-flex items-center gap-2">
-                      <Link
-                        to={`/${s.subdomain}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-foreground group-hover:text-primary transition-colors"
-                      >
-                        {s.subdomain}.is-pinoy.dev
-                      </Link>
-                      <a
-                        href={`https://${s.subdomain}.is-pinoy.dev`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label={`Open ${s.subdomain}.is-pinoy.dev in a new tab`}
-                        className="text-muted-foreground hover:text-primary"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <DnsBadge status={s.dns_status} />
-                  </td>
-                  <td className="p-4">
-                    <HttpBadge status={s.http_status} />
-                  </td>
-                  <td className="p-4">
-                    <SslBadge status={s.ssl_status} />
-                  </td>
-                  <td className="p-4">
-                    <StatusBadge status={s.overall} />
-                  </td>
-                  <td className="p-4 text-muted-foreground font-mono text-xs">
-                    {formatRelative(s.since)}
-                  </td>
-                  <td className="p-4">
-                    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <main className="pt-20 px-6 pb-6 md:px-10 md:pb-10 max-w-4xl mx-auto">
+        <div className="mt-6 flex flex-wrap items-start gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="font-pixel text-[10px] text-muted-foreground">
+              SYSTEM STATUS
+            </h1>
+            <div className="flex items-center gap-3">
+              <StatusBadge status={overallStatus} />
+              <span className="font-pixel text-[9px] text-foreground">
+                {overallHealthy
+                  ? "ALL SYSTEMS OPERATIONAL"
+                  : degraded > 0
+                    ? `${degraded} SUBDOMAIN${degraded > 1 ? "S" : ""} DEGRADED`
+                    : `${propagating} SUBDOMAIN${propagating > 1 ? "S" : ""} PROPAGATING`}
+              </span>
+            </div>
+          </div>
+          {lastChecked && (
+            <span className="font-pixel text-[8px] text-muted-foreground md:ml-auto self-end pb-0.5">
+              UPDATED {formatRelative(lastChecked)}
+            </span>
+          )}
         </div>
-      )}
 
+        {total === 0 ? (
+          <p className="mt-10 font-pixel text-muted-foreground text-[9px]">
+            NO DATA YET — FIRST CHECK PENDING
+          </p>
+        ) : (
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <MetricCard
+              label="TOTAL SUBDOMAINS"
+              value={total}
+              sub="REGISTERED DOMAINS"
+            />
+            <MetricCard
+              label="OPERATIONAL"
+              value={operational}
+              sub={`${uptimePct}% UPTIME RATE`}
+              accent="green"
+            />
+            <MetricCard
+              label="DEGRADED"
+              value={degraded}
+              sub={degraded === 0 ? "ALL CLEAR" : "NEEDS ATTENTION"}
+              accent={degraded > 0 ? "red" : "muted"}
+            />
+            <MetricCard
+              label="SSL VALID"
+              value={sslValid}
+              sub={`OF ${total} CHECKED`}
+              accent="green"
+            />
+            <MetricCard
+              label="SSL EXPIRING SOON"
+              value={sslExpiring}
+              sub="WITHIN 14 DAYS"
+              accent={sslExpiring > 0 ? "yellow" : "muted"}
+            />
+            <MetricCard
+              label="SSL EXPIRED"
+              value={sslExpired}
+              sub={sslExpired === 0 ? "NONE EXPIRED" : "ACTION REQUIRED"}
+              accent={sslExpired > 0 ? "red" : "muted"}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

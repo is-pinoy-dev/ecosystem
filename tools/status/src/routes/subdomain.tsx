@@ -1,4 +1,5 @@
 import { Link, isRouteErrorResponse, useLoaderData } from "react-router";
+import { ExternalLink } from "lucide-react";
 import { NavBar } from "~/components/nav-bar";
 import {
   DnsBadge,
@@ -70,9 +71,17 @@ export default function SubdomainDetails() {
         </Link>
 
         <div className="mt-4 flex flex-wrap items-center gap-4">
-          <h1 className="font-mono text-base md:text-lg text-foreground">
-            {status.subdomain}.is-pinoy.dev
-          </h1>
+          <a
+            href={`https://${status.subdomain}.is-pinoy.dev`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-2 font-mono text-base md:text-lg text-foreground"
+          >
+            <span className="underline decoration-primary underline-offset-4 group-hover:text-primary transition-colors">
+              {status.subdomain}.is-pinoy.dev
+            </span>
+            <ExternalLink className="h-4 w-4 text-primary shrink-0" />
+          </a>
           <StatusBadge status={status.overall} />
         </div>
 
@@ -119,11 +128,9 @@ export default function SubdomainDetails() {
               >
                 @{owner.github}
               </a>
-              {owner.recordType && (
-                <span className="font-pixel text-[8px] text-muted-foreground">
-                  {owner.recordType} RECORD
-                </span>
-              )}
+              <span className="font-pixel text-[8px] text-muted-foreground">
+                OWNER
+              </span>
             </div>
           </div>
         )}
