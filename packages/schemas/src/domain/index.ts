@@ -16,7 +16,7 @@ export const domainFeaturesSchema = z.object({
 export const domainSchema = z.object({
   subdomain: z
     .string()
-    .min(1)
+    .min(3, "Subdomain must be at least 3 characters")
     .max(63)
     .regex(/^[a-z0-9-]+$/),
   owner: z.object({
