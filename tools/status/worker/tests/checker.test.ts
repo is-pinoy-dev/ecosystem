@@ -60,10 +60,29 @@ describe("checkDns", () => {
 describe("checkHttp", () => {
   beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
-  it("returns up when fetch resolves", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ status: 200 } as Response);
-
+  it("returns up on 200", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: true, status: 200 } as Response);
     expect(await checkHttp("foo.is-pinoy.dev")).toBe("up");
+  });
+
+  it("returns up on 401 (auth-protected site)", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 401 } as Response);
+    expect(await checkHttp("foo.is-pinoy.dev")).toBe("up");
+  });
+
+  it("returns up on 403 (auth-protected site)", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 403 } as Response);
+    expect(await checkHttp("foo.is-pinoy.dev")).toBe("up");
+  });
+
+  it("returns down on 404 (deployment not found)", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 404 } as Response);
+    expect(await checkHttp("foo.is-pinoy.dev")).toBe("down");
+  });
+
+  it("returns down on 500", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 500 } as Response);
+    expect(await checkHttp("foo.is-pinoy.dev")).toBe("down");
   });
 
   it("returns down on network error", async () => {
