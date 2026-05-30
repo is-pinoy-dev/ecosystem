@@ -1,0 +1,32 @@
+@import "@is-pinoy-dev/ui/globals.css";
+@import "@fontsource/press-start-2p/400.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+
+@source "../**/*.{ts,tsx}";
+
+@theme inline {
+  --font-pixel: "Press Start 2P", monospace;
+  --font-sans: "IBM Plex Mono", monospace;
+  --font-mono: "IBM Plex Mono", monospace;
+  --default-font-family: "IBM Plex Mono", monospace;
+}
+
+@keyframes pixel-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
