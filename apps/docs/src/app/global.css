@@ -64,8 +64,12 @@ h6 {
 /* Tab dropdown trigger — ghost variant */
 #nd-sidebar button.border {
   background: transparent !important;
-  border-color: transparent !important;
+  /*border-color: transparent !important;*/
   box-shadow: none !important;
+}
+
+#nd-sidebar button:last-child.border {
+  border-color: transparent !important;
 }
 
 #nd-sidebar button.border[data-state="open"] {
@@ -105,12 +109,6 @@ button[aria-label="Open Sidebar"]:hover {
   border: 3px solid var(--border) !important;
   box-shadow: 4px 4px 0 var(--primary-dark) !important;
   background: transparent !important;
-}
-
-[data-sidebar-panel] [data-search],
-[data-sidebar-panel] [data-search-full] {
-  border-color: transparent !important;
-  box-shadow: none !important;
 }
 
 /* Sidebar collapse toggle */
@@ -156,19 +154,23 @@ button[aria-label="Collapse Sidebar"][data-collapsed="false"]:hover {
   transform: translate(2px, 2px);
 }
 
-/* Search bar in nav — ghost variant */
-[data-search],
-[data-search-full] {
-  border: 3px solid var(--border) !important;
+/* Search bar — icon-only trigger (mobile) */
+[data-search] {
+  border: 3px solid transparent !important;
   background: transparent !important;
   box-shadow: none !important;
 }
 
-@media (max-width: 768px) {
-  [data-search],
-  [data-search-full] {
-    border-color: transparent !important;
-  }
+/* Search bar — full bar (desktop sidebar) */
+[data-search-full] {
+  border: 3px solid var(--border) !important;
+  box-shadow: 4px 4px 0 var(--primary-dark) !important;
+}
+
+/* Reset in collapsed sidebar panel */
+[data-sidebar-panel] [data-search-full] {
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Search dialog */

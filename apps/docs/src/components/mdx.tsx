@@ -5,6 +5,7 @@ import type { MDXComponents } from 'mdx/types'
 import { CustomPre, CustomCode } from './subdomain-code'
 import { BadgePreview } from './badge-preview'
 import { BadgeThemes } from './badge-themes'
+import { SubdomainBanner } from './subdomain-banner'
 
 export function getMDXComponents(components?: MDXComponents) {
   return {
@@ -17,6 +18,7 @@ export function getMDXComponents(components?: MDXComponents) {
     code: CustomCode,
     BadgePreview,
     BadgeThemes,
+    SubdomainBanner,
     ...components,
   } satisfies MDXComponents
 }
