@@ -61,9 +61,9 @@ export function deriveOverall(dns: DnsStatus, http: HttpStatus): OverallStatus {
   return "degraded";
 }
 
-interface CrtShEntry {
+interface CertSpotterIssuance {
   not_after: string;
-  issuer_name: string;
+  issuer?: { friendly_name?: string; name?: string };
 }
 
 const SSL_EXPIRING_DAYS = 14;
@@ -80,7 +80,7 @@ export async function checkSsl(
   const timer = setTimeout(() => controller.abort(), 4000);
   try {
     const res = await fetch(
-      `https://crt.sh/?q=${encodeURIComponent(fqdn)}&output=json`,
+      `https://api.certspotter.com/v1/issuances?domain=${encodeURIComponent(fqdn)}&expand=issuer`,
       {
         headers: { "User-Agent": "is-pinoy.dev status worker" },
         signal: controller.signal,
@@ -88,13 +88,11 @@ export async function checkSsl(
     );
     if (!res.ok) return { status: "unknown", expiresAt: null, issuer: null };
 
-    const entries = (await res.json()) as CrtShEntry[];
+    const entries = (await res.json()) as CertSpotterIssuance[];
     if (!Array.isArray(entries) || entries.length === 0) {
       return { status: "unknown", expiresAt: null, issuer: null };
     }
 
-    // crt.sh emits timezone-less not_after (e.g. "2026-08-28T23:59:59"), which
-    // Date parses as local time. Correct only because the Worker runtime is UTC.
     const latest = entries.reduce((a, b) =>
       new Date(b.not_after).getTime() > new Date(a.not_after).getTime() ? b : a
     );
@@ -104,7 +102,9 @@ export async function checkSsl(
     const status: SslStatus =
       daysLeft < 0 ? "expired" : daysLeft < SSL_EXPIRING_DAYS ? "expiring" : "valid";
 
-    return { status, expiresAt, issuer: latest.issuer_name ?? null };
+    const issuer =
+      latest.issuer?.friendly_name ?? latest.issuer?.name ?? null;
+    return { status, expiresAt, issuer };
   } catch {
     return { status: "unknown", expiresAt: null, issuer: null };
   } finally {
