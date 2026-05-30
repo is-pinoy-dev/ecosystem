@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build workspace dependencies
+        run: pnpm --filter @is-pinoy-dev/status build
+
       - name: Apply D1 migrations
         working-directory: tools/status
         run: pnpm exec wrangler d1 migrations apply status-db --remote -c worker/wrangler.toml
