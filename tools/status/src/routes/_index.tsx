@@ -1,6 +1,6 @@
-import { useLoaderData } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { useState } from "react";
-import { DnsBadge, HttpBadge, StatusBadge } from "~/components/status-badge";
+import { DnsBadge, HttpBadge, StatusBadge, SslBadge } from "~/components/status-badge";
 import { NavBar } from "~/components/nav-bar";
 import { StatusInfoPopover } from "~/components/status-info-popover";
 import type { Route } from "./+types/_index";
@@ -114,6 +114,9 @@ export default function StatusPage() {
                   SITE
                 </th>
                 <th className="text-left p-4 text-muted-foreground font-normal">
+                  SSL
+                </th>
+                <th className="text-left p-4 text-muted-foreground font-normal">
                   <span className="inline-flex items-center gap-2">
                     STATUS
                     <StatusInfoPopover />
@@ -130,14 +133,22 @@ export default function StatusPage() {
                   key={s.subdomain}
                   className="border-b border-border hover:bg-card/50 transition-colors"
                 >
-                  <td className="p-4 text-foreground font-mono text-xs">
-                    {s.subdomain}.is-pinoy.dev
+                  <td className="p-4 font-mono text-xs">
+                    <Link
+                      to={`/${s.subdomain}`}
+                      className="text-foreground hover:text-primary"
+                    >
+                      {s.subdomain}.is-pinoy.dev
+                    </Link>
                   </td>
                   <td className="p-4">
                     <DnsBadge status={s.dns_status} />
                   </td>
                   <td className="p-4">
                     <HttpBadge status={s.http_status} />
+                  </td>
+                  <td className="p-4">
+                    <SslBadge status={s.ssl_status} />
                   </td>
                   <td className="p-4">
                     <StatusBadge status={s.overall} />

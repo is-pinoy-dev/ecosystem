@@ -20,14 +20,19 @@ export async function upsertStatus(
   await db
     .prepare(
       `INSERT INTO subdomain_status
-         (subdomain, dns_status, http_status, overall, since, last_checked)
-       VALUES (?, ?, ?, ?, ?, ?)
+         (subdomain, dns_status, http_status, overall, since, last_checked,
+          ssl_status, ssl_expires_at, ssl_issuer, ssl_checked_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(subdomain) DO UPDATE SET
-         dns_status   = excluded.dns_status,
-         http_status  = excluded.http_status,
-         overall      = excluded.overall,
-         since        = excluded.since,
-         last_checked = excluded.last_checked`
+         dns_status     = excluded.dns_status,
+         http_status    = excluded.http_status,
+         overall        = excluded.overall,
+         since          = excluded.since,
+         last_checked   = excluded.last_checked,
+         ssl_status     = excluded.ssl_status,
+         ssl_expires_at = excluded.ssl_expires_at,
+         ssl_issuer     = excluded.ssl_issuer,
+         ssl_checked_at = excluded.ssl_checked_at`
     )
     .bind(
       check.subdomain,
@@ -35,7 +40,11 @@ export async function upsertStatus(
       check.http_status,
       check.overall,
       since,
-      check.last_checked
+      check.last_checked,
+      check.ssl_status,
+      check.ssl_expires_at,
+      check.ssl_issuer,
+      check.ssl_checked_at
     )
     .run();
 }

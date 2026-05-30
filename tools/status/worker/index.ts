@@ -3,8 +3,9 @@ import { createRequestHandler } from "@react-router/cloudflare";
 import * as build from "../build/server";
 
 import { fetchSubdomains } from "./github";
-import { checkDns, checkHttp, deriveOverall } from "./checker";
+import { checkDns, checkHttp, deriveOverall, checkSsl } from "./checker";
 import { upsertStatus } from "./db";
+import type { SslStatus } from "./types";
 
 export interface Env {
   STATUS_DB: D1Database;
@@ -21,6 +22,22 @@ const handleRequest = createRequestHandler({
     },
   }),
 });
+
+const SSL_REFRESH_MS = 12 * 60 * 60 * 1000;
+
+interface PriorSsl {
+  ssl_status: SslStatus | null;
+  ssl_expires_at: string | null;
+  ssl_issuer: string | null;
+  ssl_checked_at: string | null;
+}
+
+function shouldRefreshSsl(prev: PriorSsl | null): boolean {
+  if (!prev || !prev.ssl_checked_at) return true;
+  if (prev.ssl_status === "expiring" || prev.ssl_status === "expired")
+    return true;
+  return Date.now() - new Date(prev.ssl_checked_at).getTime() > SSL_REFRESH_MS;
+}
 
 async function runChecks(env: Env): Promise<void> {
   const subdomains = await fetchSubdomains();
@@ -39,11 +56,35 @@ async function runChecks(env: Env): Promise<void> {
       const http =
         dns === "live" ? await checkHttp(fqdn) : ("unchecked" as const);
       const overall = deriveOverall(dns, http);
+
+      const prev = await env.STATUS_DB.prepare(
+        "SELECT ssl_status, ssl_expires_at, ssl_issuer, ssl_checked_at FROM subdomain_status WHERE subdomain = ?"
+      )
+        .bind(subdomain)
+        .first<PriorSsl>();
+
+      let ssl_status = prev?.ssl_status ?? null;
+      let ssl_expires_at = prev?.ssl_expires_at ?? null;
+      let ssl_issuer = prev?.ssl_issuer ?? null;
+      let ssl_checked_at = prev?.ssl_checked_at ?? null;
+
+      if (shouldRefreshSsl(prev)) {
+        const ssl = await checkSsl(fqdn, http === "up");
+        ssl_status = ssl.status;
+        ssl_expires_at = ssl.expiresAt;
+        ssl_issuer = ssl.issuer;
+        ssl_checked_at = now;
+      }
+
       await upsertStatus(env.STATUS_DB, {
         subdomain,
         dns_status: dns,
         http_status: http,
         overall,
+        ssl_status,
+        ssl_expires_at,
+        ssl_issuer,
+        ssl_checked_at,
         last_checked: now,
       });
     })

@@ -1,4 +1,4 @@
-import type { DnsStatus, HttpStatus, OverallStatus } from "~/types";
+import type { DnsStatus, HttpStatus, OverallStatus, SslStatus } from "~/types";
 
 type Config = {
   label: string;
@@ -81,6 +81,31 @@ const HTTP_CONFIG: Record<HttpStatus, Config> = {
   },
 };
 
+const SSL_CONFIG: Record<SslStatus, Config> = {
+  valid: {
+    label: "VALID",
+    dot: "bg-green-500",
+    badge: "bg-green-500/10 border border-green-500/40 text-green-400",
+    pulse: true,
+  },
+  expiring: {
+    label: "EXPIRING",
+    dot: "bg-primary",
+    badge: "bg-primary/10 border border-primary/40 text-primary",
+    blink: true,
+  },
+  expired: {
+    label: "EXPIRED",
+    dot: "bg-red-500",
+    badge: "bg-red-500/10 border border-red-500/40 text-red-400",
+  },
+  unknown: {
+    label: "—",
+    dot: "bg-muted-foreground/40",
+    badge: "bg-muted/20 border border-border text-muted-foreground",
+  },
+};
+
 export function StatusBadge({ status }: { status: OverallStatus }) {
   return <Badge {...OVERALL_CONFIG[status]} />;
 }
@@ -91,4 +116,8 @@ export function DnsBadge({ status }: { status: DnsStatus }) {
 
 export function HttpBadge({ status }: { status: HttpStatus }) {
   return <Badge {...HTTP_CONFIG[status]} />;
+}
+
+export function SslBadge({ status }: { status: SslStatus | null }) {
+  return <Badge {...SSL_CONFIG[status ?? "unknown"]} />;
 }
