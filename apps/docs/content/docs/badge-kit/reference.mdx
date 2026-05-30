@@ -55,28 +55,97 @@ All badges are cached at the CDN edge for **24 hours** (`Cache-Control: public, 
 
 ## Examples
 
-```
-# Default subdomain badge (DEPLOYED ON eyebrow, dark theme)
-https://badges.is-pinoy.dev/badge/yourname
+### Subdomain badge
 
-# Subdomain badge with custom label, gold theme
-https://badges.is-pinoy.dev/badge/yourname?label=BUILT+BY&theme=gold
+<Tabs items={["Default", "Gold", "Outlined PNG", "Custom label"]}>
+  <Tab value="Default">
+    ```text title="Dark theme, DEPLOYED ON eyebrow"
+    https://badges.is-pinoy.dev/badge/yourname
+    ```
+  </Tab>
+  <Tab value="Gold">
+    ```text title="Gold theme"
+    https://badges.is-pinoy.dev/badge/yourname?theme=gold
+    ```
+  </Tab>
+  <Tab value="Outlined PNG">
+    ```text title="Outlined theme, exported as PNG"
+    https://badges.is-pinoy.dev/badge/yourname?theme=outlined&format=png
+    ```
+  </Tab>
+  <Tab value="Custom label">
+    ```text title="Custom eyebrow label, gold theme"
+    https://badges.is-pinoy.dev/badge/yourname?label=BUILT+BY&theme=gold
+    ```
+  </Tab>
+</Tabs>
 
-# Subdomain badge, outlined theme as PNG
-https://badges.is-pinoy.dev/badge/yourname?theme=outlined&format=png
+### Member badge
 
-# Member badge, light theme
-https://badges.is-pinoy.dev/badge/yourname?type=member&theme=light
+<Tabs items={["Default", "Light", "Outlined WebP"]}>
+  <Tab value="Default">
+    ```text title="Dark theme"
+    https://badges.is-pinoy.dev/badge/yourname?type=member
+    ```
+  </Tab>
+  <Tab value="Light">
+    ```text title="Light theme"
+    https://badges.is-pinoy.dev/badge/yourname?type=member&theme=light
+    ```
+  </Tab>
+  <Tab value="Outlined WebP">
+    ```text title="Outlined theme, exported as WebP"
+    https://badges.is-pinoy.dev/badge/yourname?type=member&theme=outlined&format=webp
+    ```
+  </Tab>
+</Tabs>
 
-# Pinoy Made, outlined theme as WebP
-https://badges.is-pinoy.dev/badge?type=pinoy-made&theme=outlined&format=webp
+### Platform badges
 
-# Certified Pinoy Dev, gold theme
-https://badges.is-pinoy.dev/badge?type=certified&theme=gold
+<Tabs items={["Pinoy Made", "Pinoy Made outlined", "Certified", "Certified gold"]}>
+  <Tab value="Pinoy Made">
+    ```text title="Default theme"
+    https://badges.is-pinoy.dev/badge?type=pinoy-made
+    ```
+  </Tab>
+  <Tab value="Pinoy Made outlined">
+    ```text title="Outlined theme, exported as WebP"
+    https://badges.is-pinoy.dev/badge?type=pinoy-made&theme=outlined&format=webp
+    ```
+  </Tab>
+  <Tab value="Certified">
+    ```text title="Default theme"
+    https://badges.is-pinoy.dev/badge?type=certified
+    ```
+  </Tab>
+  <Tab value="Certified gold">
+    ```text title="Gold theme"
+    https://badges.is-pinoy.dev/badge?type=certified&theme=gold
+    ```
+  </Tab>
+</Tabs>
 
-# README banner
-https://badges.is-pinoy.dev/banner/yourname?type=readme&theme=dark
+### Banners
 
-# Profile banner as PNG
-https://badges.is-pinoy.dev/banner/yourname?type=profile&theme=gold&format=png
-```
+<Tabs items={["README dark", "README gold", "Profile gold", "Profile PNG"]}>
+  <Tab value="README dark">
+    ```text title="README banner, dark theme (646px)"
+    https://badges.is-pinoy.dev/banner/yourname?type=readme
+    ```
+  </Tab>
+  <Tab value="README gold">
+    ```text title="README banner, gold theme (646px)"
+    https://badges.is-pinoy.dev/banner/yourname?type=readme&theme=gold
+    ```
+  </Tab>
+  <Tab value="Profile gold">
+    ```text title="Profile banner, gold theme (726px)"
+    https://badges.is-pinoy.dev/banner/yourname?type=profile
+    ```
+  </Tab>
+  <Tab value="Profile PNG">
+    ```text title="Profile banner, gold theme, exported as PNG (726px)"
+    https://badges.is-pinoy.dev/banner/yourname?type=profile&theme=gold&format=png
+    ```
+  </Tab>
+</Tabs>
