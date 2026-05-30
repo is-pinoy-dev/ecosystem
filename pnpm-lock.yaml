@@ -271,9 +271,6 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^4.20260527.1
         version: 4.20260527.1
-      '@fontsource/ibm-plex-mono':
-        specifier: ^5.2.7
-        version: 5.2.7
       '@fontsource/press-start-2p':
         specifier: ^5.2.7
         version: 5.2.7
