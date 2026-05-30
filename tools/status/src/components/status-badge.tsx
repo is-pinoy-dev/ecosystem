@@ -1,5 +1,5 @@
 import { Badge } from "@is-pinoy-dev/ui/components/badge";
-import type { OverallStatus } from "../../worker/types";
+import type { OverallStatus } from "~/types";
 
 const CONFIG: Record<OverallStatus, { label: string; className: string }> = {
   operational: {
