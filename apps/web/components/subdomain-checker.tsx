@@ -35,7 +35,7 @@ function ResultCard({
 
   if (status === "taken" && !record) {
     return (
-      <div className="mt-4 flex w-fit items-center gap-3 border-[3px] border-border bg-background px-5 py-4 shadow-[5px_5px_0_#000]">
+      <div className="mt-4 flex w-full max-w-[560px] items-center gap-3 border-[3px] border-border bg-background px-5 py-4 shadow-[5px_5px_0_#000]">
         <span className="font-mono text-[13px] leading-none text-muted-foreground">
           <span className="text-primary">{subdomain}</span>.is-pinoy.dev is reserved.
         </span>
@@ -45,7 +45,7 @@ function ResultCard({
 
   if (status === "taken" && record) {
     return (
-      <div className="mt-4 flex w-fit items-center gap-4 border-[3px] border-primary bg-background px-5 py-4 shadow-[5px_5px_0_#000]">
+      <div className="mt-4 flex w-full max-w-[560px] items-center gap-4 border-[3px] border-primary bg-background px-5 py-4 shadow-[5px_5px_0_#000]">
         <Image
           src={`https://github.com/${record.owner.github}.png?size=48`}
           alt={record.owner.github}
@@ -54,11 +54,11 @@ function ResultCard({
           className="shrink-0 border-[2px] border-primary [image-rendering:pixelated]"
           unoptimized
         />
-        <div className="flex flex-col items-start gap-[6px]">
+        <div className="flex min-w-0 flex-col items-start gap-[6px]">
           <span className="font-mono text-[14px] leading-none text-foreground">
             @{record.owner.github}
           </span>
-          <span className="font-sans text-[13px] text-muted-foreground">
+          <span className="font-sans text-[13px] text-muted-foreground break-words">
             <span className="font-mono text-primary">{subdomain}</span>
             .is-pinoy.dev is already claimed.
           </span>
@@ -69,7 +69,7 @@ function ResultCard({
 
   // available
   return (
-    <div className="mt-4 flex w-full max-w-[560px] flex-wrap items-center justify-between gap-4 border-[3px] border-primary px-6 py-5 shadow-[5px_5px_0_var(--color-primary-dark)]">
+    <div className="mt-4 flex w-full max-w-[560px] flex-col items-start gap-4 border-[3px] border-primary px-6 py-5 shadow-[5px_5px_0_var(--color-primary-dark)] sm:flex-row sm:items-center sm:justify-between">
       <span className="font-pixel text-[9px] leading-[1.6]">
         ✓ <span className="text-primary">{subdomain}</span>.is-pinoy.dev is available!
       </span>
