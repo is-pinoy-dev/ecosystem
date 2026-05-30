@@ -119,3 +119,30 @@ or from CI:
 | `juan-` | `juan` |
 
 ---
+
+## Subdomain too short
+
+**Error:**
+```text
+❌ Subdomain must be at least 3 characters
+```
+
+**Fix:** Choose a subdomain that is at least 3 characters long. Single or double-character subdomains are not allowed:
+
+| Invalid | Valid |
+|---------|-------|
+| `jb` | `jun` |
+| `ab` | `abc` |
+
+---
+
+## Reserved subdomain
+
+**Error:**
+```text
+❌ Reserved subdomain: status
+```
+
+**Fix:** Choose a different name. Certain subdomains are reserved for platform use (e.g. `api`, `status`, `mail`, `admin`). See the full list in [Naming Rules](/guides/getting-started/naming-rules#reserved-names).
+
+---

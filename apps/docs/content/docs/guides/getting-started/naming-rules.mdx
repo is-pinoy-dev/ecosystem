@@ -21,11 +21,28 @@ In regular expression form: `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`
 
 ## Length
 
-Between **1 and 63 characters** (the standard DNS label limit).
+Between **3 and 63 characters** (minimum 3, maximum is the standard DNS label limit).
 
 ## One subdomain per person
 
 Each GitHub account may register one subdomain. If you already have one and want to change it, open a GitHub issue on the [domains repository](https://github.com/is-pinoy-dev/domains).
+
+## Reserved names
+
+The following subdomains are reserved and cannot be registered:
+
+| Category | Reserved names |
+|----------|---------------|
+| Infrastructure / DNS | `www`, `api`, `cdn`, `ns`, `ns1`, `ns2`, `mx`, `mail`, `smtp`, `pop`, `imap`, `webmail`, `ftp`, `ssh`, `vpn`, `ssl` |
+| Auth / identity | `auth`, `login`, `logout`, `signin`, `signup`, `register`, `account`, `profile`, `oauth`, `sso`, `id` |
+| Admin / ops | `admin`, `console`, `dashboard`, `portal`, `panel`, `manage`, `management`, `controlpanel`, `cp`, `ops` |
+| Environments | `dev`, `staging`, `beta`, `alpha`, `test`, `qa`, `prod`, `production`, `preview`, `demo`, `sandbox`, `local`, `localhost`, `canary` |
+| Observability | `status`, `monitor`, `metrics`, `analytics`, `logs`, `grafana`, `prometheus`, `kibana`, `uptime` |
+| Content / assets | `static`, `assets`, `media`, `img`, `images`, `files`, `uploads`, `download`, `downloads` |
+| Community | `blog`, `docs`, `forum`, `community`, `wiki`, `help`, `support`, `faq`, `kb`, `news`, `showcase` |
+| Commerce | `shop`, `store`, `pay`, `payment`, `checkout`, `billing`, `invoice` |
+| Brand protection | `pinoy`, `ispinoy`, `ispinodev`, `oss`, `app` |
+| Abuse / postmaster | `abuse`, `postmaster`, `hostmaster`, `webmaster`, `security`, `noreply`, `no-reply` |
 
 ## What gets rejected
 
@@ -34,7 +51,8 @@ Pull requests will be closed if the subdomain:
 - **Does not point to a portfolio** — only portfolio websites are accepted for now
 - **Squats a name** — registering a subdomain you have no intention of using
 - **Impersonates someone** — using another person's name, handle, or brand
-- **Uses reserved names** — certain names are reserved by maintainers (e.g. `www`, `api`, `mail`)
+- **Uses a reserved name** — see the table above
+- **Is shorter than 3 characters** — minimum length is 3
 - **Has a mismatched owner** — `owner.github` must match the GitHub account opening the PR
 - **Fails schema validation** — records that don't pass the JSON schema
 
