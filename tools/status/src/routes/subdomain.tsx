@@ -1,4 +1,4 @@
-import { Link, useLoaderData } from "react-router";
+import { Link, isRouteErrorResponse, useLoaderData } from "react-router";
 import { NavBar } from "~/components/nav-bar";
 import {
   DnsBadge,
@@ -132,7 +132,8 @@ export default function SubdomainDetails() {
   );
 }
 
-export function ErrorBoundary() {
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const is404 = isRouteErrorResponse(error) && error.status === 404;
   return (
     <div className="min-h-screen bg-background text-foreground">
       <NavBar />
@@ -144,7 +145,9 @@ export function ErrorBoundary() {
           ← BACK
         </Link>
         <p className="mt-8 font-pixel text-[10px] text-muted-foreground">
-          SUBDOMAIN NOT FOUND — NO STATUS DATA.
+          {is404
+            ? "SUBDOMAIN NOT FOUND — NO STATUS DATA."
+            : "SOMETHING WENT WRONG — TRY AGAIN LATER."}
         </p>
       </main>
     </div>
