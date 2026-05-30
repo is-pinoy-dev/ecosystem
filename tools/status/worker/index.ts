@@ -22,43 +22,47 @@ const handleRequest = createRequestHandler({
   }),
 });
 
+async function runChecks(env: Env): Promise<void> {
+  const subdomains = await fetchSubdomains();
+  if (subdomains.length === 0) {
+    throw new Error(
+      "Empty subdomain list from GitHub — aborting to avoid data loss"
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const results = await Promise.allSettled(
+    subdomains.map(async (subdomain) => {
+      const fqdn = `${subdomain}.is-pinoy.dev`;
+      const dns = await checkDns(fqdn);
+      const http =
+        dns === "live" ? await checkHttp(fqdn) : ("unchecked" as const);
+      const overall = deriveOverall(dns, http);
+      await upsertStatus(env.STATUS_DB, {
+        subdomain,
+        dns_status: dns,
+        http_status: http,
+        overall,
+        last_checked: now,
+      });
+    })
+  );
+
+  for (const result of results) {
+    if (result.status === "rejected") {
+      console.error("Subdomain check failed:", result.reason);
+    }
+  }
+}
+
 export default {
   async scheduled(
     _event: ScheduledController,
     env: Env,
     _ctx: ExecutionContext
   ): Promise<void> {
-    const subdomains = await fetchSubdomains();
-    if (subdomains.length === 0) {
-      throw new Error(
-        "Empty subdomain list from GitHub — aborting to avoid data loss"
-      );
-    }
-
-    const now = new Date().toISOString();
-
-    const results = await Promise.allSettled(
-      subdomains.map(async (subdomain) => {
-        const fqdn = `${subdomain}.is-pinoy.dev`;
-        const dns = await checkDns(fqdn);
-        const http =
-          dns === "live" ? await checkHttp(fqdn) : ("unchecked" as const);
-        const overall = deriveOverall(dns, http);
-        await upsertStatus(env.STATUS_DB, {
-          subdomain,
-          dns_status: dns,
-          http_status: http,
-          overall,
-          last_checked: now,
-        });
-      })
-    );
-
-    for (const result of results) {
-      if (result.status === "rejected") {
-        console.error("Subdomain check failed:", result.reason);
-      }
-    }
+    await runChecks(env);
   },
 
   async fetch(
@@ -66,6 +70,36 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/api/refresh" && request.method === "POST") {
+      try {
+        const COOLDOWN_MS = 2 * 60 * 1000;
+        const recent = await env.STATUS_DB.prepare(
+          "SELECT last_checked FROM subdomain_status ORDER BY last_checked DESC LIMIT 1"
+        ).first<{ last_checked: string }>();
+
+        if (recent) {
+          const age = Date.now() - new Date(recent.last_checked).getTime();
+          if (age < COOLDOWN_MS) {
+            const retryAfter = Math.ceil((COOLDOWN_MS - age) / 1000);
+            return Response.json(
+              { ok: false, error: "Rate limited", retryAfter },
+              { status: 429, headers: { "Retry-After": String(retryAfter) } }
+            );
+          }
+        }
+
+        await runChecks(env);
+        return Response.json({ ok: true });
+      } catch (err) {
+        return Response.json(
+          { ok: false, error: err instanceof Error ? err.message : String(err) },
+          { status: 500 }
+        );
+      }
+    }
+
     if (env.ASSETS) {
       try {
         const assetResponse = await env.ASSETS.fetch(
