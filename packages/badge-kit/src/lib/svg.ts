@@ -1,4 +1,4 @@
-import { PRESS_START_2P_WOFF2_BASE64, IBM_PLEX_MONO_WOFF2_BASE64 } from './font.ts'
+import { PRESS_START_2P_WOFF2_BASE64, IBM_PLEX_MONO_TTF_BASE64 } from './font.ts'
 
 // ─── Public types ──────────────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ export const VALID_BANNER_THEMES: Record<BannerType, Theme[]> = {
 function fontFaceStyles(): string {
   return (
     `@font-face{font-family:'Press Start 2P';src:url('data:font/woff2;base64,${PRESS_START_2P_WOFF2_BASE64}') format('woff2');}` +
-    `@font-face{font-family:'IBM Plex Mono';src:url('data:font/woff2;base64,${IBM_PLEX_MONO_WOFF2_BASE64}') format('woff2');}`
+    `@font-face{font-family:'IBM Plex Mono';src:url('data:font/ttf;base64,${IBM_PLEX_MONO_TTF_BASE64}') format('truetype');}`
   )
 }
 
