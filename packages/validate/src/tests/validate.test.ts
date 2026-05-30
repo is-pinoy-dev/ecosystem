@@ -51,6 +51,26 @@ describe("validateDomain", () => {
     expect(result.errors.length).toBeGreaterThan(0)
   })
 
+  it("returns error for subdomain shorter than 3 characters", () => {
+    const result = validateDomain({
+      subdomain: "ab",
+      owner: { github: "bosquejun" },
+      records: { CNAME: { value: "ab.vercel.app" } },
+    })
+    expect(result.ok).toBe(false)
+    expect(result.errors.length).toBeGreaterThan(0)
+  })
+
+  it("returns error for single-character subdomain", () => {
+    const result = validateDomain({
+      subdomain: "a",
+      owner: { github: "bosquejun" },
+      records: { CNAME: { value: "a.vercel.app" } },
+    })
+    expect(result.ok).toBe(false)
+    expect(result.errors.length).toBeGreaterThan(0)
+  })
+
   it("returns ok for a valid TXT domain", () => {
     const result = validateDomain({
       subdomain: "jun",
