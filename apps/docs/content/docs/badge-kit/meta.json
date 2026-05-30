@@ -1,0 +1,5 @@
+{
+  "title": "Badge Kit",
+  "root": true,
+  "pages": ["index", "reference"]
+}

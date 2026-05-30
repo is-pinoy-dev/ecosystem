@@ -1,0 +1,58 @@
+---
+title: "8: After Merge"
+description: Step 8 — What happens after your PR is merged and how to verify DNS propagation.
+---
+
+## Step 8: Wait for CI and review
+
+After you open your pull request, two things happen before it gets merged:
+
+### CI runs automatically
+
+The CI pipeline validates your JSON file and checks that `owner.github` matches the GitHub account that opened the PR. This usually completes within a minute.
+
+If CI fails, GitHub will post a comment on your PR explaining what went wrong. Push a fix to your branch and CI will re-run automatically. See [CI Failures](/guides/troubleshooting/ci-failures) for help.
+
+### A maintainer reviews
+
+Once CI passes, a maintainer will review your PR and merge it if everything looks good. Review usually happens within a day or two.
+
+<Callout type="info">
+  Post your PR link in our [Discord](https://discord.com/channels/1507758007218471062/1507758194624299039) to get a faster review.
+</Callout>
+
+---
+
+## After merge: DNS goes live
+
+Once your PR is merged, the subdomain is synced to Cloudflare automatically. DNS propagation usually takes **a few minutes** but can take **up to 48 hours** depending on DNS resolvers.
+
+## Verify DNS propagation
+
+Check whether your subdomain has propagated using `dig`:
+
+```bash
+dig yourname.is-pinoy.dev CNAME
+```
+
+You should see your CNAME value in the ANSWER SECTION (the exact target will match what you put in your JSON file):
+
+```text
+;; ANSWER SECTION:
+yourname.is-pinoy.dev.  300  IN  CNAME  <your-cname-target>.
+```
+
+Alternatively, use a web-based tool like [whatsmydns.net](https://www.whatsmydns.net) to check propagation from multiple locations.
+
+## If your subdomain isn't live after 48 hours
+
+Open an issue on the [domains repository](https://github.com/is-pinoy-dev/domains/issues) and include:
+- Your subdomain
+- A link to the merged PR
+- The output of `dig yourname.is-pinoy.dev CNAME`
+
+---
+
+Congratulations — your `*.is-pinoy.dev` subdomain is live! 🎉
+
+If you run into issues, check the [Troubleshooting](/guides/troubleshooting) section.

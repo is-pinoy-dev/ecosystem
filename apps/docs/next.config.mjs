@@ -18,6 +18,21 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  async redirects() {
+    return [
+      { source: '/', destination: '/guides', permanent: false },
+      { source: '/getting-started', destination: '/guides/getting-started', permanent: true },
+      { source: '/getting-started/:path*', destination: '/guides/getting-started/:path*', permanent: true },
+      { source: '/providers', destination: '/guides/providers', permanent: true },
+      { source: '/providers/:path*', destination: '/guides/providers/:path*', permanent: true },
+      { source: '/workflow', destination: '/guides/workflow', permanent: true },
+      { source: '/workflow/:path*', destination: '/guides/workflow/:path*', permanent: true },
+      { source: '/reference', destination: '/guides/reference', permanent: true },
+      { source: '/reference/:path*', destination: '/guides/reference/:path*', permanent: true },
+      { source: '/troubleshooting', destination: '/guides/troubleshooting', permanent: true },
+      { source: '/troubleshooting/:path*', destination: '/guides/troubleshooting/:path*', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

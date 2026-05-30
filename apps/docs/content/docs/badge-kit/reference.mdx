@@ -1,0 +1,82 @@
+---
+title: Reference
+description: All badge endpoints, types, themes, and query parameters.
+---
+
+## Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /badge/:subdomain` | Subdomain badge (`subdomain` or `member` type) |
+| `GET /badge` | Platform badge (`pinoy-made` or `certified` type) |
+| `GET /banner/:subdomain` | Wide banner |
+
+Base URL: `https://badges.is-pinoy.dev`
+
+## Query parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `type` | Badge or banner type (see tables below) | `subdomain` (badge), `readme` (banner) |
+| `theme` | Visual theme (see table below) | Depends on type |
+| `format` | Output format: `svg`, `png`, `webp` | `svg` |
+| `label` | Eyebrow text for `subdomain` type, max 15 chars | `DEPLOYED ON` |
+
+## Badge types
+
+| Type | Route | Default theme |
+|------|-------|---------------|
+| `subdomain` | `/badge/:subdomain` | `dark` |
+| `member` | `/badge/:subdomain?type=member` | `dark` |
+| `pinoy-made` | `/badge?type=pinoy-made` | `split` |
+| `certified` | `/badge?type=certified` | `gold` |
+
+## Banner types
+
+| Type | Width | Default theme |
+|------|-------|---------------|
+| `readme` | 646px | `dark` |
+| `profile` | 726px | `gold` |
+
+## Themes
+
+All badge types support the same four themes.
+
+| Theme | Description |
+|-------|-------------|
+| `dark` | Dark background, gold accent |
+| `gold` | Gold background, dark text |
+| `light` | Light background, dark text, gold sun |
+| `outlined` | Transparent background, gold border |
+
+## Caching
+
+All badges are cached at the CDN edge for **24 hours** (`Cache-Control: public, max-age=86400`).
+
+## Examples
+
+```
+# Default subdomain badge (DEPLOYED ON eyebrow, dark theme)
+https://badges.is-pinoy.dev/badge/yourname
+
+# Subdomain badge with custom label, gold theme
+https://badges.is-pinoy.dev/badge/yourname?label=BUILT+BY&theme=gold
+
+# Subdomain badge, outlined theme as PNG
+https://badges.is-pinoy.dev/badge/yourname?theme=outlined&format=png
+
+# Member badge, light theme
+https://badges.is-pinoy.dev/badge/yourname?type=member&theme=light
+
+# Pinoy Made, outlined theme as WebP
+https://badges.is-pinoy.dev/badge?type=pinoy-made&theme=outlined&format=webp
+
+# Certified Pinoy Dev, gold theme
+https://badges.is-pinoy.dev/badge?type=certified&theme=gold
+
+# README banner
+https://badges.is-pinoy.dev/banner/yourname?type=readme&theme=dark
+
+# Profile banner as PNG
+https://badges.is-pinoy.dev/banner/yourname?type=profile&theme=gold&format=png
+```

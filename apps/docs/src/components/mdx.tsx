@@ -1,9 +1,10 @@
-// apps/docs/src/components/mdx.tsx
 import defaultMdxComponents from 'fumadocs-ui/mdx'
 import { Steps, Step } from 'fumadocs-ui/components/steps'
 import { Tabs, Tab } from 'fumadocs-ui/components/tabs'
 import type { MDXComponents } from 'mdx/types'
 import { CustomPre, CustomCode } from './subdomain-code'
+import { BadgePreview } from './badge-preview'
+import { BadgeThemes } from './badge-themes'
 
 export function getMDXComponents(components?: MDXComponents) {
   return {
@@ -14,6 +15,8 @@ export function getMDXComponents(components?: MDXComponents) {
     Tab,
     pre: CustomPre,
     code: CustomCode,
+    BadgePreview,
+    BadgeThemes,
     ...components,
   } satisfies MDXComponents
 }

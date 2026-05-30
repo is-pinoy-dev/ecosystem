@@ -1,0 +1,8 @@
+name = "badge-kit"
+main = "src/index.ts"
+compatibility_date = "2026-05-29"
+compatibility_flags = ["nodejs_compat"]
+
+[[routes]]
+pattern = "badges.is-pinoy.dev/*"
+zone_name = "is-pinoy.dev"

@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>is-pinoy.dev — Banners & Badges</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; border-radius: 0 !important; margin: 0; padding: 0; }
+
+    body {
+      background: #0D0D0D;
+      color: #FAFAF5;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        linear-gradient(rgba(245,200,0,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(245,200,0,0.025) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px);
+    }
+
+    .page { max-width: 980px; margin: 0 auto; padding: 80px 40px 120px; position: relative; z-index: 1; }
+
+    .eyebrow { display: block; font-family: 'Press Start 2P', monospace; font-size: 0.5rem; letter-spacing: 0.1875em; color: #F5C800; margin-bottom: 16px; }
+    .page-title { font-family: 'Press Start 2P', monospace; font-size: clamp(0.875rem, 2.5vw, 1.5rem); line-height: 1.6; color: #FAFAF5; margin-bottom: 16px; }
+    .page-sub { color: #888; font-size: 0.9375rem; max-width: 560px; margin-bottom: 56px; }
+
+    .handle-lbl { font-family: 'Press Start 2P', monospace; font-size: 0.6875rem; color: #FAFAF5; line-height: 1.6; margin-bottom: 16px; }
+    .handle-row { display: flex; max-width: 400px; margin-bottom: 72px; }
+    .handle-input {
+      flex: 1; background: #0D0D0D; border: 3px solid #F5C800; color: #FAFAF5;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.875rem; padding: 11px 14px;
+      outline: none; caret-color: #F5C800;
+    }
+    .handle-input::placeholder { color: #333; }
+    .handle-sfx {
+      background: #0D0D0D; border: 3px solid #F5C800; border-left: none;
+      padding: 11px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 0.875rem;
+      color: #555; white-space: nowrap;
+    }
+
+    .section { margin-bottom: 64px; }
+    .sect-head { padding-left: 16px; border-left: 3px solid #F5C800; margin-bottom: 32px; }
+    .sect-num { display: block; font-family: 'Press Start 2P', monospace; font-size: 0.5rem; letter-spacing: 0.1875em; color: #F5C800; margin-bottom: 8px; }
+    .sect-name { font-family: 'Press Start 2P', monospace; font-size: 0.6875rem; line-height: 1.6; color: #FAFAF5; margin-bottom: 6px; }
+    .sect-desc { font-size: 0.875rem; color: #666; }
+
+    .bitem { border: 2px solid #1E1E1E; background: #0F0F0F; margin-bottom: 3px; }
+    .bitem-top {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; border-bottom: 2px solid #1A1A1A; gap: 16px; flex-wrap: wrap;
+    }
+    .bitem-name { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 0.6875rem; color: #FAFAF5; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+    .bitem-desc { font-size: 0.8125rem; color: #555; }
+
+    .get-code {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; text-transform: uppercase;
+      letter-spacing: 0.08em; background: transparent; border: 1px solid #2A2A2A;
+      color: #555; padding: 7px 14px; cursor: pointer; transition: all 0.1s; white-space: nowrap;
+    }
+    .get-code:hover, .get-code.open { color: #F5C800; border-color: #F5C800; background: rgba(245,200,0,0.04); }
+
+    .bpreviews { padding: 28px 24px; display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+    .bprev-group { display: flex; flex-direction: column; gap: 9px; }
+    .bprev-lbl { font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem; color: #444; text-transform: uppercase; letter-spacing: 0.08em; }
+    .on-light { background: #F0EDE6; padding: 18px; display: inline-block; }
+
+    .code-drawer { display: none; border-top: 2px solid #1A1A1A; background: #0A0A0A; }
+    .code-drawer.open { display: block; }
+
+    .ctabs { display: flex; border-bottom: 1px solid #1A1A1A; }
+    .ctab {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; text-transform: uppercase;
+      letter-spacing: 0.08em; padding: 9px 18px; background: transparent; border: none;
+      border-right: 1px solid #1A1A1A; color: #444; cursor: pointer; transition: all 0.1s;
+    }
+    .ctab:hover { color: #888; }
+    .ctab.active { color: #F5C800; background: rgba(245,200,0,0.03); }
+
+    .cpanel { display: none; position: relative; }
+    .cpanel.active { display: block; }
+    .cpre {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.6875rem; line-height: 1.9;
+      color: #666; padding: 20px 80px 20px 24px; overflow-x: auto; white-space: pre; margin: 0;
+    }
+
+    .copy-btn {
+      position: absolute; top: 10px; right: 12px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem; text-transform: uppercase;
+      letter-spacing: 0.08em; background: transparent; border: 1px solid #2A2A2A;
+      color: #555; padding: 5px 10px; cursor: pointer; transition: all 0.1s;
+    }
+    .copy-btn:hover { color: #F5C800; border-color: #F5C800; }
+    .copy-btn.ok { color: #39D353; border-color: #39D353; }
+
+    .divider { height: 1px; background: #1A1A1A; margin: 56px 0; }
+
+    .cta {
+      background: #F5C800; border-top: 3px solid #0D0D0D; border-bottom: 3px solid #0D0D0D;
+      padding: 32px 40px; display: flex; align-items: center; justify-content: space-between;
+      gap: 24px; flex-wrap: wrap; margin-top: 24px;
+    }
+    .cta-h { font-family: 'Press Start 2P', monospace; font-size: 0.6875rem; color: #0D0D0D; line-height: 1.6; margin-bottom: 8px; }
+    .cta-p { font-size: 0.875rem; color: rgba(0,0,0,0.6); }
+    .cta-btn {
+      font-family: 'Press Start 2P', monospace; font-size: 0.5rem; color: #FAFAF5;
+      background: #0D0D0D; border: 3px solid #0D0D0D; padding: 14px 24px;
+      box-shadow: 5px 5px 0 rgba(0,0,0,0.25); cursor: pointer; transition: all 0.1s;
+      text-decoration: none; display: inline-block;
+    }
+    .cta-btn:hover { transform: translate(3px,3px); box-shadow: 2px 2px 0 rgba(0,0,0,0.25); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+    @keyframes glowPulse {
+      0%,100% { box-shadow: 5px 5px 0 #D4A800, 0 0 20px rgba(245,200,0,0.15); }
+      50%      { box-shadow: 5px 5px 0 #D4A800, 0 0 36px rgba(245,200,0,0.45); }
+    }
+
+    .fi  { animation: fadeUp 0.5s ease both; }
+    .fi1 { animation: fadeUp 0.5s 0.1s ease both; }
+    .fi2 { animation: fadeUp 0.5s 0.2s ease both; }
+
+    @media (max-width: 600px) {
+      .page { padding: 48px 20px 80px; }
+      .bpreviews { padding: 20px 16px; gap: 20px; }
+      .cta { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="fi">
+    <span class="eyebrow">// BADGE KIT</span>
+    <h1 class="page-title">Banners &amp; Badges</h1>
+    <p class="page-sub">Show your Pinoy Dev identity everywhere you build — GitHub profile, README, portfolio, or any page you ship.</p>
+  </header>
+
+  <!-- HANDLE INPUT -->
+  <div class="fi1">
+    <div class="handle-lbl">// YOUR HANDLE</div>
+    <div class="handle-row">
+      <input class="handle-input" id="handleInput" type="text" placeholder="yourhandle" value="juan" maxlength="32" spellcheck="false">
+      <div class="handle-sfx">.is-pinoy.dev</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 1 · WEBSITE BADGES
+       ══════════════════════════════════════════════════════ -->
+  <section class="section fi2">
+    <div class="sect-head">
+      <span class="sect-num">// 01</span>
+      <div class="sect-name">Website Badges</div>
+      <div class="sect-desc">Drop these in your README, repo, or deployed project page.</div>
+    </div>
+
+    <!-- DEPLOYED ON -->
+    <div class="bitem">
+      <div class="bitem-top">
+        <div>
+          <span class="bitem-name">Deployed On</span>
+          <span class="bitem-desc">Your project lives at handle.is-pinoy.dev — announce it.</span>
+        </div>
+        <button class="get-code" onclick="toggleCode(this)">Embed code ↓</button>
+      </div>
+      <div class="bpreviews">
+        <div class="bprev-group">
+          <span class="bprev-lbl">Dark</span>
+          <div class="br" data-type="deployed-on" data-theme="dark"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl" style="color:#888;">Light</span>
+          <div class="on-light">
+            <div class="br" data-type="deployed-on" data-theme="light"></div>
+          </div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Gold</span>
+          <div class="br" data-type="deployed-on" data-theme="gold"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Retro</span>
+          <div class="br" data-type="deployed-on" data-theme="retro"></div>
+        </div>
+      </div>
+      <div class="code-drawer">
+        <div class="ctabs">
+          <button class="ctab active" onclick="switchTab(this,'html')">HTML</button>
+          <button class="ctab" onclick="switchTab(this,'md')">Markdown</button>
+        </div>
+        <div class="cpanel active" data-lang="html">
+          <pre class="cpre" data-type="deployed-on" data-codelang="html"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="cpanel" data-lang="md">
+          <pre class="cpre" data-type="deployed-on" data-codelang="md"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PINOY-MADE -->
+    <div class="bitem">
+      <div class="bitem-top">
+        <div>
+          <span class="bitem-name">Pinoy-Made</span>
+          <span class="bitem-desc">A quality mark. No handle required — just the origin stamp.</span>
+        </div>
+        <button class="get-code" onclick="toggleCode(this)">Embed code ↓</button>
+      </div>
+      <div class="bpreviews">
+        <div class="bprev-group">
+          <span class="bprev-lbl">Split Panel</span>
+          <div class="br" data-type="pinoy-made" data-theme="split"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Dark</span>
+          <div class="br" data-type="pinoy-made" data-theme="dark"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Gold</span>
+          <div class="br" data-type="pinoy-made" data-theme="gold"></div>
+        </div>
+      </div>
+      <div class="code-drawer">
+        <div class="ctabs">
+          <button class="ctab active" onclick="switchTab(this,'html')">HTML</button>
+          <button class="ctab" onclick="switchTab(this,'md')">Markdown</button>
+        </div>
+        <div class="cpanel active" data-lang="html">
+          <pre class="cpre" data-type="pinoy-made" data-codelang="html"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="cpanel" data-lang="md">
+          <pre class="cpre" data-type="pinoy-made" data-codelang="md"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUILT BY -->
+    <div class="bitem">
+      <div class="bitem-top">
+        <div>
+          <span class="bitem-name">Built By</span>
+          <span class="bitem-desc">Credit the builder. Your handle, front and center.</span>
+        </div>
+        <button class="get-code" onclick="toggleCode(this)">Embed code ↓</button>
+      </div>
+      <div class="bpreviews">
+        <div class="bprev-group">
+          <span class="bprev-lbl">Dark</span>
+          <div class="br" data-type="built-by" data-theme="dark"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Gold</span>
+          <div class="br" data-type="built-by" data-theme="gold"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Outlined</span>
+          <div class="br" data-type="built-by" data-theme="outlined"></div>
+        </div>
+      </div>
+      <div class="code-drawer">
+        <div class="ctabs">
+          <button class="ctab active" onclick="switchTab(this,'html')">HTML</button>
+          <button class="ctab" onclick="switchTab(this,'md')">Markdown</button>
+        </div>
+        <div class="cpanel active" data-lang="html">
+          <pre class="cpre" data-type="built-by" data-codelang="html"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="cpanel" data-lang="md">
+          <pre class="cpre" data-type="built-by" data-codelang="md"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 2 · DEVELOPER BADGES
+       ══════════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="sect-head">
+      <span class="sect-num">// 02</span>
+      <div class="sect-name">Developer Badges</div>
+      <div class="sect-desc">Your identity as a Pinoy dev. For GitHub profiles, bios, and personal footers.</div>
+    </div>
+
+    <!-- PROUD PINOY DEV -->
+    <div class="bitem">
+      <div class="bitem-top">
+        <div>
+          <span class="bitem-name">Proud Pinoy Dev</span>
+          <span class="bitem-desc">Identity first. No explanation needed.</span>
+        </div>
+        <button class="get-code" onclick="toggleCode(this)">Embed code ↓</button>
+      </div>
+      <div class="bpreviews">
+        <div class="bprev-group">
+          <span class="bprev-lbl">Dark · Glow</span>
+          <div class="br" data-type="proud-pinoy-dev" data-theme="dark"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Gold</span>
+          <div class="br" data-type="proud-pinoy-dev" data-theme="gold"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Outlined</span>
+          <div class="br" data-type="proud-pinoy-dev" data-theme="outlined"></div>
+        </div>
+      </div>
+      <div class="code-drawer">
+        <div class="ctabs">
+          <button class="ctab active" onclick="switchTab(this,'html')">HTML</button>
+          <button class="ctab" onclick="switchTab(this,'md')">Markdown</button>
+        </div>
+        <div class="cpanel active" data-lang="html">
+          <pre class="cpre" data-type="proud-pinoy-dev" data-codelang="html"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="cpanel" data-lang="md">
+          <pre class="cpre" data-type="proud-pinoy-dev" data-codelang="md"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CERTIFIED PINOY DEV -->
+    <div class="bitem">
+      <div class="bitem-top">
+        <div>
+          <span class="bitem-name">Certified Pinoy Dev</span>
+          <span class="bitem-desc">The premium badge. Gold treatment, official stamp, your name on it.</span>
+        </div>
+        <button class="get-code" onclick="toggleCode(this)">Embed code ↓</button>
+      </div>
+      <div class="bpreviews">
+        <div class="bprev-group">
+          <span class="bprev-lbl">Gold</span>
+          <div class="br" data-type="certified" data-theme="gold"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Retro · Double border</span>
+          <div class="br" data-type="certified" data-theme="retro"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Dark</span>
+          <div class="br" data-type="certified" data-theme="dark"></div>
+        </div>
+      </div>
+      <div class="code-drawer">
+        <div class="ctabs">
+          <button class="ctab active" onclick="switchTab(this,'html')">HTML</button>
+          <button class="ctab" onclick="switchTab(this,'md')">Markdown</button>
+        </div>
+        <div class="cpanel active" data-lang="html">
+          <pre class="cpre" data-type="certified" data-codelang="html"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="cpanel" data-lang="md">
+          <pre class="cpre" data-type="certified" data-codelang="md"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBER CHIP -->
+    <div class="bitem">
+      <div class="bitem-top">
+        <div>
+          <span class="bitem-name">Member</span>
+          <span class="bitem-desc">Compact chip. Fits inline in bios, footers, and project descriptions.</span>
+        </div>
+        <button class="get-code" onclick="toggleCode(this)">Embed code ↓</button>
+      </div>
+      <div class="bpreviews">
+        <div class="bprev-group">
+          <span class="bprev-lbl">Dark</span>
+          <div class="br" data-type="member" data-theme="dark"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Gold</span>
+          <div class="br" data-type="member" data-theme="gold"></div>
+        </div>
+        <div class="bprev-group">
+          <span class="bprev-lbl">Outlined</span>
+          <div class="br" data-type="member" data-theme="outlined"></div>
+        </div>
+      </div>
+      <div class="code-drawer">
+        <div class="ctabs">
+          <button class="ctab active" onclick="switchTab(this,'html')">HTML</button>
+          <button class="ctab" onclick="switchTab(this,'md')">Markdown</button>
+        </div>
+        <div class="cpanel active" data-lang="html">
+          <pre class="cpre" data-type="member" data-codelang="html"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="cpanel" data-lang="md">
+          <pre class="cpre" data-type="member" data-codelang="md"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 3 · BANNERS
+       ══════════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="sect-head">
+      <span class="sect-num">// 03</span>
+      <div class="sect-name">Banners</div>
+      <div class="sect-desc">Wide-format for GitHub README headers and portfolio site hero blocks.</div>
+    </div>
+
+    <!-- README BANNER -->
+    <div class="bitem">
+      <div class="bitem-top">
+        <div>
+          <span class="bitem-name">README Banner</span>
+          <span class="bitem-desc">Top-of-README block. Clean, direct, links to your subdomain.</span>
+        </div>
+        <button class="get-code" onclick="toggleCode(this)">Embed code ↓</button>
+      </div>
+      <div class="bpreviews" style="flex-direction:column; gap:24px;">
+        <div class="bprev-group" style="width:100%;">
+          <span class="bprev-lbl">Dark</span>
+          <div class="br" data-type="readme-banner" data-theme="dark" style="display:block; width:100%;"></div>
+        </div>
+        <div class="bprev-group" style="width:100%;">
+          <span class="bprev-lbl">Gold</span>
+          <div class="br" data-type="readme-banner" data-theme="gold" style="display:block; width:100%;"></div>
+        </div>
+      </div>
+      <div class="code-drawer">
+        <div class="ctabs">
+          <button class="ctab active" onclick="switchTab(this,'html')">HTML</button>
+          <button class="ctab" onclick="switchTab(this,'md')">Markdown</button>
+        </div>
+        <div class="cpanel active" data-lang="html">
+          <pre class="cpre" data-type="readme-banner" data-codelang="html"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="cpanel" data-lang="md">
+          <pre class="cpre" data-type="readme-banner" data-codelang="md"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE BANNER -->
+    <div class="bitem">
+      <div class="bitem-top">
+        <div>
+          <span class="bitem-name">Profile Banner</span>
+          <span class="bitem-desc">GitHub profile README or portfolio intro. Full-width with scan lines.</span>
+        </div>
+        <button class="get-code" onclick="toggleCode(this)">Embed code ↓</button>
+      </div>
+      <div class="bpreviews" style="flex-direction:column; gap:24px;">
+        <div class="bprev-group" style="width:100%;">
+          <span class="bprev-lbl">Gold · Scan</span>
+          <div class="br" data-type="profile-banner" data-theme="gold" style="display:block; width:100%;"></div>
+        </div>
+        <div class="bprev-group" style="width:100%;">
+          <span class="bprev-lbl">Dark</span>
+          <div class="br" data-type="profile-banner" data-theme="dark" style="display:block; width:100%;"></div>
+        </div>
+      </div>
+      <div class="code-drawer">
+        <div class="ctabs">
+          <button class="ctab active" onclick="switchTab(this,'html')">HTML</button>
+          <button class="ctab" onclick="switchTab(this,'md')">Markdown</button>
+        </div>
+        <div class="cpanel active" data-lang="html">
+          <pre class="cpre" data-type="profile-banner" data-codelang="html"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="cpanel" data-lang="md">
+          <pre class="cpre" data-type="profile-banner" data-codelang="md"></pre>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+
+<!-- CTA -->
+<div class="cta">
+  <div>
+    <div class="cta-h">Don't have a subdomain yet?</div>
+    <div class="cta-p">Claim yours free in 30 seconds.</div>
+  </div>
+  <a href="https://is-pinoy.dev" target="_blank" class="cta-btn">Claim subdomain →</a>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// SVG HELPERS
+// ═══════════════════════════════════════════════════════════
+
+function sunSVG(size, fill) {
+  var r = '';
+  [0,45,90,135,180,225,270,315].forEach(function(d) {
+    r += '<rect x="44" y="4" width="12" height="46" rx="2" transform="rotate('+d+',50,50)" fill="'+fill+'"/>';
+  });
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">'+r+'</svg>';
+}
+
+function blink(color) {
+  return '<div style="width:6px;height:6px;background:'+color+';flex-shrink:0;animation:blink 1.4s step-end infinite;box-shadow:0 0 6px '+color+';"></div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// BADGE RENDERERS  — (handle, theme) → HTML string
+// ═══════════════════════════════════════════════════════════
+
+var B = {};
+
+// ─── DEPLOYED ON ─────────────────────────────────────────
+B['deployed-on'] = function(h, t) {
+  var c = {
+    dark:    {bg:'#0D0D0D',bd:'#F5C800',sun:'#F5C800',lbl:'#888',   val:'#F5C800',sfx:'#555',   sh:'5px 5px 0 rgba(245,200,0,0.25)',hsh:'2px 2px 0 rgba(245,200,0,0.25)'},
+    light:   {bg:'#FAFAF5',bd:'#0D0D0D',sun:'#F5C800',lbl:'#888',   val:'#0D0D0D',sfx:'#aaa',   sh:'5px 5px 0 rgba(0,0,0,0.15)',   hsh:'2px 2px 0 rgba(0,0,0,0.15)'},
+    gold:    {bg:'#F5C800',bd:'#0D0D0D',sun:'#0D0D0D',lbl:'#6b5200',val:'#0D0D0D',sfx:'#6b5200',sh:'5px 5px 0 #0D0D0D',           hsh:'2px 2px 0 #0D0D0D'},
+    retro:   {bg:'#0D0D0D',bd:'#F5C800',sun:'#F5C800',lbl:'#888',   val:'#F5C800',sfx:'#555',   sh:'0 0 0 3px #0D0D0D,0 0 0 6px #F5C800,8px 8px 0 #D4A800', hsh:'0 0 0 3px #0D0D0D,0 0 0 6px #F5C800,5px 5px 0 #D4A800'}
+  }[t] || {bg:'#0D0D0D',bd:'#F5C800',sun:'#F5C800',lbl:'#888',val:'#F5C800',sfx:'#555',sh:'5px 5px 0 rgba(245,200,0,0.25)',hsh:'2px 2px 0 rgba(245,200,0,0.25)'};
+  return '<a href="https://'+h+'.is-pinoy.dev" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:12px;background:'+c.bg+';border:3px solid '+c.bd+';padding:12px 18px;text-decoration:none;box-shadow:'+c.sh+';cursor:pointer;" data-sh="'+c.sh+'" data-hsh="'+c.hsh+'">'  
+    +sunSVG(28,c.sun)
+    +'<div style="display:flex;flex-direction:column;gap:3px;">'
+    +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.12em;color:'+c.lbl+';line-height:1;">Deployed on</span>'
+    +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.6875rem;color:'+c.val+';line-height:1.3;">'+h+'<span style="color:'+c.sfx+';font-size:0.7em;">.is-pinoy.dev</span></span>'
+    +'</div>'
+    +blink(c.bd)
+    +'</a>';
+};
+
+// ─── PINOY-MADE ──────────────────────────────────────────
+B['pinoy-made'] = function(h, t) {
+  if (t === 'split') {
+    return '<a href="https://is-pinoy.dev" target="_blank" rel="noopener" style="display:inline-flex;border:3px solid #F5C800;box-shadow:5px 5px 0 #D4A800;text-decoration:none;cursor:pointer;" data-sh="5px 5px 0 #D4A800" data-hsh="2px 2px 0 #D4A800">'
+      +'<div style="background:#0D0D0D;padding:10px 14px;display:flex;align-items:center;border-right:3px solid #F5C800;">'+sunSVG(24,'#F5C800')+'</div>'
+      +'<div style="background:#F5C800;padding:10px 18px;display:flex;align-items:center;">'
+      +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.6875rem;color:#0D0D0D;letter-spacing:0.04em;">PINOY-MADE</span>'
+      +'</div>'
+      +'</a>';
+  }
+  if (t === 'gold') {
+    return '<a href="https://is-pinoy.dev" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:12px;background:#F5C800;border:3px solid #0D0D0D;padding:11px 18px;text-decoration:none;box-shadow:5px 5px 0 #0D0D0D;cursor:pointer;" data-sh="5px 5px 0 #0D0D0D" data-hsh="2px 2px 0 #0D0D0D">'
+      +sunSVG(24,'#0D0D0D')
+      +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.6875rem;color:#0D0D0D;letter-spacing:0.04em;">PINOY-MADE</span>'
+      +'</a>';
+  }
+  return '<a href="https://is-pinoy.dev" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:12px;background:#0D0D0D;border:3px solid #444;padding:11px 18px;text-decoration:none;box-shadow:5px 5px 0 #444;cursor:pointer;" data-sh="5px 5px 0 #444" data-hsh="2px 2px 0 #444">'
+    +sunSVG(24,'#F5C800')
+    +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.6875rem;color:#FAFAF5;letter-spacing:0.04em;">PINOY-MADE</span>'
+    +'</a>';
+};
+
+// ─── BUILT BY ────────────────────────────────────────────
+B['built-by'] = function(h, t) {
+  if (t === 'gold') {
+    return '<a href="https://'+h+'.is-pinoy.dev" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:14px;background:#F5C800;border:3px solid #0D0D0D;padding:12px 20px;text-decoration:none;box-shadow:5px 5px 0 #0D0D0D;cursor:pointer;" data-sh="5px 5px 0 #0D0D0D" data-hsh="2px 2px 0 #0D0D0D">'
+      +sunSVG(28,'#0D0D0D')
+      +'<div style="display:flex;flex-direction:column;gap:3px;">'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.12em;color:#6b5200;line-height:1;">Built by a Pinoy Dev</span>'
+      +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.6875rem;color:#0D0D0D;line-height:1.3;">'+h+'<span style="color:#6b5200;font-size:0.7em;">.is-pinoy.dev</span></span>'
+      +'</div></a>';
+  }
+  if (t === 'outlined') {
+    return '<a href="https://'+h+'.is-pinoy.dev" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:14px;background:transparent;border:3px solid #F5C800;padding:12px 20px;text-decoration:none;cursor:pointer;" data-sh="" data-hsh="">'
+      +sunSVG(28,'#F5C800')
+      +'<div style="display:flex;flex-direction:column;gap:3px;">'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.12em;color:#888;line-height:1;">Built by a Pinoy Dev</span>'
+      +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.6875rem;color:#F5C800;line-height:1.3;">'+h+'<span style="color:#555;font-size:0.7em;">.is-pinoy.dev</span></span>'
+      +'</div></a>';
+  }
+  return '<a href="https://'+h+'.is-pinoy.dev" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:14px;background:#0D0D0D;border:3px solid #F5C800;padding:12px 20px;text-decoration:none;box-shadow:5px 5px 0 rgba(245,200,0,0.25);cursor:pointer;" data-sh="5px 5px 0 rgba(245,200,0,0.25)" data-hsh="2px 2px 0 rgba(245,200,0,0.25)">'
+    +sunSVG(28,'#F5C800')
+    +'<div style="display:flex;flex-direction:column;gap:3px;">'
+    +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.12em;color:#888;line-height:1;">Built by a Pinoy Dev</span>'
+    +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.6875rem;color:#F5C800;line-height:1.3;">'+h+'<span style="color:#555;font-size:0.7em;">.is-pinoy.dev</span></span>'
+    +'</div></a>';
+};
+
+// ─── PROUD PINOY DEV ─────────────────────────────────────
+B['proud-pinoy-dev'] = function(h, t) {
+  if (t === 'gold') {
+    return '<div style="display:inline-flex;align-items:center;gap:14px;background:#F5C800;border:3px solid #0D0D0D;padding:14px 20px;box-shadow:5px 5px 0 #0D0D0D;">'
+      +sunSVG(30,'#0D0D0D')
+      +'<div style="display:flex;flex-direction:column;gap:5px;">'
+      +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.6875rem;color:#0D0D0D;line-height:1.4;">PROUD PINOY DEV</span>'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6875rem;color:#6b5200;">'+h+'.is-pinoy.dev</span>'
+      +'</div></div>';
+  }
+  if (t === 'outlined') {
+    return '<div style="display:inline-flex;align-items:center;gap:14px;background:transparent;border:3px solid #F5C800;padding:14px 20px;">'
+      +sunSVG(30,'#F5C800')
+      +'<div style="display:flex;flex-direction:column;gap:5px;">'
+      +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.6875rem;color:#F5C800;line-height:1.4;">PROUD PINOY DEV</span>'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6875rem;color:#555;">'+h+'.is-pinoy.dev</span>'
+      +'</div></div>';
+  }
+  return '<div style="display:inline-flex;align-items:center;gap:14px;background:#0D0D0D;border:3px solid #F5C800;padding:14px 20px;animation:glowPulse 2.5s ease-in-out infinite;">'
+    +sunSVG(30,'#F5C800')
+    +'<div style="display:flex;flex-direction:column;gap:5px;">'
+    +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.6875rem;color:#FAFAF5;line-height:1.4;">PROUD PINOY DEV</span>'
+    +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6875rem;color:#888;">'+h+'.is-pinoy.dev</span>'
+    +'</div></div>';
+};
+
+// ─── CERTIFIED PINOY DEV ─────────────────────────────────
+B['certified'] = function(h, t) {
+  if (t === 'retro') {
+    return '<div style="display:inline-flex;align-items:center;gap:16px;background:#F5C800;border:3px solid #0D0D0D;padding:16px 22px;box-shadow:0 0 0 3px #F5C800,0 0 0 6px #0D0D0D,8px 8px 0 #0D0D0D;">'
+      +sunSVG(34,'#0D0D0D')
+      +'<div style="display:flex;flex-direction:column;gap:4px;">'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.15em;color:#6b5200;line-height:1;">// CERTIFIED</span>'
+      +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.75rem;color:#0D0D0D;line-height:1.4;">PINOY DEV</span>'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6875rem;color:#6b5200;">'+h+'.is-pinoy.dev</span>'
+      +'</div></div>';
+  }
+  if (t === 'dark') {
+    return '<div style="display:inline-flex;align-items:center;gap:16px;background:#0D0D0D;border:3px solid #F5C800;padding:16px 22px;box-shadow:5px 5px 0 #D4A800;">'
+      +sunSVG(34,'#F5C800')
+      +'<div style="display:flex;flex-direction:column;gap:4px;">'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.15em;color:#555;line-height:1;">// CERTIFIED</span>'
+      +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.75rem;color:#F5C800;line-height:1.4;">PINOY DEV</span>'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6875rem;color:#888;">'+h+'.is-pinoy.dev</span>'
+      +'</div></div>';
+  }
+  return '<div style="display:inline-flex;align-items:center;gap:16px;background:#F5C800;border:3px solid #0D0D0D;padding:16px 22px;box-shadow:5px 5px 0 #0D0D0D;">'
+    +sunSVG(34,'#0D0D0D')
+    +'<div style="display:flex;flex-direction:column;gap:4px;">'
+    +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.15em;color:#6b5200;line-height:1;">// CERTIFIED</span>'
+    +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.75rem;color:#0D0D0D;line-height:1.4;">PINOY DEV</span>'
+    +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6875rem;color:#6b5200;">'+h+'.is-pinoy.dev</span>'
+    +'</div></div>';
+};
+
+// ─── MEMBER CHIP ─────────────────────────────────────────
+B['member'] = function(h, t) {
+  if (t === 'gold') {
+    return '<div style="display:inline-flex;align-items:center;gap:8px;background:#F5C800;border:2px solid #0D0D0D;padding:6px 12px;box-shadow:3px 3px 0 #0D0D0D;">'
+      +sunSVG(16,'#0D0D0D')
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:#0D0D0D;">is-pinoy.dev</span>'
+      +'<div style="width:1px;height:12px;background:rgba(0,0,0,0.25);"></div>'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:#6b5200;">'+h+'</span>'
+      +'</div>';
+  }
+  if (t === 'outlined') {
+    return '<div style="display:inline-flex;align-items:center;gap:8px;background:transparent;border:2px solid #F5C800;padding:6px 12px;">'
+      +sunSVG(16,'#F5C800')
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:#F5C800;">is-pinoy.dev</span>'
+      +'<div style="width:1px;height:12px;background:#333;"></div>'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:#888;">'+h+'</span>'
+      +'</div>';
+  }
+  return '<div style="display:inline-flex;align-items:center;gap:8px;background:#0D0D0D;border:2px solid #444;padding:6px 12px;box-shadow:3px 3px 0 #444;">'
+    +sunSVG(16,'#F5C800')
+    +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:#F5C800;">is-pinoy.dev</span>'
+    +'<div style="width:1px;height:12px;background:#2A2A2A;"></div>'
+    +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:#888;">'+h+'</span>'
+    +'</div>';
+};
+
+// ─── README BANNER ───────────────────────────────────────
+B['readme-banner'] = function(h, t) {
+  if (t === 'gold') {
+    return '<a href="https://'+h+'.is-pinoy.dev" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:space-between;gap:16px;background:#F5C800;border:3px solid #0D0D0D;padding:20px 28px;box-shadow:6px 6px 0 #0D0D0D;text-decoration:none;width:100%;cursor:pointer;" data-sh="6px 6px 0 #0D0D0D" data-hsh="3px 3px 0 #0D0D0D">'
+      +'<div style="display:flex;align-items:center;gap:16px;">'
+      +sunSVG(44,'#0D0D0D')
+      +'<div style="display:flex;flex-direction:column;gap:6px;">'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.15em;color:#6b5200;line-height:1;">Built by a Pinoy Dev</span>'
+      +'<span style="font-family:\'Press Start 2P\',monospace;font-size:clamp(0.6rem,1.5vw,0.875rem);color:#0D0D0D;line-height:1.3;">'+h+'<span style="color:#6b5200;font-size:0.7em;">.is-pinoy.dev</span></span>'
+      +'</div></div>'
+      +'<div style="text-align:right;flex-shrink:0;">'
+      +'<span style="display:block;font-family:\'IBM Plex Mono\',monospace;font-size:0.5rem;text-transform:uppercase;letter-spacing:0.12em;color:#6b5200;margin-bottom:4px;">Subdomain by</span>'
+      +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.5rem;color:#0D0D0D;">is-pinoy.dev</span>'
+      +'</div></a>';
+  }
+  return '<a href="https://'+h+'.is-pinoy.dev" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:space-between;gap:16px;background:#0D0D0D;border:3px solid #F5C800;padding:20px 28px;box-shadow:6px 6px 0 #D4A800;text-decoration:none;width:100%;cursor:pointer;" data-sh="6px 6px 0 #D4A800" data-hsh="3px 3px 0 #D4A800">'
+    +'<div style="display:flex;align-items:center;gap:16px;">'
+    +sunSVG(44,'#F5C800')
+    +'<div style="display:flex;flex-direction:column;gap:6px;">'
+    +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.15em;color:#888;line-height:1;">Built by a Pinoy Dev</span>'
+    +'<span style="font-family:\'Press Start 2P\',monospace;font-size:clamp(0.6rem,1.5vw,0.875rem);color:#F5C800;line-height:1.3;">'+h+'<span style="color:#555;font-size:0.7em;">.is-pinoy.dev</span></span>'
+    +'</div></div>'
+    +'<div style="text-align:right;flex-shrink:0;">'
+    +'<span style="display:block;font-family:\'IBM Plex Mono\',monospace;font-size:0.5rem;text-transform:uppercase;letter-spacing:0.12em;color:#444;margin-bottom:4px;">Subdomain by</span>'
+    +'<span style="font-family:\'Press Start 2P\',monospace;font-size:0.5rem;color:#888;">is-pinoy.dev</span>'
+    +'</div></a>';
+};
+
+// ─── PROFILE BANNER ──────────────────────────────────────
+B['profile-banner'] = function(h, t) {
+  var scan = 'position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.05) 3px,rgba(0,0,0,0.05) 4px);pointer-events:none;z-index:0;';
+  if (t === 'dark') {
+    return '<div style="display:flex;align-items:center;gap:24px;background:#0D0D0D;border:3px solid #F5C800;padding:28px 36px;width:100%;position:relative;overflow:hidden;">'
+      +'<div style="'+scan+'"></div>'
+      +'<div style="position:relative;z-index:1;flex-shrink:0;">'+sunSVG(52,'#F5C800')+'</div>'
+      +'<div style="position:relative;z-index:1;flex:1;min-width:0;">'
+      +'<span style="display:block;font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.15em;color:#444;margin-bottom:10px;">// PINOY DEV AT LARGE</span>'
+      +'<span style="display:block;font-family:\'Press Start 2P\',monospace;font-size:clamp(0.6rem,1.8vw,0.9375rem);color:#F5C800;line-height:1.5;margin-bottom:8px;word-break:break-all;">'+h+'.is-pinoy.dev</span>'
+      +'<span style="font-family:\'IBM Plex Sans\',sans-serif;font-size:0.8125rem;color:#555;">Building on the free subdomain network for Filipino developers.</span>'
+      +'</div></div>';
+  }
+  return '<div style="display:flex;align-items:center;gap:24px;background:#F5C800;border:3px solid #0D0D0D;padding:28px 36px;width:100%;box-shadow:6px 6px 0 #0D0D0D;position:relative;overflow:hidden;">'
+    +'<div style="'+scan+'"></div>'
+    +'<div style="position:relative;z-index:1;flex-shrink:0;">'+sunSVG(52,'#0D0D0D')+'</div>'
+    +'<div style="position:relative;z-index:1;flex:1;min-width:0;">'
+    +'<span style="display:block;font-family:\'IBM Plex Mono\',monospace;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.15em;color:#6b5200;margin-bottom:10px;">// PINOY DEV AT LARGE</span>'
+    +'<span style="display:block;font-family:\'Press Start 2P\',monospace;font-size:clamp(0.6rem,1.8vw,0.9375rem);color:#0D0D0D;line-height:1.5;margin-bottom:8px;word-break:break-all;">'+h+'.is-pinoy.dev</span>'
+    +'<span style="font-family:\'IBM Plex Sans\',sans-serif;font-size:0.8125rem;color:#6b5200;">Building on the free subdomain network for Filipino developers.</span>'
+    +'</div></div>';
+};
+
+// ═══════════════════════════════════════════════════════════
+// CODE TEMPLATES
+// ═══════════════════════════════════════════════════════════
+
+var C = { html:{}, md:{} };
+
+C.html['deployed-on']   = function(h){return'<!-- Load once per page -->\n<script src="https://is-pinoy.dev/badge.js"><\/script>\n\n<!-- Deployed On badge -->\n<is-pinoy-badge\n  handle="'+h+'"\n  type="deployed-on"\n  theme="dark"\n></is-pinoy-badge>\n\n<!-- themes: dark · light · gold · retro -->';};
+C.html['pinoy-made']    = function(h){return'<!-- Load once per page -->\n<script src="https://is-pinoy.dev/badge.js"><\/script>\n\n<!-- Pinoy-Made badge (no handle required) -->\n<is-pinoy-badge\n  type="pinoy-made"\n  theme="split"\n></is-pinoy-badge>\n\n<!-- themes: split · dark · gold -->';};
+C.html['built-by']      = function(h){return'<!-- Load once per page -->\n<script src="https://is-pinoy.dev/badge.js"><\/script>\n\n<!-- Built By badge -->\n<is-pinoy-badge\n  handle="'+h+'"\n  type="built-by"\n  theme="dark"\n></is-pinoy-badge>\n\n<!-- themes: dark · gold · outlined -->';};
+C.html['proud-pinoy-dev']=function(h){return'<!-- Load once per page -->\n<script src="https://is-pinoy.dev/badge.js"><\/script>\n\n<!-- Proud Pinoy Dev badge -->\n<is-pinoy-badge\n  handle="'+h+'"\n  type="proud-pinoy-dev"\n  theme="dark"\n></is-pinoy-badge>\n\n<!-- themes: dark · gold · outlined -->';};
+C.html['certified']     = function(h){return'<!-- Load once per page -->\n<script src="https://is-pinoy.dev/badge.js"><\/script>\n\n<!-- Certified Pinoy Dev badge -->\n<is-pinoy-badge\n  handle="'+h+'"\n  type="certified"\n  theme="gold"\n></is-pinoy-badge>\n\n<!-- themes: gold · retro · dark -->';};
+C.html['member']        = function(h){return'<!-- Load once per page -->\n<script src="https://is-pinoy.dev/badge.js"><\/script>\n\n<!-- Member chip -->\n<is-pinoy-badge\n  handle="'+h+'"\n  type="member"\n  theme="dark"\n></is-pinoy-badge>\n\n<!-- themes: dark · gold · outlined -->';};
+C.html['readme-banner'] = function(h){return'<!-- Load once per page -->\n<script src="https://is-pinoy.dev/badge.js"><\/script>\n\n<!-- README Banner -->\n<is-pinoy-banner\n  handle="'+h+'"\n  type="readme"\n  theme="dark"\n></is-pinoy-banner>\n\n<!-- themes: dark · gold -->';};
+C.html['profile-banner']= function(h){return'<!-- Load once per page -->\n<script src="https://is-pinoy.dev/badge.js"><\/script>\n\n<!-- Profile Banner -->\n<is-pinoy-banner\n  handle="'+h+'"\n  type="profile"\n  theme="gold"\n></is-pinoy-banner>\n\n<!-- themes: gold · dark -->';};
+
+C.md['deployed-on']    = function(h){return'[![Deployed on is-pinoy.dev](https://badge.is-pinoy.dev/deployed-on/'+h+'.svg)](https://'+h+'.is-pinoy.dev)\n\n<!-- Gold theme variant: -->\n[![Deployed on is-pinoy.dev](https://badge.is-pinoy.dev/deployed-on/'+h+'.svg?theme=gold)](https://'+h+'.is-pinoy.dev)';};
+C.md['pinoy-made']     = function(h){return'[![Pinoy-Made](https://badge.is-pinoy.dev/pinoy-made.svg)](https://is-pinoy.dev)\n\n<!-- Split theme: -->\n[![Pinoy-Made](https://badge.is-pinoy.dev/pinoy-made.svg?theme=split)](https://is-pinoy.dev)';};
+C.md['built-by']       = function(h){return'[![Built by a Pinoy Dev](https://badge.is-pinoy.dev/built-by/'+h+'.svg)](https://'+h+'.is-pinoy.dev)';};
+C.md['proud-pinoy-dev']= function(h){return'[![Proud Pinoy Dev](https://badge.is-pinoy.dev/proud-pinoy-dev/'+h+'.svg)](https://'+h+'.is-pinoy.dev)';};
+C.md['certified']      = function(h){return'[![Certified Pinoy Dev](https://badge.is-pinoy.dev/certified/'+h+'.svg)](https://'+h+'.is-pinoy.dev)\n\n<!-- Retro theme: -->\n[![Certified Pinoy Dev](https://badge.is-pinoy.dev/certified/'+h+'.svg?theme=retro)](https://'+h+'.is-pinoy.dev)';};
+C.md['member']         = function(h){return'[![is-pinoy.dev member](https://badge.is-pinoy.dev/member/'+h+'.svg)](https://'+h+'.is-pinoy.dev)';};
+C.md['readme-banner']  = function(h){return'<p align="center">\n  <a href="https://'+h+'.is-pinoy.dev">\n    <img\n      src="https://banner.is-pinoy.dev/readme/'+h+'.svg"\n      alt="'+h+' is a Pinoy Dev"\n      height="88"\n    />\n  </a>\n</p>';};
+C.md['profile-banner'] = function(h){return'<p align="center">\n  <a href="https://'+h+'.is-pinoy.dev">\n    <img\n      src="https://banner.is-pinoy.dev/profile/'+h+'.svg"\n      alt="'+h+' · Pinoy Dev at Large"\n      width="720" height="120"\n    />\n  </a>\n</p>';};
+
+// ═══════════════════════════════════════════════════════════
+// RENDER ENGINE
+// ═══════════════════════════════════════════════════════════
+
+var handle = 'juan';
+
+function attachHover(el) {
+  var sh = el.getAttribute('data-sh');
+  var hsh = el.getAttribute('data-hsh');
+  if (!sh) return;
+  el.addEventListener('mouseenter', function() {
+    this.style.transform = 'translate(3px,3px)';
+    this.style.boxShadow = hsh;
+    this.style.transition = 'transform 0.1s,box-shadow 0.1s';
+  });
+  el.addEventListener('mouseleave', function() {
+    this.style.transform = '';
+    this.style.boxShadow = sh;
+  });
+}
+
+function renderAll(h) {
+  document.querySelectorAll('.br[data-type]').forEach(function(el) {
+    var type = el.dataset.type;
+    var theme = el.dataset.theme || 'dark';
+    if (B[type]) {
+      el.innerHTML = B[type](h, theme);
+      var link = el.querySelector('[data-sh]');
+      if (link) attachHover(link);
+    }
+  });
+  document.querySelectorAll('[data-type][data-codelang]').forEach(function(el) {
+    var type = el.dataset.type;
+    var lang = el.dataset.codelang;
+    if (C[lang] && C[lang][type]) el.textContent = C[lang][type](h);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI HANDLERS
+// ═══════════════════════════════════════════════════════════
+
+function toggleCode(btn) {
+  var bitem = btn.closest('.bitem');
+  var drawer = bitem.querySelector('.code-drawer');
+  var wasOpen = drawer.classList.contains('open');
+  document.querySelectorAll('.code-drawer.open').forEach(function(d){ d.classList.remove('open'); });
+  document.querySelectorAll('.get-code.open').forEach(function(b){ b.classList.remove('open'); b.textContent = 'Embed code ↓'; });
+  if (!wasOpen) {
+    drawer.classList.add('open');
+    btn.classList.add('open');
+    btn.textContent = 'Embed code ↑';
+  }
+}
+
+function switchTab(btn, lang) {
+  var drawer = btn.closest('.code-drawer');
+  drawer.querySelectorAll('.ctab').forEach(function(b){ b.classList.remove('active'); });
+  drawer.querySelectorAll('.cpanel').forEach(function(p){ p.classList.remove('active'); });
+  btn.classList.add('active');
+  var panel = drawer.querySelector('.cpanel[data-lang="'+lang+'"]');
+  if (panel) panel.classList.add('active');
+}
+
+function copyCode(btn) {
+  var panel = btn.closest('.cpanel');
+  var pre = panel && panel.querySelector('.cpre');
+  var text = pre ? pre.textContent : '';
+  function flash() {
+    btn.textContent = 'Copied!';
+    btn.classList.add('ok');
+    setTimeout(function(){ btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+  }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(flash).catch(flash);
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+    flash();
+  }
+}
+
+document.getElementById('handleInput').addEventListener('input', function() {
+  handle = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+  this.value = handle;
+  renderAll(handle || 'yourhandle');
+});
+
+renderAll(handle);
+</script>
+</body>
+</html>

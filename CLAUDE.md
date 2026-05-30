@@ -90,6 +90,8 @@ The UI follows a strict **retro pixel-art** aesthetic (see `DESIGN.md`):
 
 **Always prefer `@is-pinoy-dev/ui` (shadcn) components** over native HTML tags. Use `Button`, `Card`, `Badge`, etc. from `packages/ui` instead of `<button>`, `<div>`, `<span>`. Fall back to a native tag only when no shadcn component exists for the use case.
 
+**In `apps/docs`, always use the Fumadocs `TypeTable` component** to display type/props tables. Import it from `fumadocs-ui/components/type-table`. Never use a plain markdown table or custom HTML table for type documentation.
+
 ## Styling Rules
 
 **Always prefer Tailwind CSS utility classes** over inline styles (`style={{...}}`) or native CSS classes in `globals.css`. Use inline styles or globals only when a utility class is not available (e.g., complex `clamp()` expressions, dynamic values that depend on runtime state, or CSS animations/keyframes).

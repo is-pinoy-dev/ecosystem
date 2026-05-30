@@ -1,0 +1,63 @@
+---
+title: CI Failures
+description: How to fix CI failures on your subdomain registration pull request.
+---
+
+When you open a PR, CI runs two checks:
+
+1. **JSON schema validation** — your file is validated against the official JSON schema
+2. **Owner verification** — `owner.github` must match the GitHub account that opened the PR
+
+If either check fails, GitHub posts a comment on your PR with the error message. Fix the issue, push a new commit to your branch, and CI will re-run automatically.
+
+## Schema validation failed
+
+The CI comment will look something like:
+
+```text
+✖ /records/CNAME/value: must match pattern "^.+\.$"
+```
+
+This means your CNAME value is missing the trailing dot. Fix your JSON:
+
+```json
+"CNAME": {
+  "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
+}
+```
+
+For a full list of schema errors and their fixes, see [Common Errors](/guides/troubleshooting/common-errors).
+
+## `owner.github` mismatch
+
+The CI comment will say something like:
+
+```text
+✖ owner.github (juandelacruz) does not match the pull request author (JuanDeLaCruz)
+```
+
+This check is **case-sensitive**. Fix your JSON so `owner.github` exactly matches your GitHub username as shown in your profile URL (`github.com/your-username`).
+
+```json
+"owner": {
+  "github": "JuanDeLaCruz"
+}
+```
+
+<Callout type="warn">
+  GitHub usernames are case-sensitive in this check. Copy your username from your GitHub profile URL to be sure.
+</Callout>
+
+## How to push a fix
+
+After editing your JSON file:
+
+```bash
+git add subdomains/yourname.json
+git commit -m "Fix validation error"
+git push
+```
+
+This pushes to the same branch you used when opening the PR.
+
+CI will re-run automatically within a few seconds of the push.

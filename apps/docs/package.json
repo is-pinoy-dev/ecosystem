@@ -29,6 +29,7 @@
     "remark-rehype": "^11.1.2",
     "tailwind-merge": "catalog:",
     "unist-util-visit": "^5.1.0",
+    "shiki": "^4.0.2",
     "zod": "catalog:",
     "zustand": "^5.0.13"
   },
