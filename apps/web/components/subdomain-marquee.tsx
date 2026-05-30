@@ -6,9 +6,27 @@ async function fetchOperationalSubdomains(): Promise<string[]> {
       "https://status.is-pinoy.dev/api/statuses?overall=operational",
       { next: { revalidate: 300 } }
     )
+    if (res.ok) {
+      const rows = (await res.json()) as SubdomainStatus[]
+      if (rows.length >= 4) return rows.map((r) => r.subdomain)
+    }
+  } catch {
+    // fall through to GitHub fallback
+  }
+
+  try {
+    const res = await fetch(
+      "https://api.github.com/repos/is-pinoy-dev/domains/contents/subdomains",
+      {
+        headers: { Accept: "application/vnd.github+json" },
+        next: { revalidate: 3600 },
+      }
+    )
     if (!res.ok) return []
-    const rows = (await res.json()) as SubdomainStatus[]
-    return rows.map((r) => r.subdomain)
+    const files = (await res.json()) as { name: string }[]
+    return files
+      .filter((f) => f.name.endsWith(".json"))
+      .map((f) => f.name.replace(/\.json$/, ""))
   } catch {
     return []
   }
