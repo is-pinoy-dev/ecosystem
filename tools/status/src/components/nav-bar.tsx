@@ -18,7 +18,7 @@ export function NavBar() {
     try {
       const res = await fetch("/api/refresh", { method: "POST" });
       if (res.status === 429) {
-        const { retryAfter } = await res.json<{ retryAfter: number }>();
+        const { retryAfter } = (await res.json()) as { retryAfter: number };
         setCooldown(retryAfter);
         const interval = setInterval(() => {
           setCooldown((s) => {
