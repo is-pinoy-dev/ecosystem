@@ -59,6 +59,12 @@ export function MainNav() {
         >
           DOCS
         </a>
+        <Link
+          href="/showcase"
+          className="font-pixel text-[9px] tracking-[0.05em] text-muted-foreground transition-colors duration-100 hover:text-primary no-underline"
+        >
+          SHOWCASE
+        </Link>
       </div>
       <div className="flex gap-3">
         <NavButton
