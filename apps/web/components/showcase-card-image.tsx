@@ -30,7 +30,7 @@ export function ShowcaseCardImage({
   // Fall through to logo if the favicon request stalls
   useEffect(() => {
     if (safeIdx !== faviconIdx) return
-    const t = setTimeout(advance, 3000)
+    const t = setTimeout(advance, 5000)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeIdx])

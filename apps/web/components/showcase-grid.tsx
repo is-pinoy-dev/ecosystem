@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@is-pinoy-dev/ui/components/card"
 import { Button } from "@is-pinoy-dev/ui/components/button"
+import { Skeleton } from "@is-pinoy-dev/ui/components/skeleton"
 import { ShowcaseCardImage } from "@/components/showcase-card-image"
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -146,16 +147,17 @@ function ShowcaseCard({ entry }: { entry: SubdomainEntry }) {
 function CardSkeleton() {
   return (
     <div className="overflow-hidden border-[3px] border-card bg-background shadow-[5px_5px_0_#000]">
-      <div className="h-[180px] animate-pulse border-b-2 border-border bg-card" />
+      {/* Image area — slightly lighter than bg-card so the pulse is visible */}
+      <Skeleton className="h-[180px] w-full border-b-2 border-border bg-muted/30" />
       <div className="flex flex-col p-0">
         <div className="flex flex-col gap-2 px-4 pt-4 pb-3">
-          <div className="h-2.5 w-20 animate-pulse bg-card" />
-          <div className="h-2 w-28 animate-pulse bg-card" />
+          <Skeleton className="h-2.5 w-20" />
+          <Skeleton className="h-2 w-28" />
         </div>
         <div className="mx-4 h-px bg-border/40" />
         <div className="flex items-center gap-2 px-4 py-2.5">
-          <div className="h-4 w-4 shrink-0 animate-pulse bg-card" />
-          <div className="h-2 w-16 animate-pulse bg-card" />
+          <Skeleton className="h-4 w-4 shrink-0" />
+          <Skeleton className="h-2 w-16" />
         </div>
       </div>
     </div>
@@ -165,7 +167,7 @@ function CardSkeleton() {
 export function ShowcaseGridSkeleton() {
   return (
     <div className="flex flex-col gap-8">
-      <div className="h-7 w-20 animate-pulse bg-card" />
+      <Skeleton className="h-7 w-20" />
       <div className="grid grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
         {Array.from({ length: 6 }).map((_, i) => (
           <CardSkeleton key={i} />
