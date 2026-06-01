@@ -18,8 +18,14 @@ export function ShowcaseCardImage({
   const faviconIdx = logoIdx - 1
 
   const [idx, setIdx] = useState(0)
+  const [loaded, setLoaded] = useState(false)
   const safeIdx = Math.min(idx, logoIdx)
   const advance = () => setIdx((i) => Math.min(i + 1, logoIdx))
+
+  // Reset fade-in whenever the source changes
+  useEffect(() => {
+    setLoaded(false)
+  }, [safeIdx])
 
   // Fall through to logo if the favicon request stalls
   useEffect(() => {
@@ -40,8 +46,9 @@ export function ShowcaseCardImage({
         src={src}
         alt=""
         aria-hidden
+        onLoad={() => setLoaded(true)}
         onError={advance}
-        className="h-full w-full object-cover"
+        className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
       />
     )
   }
@@ -54,11 +61,12 @@ export function ShowcaseCardImage({
         src={src}
         alt=""
         aria-hidden
+        onLoad={() => setLoaded(true)}
         onError={advance}
-        className={`object-contain [image-rendering:pixelated] ${
+        className={`object-contain [image-rendering:pixelated] transition-opacity duration-200 ${
           isLogo
-            ? "h-8 w-8 opacity-25 grayscale"
-            : "h-10 w-10 opacity-60"
+            ? `h-8 w-8 grayscale ${loaded ? "opacity-25" : "opacity-0"}`
+            : `h-10 w-10 ${loaded ? "opacity-60" : "opacity-0"}`
         }`}
       />
     </div>
