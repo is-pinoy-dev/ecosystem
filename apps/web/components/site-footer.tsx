@@ -97,6 +97,7 @@ export function SiteFooter() {
             <FooterLink href="https://status.is-pinoy.dev" external>
               Operational Status
             </FooterLink>
+            <FooterLink href="/showcase">Showcase</FooterLink>
           </div>
           <div className="flex flex-col gap-3">
             <span className="mb-1 font-pixel text-[7px] leading-[1.6] tracking-[0.1em] text-foreground">
