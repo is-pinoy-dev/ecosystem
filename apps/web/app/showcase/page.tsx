@@ -1,10 +1,10 @@
 import type { Metadata } from "next"
-import Image from "next/image"
 import { ScanlineOverlay } from "@/components/scanline-overlay"
 import { TopMarquee } from "@/components/top-marquee"
 import { MainNav } from "@/components/main-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Card, CardContent } from "@is-pinoy-dev/ui/components/card"
+import { ShowcaseCardImage } from "@/components/showcase-card-image"
 
 export const metadata: Metadata = {
   title: "Showcase",
@@ -21,6 +21,38 @@ interface SubdomainEntry {
   subdomain: string
   owner: { github: string; email?: string }
   records: Record<string, unknown>
+  ogImage: string | null
+}
+
+async function fetchOgImage(subdomain: string): Promise<string | null> {
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), 5000)
+  try {
+    const baseUrl = `https://${subdomain}.is-pinoy.dev`
+    const res = await fetch(baseUrl, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "is-pinoy.dev-showcase/1.0 (+https://is-pinoy.dev/showcase)",
+      },
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return null
+    const html = await res.text()
+    const match =
+      html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ??
+      html.match(/<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']/i)
+    const raw = match?.[1]?.trim()
+    if (!raw) return null
+    try {
+      return new URL(raw, baseUrl).href
+    } catch {
+      return null
+    }
+  } catch {
+    return null
+  } finally {
+    clearTimeout(id)
+  }
 }
 
 async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
@@ -48,12 +80,16 @@ async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
 
   const results = await Promise.allSettled(
     names.map(async (subdomain) => {
-      const res = await fetch(
-        `https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains/${subdomain}.json`,
-        { next: { revalidate: 3600 } }
-      )
-      if (!res.ok) return null
-      return (await res.json()) as SubdomainEntry
+      const [jsonRes, ogImage] = await Promise.all([
+        fetch(
+          `https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains/${subdomain}.json`,
+          { next: { revalidate: 3600 } }
+        ),
+        fetchOgImage(subdomain),
+      ])
+      if (!jsonRes.ok) return null
+      const data = (await jsonRes.json()) as Omit<SubdomainEntry, "ogImage">
+      return { ...data, ogImage }
     })
   )
 
@@ -72,38 +108,30 @@ function ShowcaseCard({ entry }: { entry: SubdomainEntry }) {
       href={`https://${entry.subdomain}.is-pinoy.dev`}
       target="_blank"
       rel="noopener noreferrer"
-      className="no-underline group"
+      className="no-underline group block"
     >
-      <Card className="h-full border-[3px] border-card bg-background shadow-[5px_5px_0_#000] transition-all duration-100 group-hover:-translate-x-px group-hover:-translate-y-px group-hover:border-primary group-hover:shadow-[6px_6px_0_var(--color-primary-dark)]">
-        <CardContent className="relative flex flex-col gap-4 p-5">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 shrink-0 overflow-hidden border-2 border-border">
-              <Image
-                src={`https://github.com/${entry.owner.github}.png?size=80`}
-                alt={`${entry.owner.github}'s avatar`}
-                width={40}
-                height={40}
-                className="h-full w-full [image-rendering:pixelated]"
-                unoptimized
-              />
-            </div>
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="truncate font-pixel text-[7px] leading-[1.6] tracking-[0.05em] text-foreground">
-                {entry.subdomain}
-              </span>
-              <span className="truncate font-mono text-[11px] text-muted-foreground">
-                @{entry.owner.github}
-              </span>
-            </div>
-          </div>
+      <Card className="h-full overflow-hidden border-[3px] border-card bg-background shadow-[5px_5px_0_#000] transition-all duration-100 group-hover:-translate-x-px group-hover:-translate-y-px group-hover:border-primary group-hover:shadow-[6px_6px_0_var(--color-primary-dark)]">
+        {/* Preview image */}
+        <div className="relative h-[160px] overflow-hidden border-b-2 border-border bg-card">
+          <ShowcaseCardImage ogImage={entry.ogImage} subdomain={entry.subdomain} />
+          <div className="absolute inset-0 bg-primary/0 transition-colors group-hover:bg-primary/5" />
+        </div>
 
-          <div className="truncate border border-border bg-card/40 px-3 py-2 font-mono text-[10px] text-muted-foreground transition-colors group-hover:border-primary group-hover:text-primary">
-            {entry.subdomain}.is-pinoy.dev
-          </div>
-
-          <span className="absolute right-4 bottom-4 font-mono text-[14px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
-            →
+        <CardContent className="flex flex-col gap-1 p-4">
+          <span className="truncate font-pixel text-[8px] leading-[1.8] tracking-[0.05em] text-primary">
+            {entry.subdomain}
           </span>
+          <span className="font-mono text-[10px] text-muted-foreground/60">
+            .is-pinoy.dev
+          </span>
+          <div className="mt-2 flex items-center justify-between">
+            <span className="font-mono text-[10px] text-muted-foreground">
+              @{entry.owner.github}
+            </span>
+            <span className="font-mono text-[14px] text-muted-foreground transition-colors group-hover:text-primary">
+              →
+            </span>
+          </div>
         </CardContent>
       </Card>
     </a>
@@ -132,8 +160,7 @@ export default async function ShowcasePage() {
                 {"// SHOWCASE"}
               </h1>
               <p className="m-0 max-w-[480px] font-sans text-[15px] leading-[1.7] text-muted-foreground">
-                Filipino developer portfolios and projects living on
-                is-pinoy.dev.
+                Filipino developer portfolios and projects living on is-pinoy.dev.
               </p>
               <span className="self-start border-2 border-primary/30 bg-primary/10 px-3 py-1.5 font-pixel text-[7px] tracking-[0.1em] text-primary">
                 {entries.length} SITE{entries.length !== 1 ? "S" : ""}
