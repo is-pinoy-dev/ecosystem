@@ -4,7 +4,7 @@ import { ScanlineOverlay } from "@/components/scanline-overlay"
 import { TopMarquee } from "@/components/top-marquee"
 import { MainNav } from "@/components/main-nav"
 import { SiteFooter } from "@/components/site-footer"
-import { ShowcaseGrid, ShowcaseGridSkeleton } from "@/components/showcase-grid"
+import { ShowcaseGrid, ShowcaseGridSkeleton, ShowcaseCTA } from "@/components/showcase-grid"
 
 export const metadata: Metadata = {
   title: "Showcase",
@@ -44,6 +44,8 @@ export default function ShowcasePage() {
             <Suspense fallback={<ShowcaseGridSkeleton />}>
               <ShowcaseGrid />
             </Suspense>
+
+            <ShowcaseCTA />
           </div>
         </section>
 
