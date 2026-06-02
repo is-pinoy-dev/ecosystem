@@ -1,0 +1,31 @@
+name = "tools-og"
+main = "index.ts"
+compatibility_date = "2026-05-27"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "../build/client"
+binding = "ASSETS"
+
+[[routes]]
+pattern = "is-pinoy.dev/_tools/og*"
+zone_name = "is-pinoy.dev"
+
+[[routes]]
+pattern = "*.is-pinoy.dev/_tools/og*"
+zone_name = "is-pinoy.dev"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+persist = true
+head_sampling_rate = 1
