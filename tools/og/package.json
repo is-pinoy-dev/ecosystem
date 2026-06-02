@@ -7,13 +7,13 @@
     "prebuild": "node scripts/copy-wasm.mjs",
     "build": "react-router build",
     "dev": "node scripts/copy-wasm.mjs && react-router dev",
+    "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
     "deploy": "pnpm build && wrangler deploy -c worker/wrangler.toml"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "@fontsource/press-start-2p": "^5.2.7",
-    "@is-pinoy-dev/schemas": "workspace:*",
     "@is-pinoy-dev/ui": "workspace:*",
     "@react-router/node": "7.15.1",
     "@react-router/serve": "7.15.1",

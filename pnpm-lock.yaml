@@ -569,9 +569,6 @@ importers:
       '@fontsource/press-start-2p':
         specifier: ^5.2.7
         version: 5.2.7
-      '@is-pinoy-dev/schemas':
-        specifier: workspace:*
-        version: link:../../packages/schemas
       '@is-pinoy-dev/ui':
         specifier: workspace:*
         version: link:../../packages/ui
