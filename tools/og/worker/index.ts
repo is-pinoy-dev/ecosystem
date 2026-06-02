@@ -18,23 +18,28 @@ const handleRequest = createRequestHandler({
 });
 
 const PREFIX = "/_tools/og";
-const IMAGE_PREFIX = "/_tools/og/image/";
+const IMAGE_PATH = "/_tools/og/image";
 const DOMAINS_RAW_BASE =
   "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/domains";
-const DOMAIN_CACHE_TTL = 300; // 5 minutes
-const IMAGE_CACHE_TTL = 300; // 5 minutes
+const DOMAIN_CACHE_TTL = 300;
+const IMAGE_CACHE_TTL = 300;
 
 export interface Env {
   ASSETS: Fetcher;
 }
 
-// Module-level WASM init — runs once per isolate
+/** Returns null for apex domain (is-pinoy.dev), otherwise the subdomain label. */
+function extractSubdomain(hostname: string): string | null {
+  const parts = hostname.split(".");
+  return parts.length > 2 ? parts.slice(0, parts.length - 2).join(".") : null;
+}
+
+// Module-level WASM init — runs once per isolate lifetime
 let wasmReady: Promise<void> | null = null;
 
 async function ensureWasm(env: Env, origin: string): Promise<void> {
   if (wasmReady) return wasmReady;
   wasmReady = (async () => {
-    // ASSETS serves files without the /_tools/og prefix
     const wasmRes = await env.ASSETS.fetch(`${origin}/resvg.wasm`);
     if (!wasmRes.ok) throw new Error("Failed to fetch resvg.wasm from ASSETS");
     await initWasm(wasmRes);
@@ -52,11 +57,7 @@ async function fetchSubdomainData(
     const cached = await caches.default.match(cacheKey);
     if (cached) {
       const data = await cached.json<{ owner?: { github?: string } }>();
-      return {
-        subdomain,
-        owner: data.owner?.github ?? subdomain,
-        found: true,
-      };
+      return { subdomain, owner: data.owner?.github ?? subdomain, found: true };
     }
   }
 
@@ -64,9 +65,7 @@ async function fetchSubdomainData(
     headers: { "User-Agent": "is-pinoy-dev-og/1.0" },
   });
 
-  if (!res.ok) {
-    return { subdomain, owner: "", found: false };
-  }
+  if (!res.ok) return { subdomain, owner: "", found: false };
 
   const data = await res.json<{ owner?: { github?: string } }>();
 
@@ -81,15 +80,10 @@ async function fetchSubdomainData(
     );
   }
 
-  return {
-    subdomain,
-    owner: data.owner?.github ?? subdomain,
-    found: true,
-  };
+  return { subdomain, owner: data.owner?.github ?? subdomain, found: true };
 }
 
 async function loadFont(env: Env, origin: string): Promise<ArrayBuffer> {
-  // ASSETS serves files without the /_tools/og prefix
   const fontKey = `${origin}/PressStart2P-Regular.ttf`;
   if (typeof caches !== "undefined") {
     const cached = await caches.default.match(fontKey);
@@ -119,9 +113,8 @@ async function handleImageRequest(
   ctx: ExecutionContext
 ): Promise<Response> {
   const url = new URL(request.url);
-
-  // Serve cached PNG if available
   const imageCacheKey = `https://og-cache.internal/${subdomain}.png`;
+
   if (typeof caches !== "undefined") {
     const cached = await caches.default.match(imageCacheKey);
     if (cached) return cached;
@@ -134,7 +127,6 @@ async function handleImageRequest(
   ]);
 
   const png = await generateOgPng(ogData, fontBuffer);
-
   const response = new Response(png, {
     headers: {
       "Content-Type": "image/png",
@@ -156,21 +148,27 @@ export default {
     ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url);
+    const subdomain = extractSubdomain(url.hostname);
 
-    // Handle OG image generation
-    if (url.pathname.startsWith(IMAGE_PREFIX)) {
-      const subdomain = url.pathname.slice(IMAGE_PREFIX.length).replace(/\.png$/, "");
-      if (subdomain && /^[a-z0-9-]+$/.test(subdomain)) {
-        try {
-          return await handleImageRequest(subdomain, request, env, ctx);
-        } catch (err) {
-          console.error("[og] image generation failed:", err instanceof Error ? err.stack : String(err));
-          return new Response("Image generation failed", { status: 500 });
-        }
+    // /_tools/og/image — return the PNG for this subdomain
+    if (url.pathname === IMAGE_PATH || url.pathname === `${IMAGE_PATH}/`) {
+      if (!subdomain) {
+        return new Response("OG image is only available on subdomains", {
+          status: 400,
+        });
+      }
+      try {
+        return await handleImageRequest(subdomain, request, env, ctx);
+      } catch (err) {
+        console.error(
+          "[og] image generation failed:",
+          err instanceof Error ? err.stack : String(err)
+        );
+        return new Response("Image generation failed", { status: 500 });
       }
     }
 
-    // Strip prefix and serve static assets or SSR
+    // Strip prefix and serve static assets
     if (url.pathname.startsWith(PREFIX)) {
       url.pathname = url.pathname.slice(PREFIX.length) || "/";
     }
