@@ -24,6 +24,7 @@ Cloudflare Worker at `badges.is-pinoy.dev` that renders SVG/PNG/WebP badges and 
 | `GET /badge/:subdomain` | Badge for a registered subdomain (shows "not found" if unregistered) |
 | `GET /badge` | Subdomain-less badge (only `type=pinoy-made` applies) |
 | `GET /banner/:subdomain` | Wide banner for a subdomain |
+| `GET /badge.js` | Interactive `<is-pinoy-badge>` web component for HTML pages (see below) |
 
 ### Query Parameters
 
@@ -64,6 +65,44 @@ Cloudflare Worker at `badges.is-pinoy.dev` that renders SVG/PNG/WebP badges and 
 /badge?type=pinoy-made&theme=split
 /banner/juan?type=readme&theme=dark
 /banner/juan?type=profile&theme=gold&format=webp
+```
+
+## Interactive HTML badge (`/badge.js`)
+
+For real HTML pages (portfolios, footers, docs) — where hover and pointer
+interaction are available, unlike a GitHub README — load the web component once
+and drop in `<is-pinoy-badge>` elements:
+
+```html
+<script src="https://badges.is-pinoy.dev/badge.js"></script>
+
+<is-pinoy-badge handle="juan" type="deployed-on" theme="dark"></is-pinoy-badge>
+```
+
+The component renders into Shadow DOM, so the host page's CSS can't bleed in. It
+adds two effects on top of the static SVG badge:
+
+- **Tilt** — an "ID card" 3D tilt that rotates toward the cursor, with a
+  pointer-tracking glare highlight.
+- **Shimmer** — a configurable diagonal light sweep.
+
+Both degrade gracefully under `prefers-reduced-motion`.
+
+### Attributes
+
+| Attribute | Values | Default |
+|-----------|--------|---------|
+| `handle` | subdomain handle (sanitized to `[a-z0-9-]`); omit for `pinoy-made` | — |
+| `type` | `deployed-on` (alias `subdomain`), `member`, `pinoy-made`, `certified` | `deployed-on` |
+| `theme` | `dark`, `gold`, `light`, `outlined` | per-type default |
+| `label` | custom eyebrow for `deployed-on` | `DEPLOYED ON` |
+| `shimmer` | `off`, `sweep` (once on hover), `loop` (while hovered), `always` | `sweep` |
+| `shimmer-color` | any CSS color for the sweep | `rgba(255,255,255,0.55)` |
+| `tilt` | `false` / `off` to disable the 3D tilt | enabled |
+
+```html
+<is-pinoy-badge handle="juan" type="certified" theme="gold" shimmer="loop"></is-pinoy-badge>
+<is-pinoy-badge handle="juan" type="member" theme="dark" tilt="false"></is-pinoy-badge>
 ```
 
 ## Scripts

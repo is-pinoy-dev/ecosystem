@@ -51,6 +51,34 @@ Wider assets for README headers and GitHub profiles.
 
 <BadgeThemes basePath="/banner/yourname?type=profile" themes={["gold", "dark"]} alt="profile banner" />
 
+## Interactive HTML badge
+
+For your own website, portfolio, or footer — anywhere real HTML runs — use the `<is-pinoy-badge>` web component instead of a static image. It adds an "ID card" tilt that follows your cursor and a configurable shimmer sweep on hover. (GitHub READMEs strip scripts, so keep using the SVG/Markdown embeds there.)
+
+Load the component once per page, then drop in as many badges as you like:
+
+```html
+<script src="https://badges.is-pinoy.dev/badge.js"></script>
+
+<is-pinoy-badge handle="yourname" type="deployed-on" theme="dark"></is-pinoy-badge>
+```
+
+It renders into Shadow DOM, so your page's CSS can't bleed in, and it respects `prefers-reduced-motion`.
+
+| Attribute | Values | Default |
+|-----------|--------|---------|
+| `handle` | your subdomain (omit for `pinoy-made`) | — |
+| `type` | `deployed-on`, `member`, `pinoy-made`, `certified` | `deployed-on` |
+| `theme` | `dark`, `gold`, `light`, `outlined` | per-type default |
+| `label` | custom eyebrow for `deployed-on` | `DEPLOYED ON` |
+| `shimmer` | `off`, `sweep`, `loop`, `always` | `sweep` |
+| `shimmer-color` | any CSS color | translucent white |
+| `tilt` | `false` to disable the 3D tilt | enabled |
+
+```html
+<is-pinoy-badge handle="yourname" type="certified" theme="gold" shimmer="loop"></is-pinoy-badge>
+```
+
 ## Not found state
 
 If your subdomain is not registered, the badge shows a greyed-out "not found" state instead of your handle. Register your subdomain first via the [steps](/guides/workflow).
