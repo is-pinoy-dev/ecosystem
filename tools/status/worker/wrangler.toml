@@ -10,7 +10,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "STATUS_DB"
 database_name = "status-db"
-database_id = "631957d0-6d6d-40ad-b801-0d0dfdd97693"
+database_id = "384c9b0f-1fd3-4018-91c3-9e50fcc573d5"
 migrations_dir = "migrations"
 
 [triggers]
