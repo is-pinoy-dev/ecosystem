@@ -10,7 +10,7 @@ crons = ["0 1 * * *"]
 [[d1_databases]]
 binding = "ANALYTICS_DB"
 database_name = "analytics-db"
-database_id = "e76f34ea-c2d0-4e5f-995c-d717b87ee221"
+database_id = "f0b338c1-b5d4-48db-8b42-0435a24ef430"
 migrations_dir = "migrations"
 
 [observability]
