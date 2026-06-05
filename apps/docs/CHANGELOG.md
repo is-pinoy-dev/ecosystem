@@ -1,5 +1,11 @@
 # docs
 
+## 0.2.2
+
+### Patch Changes
+
+- c75b0b8: Add a live, interactive preview of the `<is-pinoy-badge>` web component to the badge-kit docs page. Visitors can switch type, theme, and shimmer mode, toggle the tilt, and hover the rendered badge to feel the shimmer + ID-card tilt — with the matching embed snippet generated live below it.
+
 ## 0.2.1
 
 ### Patch Changes
