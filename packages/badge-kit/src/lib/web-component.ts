@@ -129,24 +129,26 @@ export const WEB_COMPONENT_JS = `(function () {
       +   'mix-blend-mode:overlay;}'
       + '.ipd-card:hover .ipd-glare{opacity:1;}'
       // configurable diagonal shimmer sweep
-      + '.ipd-shimmer{position:absolute;top:0;left:0;height:100%;width:45%;pointer-events:none;z-index:3;'
-      +   'background:linear-gradient(100deg,transparent 20%,' + shimmerColor + ' 50%,transparent 80%);'
-      +   'transform:translateX(-160%) skewX(-18deg);}'
+      + '.ipd-shimmer{position:absolute;top:0;left:0;height:100%;width:60%;pointer-events:none;z-index:3;'
+      +   'background:linear-gradient(100deg,transparent 8%,' + shimmerColor + ' 38%,' + shimmerColor + ' 62%,transparent 92%);'
+      +   'transform:translateX(-180%) skewX(-18deg);}'
       + '.sh-off{display:none;}'
       + '.ipd-card:hover .sh-sweep{animation:ipd-shimmer .85s ease-out;}'
       + '.ipd-card:hover .sh-loop{animation:ipd-shimmer 1.6s linear infinite;}'
       + '.sh-always{animation:ipd-shimmer 2.6s linear infinite;}'
-      + '@keyframes ipd-shimmer{from{transform:translateX(-160%) skewX(-18deg);}to{transform:translateX(280%) skewX(-18deg);}}'
+      + '@keyframes ipd-shimmer{from{transform:translateX(-180%) skewX(-18deg);}to{transform:translateX(300%) skewX(-18deg);}}'
       // content sits above the shadow rects, below glare/shimmer
       + '.ipd-inner{position:relative;z-index:1;}'
       + '.ipd-row{display:inline-flex;align-items:center;gap:10px;}'
-      + '.ipd-col{display:inline-flex;flex-direction:column;gap:5px;}'
-      + '.ipd-sep{align-self:stretch;width:1px;margin:4px 0;background:#2a2a2a;}'
-      + '.ipd-divider{width:1px;height:10px;}'
+      // nudge two-line content down ~1.5px: Press Start 2P leaves descender space
+      // at the bottom of the value line, so the block otherwise reads top-heavy.
+      + '.ipd-col{display:inline-flex;flex-direction:column;justify-content:center;gap:6px;transform:translateY(1.5px);}'
+      + '.ipd-sep{align-self:stretch;width:1px;margin:3px 0;background:#2a2a2a;}'
+      + '.ipd-divider{width:1px;height:11px;}'
       + ".ipd-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:0.5rem;text-transform:uppercase;letter-spacing:0.12em;line-height:1;}"
-      + ".ipd-value{font-family:'Press Start 2P',monospace;font-size:0.5rem;line-height:1.6;}"
+      + ".ipd-value{font-family:'Press Start 2P',monospace;font-size:0.5rem;line-height:1;}"
       + ".ipd-sfx{font-family:'IBM Plex Mono',monospace;font-size:0.72em;}"
-      + ".ipd-brand,.ipd-handle{font-family:'IBM Plex Mono',monospace;font-size:0.625rem;}"
+      + ".ipd-brand,.ipd-handle{font-family:'IBM Plex Mono',monospace;font-size:0.625rem;line-height:1;}"
       + '.ipd-sun{flex-shrink:0;display:block;}'
       // honor reduced-motion: no tilt, no sweep, no glare
       + '@media (prefers-reduced-motion: reduce){'
