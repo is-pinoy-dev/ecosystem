@@ -28,6 +28,14 @@ export async function handleDiff(
 
   warning(`${actions.length} change(s) detected:`);
   divider();
-  printActionTable(actions);
+  printActionTable(
+    actions.map((a) => ({
+      type: a.type,
+      fqdn: a.fqdn,
+      details: "record" in a
+        ? `${a.record.type} ${a.record.value}${"proxied" in a.record && a.record.proxied ? " (proxied)" : ""}`
+        : undefined,
+    })),
+  );
   divider();
 }
