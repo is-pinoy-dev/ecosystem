@@ -50,7 +50,9 @@ export async function handleSync(
     actions.map((a) => ({
       type: a.type,
       fqdn: a.fqdn,
-      details: "record" in a ? `${a.record.type} ${a.record.value}` : undefined,
+      details: "record" in a
+        ? `${a.record.type} ${a.record.value}${"proxied" in a.record && a.record.proxied ? " (proxied)" : ""}`
+        : undefined,
     })),
   );
   divider();
