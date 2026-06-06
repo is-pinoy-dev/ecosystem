@@ -104,7 +104,7 @@ runs:
           fi
         } > /tmp/pr-comment.md
         gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md \
-          --edit-last 2>/dev/null || true
+          --edit-last 2>/dev/null || gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-comment.md || true
 
     - name: Fail on validation errors
       if: steps.validate.outputs.failed == 'true'
