@@ -1,5 +1,11 @@
 # @is-pinoy-dev/cli
 
+## 0.4.8
+
+### Patch Changes
+
+- c21b96e: Show `(proxied)` in dry-run and diff output when a record has Cloudflare proxy enabled
+
 ## 0.4.7
 
 ### Patch Changes

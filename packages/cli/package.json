@@ -1,6 +1,6 @@
 {
   "name": "@is-pinoy-dev/cli",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "type": "module",
   "bin": {
     "is-pinoy": "./dist/index.js"
