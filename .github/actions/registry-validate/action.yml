@@ -48,7 +48,7 @@ runs:
         INPUT_DIR: ${{ inputs.dir }}
 
     - name: Post failure comment
-      if: steps.validate.outputs.failed == 'true' && github.event_name == 'pull_request'
+      if: steps.validate.outputs.failed == 'true' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -88,7 +88,7 @@ runs:
         CLOUDFLARE_ZONE_ID: ${{ inputs.cloudflare-zone-id }}
 
     - name: Update comment on success
-      if: steps.validate.outputs.failed == 'false' && github.event_name == 'pull_request'
+      if: steps.validate.outputs.failed == 'false' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
