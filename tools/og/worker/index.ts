@@ -20,7 +20,7 @@ const handleRequest = createRequestHandler({
 const PREFIX = "/_tools/og";
 const IMAGE_PATH = "/_tools/og/image";
 const DOMAINS_RAW_BASE =
-  "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/domains";
+  "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains";
 const DOMAIN_CACHE_TTL = 300;
 const IMAGE_CACHE_TTL = 300;
 
