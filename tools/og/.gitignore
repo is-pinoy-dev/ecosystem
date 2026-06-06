@@ -2,3 +2,4 @@ node_modules/
 build/
 .react-router/
 public/resvg.wasm
+worker/resvg.wasm
