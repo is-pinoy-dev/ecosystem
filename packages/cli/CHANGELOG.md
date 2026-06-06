@@ -1,5 +1,11 @@
 # @is-pinoy-dev/cli
 
+## 0.4.7
+
+### Patch Changes
+
+- 1e1f6a3: Fix TXT record FQDN to use `_${provider}.${domain}` instead of `_${provider}.${subdomain}.${domain}`
+
 ## 0.4.6
 
 ### Patch Changes
