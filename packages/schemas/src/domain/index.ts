@@ -10,6 +10,7 @@ import {
 export const domainFeaturesSchema = z.object({
   tools: z.object({
     "site-audit": z.boolean(),
+    "og": z.boolean(),
   }).partial().optional(),
 }).partial().optional()
 

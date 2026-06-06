@@ -1,4 +1,4 @@
-import { writeFileSync } from "fs"
+import { writeFileSync, mkdirSync } from "fs"
 import { resolve, dirname } from "path"
 import { fileURLToPath } from "url"
 import { domainSchema } from "../src/domain/index.js"
@@ -10,7 +10,8 @@ delete (jsonSchema as Record<string, unknown>).additionalProperties
 
 const outputPath = resolve(
   __dirname,
-  "../../../../domains/schemas/v1/subdomain.schema.json"
+  "../schema/v1/subdomain.schema.json"
 )
+mkdirSync(dirname(outputPath), { recursive: true })
 writeFileSync(outputPath, JSON.stringify(jsonSchema, null, 2) + "\n")
 console.log(`Generated: ${outputPath}`)
