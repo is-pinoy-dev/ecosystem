@@ -6,16 +6,16 @@ describe("deriveOverall", () => {
     expect(deriveOverall("propagating", "unchecked")).toBe("propagating");
   });
 
-  it("returns degraded when DNS is error", () => {
-    expect(deriveOverall("error", "unchecked")).toBe("degraded");
+  it("returns unstable when DNS is error", () => {
+    expect(deriveOverall("error", "unchecked")).toBe("unstable");
   });
 
   it("returns operational when DNS is live and HTTP is up", () => {
     expect(deriveOverall("live", "up")).toBe("operational");
   });
 
-  it("returns degraded when DNS is live but HTTP is down", () => {
-    expect(deriveOverall("live", "down")).toBe("degraded");
+  it("returns unstable when DNS is live but HTTP is down", () => {
+    expect(deriveOverall("live", "down")).toBe("unstable");
   });
 });
 

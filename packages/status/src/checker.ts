@@ -56,9 +56,9 @@ export async function checkHttp(fqdn: string): Promise<HttpStatus> {
 
 export function deriveOverall(dns: DnsStatus, http: HttpStatus): OverallStatus {
   if (dns === "propagating") return "propagating";
-  if (dns === "error") return "degraded";
+  if (dns === "error") return "unstable";
   if (http === "up") return "operational";
-  return "degraded";
+  return "unstable";
 }
 
 interface CertSpotterIssuance {

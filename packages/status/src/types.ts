@@ -1,6 +1,6 @@
 export type DnsStatus = "live" | "propagating" | "error";
 export type HttpStatus = "up" | "down" | "unchecked";
-export type OverallStatus = "operational" | "degraded" | "propagating";
+export type OverallStatus = "operational" | "unstable" | "propagating";
 export type SslStatus = "valid" | "expiring" | "expired" | "unknown";
 
 export interface SslResult {

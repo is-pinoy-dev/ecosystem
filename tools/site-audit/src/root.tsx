@@ -18,12 +18,29 @@ export const links: Route.LinksFunction = () => [
   { rel: "manifest", href: `${import.meta.env.BASE_URL}site.webmanifest` },
 ];
 
+export function meta() {
+  return [
+    { title: "Site Audit — is-pinoy.dev" },
+    { name: "description", content: "Audit your portfolio's SEO and OpenGraph tags directly from your subdomain." },
+    { property: "og:type", content: "website" },
+    { property: "og:title", content: "Site Audit — is-pinoy.dev" },
+    { property: "og:description", content: "Audit your portfolio's SEO and OpenGraph tags directly from your subdomain." },
+    { property: "og:image", content: "/_tools/site-audit/site-audit-banner.gif" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: "Site Audit — is-pinoy.dev" },
+    { name: "twitter:description", content: "Audit your portfolio's SEO and OpenGraph tags directly from your subdomain." },
+    { name: "twitter:image", content: "/_tools/site-audit/site-audit-banner.gif" },
+  ];
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="color-scheme" content="dark" />
         <Meta />
         <Links />
       </head>
