@@ -1,15 +1,25 @@
 {
   "name": "Site Audit — is-pinoy.dev",
   "short_name": "Site Audit",
+  "description": "Audit your portfolio's SEO and OpenGraph tags directly from your subdomain.",
+  "start_url": "/_tools/site-audit",
+  "scope": "/_tools/site-audit/",
+  "id": "/_tools/site-audit",
   "icons": [
     {
-      "src": "/web-app-manifest-192x192.png",
+      "src": "/_tools/site-audit/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/_tools/site-audit/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/web-app-manifest-512x512.png",
+      "src": "/_tools/site-audit/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

@@ -35,7 +35,7 @@ const OVERALL_CONFIG: Record<OverallStatus, Config> = {
     badge: "bg-primary/10 border border-primary/40 text-primary",
     blink: true,
   },
-  degraded: {
+  unstable: {
     label: "DEGRADED",
     dot: "bg-red-500",
     badge: "bg-red-500/10 border border-red-500/40 text-red-400",

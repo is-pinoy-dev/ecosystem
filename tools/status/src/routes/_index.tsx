@@ -61,7 +61,7 @@ export default function StatusPage() {
 
   const total = statuses.length;
   const operational = statuses.filter((s) => s.overall === "operational").length;
-  const degraded = statuses.filter((s) => s.overall === "degraded").length;
+  const unstable = statuses.filter((s) => s.overall === "unstable").length;
   const propagating = statuses.filter((s) => s.overall === "propagating").length;
   const sslValid = statuses.filter((s) => s.ssl_status === "valid").length;
   const sslExpiring = statuses.filter((s) => s.ssl_status === "expiring").length;
@@ -77,10 +77,10 @@ export default function StatusPage() {
         )
       : null;
 
-  const overallHealthy = degraded === 0 && propagating === 0;
+  const overallHealthy = unstable === 0 && propagating === 0;
   const overallStatus =
-    degraded > 0
-      ? "degraded"
+    unstable > 0
+      ? "unstable"
       : propagating > 0
         ? "propagating"
         : total > 0
@@ -101,8 +101,8 @@ export default function StatusPage() {
               <span className="font-pixel text-[9px] text-foreground">
                 {overallHealthy
                   ? "ALL SYSTEMS OPERATIONAL"
-                  : degraded > 0
-                    ? `${degraded} SUBDOMAIN${degraded > 1 ? "S" : ""} DEGRADED`
+                  : unstable > 0
+                    ? `${unstable} SUBDOMAIN${unstable > 1 ? "S" : ""} DEGRADED`
                     : `${propagating} SUBDOMAIN${propagating > 1 ? "S" : ""} PROPAGATING`}
               </span>
             </div>
@@ -133,9 +133,9 @@ export default function StatusPage() {
             />
             <MetricCard
               label="DEGRADED"
-              value={degraded}
-              sub={degraded === 0 ? "ALL CLEAR" : "NEEDS ATTENTION"}
-              accent={degraded > 0 ? "red" : "muted"}
+              value={unstable}
+              sub={unstable === 0 ? "ALL CLEAR" : "NEEDS ATTENTION"}
+              accent={unstable > 0 ? "red" : "muted"}
             />
             <MetricCard
               label="SSL VALID"
