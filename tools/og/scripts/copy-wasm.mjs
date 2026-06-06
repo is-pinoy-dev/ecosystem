@@ -14,3 +14,11 @@ if (!existsSync(publicDir)) mkdirSync(publicDir, { recursive: true });
 
 copyFileSync(wasmSrc, wasmDest);
 console.log("✓ Copied resvg.wasm to public/");
+
+const workerDir = join(toolRoot, "worker");
+const wasmWorkerDest = join(workerDir, "resvg.wasm");
+
+if (!existsSync(workerDir)) mkdirSync(workerDir, { recursive: true });
+
+copyFileSync(wasmSrc, wasmWorkerDest);
+console.log("✓ Copied resvg.wasm to worker/");

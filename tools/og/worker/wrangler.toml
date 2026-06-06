@@ -3,6 +3,10 @@ main = "index.ts"
 compatibility_date = "2026-05-27"
 compatibility_flags = ["nodejs_compat"]
 
+[[rules]]
+globs = ["**/*.wasm"]
+type = "CompiledWasm"
+
 [assets]
 directory = "../build/client"
 binding = "ASSETS"

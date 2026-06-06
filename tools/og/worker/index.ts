@@ -3,6 +3,8 @@ import { createRequestHandler } from "@react-router/cloudflare";
 import * as build from "../build/server";
 import { Resvg, initWasm } from "@resvg/resvg-wasm";
 import { buildSvg, type OgData } from "./generate";
+// @ts-ignore - resvg.wasm is copied to worker/ at build time and pre-compiled by wrangler
+import resvgWasmModule from "./resvg.wasm";
 
 const handleRequest = createRequestHandler({
   build,
@@ -37,13 +39,9 @@ function extractSubdomain(hostname: string): string | null {
 // Module-level WASM init — runs once per isolate lifetime
 let wasmReady: Promise<void> | null = null;
 
-async function ensureWasm(env: Env, origin: string): Promise<void> {
+async function ensureWasm(): Promise<void> {
   if (wasmReady) return wasmReady;
-  wasmReady = (async () => {
-    const wasmRes = await env.ASSETS.fetch(`${origin}/resvg.wasm`);
-    if (!wasmRes.ok) throw new Error("Failed to fetch resvg.wasm from ASSETS");
-    await initWasm(wasmRes);
-  })();
+  wasmReady = initWasm(resvgWasmModule);
   return wasmReady;
 }
 
@@ -120,7 +118,7 @@ async function handleImageRequest(
     if (cached) return cached;
   }
 
-  await ensureWasm(env, url.origin);
+  await ensureWasm();
   const [ogData, fontBuffer] = await Promise.all([
     fetchSubdomainData(subdomain, ctx),
     loadFont(env, url.origin),
