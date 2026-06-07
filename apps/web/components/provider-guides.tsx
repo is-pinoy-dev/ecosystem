@@ -57,8 +57,8 @@ const PROVIDERS: Provider[] = [
   },
   {
     name: "GitHub Pages",
-    href: null,
-    active: false,
+    href: "https://docs.is-pinoy.dev/providers/github-pages",
+    active: true,
     logo: <GitHubPagesLogo />,
   },
   {
