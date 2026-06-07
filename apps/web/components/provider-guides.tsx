@@ -50,12 +50,6 @@ const PROVIDERS: Provider[] = [
     logo: <VercelLogo />,
   },
   {
-    name: "Netlify",
-    href: null,
-    active: false,
-    logo: <NetlifyLogo />,
-  },
-  {
     name: "GitHub Pages",
     href: "https://docs.is-pinoy.dev/providers/github-pages",
     active: true,
@@ -63,9 +57,15 @@ const PROVIDERS: Provider[] = [
   },
   {
     name: "Cloudflare Pages",
+    href: "https://docs.is-pinoy.dev/providers/cloudflare-pages",
+    active: true,
+    logo: <CloudflareLogo />,
+  },
+  {
+    name: "Netlify",
     href: null,
     active: false,
-    logo: <CloudflareLogo />,
+    logo: <NetlifyLogo />,
   },
 ]
 

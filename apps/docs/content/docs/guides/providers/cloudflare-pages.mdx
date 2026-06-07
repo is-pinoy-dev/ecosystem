@@ -1,0 +1,94 @@
+---
+title: Cloudflare Pages
+description: How to point a Cloudflare Pages project at your is-pinoy.dev subdomain.
+icon: Cloudflare
+---
+
+This guide walks you through getting your Cloudflare Pages project live on an is-pinoy.dev subdomain. Cloudflare Pages gives every project a `*.pages.dev` hostname — that is the value you point your subdomain at.
+
+## Prerequisites
+
+- Your portfolio is already deployed on Cloudflare Pages
+- You have chosen a subdomain (e.g. `yourname.is-pinoy.dev`)
+
+---
+
+<Steps>
+  <Step>
+    ## Find your CNAME value
+
+    Every Cloudflare Pages project is served at a `pages.dev` subdomain. Your CNAME target is your project's production hostname:
+
+    ```
+    your-project.pages.dev.
+    ```
+
+    You can find it on your project's **Deployments** page in the Cloudflare dashboard — it is the URL of your production deployment.
+
+    <Callout type="warn">
+      Keep the trailing dot (`.`). This is standard DNS notation for a fully-qualified domain name. Replace `your-project` with your actual Pages project name.
+    </Callout>
+  </Step>
+  <Step>
+    ## Register the custom domain in Cloudflare Pages
+
+    1. Open your project in the [Cloudflare dashboard](https://dash.cloudflare.com) → **Workers & Pages**
+    2. Select your Pages project
+    3. Go to the **Custom domains** tab
+    4. Click **Set up a custom domain** and enter your full subdomain:
+
+    ```
+    yourname.is-pinoy.dev
+    ```
+
+    Because `is-pinoy.dev` is managed on a different Cloudflare account, Cloudflare will tell you to add a **CNAME record** at your DNS provider pointing to `your-project.pages.dev`. That is exactly what your is-pinoy.dev JSON file does in the next step.
+
+    <Callout type="info">
+      Cloudflare will show the domain as "Pending" until your is-pinoy.dev PR is merged and DNS has propagated. This is expected — Cloudflare cannot verify the record until it is live.
+    </Callout>
+  </Step>
+  <Step>
+    ## Keep the record DNS-only
+
+    is-pinoy.dev manages DNS through Cloudflare, and so does `pages.dev`. A **proxied** record (the orange cloud) that points across two different Cloudflare accounts is rejected with **Error 1014: CNAME Cross-User Banned**.
+
+    <Callout type="warn">
+      Leave `proxied` off (`false`, the default) for Cloudflare Pages. Cloudflare Pages already serves your site over its own edge with automatic HTTPS, so a DNS-only record is both required and sufficient.
+    </Callout>
+  </Step>
+  <Step>
+    ## Create your subdomain JSON file
+
+    Now that you have your CNAME value, go to [Create Your JSON File](/guides/workflow/create-file) to add it to your file.
+
+    For reference, here is what your JSON should look like:
+
+    ```json
+    {
+      "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/ecosystem/main/packages/schemas/schema/v1/subdomain.schema.json",
+      "subdomain": "yourname",
+      "owner": {
+        "github": "your-github-username"
+      },
+      "records": {
+        "CNAME": {
+          "value": "your-project.pages.dev."
+        }
+      }
+    }
+    ```
+
+    Replace `yourname`, `your-github-username`, and `your-project` with your actual information.
+  </Step>
+</Steps>
+
+## Important notes
+
+- **Trailing dot** — the CNAME value must end with `.` (e.g. `your-project.pages.dev.`)
+- **DNS-only only** — never enable `proxied: true` for a `pages.dev` target; it triggers Error 1014
+- **No TXT record needed** — Cloudflare Pages verifies ownership through the custom-domain flow, so the CNAME is all you need
+- **"Pending" in the dashboard** — expected until your PR is merged and DNS propagates
+
+---
+
+Once your JSON file is ready, proceed to [Validate](/guides/workflow/validate).
