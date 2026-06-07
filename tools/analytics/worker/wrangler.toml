@@ -1,6 +1,7 @@
 name = "tools-analytics"
 main = "index.ts"
 compatibility_date = "2026-05-27"
+account_id = "fc863d4a3faa0342c0f96ae1723e265a"
 workers_dev = false
 preview_urls = false
 
