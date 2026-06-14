@@ -65,6 +65,10 @@ async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
 
   if (names.length === 0) return []
 
+  // TODO: at large scale (100+ subdomains) the per-subdomain OG-image fetch
+  // fan-out will make revalidation slow. Consider a pre-built JSON manifest
+  // (generated in CI) that stores ogImage URLs so this page only needs one
+  // fetch instead of N+1.
   const results = await Promise.allSettled(
     names.map(async (subdomain) => {
       const [jsonRes, ogImage] = await Promise.all([
