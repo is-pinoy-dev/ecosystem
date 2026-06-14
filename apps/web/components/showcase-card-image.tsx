@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 
 export function ShowcaseCardImage({
   ogImage,
@@ -18,16 +18,23 @@ export function ShowcaseCardImage({
   const faviconIdx = logoIdx - 1
 
   const [idx, setIdx] = useState(0)
-  const [loaded, setLoaded] = useState(false)
+  // Track which src has finished loading so the fade-in is derived, not raced
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+
   const safeIdx = Math.min(idx, logoIdx)
+  const src = sources[safeIdx]!
+  const loaded = loadedSrc === src
   const advance = () => setIdx((i) => Math.min(i + 1, logoIdx))
 
-  // Reset fade-in whenever the source changes
+  // Catch images that were already cached and completed before React attached
+  // the onLoad handler (common after hydration) — onLoad would never fire.
   useEffect(() => {
-    setLoaded(false)
-  }, [safeIdx])
+    const img = imgRef.current
+    if (img?.complete && img.naturalWidth > 0) setLoadedSrc(src)
+  }, [src])
 
-  // Fall through to logo if the favicon request stalls
+  // Fall through to the logo if the favicon request stalls
   useEffect(() => {
     if (safeIdx !== faviconIdx) return
     const t = setTimeout(advance, 5000)
@@ -35,7 +42,6 @@ export function ShowcaseCardImage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeIdx])
 
-  const src = sources[safeIdx]
   const isCover = safeIdx === 0 && ogImage !== null
   const isLogo = safeIdx === logoIdx
 
@@ -43,10 +49,11 @@ export function ShowcaseCardImage({
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
+        ref={imgRef}
         src={src}
         alt=""
         aria-hidden
-        onLoad={() => setLoaded(true)}
+        onLoad={() => setLoadedSrc(src)}
         onError={advance}
         className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
       />
@@ -58,10 +65,11 @@ export function ShowcaseCardImage({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         key={src}
+        ref={imgRef}
         src={src}
         alt=""
         aria-hidden
-        onLoad={() => setLoaded(true)}
+        onLoad={() => setLoadedSrc(src)}
         onError={advance}
         className={`object-contain [image-rendering:pixelated] transition-opacity duration-200 ${
           isLogo

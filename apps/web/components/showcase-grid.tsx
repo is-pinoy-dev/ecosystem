@@ -201,26 +201,6 @@ export async function ShowcaseGrid() {
           </span>
         </div>
       )}
-
-      <div className="mt-4 flex items-center justify-between gap-6 border-t-2 border-primary/20 pt-10 max-sm:flex-col max-sm:items-start">
-        <div className="flex flex-col gap-1.5">
-          <span className="font-pixel text-[7px] leading-[1.8] tracking-[0.1em] text-foreground">
-            WANT TO BE FEATURED?
-          </span>
-          <span className="font-sans text-[13px] leading-[1.7] text-muted-foreground">
-            Register your free subdomain and join the community.
-          </span>
-        </div>
-        <Button asChild variant="default-shadow" className="shrink-0">
-          <a
-            href="https://github.com/is-pinoy-dev/domains"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            CLAIM YOURS
-          </a>
-        </Button>
-      </div>
     </div>
   )
 }
