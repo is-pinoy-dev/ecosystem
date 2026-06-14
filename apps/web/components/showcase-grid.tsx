@@ -79,7 +79,8 @@ async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
         fetchOgImage(subdomain),
       ])
       if (!jsonRes.ok) return null
-      const data = (await jsonRes.json()) as Omit<SubdomainEntry, "ogImage">
+      const data = (await jsonRes.json()) as Omit<SubdomainEntry, "ogImage"> & { destroy?: boolean }
+      if (data.destroy) return null
       return { ...data, ogImage }
     })
   )
