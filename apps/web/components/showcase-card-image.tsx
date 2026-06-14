@@ -45,6 +45,28 @@ export function ShowcaseCardImage({
   const isCover = safeIdx === 0 && ogImage !== null
   const isLogo = safeIdx === logoIdx
 
+  // All image sources exhausted — render a branded text placeholder
+  if (isLogo) {
+    return (
+      <div
+        className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(245,200,0,0.06) 1px, transparent 1px)," +
+            "linear-gradient(90deg, rgba(245,200,0,0.06) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+      >
+        <span className="max-w-full truncate font-pixel text-[10px] leading-[1.8] tracking-[0.05em] text-primary">
+          {subdomain}
+        </span>
+        <span className="font-mono text-[9px] text-muted-foreground/50">
+          .is-pinoy.dev
+        </span>
+      </div>
+    )
+  }
+
   if (isCover) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -60,6 +82,7 @@ export function ShowcaseCardImage({
     )
   }
 
+  // Favicon path
   return (
     <div className="flex h-full w-full items-center justify-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -71,11 +94,7 @@ export function ShowcaseCardImage({
         aria-hidden
         onLoad={() => setLoadedSrc(src)}
         onError={advance}
-        className={`object-contain [image-rendering:pixelated] transition-opacity duration-200 ${
-          isLogo
-            ? `h-8 w-8 grayscale ${loaded ? "opacity-25" : "opacity-0"}`
-            : `h-10 w-10 ${loaded ? "opacity-60" : "opacity-0"}`
-        }`}
+        className={`h-10 w-10 object-contain [image-rendering:pixelated] transition-opacity duration-200 ${loaded ? "opacity-60" : "opacity-0"}`}
       />
     </div>
   )
