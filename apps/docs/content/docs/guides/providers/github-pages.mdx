@@ -1,14 +1,14 @@
 ---
 title: GitHub Pages
-description: How to point a GitHub Pages site at your is-pinoy.dev subdomain, including Cloudflare proxy settings.
+description: How to point a GitHub Pages site at your is-pinoy.dev subdomain and configure GitHub to serve a valid HTTPS certificate.
 icon: GitHub
 ---
 
-This guide walks you through getting your GitHub Pages site live on an is-pinoy.dev subdomain. Unlike platforms that hand you a unique DNS value, GitHub Pages uses a predictable CNAME target based on your username.
+This guide walks you through getting your GitHub Pages site live on an is-pinoy.dev subdomain — including the GitHub-side steps you must do **after** your PR is merged. Skipping those steps is the most common cause of "invalid certificate" errors on new subdomains.
 
 ## Prerequisites
 
-- Your portfolio is already deployed and building on GitHub Pages
+- Your portfolio is already deployed and building on GitHub Pages (e.g. `https://your-github-username.github.io`)
 - You have chosen a subdomain (e.g. `yourname.is-pinoy.dev`)
 
 ---
@@ -17,22 +17,54 @@ This guide walks you through getting your GitHub Pages site live on an is-pinoy.
   <Step>
     ## Find your CNAME value
 
-    For a **user or organization site** (the repo named `username.github.io`), your CNAME target is:
+    Your CNAME value is your GitHub Pages hostname:
 
     ```
-    username.github.io.
+    your-github-username.github.io.
     ```
 
-    For a **project site** (any other repo, served at `username.github.io/repo`), the CNAME target is the same — you still point at `username.github.io.`, and GitHub routes to the correct repo using the custom domain you set in the next step.
+    This is the same value for both **user sites** (`your-github-username.github.io`) and **project sites** (`your-github-username.github.io/my-project`) — the repository path is never part of the CNAME. GitHub routes to the correct repository using the custom domain you set later in this guide.
 
     <Callout type="warn">
-      Keep the trailing dot (`.`). This is standard DNS notation for a fully-qualified domain name. Replace `username` with your own GitHub username, lowercased.
+      Keep the trailing dot (`.`). This is standard DNS notation for a fully-qualified domain name. Replace `your-github-username` with your own GitHub username, lowercased.
     </Callout>
   </Step>
   <Step>
-    ## Set the custom domain in your repo
+    ## Create your subdomain JSON file
 
-    1. Go to your repository on GitHub
+    Now that you have your CNAME value, go to [Create Your JSON File](/guides/workflow/create-file) to add it to your file.
+
+    For reference, here is what your JSON should look like:
+
+    ```json
+    {
+      "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/ecosystem/main/packages/schemas/schema/v1/subdomain.schema.json",
+      "subdomain": "yourname",
+      "owner": {
+        "github": "your-github-username"
+      },
+      "records": {
+        "CNAME": {
+          "value": "your-github-username.github.io."
+        }
+      }
+    }
+    ```
+
+    Replace `yourname` and `your-github-username` with your actual information.
+
+    <Callout type="warn">
+      Do **not** set `"proxied": true` for GitHub Pages. The record must stay DNS-only so GitHub can verify your domain and issue the HTTPS certificate. If Cloudflare proxies the record, certificate provisioning fails and **Enforce HTTPS** stays greyed out.
+    </Callout>
+
+    Once your JSON file is ready, [validate it](/guides/workflow/validate), [open a PR](/guides/workflow/open-pr), and wait for it to be merged. The remaining steps happen **after the merge**, once your DNS record is live.
+  </Step>
+  <Step>
+    ## Add the custom domain in your Pages settings
+
+    Do this **after your PR is merged** and the DNS record is live (see [After Merge](/guides/workflow/after-merge) for how to check propagation).
+
+    1. Go to the repository that serves your Pages site (e.g. `your-github-username.github.io`)
     2. Click **Settings** → **Pages**
     3. Under **Custom domain**, enter your full subdomain:
 
@@ -42,77 +74,39 @@ This guide walks you through getting your GitHub Pages site live on an is-pinoy.
 
     4. Click **Save**
 
-    This commits a `CNAME` file to your repository so GitHub Pages knows to serve your site at that hostname.
-
-    <Callout type="info">
-      GitHub will report "DNS check unsuccessful" until your is-pinoy.dev PR is merged and DNS has propagated. This is expected — GitHub cannot see the record until it is live.
-    </Callout>
-  </Step>
-  <Step>
-    ## Choose your Cloudflare proxy setting
-
-    is-pinoy.dev manages DNS through Cloudflare. You can choose whether traffic is **proxied** through Cloudflare's network (the orange cloud) using the `proxied` field on your record.
+    GitHub runs a DNS check and then starts provisioning a TLS certificate for your subdomain.
 
     <Callout type="warn">
-      **Leave the proxy off (`proxied: false`, the default) until HTTPS is working.** GitHub Pages provisions a Let's Encrypt certificate by validating your domain over plain DNS. If Cloudflare proxies the record before the certificate is issued, validation can fail and **Enforce HTTPS** will stay greyed out in your Pages settings.
+      **This step is required.** Until you add the custom domain here, GitHub serves its default `*.github.io` certificate for your subdomain, and browsers show an **invalid certificate** error when visiting `https://yourname.is-pinoy.dev`.
     </Callout>
-
-    Once your site loads over HTTPS and **Enforce HTTPS** is enabled in GitHub Pages settings, you may optionally switch `proxied` to `true` to get Cloudflare's CDN caching and DDoS protection. See [Cloudflare proxy](/guides/reference/supported-records#cloudflare-proxy-proxied) for details.
   </Step>
   <Step>
-    ## Create your subdomain JSON file
+    ## Wait for the certificate to be provisioned
 
-    Now that you have your CNAME value, go to [Create Your JSON File](/guides/workflow/create-file) to add it to your file.
+    After saving the custom domain, the Pages settings page shows the certificate status (e.g. "TLS certificate is being provisioned"). GitHub issues a Let's Encrypt certificate — this usually completes within an hour, but can take up to 24 hours.
 
-    For reference, here is what your JSON should look like:
+    <Callout type="info">
+      If provisioning seems stuck after 24 hours, remove the custom domain, click **Save**, then add it back — this re-triggers provisioning.
+    </Callout>
+  </Step>
+  <Step>
+    ## Enable "Enforce HTTPS"
 
-    <Tabs items={["DNS-only (recommended)", "Proxied through Cloudflare"]}>
-      <Tab value="DNS-only (recommended)">
-        ```json
-        {
-          "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/ecosystem/main/packages/schemas/schema/v1/subdomain.schema.json",
-          "subdomain": "yourname",
-          "owner": {
-            "github": "your-github-username"
-          },
-          "records": {
-            "CNAME": {
-              "value": "your-github-username.github.io."
-            }
-          }
-        }
-        ```
-      </Tab>
-      <Tab value="Proxied through Cloudflare">
-        ```json
-        {
-          "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/ecosystem/main/packages/schemas/schema/v1/subdomain.schema.json",
-          "subdomain": "yourname",
-          "owner": {
-            "github": "your-github-username"
-          },
-          "records": {
-            "CNAME": {
-              "value": "your-github-username.github.io.",
-              "proxied": true
-            }
-          }
-        }
-        ```
-      </Tab>
-    </Tabs>
+    Once the certificate is issued, the **Enforce HTTPS** checkbox in **Settings** → **Pages** becomes clickable (it stays greyed out while the certificate is provisioning).
 
-    Replace `yourname` and `your-github-username` with your actual information.
+    Tick it. GitHub will then redirect all `http://` visitors to `https://` automatically.
   </Step>
 </Steps>
 
 ## Important notes
 
-- **Trailing dot** — the CNAME value must end with `.` (e.g. `username.github.io.`)
-- **No TXT record needed** — serving a GitHub Pages site over a subdomain only requires the CNAME. GitHub's organization-level domain verification uses a separate `_github-pages-challenge` host that is not part of this single-subdomain file, so skip it.
-- **HTTPS first, proxy second** — wait until GitHub Pages has issued your certificate and **Enforce HTTPS** is on before enabling `proxied: true`
-- **"DNS check unsuccessful" on GitHub** — expected until your PR is merged and DNS propagates
+- **Order matters** — the DNS record (your merged PR) must be live *before* GitHub can verify the custom domain and issue a certificate. If you added the custom domain before your PR was merged, remove it and add it again.
+- **Invalid certificate on `https://yourname.is-pinoy.dev`** — almost always means the custom domain hasn't been added in your Pages settings yet (Step 3), or the certificate is still provisioning (Step 4).
+- **A `CNAME` file appears in your repository** — GitHub commits a file named `CNAME` containing your subdomain to the branch that serves your site. This is normal; don't delete it. If you deploy with a GitHub Actions workflow or a static site generator, make sure your build doesn't wipe it from the output directory (Jekyll preserves it automatically).
+- **One custom domain per repository** — the custom domain applies to the specific repository serving the site. Project sites need it configured in their own repository's Pages settings.
+- **Trailing dot** — the CNAME value in your JSON must end with `.` (e.g. `your-github-username.github.io.`)
+- **DNS propagation** takes a few minutes after merge but can take up to 48 hours depending on your DNS resolver.
 
 ---
 
-Once your JSON file is ready, proceed to [Validate](/guides/workflow/validate).
+Once your JSON file is ready, proceed to [Validate](/guides/workflow/validate). If you run into trouble after setup, see GitHub's docs on [securing your site with HTTPS](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https).
