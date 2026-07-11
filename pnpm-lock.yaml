@@ -31,7 +31,7 @@ catalogs:
       specifier: ^9.39.2
       version: 9.39.2
     figlet:
-      specifier: ^1.8.0
+      specifier: 1.11.0
       version: 1.11.0
     lucide-react:
       specifier: ^1.16.0
