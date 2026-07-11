@@ -23,7 +23,18 @@ runs:
   steps:
     - name: Install CLI
       shell: bash
-      run: npm install -g @is-pinoy-dev/cli@latest
+      # figlet 1.11.1 ships a broken CJS build that crashes on require. If the
+      # installed CLI resolved that version, swap in a known-good build. Safe to
+      # remove once the CLI pins figlet (>0.4.8).
+      run: |
+        npm install -g @is-pinoy-dev/cli@latest
+        FIGLET_DIR="$(npm root -g)/@is-pinoy-dev/cli/node_modules/figlet"
+        if [ -d "$FIGLET_DIR" ] && grep -q '"version": "1.11.1"' "$FIGLET_DIR/package.json"; then
+          TARBALL=$(npm pack figlet@1.11.0 --pack-destination "$RUNNER_TEMP" | tail -1)
+          rm -rf "$FIGLET_DIR"
+          mkdir -p "$FIGLET_DIR"
+          tar -xzf "$RUNNER_TEMP/$TARBALL" -C "$FIGLET_DIR" --strip-components=1
+        fi
 
     - name: Run validation
       id: validate

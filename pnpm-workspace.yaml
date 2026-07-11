@@ -25,6 +25,7 @@ catalog:
   next-themes: ^0.4.6
   # cli utilities
   dotenv: ^17.4.2
-  figlet: ^1.8.0
+  # pinned: figlet 1.11.1 ships a broken CJS build (fileURLToPath(undefined) crash on require)
+  figlet: 1.11.0
   "@types/figlet": ^1.7.0
   picocolors: ^1.1.1
