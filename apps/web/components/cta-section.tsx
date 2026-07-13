@@ -1,32 +1,32 @@
-import { ArrowUpRight } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
-import {
-  SectionDescription,
-  SectionEyebrow,
-  SectionHeader,
-  SectionTitle,
-} from "@is-pinoy-dev/ui/components/section-header"
+import { ContributionGrid } from "@/components/contribution-grid"
 import { DiscordIcon, GitHubIcon } from "@/components/icons"
 
-export function CTASection() {
+export function CommunitySection() {
   return (
-    <section className="py-16 sm:py-20" aria-labelledby="community-title">
-      <Container className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
-        <SectionHeader>
-          <SectionEyebrow>Open source. Built together.</SectionEyebrow>
-          <SectionTitle id="community-title">
-            Built by us, for all of us.
-          </SectionTitle>
-        </SectionHeader>
+    <section
+      className="border-b border-border py-7 sm:py-10 lg:py-14"
+      aria-labelledby="community-title"
+    >
+      <Container className="grid min-w-0 gap-10 lg:grid-cols-[0.36fr_0.64fr] lg:gap-16">
+        <div className="min-w-0">
+          <h2
+            id="community-title"
+            className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase"
+          >
+            Open source. Built together.
+          </h2>
+          <p className="m-0 mt-[18px] max-w-[320px] text-sm leading-[1.7] text-foreground">
+            is-pinoy.dev is a volunteer-run project by Filipino developers.
+            Contributions—big or small—make this possible.
+          </p>
 
-        <div className="border-l border-border pl-6 sm:pl-10">
-          <SectionDescription>
-            is-pinoy.dev is maintained by Filipino developers.
-            Contributions—large or small—make the service stronger for everyone.
-          </SectionDescription>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Button asChild>
+          <div className="mt-5 flex flex-col gap-2">
+            <Button
+              asChild
+              className="h-[42px] w-full gap-2 sm:w-[200px]"
+            >
               <a
                 href="https://github.com/is-pinoy-dev"
                 target="_blank"
@@ -34,10 +34,13 @@ export function CTASection() {
               >
                 <GitHubIcon size={16} />
                 Contribute on GitHub
-                <ArrowUpRight aria-hidden="true" />
               </a>
             </Button>
-            <Button asChild variant="outline-shadow">
+            <Button
+              asChild
+              variant="outline-shadow"
+              className="h-[42px] w-full gap-2 border-accent text-accent sm:w-[200px]"
+            >
               <a
                 href={
                   process.env.NEXT_PUBLIC_DISCORD_LINK ??
@@ -47,10 +50,14 @@ export function CTASection() {
                 rel="noopener noreferrer"
               >
                 <DiscordIcon size={16} />
-                Join Discord
+                Join our Discord
               </a>
             </Button>
           </div>
+        </div>
+
+        <div className="min-w-0 lg:-mt-1">
+          <ContributionGrid />
         </div>
       </Container>
     </section>

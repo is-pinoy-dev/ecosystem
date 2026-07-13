@@ -1,10 +1,5 @@
 import { ArrowUpRight } from "lucide-react"
 import { Container } from "@is-pinoy-dev/ui/components/container"
-import {
-  SectionEyebrow,
-  SectionHeader,
-  SectionTitle,
-} from "@is-pinoy-dev/ui/components/section-header"
 
 interface Provider {
   name: string
@@ -16,8 +11,8 @@ interface Provider {
 function VercelLogo() {
   return (
     <svg
-      width="30"
-      height="26"
+      width="24"
+      height="21"
       viewBox="0 0 76 65"
       fill="currentColor"
       aria-hidden="true"
@@ -30,8 +25,8 @@ function VercelLogo() {
 function GitHubPagesLogo() {
   return (
     <svg
-      width="30"
-      height="30"
+      width="24"
+      height="24"
       viewBox="0 0 24 24"
       fill="currentColor"
       aria-hidden="true"
@@ -44,8 +39,8 @@ function GitHubPagesLogo() {
 function CloudflareLogo() {
   return (
     <svg
-      width="38"
-      height="26"
+      width="30"
+      height="21"
       viewBox="0 0 109 44"
       fill="currentColor"
       aria-hidden="true"
@@ -58,19 +53,19 @@ function CloudflareLogo() {
 const PROVIDERS: Provider[] = [
   {
     name: "Vercel",
-    description: "Fast deployments with a straightforward CNAME setup.",
+    description: "Fast deployments. Global edge.",
     href: "https://docs.is-pinoy.dev/guides/providers/vercel",
     logo: <VercelLogo />,
   },
   {
     name: "GitHub Pages",
-    description: "Simple hosting directly from your repository.",
+    description: "Simple hosting from your repository.",
     href: "https://docs.is-pinoy.dev/guides/providers/github-pages",
     logo: <GitHubPagesLogo />,
   },
   {
     name: "Cloudflare Pages",
-    description: "Fast global builds with flexible DNS controls.",
+    description: "Fast builds. Global performance.",
     href: "https://docs.is-pinoy.dev/guides/providers/cloudflare-pages",
     logo: <CloudflareLogo />,
   },
@@ -79,14 +74,16 @@ const PROVIDERS: Provider[] = [
 export function ProviderGuides() {
   return (
     <section
-      className="border-y border-border bg-surface-subtle py-16 sm:py-20"
+      className="border-b border-border py-6 sm:py-7 lg:py-9"
       aria-labelledby="providers-title"
     >
       <Container>
-        <SectionHeader className="mb-10">
-          <SectionEyebrow>Works with the tools you use</SectionEyebrow>
-          <SectionTitle id="providers-title">Supported providers</SectionTitle>
-        </SectionHeader>
+        <h2 id="providers-title" className="sr-only">
+          Supported providers
+        </h2>
+        <p className="m-0 mb-4 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+          Works with the tools you use
+        </p>
 
         <div className="grid border-y border-border md:grid-cols-3">
           {PROVIDERS.map((provider) => (
@@ -95,14 +92,14 @@ export function ProviderGuides() {
               href={provider.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-start gap-4 border-b border-border px-0 py-6 text-foreground no-underline last:border-b-0 md:border-r md:border-b-0 md:px-6 md:first:pl-0 md:last:border-r-0 md:last:pr-0"
+              className="group flex items-start gap-4 border-b border-border px-0 py-6 text-foreground no-underline last:border-b-0 md:border-r md:border-b-0 md:px-8 md:first:pl-0 md:last:border-r-0 md:last:pr-0"
             >
               <span
-                className={
+                className={`flex size-12 shrink-0 items-center justify-center ${
                   provider.name === "Cloudflare Pages"
-                    ? "mt-1 text-[#F6821F]"
-                    : "mt-1 text-foreground"
-                }
+                    ? "text-[#F6821F]"
+                    : "text-foreground"
+                }`}
               >
                 {provider.logo}
               </span>
@@ -114,13 +111,17 @@ export function ProviderGuides() {
                     aria-hidden="true"
                   />
                 </span>
-                <span className="mt-1 block text-sm leading-6 text-muted-foreground">
+                <span className="mt-1 line-clamp-2 block text-[13px] leading-[1.5] text-muted-foreground">
                   {provider.description}
                 </span>
               </span>
             </a>
           ))}
         </div>
+
+        <p className="m-0 mt-5 text-[13px] font-medium text-accent">
+          More providers coming soon.
+        </p>
       </Container>
     </section>
   )

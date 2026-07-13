@@ -14,7 +14,7 @@ export function DocLayout({ title, effectiveDate, children }: DocLayoutProps) {
     <>
       <MainNav />
 
-      <Container className="doc-main max-w-[780px] pt-32 pb-20">
+      <Container className="doc-main max-w-[780px] pt-12 pb-20 sm:pt-16">
         <p className="m-0 mb-5 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
           Legal
         </p>

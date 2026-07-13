@@ -1,30 +1,26 @@
 import { Suspense } from "react"
-import { Code2, ShieldCheck, Users } from "lucide-react"
+import { Code2, Sun, Users } from "lucide-react"
 import { Container } from "@is-pinoy-dev/ui/components/container"
-import {
-  SectionDescription,
-  SectionEyebrow,
-  SectionHeader,
-  SectionTitle,
-} from "@is-pinoy-dev/ui/components/section-header"
 import { MainNav } from "@/components/main-nav"
 import { SubdomainChecker } from "@/components/subdomain-checker"
-import { SubdomainMarquee } from "@/components/subdomain-marquee"
-import { DocsSection } from "@/components/docs-section"
+import {
+  RecentlyClaimed,
+  RecentlyClaimedSkeleton,
+} from "@/components/recently-claimed"
+import { HowClaimingWorks } from "@/components/how-claiming-works"
 import { ProviderGuides } from "@/components/provider-guides"
-import { CTASection } from "@/components/cta-section"
+import { CommunitySection } from "@/components/cta-section"
 import { ReportAbuseSection } from "@/components/report-abuse-section"
 import { SiteFooter } from "@/components/site-footer"
-import { ShowcaseGrid, ShowcaseGridSkeleton } from "@/components/showcase-grid"
+import {
+  ShowcaseHighlights,
+  ShowcaseHighlightsSkeleton,
+} from "@/components/showcase-grid"
 
 const TRUST_ITEMS = [
-  { icon: ShieldCheck, title: "Free forever", detail: "No fees. Ever." },
-  { icon: Code2, title: "Open source", detail: "Transparent and auditable." },
-  {
-    icon: Users,
-    title: "Community-run",
-    detail: "Reviewed by Filipino developers.",
-  },
+  { icon: Sun, label: "Libre habang-buhay.", tone: "text-primary" },
+  { icon: Code2, label: "Open source", tone: "text-foreground" },
+  { icon: Users, label: "Community-run", tone: "text-foreground" },
 ]
 
 export const dynamic = "force-dynamic"
@@ -34,76 +30,91 @@ export default function Page() {
     <>
       <MainNav />
 
-      <main className="min-h-screen pt-16">
-        <section className="border-b border-border py-16 sm:py-20 lg:py-24">
-          <Container className="grid items-center gap-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20">
-            <div className="flex flex-col items-start gap-7">
+      <main className="min-h-screen">
+        <section className="border-b border-border lg:grid lg:min-h-[420px] lg:grid-cols-2">
+          <div className="flex flex-col items-start gap-7 px-5 pt-11 pb-9 md:px-8 md:pt-14 md:pb-11 lg:pt-14 lg:pr-16 lg:pb-10 lg:pl-10">
+            <div className="flex max-w-[520px] flex-col items-start gap-7">
               <p className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
                 Para sa Pinoy developers
               </p>
-              <h1 className="m-0 max-w-[620px] text-5xl leading-[1.04] font-semibold tracking-[-0.045em] text-foreground sm:text-6xl">
-                A Filipino domain for work worth sharing
-                <span className="text-primary">.</span>
+              <h1 className="m-0 max-w-[520px] text-[40px] leading-[1.08] font-semibold tracking-[-0.04em] text-foreground lg:text-[56px]">
+                A Filipino domain
+                <br />
+                for work
+                <br />
+                worth sharing<span className="text-primary">.</span>
               </h1>
-              <p className="m-0 max-w-[560px] text-lg leading-8 text-muted-foreground">
-                Claim your free{" "}
+              <p className="m-0 max-w-[460px] text-base leading-[1.65] text-foreground/82">
+                Get your free{" "}
                 <span className="font-mono text-foreground">
                   *.is-pinoy.dev
                 </span>{" "}
-                subdomain for your portfolio. Open source, community-driven, and
-                forever free.
+                subdomain and build something that represents you. Open
+                source, community-driven, forever free.
               </p>
 
-              <div className="grid w-full gap-5 border-t border-border pt-6 sm:grid-cols-3">
-                {TRUST_ITEMS.map(({ icon: Icon, title, detail }) => (
-                  <div key={title} className="flex items-start gap-3">
-                    <Icon
-                      className="mt-0.5 size-5 shrink-0 text-foreground"
-                      aria-hidden="true"
-                    />
-                    <div>
-                      <p className="m-0 text-sm font-semibold text-foreground">
-                        {title}
-                      </p>
-                      <p className="m-0 mt-1 text-xs leading-5 text-muted-foreground">
-                        {detail}
-                      </p>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                {TRUST_ITEMS.map(({ icon: Icon, label, tone }, i) => (
+                  <div key={label} className="flex items-center gap-4">
+                    {i > 0 && (
+                      <span
+                        className="h-6 w-px bg-border"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <div className="flex items-center gap-[9px]">
+                      <Icon
+                        className={`size-[18px] shrink-0 ${tone}`}
+                        aria-hidden="true"
+                      />
+                      <span className="text-xs font-medium text-foreground">
+                        {label}
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+          </div>
 
-            <SubdomainChecker />
-          </Container>
+          <div
+            id="claim"
+            className="relative flex justify-center border-t border-border px-5 pt-9 pb-11 md:px-8 md:pt-11 md:pb-14 lg:items-center lg:border-t-0 lg:border-l lg:py-14 lg:pr-10 lg:pl-16"
+          >
+            <div
+              className="hero-grid-motif pointer-events-none absolute inset-0"
+              aria-hidden="true"
+            />
+            <div className="relative lg:mt-3">
+              <SubdomainChecker />
+            </div>
+          </div>
         </section>
 
-        <SubdomainMarquee />
-        <DocsSection />
+        <Suspense fallback={<RecentlyClaimedSkeleton />}>
+          <RecentlyClaimed />
+        </Suspense>
+        <HowClaimingWorks />
 
         <section
-          className="border-t border-border py-16 sm:py-20"
+          className="border-b border-border py-7 sm:py-10 lg:py-12"
           aria-labelledby="showcase-title"
         >
           <Container>
-            <SectionHeader className="mb-10">
-              <SectionEyebrow>Built by Filipino developers</SectionEyebrow>
-              <SectionTitle id="showcase-title">
-                See what&apos;s possible
-              </SectionTitle>
-              <SectionDescription>
-                Portfolios and projects with a memorable Filipino developer
-                identity.
-              </SectionDescription>
-            </SectionHeader>
-            <Suspense fallback={<ShowcaseGridSkeleton limit={3} />}>
-              <ShowcaseGrid limit={3} />
+            <h2 id="showcase-title" className="sr-only">
+              Community showcase
+            </h2>
+            <p className="m-0 mb-4 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+              Built by Pinoy developers
+            </p>
+            <Suspense fallback={<ShowcaseHighlightsSkeleton />}>
+              <ShowcaseHighlights />
             </Suspense>
           </Container>
         </section>
 
         <ProviderGuides />
-        <CTASection />
+        <CommunitySection />
         <ReportAbuseSection />
       </main>
 

@@ -33,7 +33,7 @@ export default function ShowcasePage() {
     <>
       <MainNav />
 
-      <main className="min-h-screen pt-16">
+      <main className="min-h-screen">
         <section className="py-16 sm:py-20">
           <Container>
             <SectionHeader className="mb-12">

@@ -75,6 +75,44 @@ a {
   }
 }
 
+.hero-grid-motif {
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      rgba(214, 209, 196, 0.45) 0,
+      rgba(214, 209, 196, 0.45) 1px,
+      transparent 1px,
+      transparent 12px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(214, 209, 196, 0.45) 0,
+      rgba(214, 209, 196, 0.45) 1px,
+      transparent 1px,
+      transparent 12px
+    ),
+    repeating-linear-gradient(
+      to right,
+      rgba(214, 209, 196, 0.7) 0,
+      rgba(214, 209, 196, 0.7) 1px,
+      transparent 1px,
+      transparent 48px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(214, 209, 196, 0.7) 0,
+      rgba(214, 209, 196, 0.7) 1px,
+      transparent 1px,
+      transparent 48px
+    );
+  mask-image: radial-gradient(ellipse at center, transparent 30%, black 80%);
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    transparent 30%,
+    black 80%
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
