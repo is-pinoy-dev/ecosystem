@@ -2,27 +2,29 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
-/* Map fumadocs color tokens to the is-pinoy.dev design system */
 :root {
   --color-fd-background: var(--background);
   --color-fd-foreground: var(--foreground);
-  --color-fd-card: var(--background);
-  --color-fd-card-foreground: var(--foreground);
+  --color-fd-card: var(--card);
+  --color-fd-card-foreground: var(--card-foreground);
   --color-fd-border: var(--border);
-  --color-fd-primary: var(--primary);
-  --color-fd-primary-foreground: var(--primary-foreground);
-  --color-fd-muted: #2a2a2a;
+  --color-fd-primary: var(--accent);
+  --color-fd-primary-foreground: var(--accent-foreground);
+  --color-fd-muted: var(--muted);
   --color-fd-muted-foreground: var(--muted-foreground);
   --color-fd-secondary: var(--secondary);
   --color-fd-secondary-foreground: var(--secondary-foreground);
-  --color-fd-accent: var(--accent);
-  --color-fd-accent-foreground: var(--accent-foreground);
+  --color-fd-accent: var(--secondary);
+  --color-fd-accent-foreground: var(--foreground);
   --color-fd-popover: var(--popover);
   --color-fd-popover-foreground: var(--popover-foreground);
   --color-fd-ring: var(--ring);
 }
 
-/* Brand fonts */
+html {
+  scrollbar-gutter: stable;
+}
+
 code,
 pre,
 kbd,
@@ -37,149 +39,125 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-pixel), monospace;
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
-/* Zero border-radius everywhere — design system constraint */
+.prose {
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.prose a {
+  color: var(--accent);
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  text-underline-offset: 3px;
+}
+
 * {
   border-radius: 0 !important;
 }
 
-/* Gold bottom border on fumadocs nav bar */
 #nd-nav {
-  border-bottom: 3px solid #f5c800;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--background) 94%, transparent);
 }
 
-/* Sidebar background matches content background, no divider */
 #nd-sidebar {
-  background: var(--background);
-  border-right: none;
+  border-right: 1px solid var(--border);
+  background: var(--sidebar);
 }
 
-/* Remove active-item highlight bar (1px cursor-like indicator) */
+#nd-sidebar [data-active="true"] {
+  border-left: 3px solid var(--primary) !important;
+  background: color-mix(in srgb, var(--primary) 14%, transparent) !important;
+  color: var(--foreground) !important;
+}
+
 #nd-sidebar [data-active="true"]::before {
   display: none !important;
 }
 
-/* Tab dropdown trigger — ghost variant */
 #nd-sidebar button.border {
   background: transparent !important;
-  /*border-color: transparent !important;*/
   box-shadow: none !important;
-}
-
-#nd-sidebar button:last-child.border {
-  border-color: transparent !important;
 }
 
 #nd-sidebar button.border[data-state="open"] {
   border-color: var(--border) !important;
+  background: var(--background) !important;
 }
 
-/* Sidebar bottom container (GitHub + theme toggle) */
-#nd-sidebar div.border {
-  border-width: 3px !important;
-  border-color: var(--border) !important;
-  box-shadow: 4px 4px 0 var(--primary-dark);
-}
-
-/* Sidebar toggle button in nav */
-button[aria-label="Open Sidebar"] {
-  border: 3px solid transparent !important;
-  box-shadow: none;
-  transition:
-    border-color 100ms,
-    box-shadow 100ms;
-}
-
-button[aria-label="Open Sidebar"]:hover {
-  border-color: var(--border) !important;
-  box-shadow: 4px 4px 0 var(--primary-dark);
-}
-
-@media (max-width: 768px) {
-  button[aria-label="Open Sidebar"] {
-    padding: 0.5rem !important;
-    margin-inline-start: 0.5rem;
-  }
-}
-
-/* Collapsed sidebar panel (shown when sidebar is collapsed) */
-[data-sidebar-panel] {
-  border: 3px solid var(--border) !important;
-  box-shadow: 4px 4px 0 var(--primary-dark) !important;
-  background: transparent !important;
-}
-
-/* Sidebar collapse toggle */
+#nd-sidebar div.border,
+[data-sidebar-panel],
+button[aria-label="Open Sidebar"],
 button[aria-label="Collapse Sidebar"] {
-  border: 3px solid transparent !important;
-  box-shadow: none;
-  transition:
-    border-color 100ms,
-    box-shadow 100ms;
-}
-
-button[aria-label="Collapse Sidebar"][data-collapsed="false"]:hover {
   border-color: var(--border) !important;
-  box-shadow: 4px 4px 0 var(--primary-dark);
+  box-shadow: none !important;
 }
 
-/* Retro pixel shadows on docs components */
+[data-sidebar-panel] {
+  background: var(--popover) !important;
+}
 
-/* Code blocks */
+[data-search] {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-search-full] {
+  border: 1px solid var(--input) !important;
+  background: var(--background) !important;
+  box-shadow: none !important;
+}
+
+[data-search-full]:focus-within {
+  border-color: var(--ring) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 20%, transparent) !important;
+}
+
+[role="dialog"] {
+  border: 1px solid var(--border) !important;
+  background: var(--popover) !important;
+  box-shadow: 0 18px 45px rgb(11 31 68 / 14%) !important;
+}
+
 .shiki {
-  border: 3px solid var(--border) !important;
-  box-shadow: 4px 4px 0 var(--primary-dark);
+  border: 1px solid #29405f !important;
+  background: var(--code-bg) !important;
+  box-shadow: none !important;
 }
 
-/* Callout boxes */
 .prose .border {
-  border-width: 3px !important;
+  border-width: 1px !important;
   border-color: var(--border) !important;
-  box-shadow: 4px 4px 0 #747474;
+  box-shadow: none !important;
 }
 
-/* Footer prev/next nav buttons */
+.prose blockquote {
+  border-left: 3px solid var(--primary) !important;
+  background: color-mix(in srgb, var(--primary) 9%, var(--background));
+  padding: 1rem 1.25rem;
+  color: var(--foreground);
+}
+
 #nd-page > div > a.border {
-  border: 3px solid var(--border) !important;
-  box-shadow: 4px 4px 0 var(--primary-dark);
+  border: 1px solid var(--border) !important;
+  background: var(--card);
+  box-shadow: none !important;
   transition:
-    box-shadow 100ms,
-    transform 100ms;
+    border-color 150ms,
+    background-color 150ms;
 }
 
 #nd-page > div > a.border:hover {
-  box-shadow: 2px 2px 0 var(--primary-dark);
-  transform: translate(2px, 2px);
+  border-color: var(--accent) !important;
+  background: var(--secondary);
 }
 
-/* Search bar — icon-only trigger (mobile) */
-[data-search] {
-  border: 3px solid transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Search bar — full bar (desktop sidebar) */
-[data-search-full] {
-  border: 3px solid var(--border) !important;
-  box-shadow: 4px 4px 0 var(--primary-dark) !important;
-}
-
-/* Reset in collapsed sidebar panel */
-[data-sidebar-panel] [data-search-full] {
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Search dialog */
-[role="dialog"] {
-  border: 3px solid var(--border) !important;
-  box-shadow: 6px 6px 0 var(--primary-dark) !important;
-}
-
-/* Show tab description in dropdown trigger on desktop (fumadocs hides it with md:hidden) */
 @media (min-width: 768px) {
   #nd-sidebar button.border > div > p {
     display: block;
@@ -187,31 +165,32 @@ button[aria-label="Collapse Sidebar"][data-collapsed="false"]:hover {
 
   #nd-sidebar button.border > div > p:last-child,
   .p-1\.5 > div:last-of-type > p:last-child {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
   }
-}
 
-/* Center icon in tab dropdown option items (override fumadocs md:mb-auto which top-aligns icons) */
-@media (min-width: 768px) {
   .p-1\.5 > div:first-child {
     margin-bottom: 0;
     align-self: center;
   }
 }
 
-/* Scrollbar and scroll-lock fixes */
-html {
-  scrollbar-gutter: stable;
-}
-
 html > body[data-scroll-locked] {
-  margin-right: 0px !important;
+  margin-right: 0 !important;
   --removed-body-scroll-bar-size: 0px !important;
 }
 
-/* Editable subdomain token: pencil icon hidden on touch devices */
 @media (pointer: coarse) {
   [data-editable-subdomain-icon] {
     display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

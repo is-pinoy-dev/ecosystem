@@ -48,19 +48,11 @@ export function ShowcaseCardImage({
   // All image sources exhausted — render a branded text placeholder
   if (isLogo) {
     return (
-      <div
-        className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(245,200,0,0.06) 1px, transparent 1px)," +
-            "linear-gradient(90deg, rgba(245,200,0,0.06) 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-        }}
-      >
-        <span className="max-w-full truncate font-pixel text-[10px] leading-[1.8] tracking-[0.05em] text-primary">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-surface-subtle px-6 text-center">
+        <span className="max-w-full truncate font-mono text-sm font-semibold text-foreground">
           {subdomain}
         </span>
-        <span className="font-mono text-[9px] text-muted-foreground/50">
+        <span className="font-mono text-xs text-muted-foreground">
           .is-pinoy.dev
         </span>
       </div>
@@ -94,7 +86,7 @@ export function ShowcaseCardImage({
         aria-hidden
         onLoad={() => setLoadedSrc(src)}
         onError={advance}
-        className={`h-10 w-10 object-contain [image-rendering:pixelated] transition-opacity duration-200 ${loaded ? "opacity-60" : "opacity-0"}`}
+        className={`h-10 w-10 object-contain transition-opacity duration-200 [image-rendering:pixelated] ${loaded ? "opacity-60" : "opacity-0"}`}
       />
     </div>
   )

@@ -1,6 +1,7 @@
 {
   "extends": "@workspace/typescript-config/react-library.json",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@is-pinoy-dev/ui/*": ["./src/*"]

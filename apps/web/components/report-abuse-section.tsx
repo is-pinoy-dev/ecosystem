@@ -1,42 +1,55 @@
+import { ExternalLink, ShieldCheck } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
+import { Container } from "@is-pinoy-dev/ui/components/container"
+import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
 
 export function ReportAbuseSection() {
   return (
-    <section className="w-full border-t-2 border-border">
-      <div className="mx-auto flex max-w-[960px] flex-col items-center gap-8 px-10 py-20 text-center">
-        {/* Eyebrow */}
-        <span className="font-pixel text-[7px] tracking-[0.15em] text-muted-foreground uppercase">
-          {"// COMMUNITY SAFETY"}
-        </span>
+    <section
+      className="border-y border-border bg-surface-subtle py-8"
+      aria-labelledby="safety-title"
+    >
+      <Container className="grid gap-6 md:grid-cols-[1fr_auto_auto] md:items-center">
+        <div className="flex items-start gap-4">
+          <ShieldCheck
+            className="mt-0.5 size-6 shrink-0 text-foreground"
+            aria-hidden="true"
+          />
+          <div>
+            <h2
+              id="safety-title"
+              className="m-0 text-base font-semibold text-foreground"
+            >
+              Keeping the community safe
+            </h2>
+            <p className="m-0 mt-1 max-w-[620px] text-sm leading-6 text-muted-foreground">
+              We do not tolerate phishing, spam, impersonation, or harmful use.
+              If something looks wrong, let us know.
+            </p>
+          </div>
+        </div>
 
-        {/* Heading */}
-        <h2
-          className="m-0 max-w-[640px] font-pixel leading-[1.8] text-foreground"
-          style={{ fontSize: "clamp(0.6rem, 1.8vw, 1rem)" }}
+        <a
+          href="https://status.is-pinoy.dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-sm font-medium text-foreground no-underline hover:text-accent"
         >
-          Seen something wrong?
-          <br />
-          Report it.
-        </h2>
+          <StatusIndicator tone="success" />
+          View system status
+        </a>
 
-        {/* Body */}
-        <p className="m-0 max-w-[480px] font-sans text-[15px] leading-[1.7] text-muted-foreground">
-          If a subdomain is being used for phishing, spam, impersonation, or any
-          other harmful purpose, let us know. We take abuse seriously and will
-          act quickly.
-        </p>
-
-        {/* CTA */}
-        <Button asChild variant="outline-shadow">
+        <Button asChild variant="destructive">
           <a
             href="https://github.com/is-pinoy-dev/domains/issues/new?template=abuse-report.md&title=%5BABUSE%5D+"
             target="_blank"
             rel="noopener noreferrer"
           >
-            REPORT MISUSE OR ABUSE
+            Report abuse
+            <ExternalLink aria-hidden="true" />
           </a>
         </Button>
-      </div>
+      </Container>
     </section>
   )
 }

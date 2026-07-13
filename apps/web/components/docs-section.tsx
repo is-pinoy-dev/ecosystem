@@ -1,77 +1,86 @@
-import Link from "next/link"
-import { Card, CardContent } from "@is-pinoy-dev/ui/components/card"
+import { ArrowRight, GitPullRequest, Globe2, Search } from "lucide-react"
+import { Button } from "@is-pinoy-dev/ui/components/button"
+import { Container } from "@is-pinoy-dev/ui/components/container"
+import {
+  SectionDescription,
+  SectionEyebrow,
+  SectionHeader,
+  SectionTitle,
+} from "@is-pinoy-dev/ui/components/section-header"
 
-interface DocCard {
-  icon: string
-  title: string
-  description: string
-  href: string
-}
-
-const DOCS: DocCard[] = [
+const STEPS = [
   {
-    icon: "▶",
-    title: "Prerequisites",
-    description: "What you need before you start: GitHub account, DNS values, and more.",
-    href: "https://docs.is-pinoy.dev/getting-started/prerequisites",
+    number: "01",
+    icon: Search,
+    title: "Check your name",
+    description:
+      "Search for your preferred subdomain. If it is free, you can claim it.",
   },
   {
-    icon: "01",
-    title: "Step-by-Step Workflow",
-    description: "Fork, create your JSON file, validate, and open a PR.",
-    href: "https://docs.is-pinoy.dev/workflow",
+    number: "02",
+    icon: Globe2,
+    title: "Connect your site",
+    description: "Point your subdomain to any supported hosting provider.",
   },
   {
-    icon: "{ }",
-    title: "JSON Format",
-    description: "Full reference for the subdomain JSON file format and DNS record types.",
-    href: "https://docs.is-pinoy.dev/reference/json-format",
+    number: "03",
+    icon: GitPullRequest,
+    title: "Open a pull request",
+    description:
+      "Add your subdomain through the GitHub repository. Maintainers take it from there.",
   },
 ]
 
-function DocCard({ card }: { card: DocCard }) {
-  return (
-    <Link
-      href={card.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="no-underline group"
-    >
-      <Card className="border-[3px] border-card shadow-[5px_5px_0_#000] bg-background p-7 flex flex-col gap-4 h-full min-h-[160px] relative transition-all duration-100 cursor-pointer group-hover:border-primary group-hover:shadow-[6px_6px_0_var(--color-primary-dark)] group-hover:-translate-x-px group-hover:-translate-y-px">
-        <CardContent className="flex flex-col gap-4 p-0">
-          <span className="font-mono text-[18px] text-primary leading-none">
-            {card.icon}
-          </span>
-          <span className="font-pixel text-[0.6rem] text-foreground leading-[1.6] tracking-[0.03em]">
-            {card.title}
-          </span>
-          <span className="font-sans text-[14px] text-muted-foreground leading-[1.7]">
-            {card.description}
-          </span>
-          <span className="absolute bottom-5 right-5 font-mono text-[16px] text-primary">
-            →
-          </span>
-        </CardContent>
-      </Card>
-    </Link>
-  )
-}
-
 export function DocsSection() {
   return (
-    <section className="w-full max-w-[960px] mx-auto px-10 pt-20 pb-20">
-      <div className="h-[2px] bg-primary mb-16 shadow-[0_2px_0_var(--color-primary-dark)]" />
-      <h2
-        className="font-pixel text-primary tracking-[0.1em] mb-10 leading-[1.6]"
-        style={{ fontSize: "clamp(0.5rem, 1.5vw, 0.75rem)" }}
-      >
-        {"// HOW TO REGISTER"}
-      </h2>
-      <div className="grid grid-cols-3 gap-4 max-sm:grid-cols-1">
-        {DOCS.map((doc) => (
-          <DocCard key={doc.href} card={doc} />
-        ))}
-      </div>
+    <section
+      id="how-it-works"
+      className="py-16 sm:py-20"
+      aria-labelledby="how-it-works-title"
+    >
+      <Container>
+        <SectionHeader className="mb-10">
+          <SectionEyebrow>How claiming works</SectionEyebrow>
+          <SectionTitle id="how-it-works-title">
+            From a name to a live site
+          </SectionTitle>
+          <SectionDescription>
+            A transparent GitHub-native workflow with no dashboard and no hidden
+            fees.
+          </SectionDescription>
+        </SectionHeader>
+
+        <div className="border-y border-border">
+          {STEPS.map(({ number, icon: Icon, title, description }) => (
+            <div
+              key={number}
+              className="grid gap-4 border-b border-border py-6 last:border-b-0 sm:grid-cols-[64px_40px_220px_1fr] sm:items-center"
+            >
+              <span className="font-mono text-2xl font-semibold text-primary-dark">
+                {number}
+              </span>
+              <Icon className="size-5 text-foreground" aria-hidden="true" />
+              <h3 className="m-0 text-base font-semibold text-foreground">
+                {title}
+              </h3>
+              <p className="m-0 max-w-[560px] text-sm leading-6 text-muted-foreground">
+                {description}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <Button asChild variant="link" className="mt-6">
+          <a
+            href="https://docs.is-pinoy.dev/guides"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open the registration guide
+            <ArrowRight aria-hidden="true" />
+          </a>
+        </Button>
+      </Container>
     </section>
   )
 }

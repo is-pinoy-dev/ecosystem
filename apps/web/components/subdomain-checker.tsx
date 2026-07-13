@@ -2,9 +2,14 @@
 
 import { useState } from "react"
 import Image from "next/image"
+import { AlertCircle, ArrowUpRight, CheckCircle2, XCircle } from "lucide-react"
 import { RESERVED_SUBDOMAINS } from "@is-pinoy-dev/validate"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Input } from "@is-pinoy-dev/ui/components/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+} from "@is-pinoy-dev/ui/components/input-group"
 
 type CheckStatus = "idle" | "loading" | "taken" | "available" | "error"
 
@@ -14,7 +19,7 @@ interface SubdomainRecord {
   records: { CNAME?: { value: string } }
 }
 
-function ResultCard({
+function ResultPanel({
   status,
   subdomain,
   record,
@@ -25,9 +30,11 @@ function ResultCard({
 }) {
   if (status === "error") {
     return (
-      <div className="mt-4 flex w-full max-w-[560px] items-center gap-3 border-[3px] border-border bg-background px-5 py-4 shadow-[5px_5px_0_#000]">
-        <span className="font-mono text-[13px] leading-none text-muted-foreground">
-          Unable to check — try again.
+      <div className="flex items-start gap-3 border border-destructive/35 bg-destructive/5 p-4 text-sm text-destructive">
+        <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <span>
+          Unable to check this name. Use letters, numbers, or hyphens and try
+          again.
         </span>
       </div>
     )
@@ -35,9 +42,16 @@ function ResultCard({
 
   if (status === "taken" && !record) {
     return (
-      <div className="mt-4 flex w-full max-w-[560px] items-center gap-3 border-[3px] border-border bg-background px-5 py-4 shadow-[5px_5px_0_#000]">
-        <span className="font-mono text-[13px] leading-none text-muted-foreground">
-          <span className="text-primary">{subdomain}</span>.is-pinoy.dev is reserved.
+      <div className="flex items-start gap-3 border border-border bg-muted p-4 text-sm text-foreground">
+        <XCircle
+          className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <span>
+          <span className="font-mono font-medium">
+            {subdomain}.is-pinoy.dev
+          </span>{" "}
+          is reserved.
         </span>
       </div>
     )
@@ -45,44 +59,50 @@ function ResultCard({
 
   if (status === "taken" && record) {
     return (
-      <div className="mt-4 flex w-full max-w-[560px] items-center gap-4 border-[3px] border-primary bg-background px-5 py-4 shadow-[5px_5px_0_#000]">
+      <div className="flex items-center gap-3 border border-border bg-card p-4">
         <Image
           src={`https://github.com/${record.owner.github}.png?size=48`}
-          alt={record.owner.github}
-          width={48}
-          height={48}
-          className="shrink-0 border-[2px] border-primary [image-rendering:pixelated]"
+          alt=""
+          width={40}
+          height={40}
+          className="size-10 shrink-0 border border-border object-cover"
           unoptimized
         />
-        <div className="flex min-w-0 flex-col items-start gap-[6px]">
-          <span className="font-mono text-[14px] leading-none text-foreground">
+        <div className="min-w-0">
+          <p className="m-0 truncate text-sm font-semibold text-foreground">
             @{record.owner.github}
-          </span>
-          <span className="font-sans text-[13px] text-muted-foreground break-words">
-            <span className="font-mono text-primary">{subdomain}</span>
-            .is-pinoy.dev is already claimed.
-          </span>
+          </p>
+          <p className="m-0 mt-1 text-sm text-muted-foreground">
+            <span className="font-mono">{subdomain}.is-pinoy.dev</span> is
+            already claimed.
+          </p>
         </div>
       </div>
     )
   }
 
-  // available
   return (
-    <div className="mt-4 flex w-full max-w-[560px] flex-col items-start gap-4 border-[3px] border-primary px-6 py-5 shadow-[5px_5px_0_var(--color-primary-dark)] sm:flex-row sm:items-center sm:justify-between">
-      <span className="font-pixel text-[9px] leading-[1.6]">
-        ✓ <span className="text-primary">{subdomain}</span>.is-pinoy.dev is available!
-      </span>
-      <Button
-        asChild
-        className="font-pixel text-[9px] tracking-[0.05em] text-background bg-primary shadow-[3px_3px_0_var(--color-primary-dark)] transition-all duration-100 hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-primary-light hover:shadow-[1px_1px_0_var(--color-primary-dark)] h-auto px-5 py-3"
-      >
+    <div className="flex flex-col items-start gap-4 border border-success/35 bg-success/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3 text-sm text-foreground">
+        <CheckCircle2
+          className="mt-0.5 size-4 shrink-0 text-success"
+          aria-hidden="true"
+        />
+        <span>
+          <span className="font-mono font-semibold">
+            {subdomain}.is-pinoy.dev
+          </span>{" "}
+          is available.
+        </span>
+      </div>
+      <Button asChild size="sm">
         <a
-          href="https://docs.is-pinoy.dev"
+          href="https://docs.is-pinoy.dev/guides"
           target="_blank"
           rel="noopener noreferrer"
         >
-          CLAIM IT →
+          Start registration
+          <ArrowUpRight aria-hidden="true" />
         </a>
       </Button>
     </div>
@@ -97,7 +117,11 @@ export function SubdomainChecker() {
 
   const handleCheck = async () => {
     const subdomain = value.trim().toLowerCase()
-    if (!subdomain) return
+    if (!subdomain || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(subdomain)) {
+      setCheckedSubdomain(subdomain)
+      setStatus("error")
+      return
+    }
 
     setStatus("loading")
     setCheckedSubdomain(subdomain)
@@ -115,8 +139,7 @@ export function SubdomainChecker() {
       )
 
       if (res.ok) {
-        const data: SubdomainRecord = await res.json()
-        setRecord(data)
+        setRecord((await res.json()) as SubdomainRecord)
         setStatus("taken")
       } else if (res.status === 404) {
         setRecord(null)
@@ -129,72 +152,67 @@ export function SubdomainChecker() {
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleCheck()
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value)
-    if (status !== "idle") setStatus("idle")
-  }
-
   return (
-    <div className="flex w-full max-w-[560px] flex-col items-center">
-      {/* Input row */}
-      <div className="flex w-full items-stretch border-[3px] border-primary shadow-[6px_6px_0_var(--color-foreground),0_0_24px_rgba(245,200,0,0.12)]">
-        {/* Input zone */}
-        <div className="relative flex min-w-0 flex-1 items-center bg-background">
+    <section
+      id="claim"
+      className="border border-border bg-surface-subtle p-6 sm:p-8"
+      aria-labelledby="checker-title"
+    >
+      <p
+        id="checker-title"
+        className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase"
+      >
+        Check availability
+      </p>
+      <div className="mt-5">
+        <InputGroup>
           <Input
             type="text"
-            aria-label="Subdomain"
+            aria-label="Subdomain name"
             value={value}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            className="relative z-[1] w-full border-none bg-transparent py-[18px] pr-2 pl-4 font-mono text-[13px] leading-none text-foreground caret-primary outline-none shadow-none focus-visible:ring-0 h-auto"
+            onChange={(event) => {
+              setValue(event.target.value)
+              if (status !== "idle") setStatus("idle")
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void handleCheck()
+            }}
+            placeholder="yourname"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className="h-auto flex-1 border-0 bg-transparent px-4 py-4 font-mono text-base shadow-none focus-visible:ring-0"
           />
-          {value === "" && (
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute top-0 bottom-0 left-4 z-0 flex items-center gap-px font-mono text-[13px] leading-none text-muted"
-            >
-              <span>yourname</span>
-              <span className="blink text-primary">█</span>
-            </div>
-          )}
-        </div>
-
-        {/* Suffix */}
-        <div className="flex shrink-0 items-center bg-background py-[18px] pr-3 pl-0 font-mono text-[13px] leading-none whitespace-nowrap text-muted select-none max-[639px]:pr-1 sm:pr-[12px]">
-          .is-pinoy.dev
-        </div>
-
-        {/* Divider */}
-        <div className="w-[3px] shrink-0 bg-primary" />
-
-        {/* Check button */}
+          <InputGroupAddon className="font-mono text-sm sm:text-base">
+            .is-pinoy.dev
+          </InputGroupAddon>
+        </InputGroup>
+        <p className="m-0 mt-2 text-xs leading-5 text-muted-foreground">
+          Use letters, numbers, and hyphens. No spaces.
+        </p>
         <Button
           type="button"
-          aria-label={
-            status === "loading" ? "Checking availability" : "Check availability"
-          }
-          onClick={handleCheck}
+          size="lg"
+          className="mt-5 w-full"
+          onClick={() => void handleCheck()}
           disabled={status === "loading"}
-          className={`shrink-0 border-none px-6 py-[18px] font-pixel text-[9px] tracking-[0.05em] whitespace-nowrap text-background transition-colors duration-100 hover:not-disabled:bg-primary-light h-auto max-[639px]:px-[14px] ${
-            status === "loading" ? "bg-primary-dark" : "bg-primary"
-          }`}
         >
-          {status === "loading" ? "..." : "CHECK"}
+          {status === "loading" ? "Checking…" : "Check availability"}
+          {status !== "loading" && <ArrowUpRight aria-hidden="true" />}
         </Button>
       </div>
 
-      {/* Result card */}
-      {(status === "taken" || status === "available" || status === "error") && (
-        <ResultCard
-          status={status}
-          subdomain={checkedSubdomain}
-          record={record}
-        />
-      )}
-    </div>
+      <div className="mt-5" aria-live="polite">
+        {(status === "taken" ||
+          status === "available" ||
+          status === "error") && (
+          <ResultPanel
+            status={status}
+            subdomain={checkedSubdomain}
+            record={record}
+          />
+        )}
+      </div>
+    </section>
   )
 }

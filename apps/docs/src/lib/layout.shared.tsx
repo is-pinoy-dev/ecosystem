@@ -7,27 +7,19 @@ export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
       title: (
-        <>
-          <Image
-            src="/logo.png"
-            alt="is-pinoy.dev logo"
-            width={48}
-            height={48}
-            className="h-7 w-auto [image-rendering:pixelated] hover:animate-spin"
-          />
-          <Image
-            src="/docs-banner.gif"
-            alt="is-pinoy.dev"
-            width={200}
-            height={40}
-            unoptimized
-            className="-ml-3 h-6 w-auto md:block"
-          />
-        </>
+        <Image
+          src="/docs-banner.gif"
+          alt="is-pinoy.dev docs"
+          width={220}
+          height={44}
+          unoptimized
+          priority
+          className="h-7 w-auto max-w-[190px] object-contain object-left"
+        />
       ),
     },
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
-    themeSwitch: { enabled: false },
+    themeSwitch: { enabled: true },
     links: [
       {
         type: "icon",
@@ -39,7 +31,7 @@ export function baseOptions(): BaseLayoutProps {
             alt="is-pinoy.dev"
             width={20}
             height={20}
-            className="opacity-60 grayscale [image-rendering:pixelated]"
+            className="opacity-75 [image-rendering:pixelated]"
           />
         ),
         text: "Back to site",

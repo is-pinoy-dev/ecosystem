@@ -1,46 +1,31 @@
-"use client"
-
 import Image from "next/image"
 import Link from "next/link"
+import { ArrowUpRight } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
-import { GitHubIcon, DiscordIcon } from "@/components/icons"
+import { Container } from "@is-pinoy-dev/ui/components/container"
+import { GitHubIcon } from "@/components/icons"
 
-function NavButton({
-  href,
-  label,
-  variant = "solid",
-  children,
-}: {
-  href: string
-  label: string
-  variant?: "solid" | "outline"
-  children: React.ReactNode
-}) {
-  return (
-    <Button
-      asChild
-      variant={variant === "outline" ? "outline-shadow" : "default-shadow"}
-      className="nav-btn"
-      aria-label={label}
-    >
-      <a href={href} target="_blank" rel="noopener noreferrer">
-        {children}
-      </a>
-    </Button>
-  )
-}
+const NAV_LINKS = [
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/showcase", label: "Showcase" },
+  { href: "https://docs.is-pinoy.dev", label: "Docs", external: true },
+]
 
 export function MainNav() {
   return (
-    <nav className="nav-root fixed top-[46px] right-0 left-0 z-[100] flex h-16 items-center justify-between border-b-[3px] border-b-primary bg-background/85 px-8 backdrop-blur">
-      <div className="flex items-center gap-6">
-        <Link href="/" className="flex items-center gap-3 no-underline">
+    <nav className="nav-root fixed inset-x-0 top-0 z-50 h-16 border-b border-border bg-background/95 backdrop-blur-md">
+      <Container className="flex h-full items-center justify-between gap-6">
+        <Link
+          href="/"
+          className="flex min-w-0 items-center gap-2 no-underline"
+          aria-label="is-pinoy.dev home"
+        >
           <Image
             src="/logo.png"
-            alt="is-pinoy.dev logo"
-            width={48}
-            height={48}
-            className="h-10 w-auto [image-rendering:pixelated] hover:animate-spin"
+            alt=""
+            width={40}
+            height={40}
+            className="h-8 w-auto shrink-0 [image-rendering:pixelated]"
           />
           <Image
             src="/banner.gif"
@@ -48,41 +33,51 @@ export function MainNav() {
             width={200}
             height={40}
             unoptimized
-            className="-ml-4 hidden h-9 w-auto md:block"
+            priority
+            className="h-7 w-auto max-w-[150px] object-contain object-left sm:max-w-[180px]"
           />
         </Link>
-        <a
-          href="https://docs.is-pinoy.dev"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-pixel text-[9px] tracking-[0.05em] text-muted-foreground transition-colors duration-100 hover:text-primary no-underline"
-        >
-          DOCS
-        </a>
-        <Link
-          href="/showcase"
-          className="font-pixel text-[9px] tracking-[0.05em] text-muted-foreground transition-colors duration-100 hover:text-primary no-underline"
-        >
-          SHOWCASE
-        </Link>
-      </div>
-      <div className="flex gap-3">
-        <NavButton
-          href={process.env.NEXT_PUBLIC_DISCORD_LINK ?? "#"}
-          label="Join is-pinoy-dev on Discord"
-          variant="outline"
-        >
-          <DiscordIcon size={14} />
-          <span className="nav-btn-text">DISCORD</span>
-        </NavButton>
-        <NavButton
-          href="https://github.com/is-pinoy-dev"
-          label="Visit is-pinoy-dev on GitHub"
-        >
-          <GitHubIcon size={14} />
-          <span className="nav-btn-text">GITHUB</span>
-        </NavButton>
-      </div>
+
+        <div className="nav-links flex items-center gap-7">
+          {NAV_LINKS.map((link) =>
+            link.external ? (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-foreground/75 no-underline transition-colors hover:text-accent"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm font-medium text-foreground/75 no-underline transition-colors hover:text-accent"
+              >
+                {link.label}
+              </Link>
+            )
+          )}
+          <a
+            href="https://github.com/is-pinoy-dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground/75 no-underline transition-colors hover:text-accent"
+          >
+            <GitHubIcon size={16} />
+            GitHub
+          </a>
+        </div>
+
+        <Button asChild size="sm" className="shrink-0">
+          <Link href="/#claim">
+            Claim yours
+            <ArrowUpRight aria-hidden="true" />
+          </Link>
+        </Button>
+      </Container>
     </nav>
   )
 }

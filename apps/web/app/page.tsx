@@ -1,83 +1,113 @@
+import { Suspense } from "react"
+import { Code2, ShieldCheck, Users } from "lucide-react"
+import { Container } from "@is-pinoy-dev/ui/components/container"
+import {
+  SectionDescription,
+  SectionEyebrow,
+  SectionHeader,
+  SectionTitle,
+} from "@is-pinoy-dev/ui/components/section-header"
 import { MainNav } from "@/components/main-nav"
-import { ScanlineOverlay } from "@/components/scanline-overlay"
-import { TopMarquee } from "@/components/top-marquee"
 import { SubdomainChecker } from "@/components/subdomain-checker"
-import { ProviderGuides } from "@/components/provider-guides"
+import { SubdomainMarquee } from "@/components/subdomain-marquee"
 import { DocsSection } from "@/components/docs-section"
-import { FAQSection } from "@/components/faq-section"
+import { ProviderGuides } from "@/components/provider-guides"
 import { CTASection } from "@/components/cta-section"
 import { ReportAbuseSection } from "@/components/report-abuse-section"
-import { SubdomainMarquee } from "@/components/subdomain-marquee"
 import { SiteFooter } from "@/components/site-footer"
+import { ShowcaseGrid, ShowcaseGridSkeleton } from "@/components/showcase-grid"
+
+const TRUST_ITEMS = [
+  { icon: ShieldCheck, title: "Free forever", detail: "No fees. Ever." },
+  { icon: Code2, title: "Open source", detail: "Transparent and auditable." },
+  {
+    icon: Users,
+    title: "Community-run",
+    detail: "Reviewed by Filipino developers.",
+  },
+]
+
+export const dynamic = "force-dynamic"
 
 export default function Page() {
   return (
     <>
-      <ScanlineOverlay />
-      <TopMarquee />
       <MainNav />
 
-      <main className="flex min-h-screen flex-col">
-        {/* Hero Section */}
-        <section className="xs:px-3.5 flex flex-1 flex-col items-center justify-center gap-8 px-10 pt-[220px] pb-[100px] text-center sm:px-5 sm:pt-[180px] sm:pb-[60px]">
-          {/* Eyebrow badge */}
-          <div
-            className="border-2 border-primary bg-primary/10 px-4 py-2 font-pixel text-[8px] tracking-[0.1875em] text-primary uppercase"
-            style={{ animation: "glow-pulse 2s ease-in-out infinite" }}
-          >
-            {"// FREE FOR FILIPINO DEVS"}
-          </div>
+      <main className="min-h-screen pt-16">
+        <section className="border-b border-border py-16 sm:py-20 lg:py-24">
+          <Container className="grid items-center gap-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20">
+            <div className="flex flex-col items-start gap-7">
+              <p className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+                Para sa Pinoy developers
+              </p>
+              <h1 className="m-0 max-w-[620px] text-5xl leading-[1.04] font-semibold tracking-[-0.045em] text-foreground sm:text-6xl">
+                A Filipino domain for work worth sharing
+                <span className="text-primary">.</span>
+              </h1>
+              <p className="m-0 max-w-[560px] text-lg leading-8 text-muted-foreground">
+                Claim your free{" "}
+                <span className="font-mono text-foreground">
+                  *.is-pinoy.dev
+                </span>{" "}
+                subdomain for your portfolio. Open source, community-driven, and
+                forever free.
+              </p>
 
-          {/* Headline */}
-          <h1
-            className="m-0 flex max-w-[900px] flex-col items-center gap-4 font-pixel leading-[1.6] text-foreground"
-            style={{ fontSize: "clamp(0.875rem, 2.5vw, 1.625rem)" }}
-          >
-            <span>Claim your</span>
-            <span
-              className="inline-block bg-primary px-8 py-3 tracking-[0.05em] text-background"
-              style={{
-                fontSize: "clamp(1.25rem, 4vw, 2.75rem)",
-                animation:
-                  "stamp-in 0.4s cubic-bezier(0.22,0.61,0.36,1) both, gold-flicker 6s ease-in-out 1s infinite",
-              }}
-            >
-              PINOY PRIDE
-            </span>
-            <span>on the Web.</span>
-          </h1>
+              <div className="grid w-full gap-5 border-t border-border pt-6 sm:grid-cols-3">
+                {TRUST_ITEMS.map(({ icon: Icon, title, detail }) => (
+                  <div key={title} className="flex items-start gap-3">
+                    <Icon
+                      className="mt-0.5 size-5 shrink-0 text-foreground"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <p className="m-0 text-sm font-semibold text-foreground">
+                        {title}
+                      </p>
+                      <p className="m-0 mt-1 text-xs leading-5 text-muted-foreground">
+                        {detail}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          {/* Subheadline */}
-          <p className="m-0 max-w-[480px] font-sans text-[15px] leading-[1.7] text-muted-foreground">
-            A free subdomain for every Filipino developer. Open source,
-            community-driven, forever free.
-          </p>
-
-          {/* Subdomain checker */}
-          <SubdomainChecker />
-
-          {/* Live subdomain marquee */}
-          <SubdomainMarquee />
+            <SubdomainChecker />
+          </Container>
         </section>
 
-        {/* Documentation */}
+        <SubdomainMarquee />
         <DocsSection />
 
-        {/* Provider Guides */}
+        <section
+          className="border-t border-border py-16 sm:py-20"
+          aria-labelledby="showcase-title"
+        >
+          <Container>
+            <SectionHeader className="mb-10">
+              <SectionEyebrow>Built by Filipino developers</SectionEyebrow>
+              <SectionTitle id="showcase-title">
+                See what&apos;s possible
+              </SectionTitle>
+              <SectionDescription>
+                Portfolios and projects with a memorable Filipino developer
+                identity.
+              </SectionDescription>
+            </SectionHeader>
+            <Suspense fallback={<ShowcaseGridSkeleton limit={3} />}>
+              <ShowcaseGrid limit={3} />
+            </Suspense>
+          </Container>
+        </section>
+
         <ProviderGuides />
-
-        {/* FAQ */}
-        {/*<FAQSection />*/}
-
-        {/* Report Abuse */}
-        <ReportAbuseSection />
-
-        {/* CTA */}
         <CTASection />
-
-        {/* Footer */}
-        <SiteFooter />
+        <ReportAbuseSection />
       </main>
+
+      <SiteFooter />
     </>
   )
 }

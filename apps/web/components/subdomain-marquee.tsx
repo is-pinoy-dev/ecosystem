@@ -1,4 +1,9 @@
+import Link from "next/link"
+import { ArrowRight } from "lucide-react"
 import type { SubdomainStatus } from "@is-pinoy-dev/status"
+import { Button } from "@is-pinoy-dev/ui/components/button"
+import { Container } from "@is-pinoy-dev/ui/components/container"
+import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
 
 async function fetchOperationalSubdomains(): Promise<string[]> {
   try {
@@ -8,10 +13,10 @@ async function fetchOperationalSubdomains(): Promise<string[]> {
     )
     if (res.ok) {
       const rows = (await res.json()) as SubdomainStatus[]
-      if (rows.length >= 4) return rows.map((r) => r.subdomain)
+      if (rows.length > 0) return rows.map((row) => row.subdomain).slice(0, 5)
     }
   } catch {
-    // fall through to GitHub fallback
+    // Fall through to the GitHub fallback.
   }
 
   try {
@@ -25,59 +30,51 @@ async function fetchOperationalSubdomains(): Promise<string[]> {
     if (!res.ok) return []
     const files = (await res.json()) as { name: string }[]
     return files
-      .filter((f) => f.name.endsWith(".json"))
-      .map((f) => f.name.replace(/\.json$/, ""))
+      .filter((file) => file.name.endsWith(".json"))
+      .map((file) => file.name.replace(/\.json$/, ""))
+      .slice(0, 5)
   } catch {
     return []
   }
 }
 
-function MarqueeRow({
-  items,
-  reverse,
-}: {
-  items: string[]
-  reverse?: boolean
-}) {
-  const doubled = [...items, ...items]
-
-  return (
-    <div className="flex overflow-hidden">
-      <div
-        className="flex shrink-0 gap-3"
-        style={{
-          animation: `${reverse ? "marquee-scroll-reverse" : "marquee-scroll"} ${items.length * 6}s linear infinite`,
-        }}
-      >
-        {doubled.map((subdomain, i) => (
-          <a
-            key={i}
-            href={`https://${subdomain}.is-pinoy.dev`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex shrink-0 items-center gap-2 border border-border bg-card/40 px-4 py-2 font-mono text-[12px] text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-          >
-            <span className="inline-block h-1.5 w-1.5 shrink-0 animate-pulse bg-green-500" />
-            {subdomain}.is-pinoy.dev
-          </a>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export async function SubdomainMarquee() {
   const subdomains = await fetchOperationalSubdomains()
-  if (subdomains.length < 4) return null
-
-  const mid = Math.ceil(subdomains.length / 2)
-  const row1 = subdomains.slice(0, mid)
-  const row2 = subdomains.slice(mid)
+  if (subdomains.length === 0) return null
 
   return (
-    <div className="w-full max-w-[680px] flex flex-col gap-3 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
-      <MarqueeRow items={row1} />
-      <MarqueeRow items={row2} reverse />
-    </div>
+    <section
+      className="border-b border-border py-6"
+      aria-label="Recently claimed subdomains"
+    >
+      <Container className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2 font-mono text-xs font-semibold tracking-[0.1em] text-accent uppercase">
+          <StatusIndicator tone="brand" />
+          Recently claimed
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-5 gap-y-3 lg:justify-center">
+          {subdomains.map((subdomain) => (
+            <a
+              key={subdomain}
+              href={`https://${subdomain}.is-pinoy.dev`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 font-mono text-xs text-foreground no-underline transition-colors hover:text-accent"
+            >
+              <StatusIndicator tone="success" />
+              {subdomain}.is-pinoy.dev
+            </a>
+          ))}
+        </div>
+
+        <Button asChild variant="link" className="shrink-0">
+          <Link href="/showcase">
+            View showcase
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        </Button>
+      </Container>
+    </section>
   )
 }
