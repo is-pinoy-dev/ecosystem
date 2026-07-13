@@ -70,7 +70,7 @@
  * while blue is reserved for links, focus states, and secondary actions.
  */
 :root {
-  --background: #faf9f5;
+  --background: #fdfcfa;
   --foreground: #0b1f44;
   --card: #ffffff;
   --card-foreground: #0b1f44;
