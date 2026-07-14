@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
+import { Badge } from "@is-pinoy-dev/ui/components/badge"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
 
@@ -41,17 +42,23 @@ function DomainChip({
   decorative?: boolean
 }) {
   return (
-    <a
-      href={`https://${subdomain}.is-pinoy.dev`}
-      target="_blank"
-      rel="noopener noreferrer"
-      tabIndex={decorative ? -1 : undefined}
-      aria-hidden={decorative || undefined}
-      className="inline-flex shrink-0 items-center gap-2 font-mono text-[13px] whitespace-nowrap text-foreground no-underline transition-colors duration-[140ms] hover:text-accent"
+    <Badge
+      asChild
+      variant="outline"
+      className="h-7 shrink-0 gap-1.5 border-border bg-background px-3 py-1 text-[13px] font-normal text-foreground [a]:hover:border-accent/60 [a]:hover:bg-background [a]:hover:text-accent"
     >
-      <StatusIndicator tone="success" className="size-[7px]" />
-      {subdomain}.is-pinoy.dev
-    </a>
+      <a
+        href={`https://${subdomain}.is-pinoy.dev`}
+        target="_blank"
+        rel="noopener noreferrer"
+        tabIndex={decorative ? -1 : undefined}
+        aria-hidden={decorative || undefined}
+        className="no-underline transition-colors duration-[140ms]"
+      >
+        <StatusIndicator tone="success" className="size-[7px]" />
+        {subdomain}.is-pinoy.dev
+      </a>
+    </Badge>
   )
 }
 
@@ -67,7 +74,7 @@ function MarqueeRow({
   return (
     <div className="marquee-row">
       <div
-        className={`marquee-track flex items-center gap-8 py-1 ${
+        className={`marquee-track flex items-center gap-3 py-1 ${
           reverse ? "marquee-track--reverse" : ""
         }`}
         style={{ ["--marquee-duration" as string]: duration }}
@@ -95,9 +102,12 @@ export function RecentlyClaimedSkeleton() {
         </div>
         <div className="mt-[18px] flex flex-col gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-8">
+            <div key={i} className="flex items-center gap-3">
               {Array.from({ length: 5 }).map((_, j) => (
-                <span key={j} className="h-3 w-24 shrink-0 animate-pulse bg-muted" />
+                <span
+                  key={j}
+                  className="h-7 w-28 shrink-0 animate-pulse border border-border bg-muted"
+                />
               ))}
             </div>
           ))}
