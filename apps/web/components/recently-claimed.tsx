@@ -5,9 +5,14 @@ import { Container } from "@is-pinoy-dev/ui/components/container"
 import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
 
 const ROW_COUNT = 3
-const ROW_DURATIONS = ["46s", "38s", "52s"]
+const ROW_DURATIONS = ["72s", "60s", "82s"]
 
-async function fetchOperationalSubdomains(): Promise<string[]> {
+interface ClaimedDomain {
+  subdomain: string
+  owner: string
+}
+
+async function fetchOperationalSubdomains(): Promise<ClaimedDomain[]> {
   try {
     const res = await fetch(
       "https://api.github.com/repos/is-pinoy-dev/domains/contents/subdomains",
@@ -18,34 +23,56 @@ async function fetchOperationalSubdomains(): Promise<string[]> {
     )
     if (!res.ok) return []
     const files = (await res.json()) as { name: string }[]
-    return files
+    const names = files
       .filter((file) => file.name.endsWith(".json"))
       .map((file) => file.name.replace(/\.json$/, ""))
+
+    const results = await Promise.allSettled(
+      names.map(async (subdomain): Promise<ClaimedDomain | null> => {
+        const res = await fetch(
+          `https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains/${subdomain}.json`,
+          { next: { revalidate: 3600 } }
+        )
+        if (!res.ok) return null
+        const data = (await res.json()) as { owner?: { github?: string } }
+        if (!data.owner?.github) return null
+        return { subdomain, owner: data.owner.github }
+      })
+    )
+
+    return results
+      .filter(
+        (r): r is PromiseFulfilledResult<ClaimedDomain> =>
+          r.status === "fulfilled" && r.value !== null
+      )
+      .map((r) => r.value)
   } catch {
     return []
   }
 }
 
-function splitIntoRows(subdomains: string[]): string[][] {
-  const rows: string[][] = Array.from({ length: ROW_COUNT }, () => [])
-  subdomains.forEach((subdomain, i) => {
-    rows[i % ROW_COUNT]!.push(subdomain)
+function splitIntoRows(domains: ClaimedDomain[]): ClaimedDomain[][] {
+  const rows: ClaimedDomain[][] = Array.from({ length: ROW_COUNT }, () => [])
+  domains.forEach((domain, i) => {
+    rows[i % ROW_COUNT]!.push(domain)
   })
   return rows.filter((row) => row.length > 0)
 }
 
 function DomainChip({
   subdomain,
+  owner,
   decorative,
 }: {
   subdomain: string
+  owner: string
   decorative?: boolean
 }) {
   return (
     <Badge
       asChild
       variant="outline"
-      className="h-7 shrink-0 gap-1.5 border-border bg-background px-3 py-1 text-[13px] font-normal text-foreground [a]:hover:border-accent/60 [a]:hover:bg-background [a]:hover:text-accent"
+      className="h-7 shrink-0 gap-1.5 border-border bg-background px-2 py-1 text-[13px] font-normal text-foreground [a]:hover:border-accent/60 [a]:hover:bg-background [a]:hover:text-accent"
     >
       <a
         href={`https://${subdomain}.is-pinoy.dev`}
@@ -55,7 +82,13 @@ function DomainChip({
         aria-hidden={decorative || undefined}
         className="no-underline transition-colors duration-[140ms]"
       >
-        <StatusIndicator tone="success" className="size-[7px]" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`https://avatars.githubusercontent.com/${owner}?size=32`}
+          alt=""
+          aria-hidden="true"
+          className="size-[18px] shrink-0 border border-border object-cover"
+        />
         {subdomain}.is-pinoy.dev
       </a>
     </Badge>
@@ -67,7 +100,7 @@ function MarqueeRow({
   reverse,
   duration,
 }: {
-  domains: string[]
+  domains: ClaimedDomain[]
   reverse: boolean
   duration: string
 }) {
@@ -79,11 +112,20 @@ function MarqueeRow({
         }`}
         style={{ ["--marquee-duration" as string]: duration }}
       >
-        {domains.map((subdomain) => (
-          <DomainChip key={subdomain} subdomain={subdomain} />
+        {domains.map((domain) => (
+          <DomainChip
+            key={domain.subdomain}
+            subdomain={domain.subdomain}
+            owner={domain.owner}
+          />
         ))}
-        {domains.map((subdomain) => (
-          <DomainChip key={`dup-${subdomain}`} subdomain={subdomain} decorative />
+        {domains.map((domain) => (
+          <DomainChip
+            key={`dup-${domain.subdomain}`}
+            subdomain={domain.subdomain}
+            owner={domain.owner}
+            decorative
+          />
         ))}
       </div>
     </div>
@@ -118,8 +160,8 @@ export function RecentlyClaimedSkeleton() {
 }
 
 export async function RecentlyClaimed() {
-  const subdomains = await fetchOperationalSubdomains()
-  const rows = splitIntoRows(subdomains)
+  const domains = await fetchOperationalSubdomains()
+  const rows = splitIntoRows(domains)
 
   return (
     <section

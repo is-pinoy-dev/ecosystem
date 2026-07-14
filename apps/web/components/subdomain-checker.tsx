@@ -91,7 +91,7 @@ function ResultPanel({
       <div className="flex items-center gap-3 border border-border bg-card p-4">
         {record ? (
           <Image
-            src={`https://github.com/${record.owner.github}.png?size=80`}
+            src={`https://avatars.githubusercontent.com/${record.owner.github}?size=80`}
             alt=""
             width={40}
             height={40}

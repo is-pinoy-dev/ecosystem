@@ -142,7 +142,7 @@ function ShowcaseCard({ entry }: { entry: SubdomainEntry }) {
           <div className="flex items-center gap-2 px-4 py-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={`https://github.com/${entry.owner.github}.png?size=32`}
+              src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
               alt=""
               aria-hidden
               className="h-5 w-5 shrink-0 border border-border object-cover"
