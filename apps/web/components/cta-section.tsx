@@ -1,6 +1,10 @@
+import { Suspense } from "react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
-import { ContributionGrid } from "@/components/contribution-grid"
+import {
+  ContributionGrid,
+  ContributionGridSkeleton,
+} from "@/components/contribution-grid"
 import { DiscordIcon, GitHubIcon } from "@/components/icons"
 
 export function CommunitySection() {
@@ -57,7 +61,9 @@ export function CommunitySection() {
         </div>
 
         <div className="min-w-0 lg:-mt-1">
-          <ContributionGrid />
+          <Suspense fallback={<ContributionGridSkeleton />}>
+            <ContributionGrid />
+          </Suspense>
         </div>
       </Container>
     </section>
