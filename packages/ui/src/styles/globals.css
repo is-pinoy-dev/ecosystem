@@ -118,44 +118,60 @@
   --accent-blue: #175cd3;
   --font-family-sans: "IBM Plex Sans", Arial, sans-serif;
   --font-family-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --contrib-empty: #ecebe6;
+  --contrib-pale-blue: #dce8fa;
+  --contrib-med-blue: #77a4ea;
+  --contrib-strong-blue: #1e63d6;
+  --contrib-navy: #0d3c86;
+  --contrib-pale-yellow: #ffe9a3;
+  --contrib-yellow: #fcc605;
 }
 
 .dark {
-  --background: #091426;
-  --foreground: #f8f7f2;
-  --card: #10213a;
-  --card-foreground: #f8f7f2;
-  --popover: #10213a;
-  --popover-foreground: #f8f7f2;
+  --background: #131d2e;
+  --foreground: #f5f4ef;
+  --card: #1c2b45;
+  --card-foreground: #f5f4ef;
+  --popover: #1c2b45;
+  --popover-foreground: #f5f4ef;
   --primary: #f5c800;
-  --primary-foreground: #091426;
-  --secondary: #172b49;
-  --secondary-foreground: #f8f7f2;
-  --muted: #172b49;
+  --primary-foreground: #131d2e;
+  --secondary: #223353;
+  --secondary-foreground: #f5f4ef;
+  --muted: #223353;
   --muted-foreground: #a7b2c5;
   --accent: #6ea8ff;
-  --accent-foreground: #091426;
+  --accent-foreground: #131d2e;
   --destructive: #ff6b5f;
-  --border: #29405f;
-  --input: #365171;
+  --border: #33496c;
+  --input: #3d5478;
   --ring: #6ea8ff;
-  --sidebar: #0d1a2e;
-  --sidebar-foreground: #f8f7f2;
+  --sidebar: #16233a;
+  --sidebar-foreground: #f5f4ef;
   --sidebar-primary: #f5c800;
-  --sidebar-primary-foreground: #091426;
-  --sidebar-accent: #263451;
-  --sidebar-accent-foreground: #f8f7f2;
-  --sidebar-border: #29405f;
+  --sidebar-primary-foreground: #131d2e;
+  --sidebar-accent: #2c3f60;
+  --sidebar-accent-foreground: #f5f4ef;
+  --sidebar-border: #33496c;
   --sidebar-ring: #6ea8ff;
-  --surface: #10213a;
-  --surface-subtle: #0d1a2e;
-  --surface-strong: #f8f7f2;
-  --code-bg: #050d19;
+  --surface: #1c2b45;
+  --surface-subtle: #16233a;
+  --surface-strong: #f5f4ef;
+  --code-bg: #0a1220;
   --success: #49c889;
   --warning: #f6b44f;
   --accent-green: #49c889;
   --accent-red: #ff6b5f;
   --accent-blue: #6ea8ff;
+
+  --contrib-empty: #1b2941;
+  --contrib-pale-blue: #223a63;
+  --contrib-med-blue: #3a5f9e;
+  --contrib-strong-blue: #5686d6;
+  --contrib-navy: #7fa9f2;
+  --contrib-pale-yellow: #5c4d22;
+  --contrib-yellow: #fcc605;
 }
 
 @theme inline {

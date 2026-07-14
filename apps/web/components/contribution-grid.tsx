@@ -6,13 +6,13 @@ const WEEKDAY_LABELS = ["Mon", "", "Wed", "", "Fri", "", ""]
 const MONTH_LABELS = ["Feb", "Mar", "Apr", "May", "Jun", "Jul"]
 
 const PALETTE = {
-  empty: "#ECEBE6",
-  paleBlue: "#DCE8FA",
-  medBlue: "#77A4EA",
-  strongBlue: "#1E63D6",
-  navy: "#0D3C86",
-  paleYellow: "#FFE9A3",
-  yellow: "#FCC605",
+  empty: "var(--contrib-empty)",
+  paleBlue: "var(--contrib-pale-blue)",
+  medBlue: "var(--contrib-med-blue)",
+  strongBlue: "var(--contrib-strong-blue)",
+  navy: "var(--contrib-navy)",
+  paleYellow: "var(--contrib-pale-yellow)",
+  yellow: "var(--contrib-yellow)",
 } as const
 
 type Tone = keyof typeof PALETTE
