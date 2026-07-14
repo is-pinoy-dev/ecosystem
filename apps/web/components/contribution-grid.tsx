@@ -81,7 +81,10 @@ export function ContributionGrid() {
         </div>
 
         <div className="min-w-0 flex-1 overflow-x-auto pb-1">
-          <div className="flex min-w-max gap-[3px]" aria-hidden="true">
+          <div
+            className="flex min-w-max justify-between gap-[3px]"
+            aria-hidden="true"
+          >
             {GRID.map((week, wi) => (
               <div key={wi} className="flex flex-col gap-[3px]">
                 {week.map((tone, ri) => (
