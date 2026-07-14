@@ -3,6 +3,9 @@ import { ArrowRight } from "lucide-react"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
 
+const ROW_COUNT = 3
+const ROW_DURATIONS = ["46s", "38s", "52s"]
+
 async function fetchOperationalSubdomains(): Promise<string[]> {
   try {
     const res = await fetch(
@@ -17,10 +20,67 @@ async function fetchOperationalSubdomains(): Promise<string[]> {
     return files
       .filter((file) => file.name.endsWith(".json"))
       .map((file) => file.name.replace(/\.json$/, ""))
-      .slice(0, 5)
   } catch {
     return []
   }
+}
+
+function splitIntoRows(subdomains: string[]): string[][] {
+  const rows: string[][] = Array.from({ length: ROW_COUNT }, () => [])
+  subdomains.forEach((subdomain, i) => {
+    rows[i % ROW_COUNT]!.push(subdomain)
+  })
+  return rows.filter((row) => row.length > 0)
+}
+
+function DomainChip({
+  subdomain,
+  decorative,
+}: {
+  subdomain: string
+  decorative?: boolean
+}) {
+  return (
+    <a
+      href={`https://${subdomain}.is-pinoy.dev`}
+      target="_blank"
+      rel="noopener noreferrer"
+      tabIndex={decorative ? -1 : undefined}
+      aria-hidden={decorative || undefined}
+      className="inline-flex shrink-0 items-center gap-2 font-mono text-[13px] whitespace-nowrap text-foreground no-underline transition-colors duration-[140ms] hover:text-accent"
+    >
+      <StatusIndicator tone="success" className="size-[7px]" />
+      {subdomain}.is-pinoy.dev
+    </a>
+  )
+}
+
+function MarqueeRow({
+  domains,
+  reverse,
+  duration,
+}: {
+  domains: string[]
+  reverse: boolean
+  duration: string
+}) {
+  return (
+    <div className="marquee-row">
+      <div
+        className={`marquee-track flex items-center gap-8 py-1 ${
+          reverse ? "marquee-track--reverse" : ""
+        }`}
+        style={{ ["--marquee-duration" as string]: duration }}
+      >
+        {domains.map((subdomain) => (
+          <DomainChip key={subdomain} subdomain={subdomain} />
+        ))}
+        {domains.map((subdomain) => (
+          <DomainChip key={`dup-${subdomain}`} subdomain={subdomain} decorative />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function RecentlyClaimedSkeleton() {
@@ -33,12 +93,13 @@ export function RecentlyClaimedSkeleton() {
             Recently claimed
           </div>
         </div>
-        <div className="mt-[18px] flex items-center gap-5 sm:gap-6">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span
-              key={i}
-              className="h-3 w-24 shrink-0 animate-pulse bg-muted"
-            />
+        <div className="mt-[18px] flex flex-col gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-8">
+              {Array.from({ length: 5 }).map((_, j) => (
+                <span key={j} className="h-3 w-24 shrink-0 animate-pulse bg-muted" />
+              ))}
+            </div>
           ))}
         </div>
       </Container>
@@ -48,6 +109,7 @@ export function RecentlyClaimedSkeleton() {
 
 export async function RecentlyClaimed() {
   const subdomains = await fetchOperationalSubdomains()
+  const rows = splitIntoRows(subdomains)
 
   return (
     <section
@@ -72,26 +134,15 @@ export async function RecentlyClaimed() {
           </Link>
         </div>
 
-        {subdomains.length > 0 ? (
-          <div
-            className="mt-[18px] flex items-center gap-x-5 overflow-x-auto scroll-px-5 sm:gap-x-6"
-            style={{ scrollPaddingInline: 20 }}
-          >
-            {subdomains.map((subdomain, i) => (
-              <div key={subdomain} className="flex shrink-0 items-center gap-5 sm:gap-6">
-                {i > 0 && (
-                  <span className="h-6 w-px shrink-0 bg-border" aria-hidden="true" />
-                )}
-                <a
-                  href={`https://${subdomain}.is-pinoy.dev`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex shrink-0 items-center gap-2 font-mono text-[13px] whitespace-nowrap text-foreground no-underline transition-colors duration-[140ms] hover:text-accent"
-                >
-                  <StatusIndicator tone="success" className="size-[7px]" />
-                  {subdomain}.is-pinoy.dev
-                </a>
-              </div>
+        {rows.length > 0 ? (
+          <div className="mt-[18px] flex flex-col gap-3">
+            {rows.map((row, i) => (
+              <MarqueeRow
+                key={i}
+                domains={row}
+                reverse={i % 2 === 1}
+                duration={ROW_DURATIONS[i % ROW_DURATIONS.length]!}
+              />
             ))}
           </div>
         ) : (
