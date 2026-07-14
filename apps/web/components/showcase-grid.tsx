@@ -118,6 +118,7 @@ function ShowcaseCard({ entry }: { entry: SubdomainEntry }) {
           <ShowcaseCardImage
             ogImage={entry.ogImage}
             subdomain={entry.subdomain}
+            owner={entry.owner.github}
           />
           <div className="absolute inset-0 bg-primary/0 transition-colors group-hover:bg-primary/5" />
         </div>
@@ -222,7 +223,7 @@ export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
 
 function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
   return (
-    <div className="flex items-center justify-between gap-3 bg-[#FFFDF8] px-3.5 py-3">
+    <div className="flex items-center justify-between gap-3 bg-card px-3.5 py-3">
       <div className="min-w-0">
         <p className="m-0 truncate font-mono text-[13px] font-semibold text-foreground">
           {entry.subdomain}.is-pinoy.dev
@@ -241,9 +242,11 @@ function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
 function HighlightCard({
   entry,
   previewClassName,
+  featured,
 }: {
   entry: SubdomainEntry
   previewClassName: string
+  featured?: boolean
 }) {
   return (
     <a
@@ -255,7 +258,12 @@ function HighlightCard({
       <div
         className={`relative overflow-hidden border-b border-border bg-muted ${previewClassName}`}
       >
-        <ShowcaseCardImage ogImage={entry.ogImage} subdomain={entry.subdomain} />
+        <ShowcaseCardImage
+          ogImage={entry.ogImage}
+          subdomain={entry.subdomain}
+          owner={entry.owner.github}
+          size={featured ? "lg" : "sm"}
+        />
       </div>
       <HighlightMeta entry={entry} />
     </a>
@@ -270,7 +278,7 @@ function HighlightCardSkeleton({
   return (
     <div className="border border-border">
       <Skeleton className={`w-full border-b border-border bg-muted ${previewClassName}`} />
-      <div className="flex items-center justify-between gap-3 bg-[#FFFDF8] px-3.5 py-3">
+      <div className="flex items-center justify-between gap-3 bg-card px-3.5 py-3">
         <div className="flex min-w-0 flex-col gap-2">
           <Skeleton className="h-2.5 w-24" />
           <Skeleton className="h-2 w-16" />
@@ -341,6 +349,7 @@ export async function ShowcaseHighlights() {
       <HighlightCard
         entry={featured}
         previewClassName="aspect-video lg:aspect-auto lg:h-[300px]"
+        featured
       />
       {secondaryEntries.length > 0 && (
         <div className="flex flex-col gap-4">
