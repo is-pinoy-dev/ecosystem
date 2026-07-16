@@ -13,7 +13,7 @@ const muted = "#AAA493"
 
 export default async function OgImage() {
   const subdomainCount = await getRegisteredSubdomains()
-    .then((subdomains) => subdomains.length)
+    .then((subdomains) => subdomains.length || null)
     .catch(() => null)
 
   const countLabel =
@@ -87,7 +87,6 @@ export default async function OgImage() {
           display: "flex",
           flexDirection: "column",
           padding: "58px 66px 0",
-          zIndex: 1,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
