@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
-import { Sun } from "lucide-react"
 import { Container } from "@is-pinoy-dev/ui/components/container"
+import { PhilippineFlagIcon } from "@/components/icons"
 
 const RESOURCE_LINKS = [
   { label: "Docs", href: "https://docs.is-pinoy.dev", external: true },
@@ -120,7 +120,7 @@ export function SiteFooter() {
         <div className="flex items-end justify-start md:col-span-3 md:justify-end lg:col-span-1">
           <p className="m-0 flex items-center gap-2 text-[11px] text-foreground">
             Made with pride
-            <Sun className="size-[13px] text-primary" aria-hidden="true" />
+            <PhilippineFlagIcon className="h-[11px] w-auto shrink-0" />
           </p>
         </div>
       </Container>

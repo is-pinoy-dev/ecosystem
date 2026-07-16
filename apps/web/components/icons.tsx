@@ -6,6 +6,20 @@ export function GitHubIcon({ size = 16 }: { size?: number }) {
   )
 }
 
+export function PhilippineFlagIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 12" className={className} aria-hidden="true">
+      <rect width="24" height="6" fill="#0038A8" />
+      <rect y="6" width="24" height="6" fill="#CE1126" />
+      <path d="M0 0 0 12 10.39 6Z" fill="#FCFCFF" />
+      <circle cx="3.3" cy="6" r="1.05" fill="#FCD116" />
+      <circle cx="1.15" cy="1.15" r="0.5" fill="#FCD116" />
+      <circle cx="1.15" cy="10.85" r="0.5" fill="#FCD116" />
+      <circle cx="9.1" cy="6" r="0.5" fill="#FCD116" />
+    </svg>
+  )
+}
+
 export function DiscordIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
