@@ -18,7 +18,7 @@ import {
 } from "@/components/showcase-grid"
 
 const TRUST_ITEMS = [
-  { icon: Sun, label: "Free forever", tone: "text-primary" },
+  { icon: Sun, label: "Always free", tone: "text-primary" },
   { icon: Code2, label: "Open source", tone: "text-foreground" },
   { icon: Users, label: "Community-run", tone: "text-foreground" },
 ]
