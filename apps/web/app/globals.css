@@ -2,6 +2,14 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Let the theme toggler drive a clean circular clip-path reveal instead of the
+   default cross-fade between the old and new view-transition snapshots. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
 body {
   min-width: 320px;
 }
@@ -75,49 +83,26 @@ a {
   }
 }
 
-.hero-grid-motif {
-  --motif-fine: color-mix(in srgb, var(--border) 55%, transparent);
-  --motif-major: color-mix(in srgb, var(--border) 90%, transparent);
-  background-image:
-    repeating-linear-gradient(
-      to right,
-      var(--motif-fine) 0,
-      var(--motif-fine) 1px,
-      transparent 1px,
-      transparent 12px
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      var(--motif-fine) 0,
-      var(--motif-fine) 1px,
-      transparent 1px,
-      transparent 12px
-    ),
-    repeating-linear-gradient(
-      to right,
-      var(--motif-major) 0,
-      var(--motif-major) 1px,
-      transparent 1px,
-      transparent 48px
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      var(--motif-major) 0,
-      var(--motif-major) 1px,
-      transparent 1px,
-      transparent 48px
-    );
+/* Hero background motif: pixel dot matrix — solid through the interior, fading
+   into the background at every edge so there is no visible hard rectangle. */
+.hero-dot-motif {
+  --motif: color-mix(in srgb, var(--border) 45%, var(--foreground) 55%);
+  background-image: radial-gradient(var(--motif) 1.5px, transparent 1.8px);
+  background-size: 16px 16px;
+  background-position: center;
   mask-image: radial-gradient(
-    ellipse 60% 65% at center,
+    ellipse closest-side at center,
     transparent 0%,
-    transparent 55%,
-    black 100%
+    transparent 40%,
+    black 80%,
+    transparent 100%
   );
   -webkit-mask-image: radial-gradient(
-    ellipse 60% 65% at center,
+    ellipse closest-side at center,
     transparent 0%,
-    transparent 55%,
-    black 100%
+    transparent 40%,
+    black 80%,
+    transparent 100%
   );
 }
 

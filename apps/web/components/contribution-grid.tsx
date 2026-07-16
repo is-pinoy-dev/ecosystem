@@ -196,53 +196,55 @@ function ContributionGridView({
   tones: Tone[][]
   monthLabels: (string | null)[]
 }) {
-  const gridTemplateColumns = `repeat(${WEEKS}, 10px)`
+  const gridTemplateColumns = `repeat(${WEEKS}, minmax(0, 1fr))`
 
   return (
     <div>
-      <div className="flex gap-2">
+      <div className="flex gap-2.5">
         <div
-          className="flex shrink-0 flex-col gap-[3px] text-[10px] leading-none text-muted-foreground"
+          className="flex w-8 shrink-0 flex-col gap-1 text-[10px] leading-none text-muted-foreground"
           aria-hidden="true"
         >
           {WEEKDAY_LABELS.map((label, i) => (
-            <span key={i} className="flex h-[10px] items-center">
+            <span key={i} className="flex flex-1 items-center">
               {label}
             </span>
           ))}
         </div>
 
-        <div className="min-w-0 flex-1 overflow-x-auto pb-1">
-          <div
-            className="grid min-w-max gap-[3px]"
-            style={{ gridTemplateColumns, justifyContent: "space-between" }}
-            aria-hidden="true"
-          >
-            {tones.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-[3px]">
-                {week.map((tone, ri) => (
-                  <span
-                    key={ri}
-                    className="size-[10px] shrink-0"
-                    style={{ backgroundColor: PALETTE[tone] }}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-          <div
-            className="mt-1.5 grid min-w-max text-[10px] leading-none text-muted-foreground"
-            style={{ gridTemplateColumns, justifyContent: "space-between" }}
-            aria-hidden="true"
-          >
-            {monthLabels.map((month, i) =>
-              month ? (
-                <span key={i} style={{ gridColumnStart: i + 1 }}>
-                  {month}
-                </span>
-              ) : null
-            )}
-          </div>
+        <div
+          className="grid min-w-0 flex-1 gap-1"
+          style={{ gridTemplateColumns }}
+          aria-hidden="true"
+        >
+          {tones.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-1">
+              {week.map((tone, ri) => (
+                <span
+                  key={ri}
+                  className="aspect-square w-full"
+                  style={{ backgroundColor: PALETTE[tone] }}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-2 flex gap-2.5">
+        <div className="w-8 shrink-0" aria-hidden="true" />
+        <div
+          className="grid min-w-0 flex-1 gap-1 text-[10px] leading-none text-muted-foreground"
+          style={{ gridTemplateColumns }}
+          aria-hidden="true"
+        >
+          {monthLabels.map((month, i) =>
+            month ? (
+              <span key={i} style={{ gridColumnStart: i + 1 }}>
+                {month}
+              </span>
+            ) : null
+          )}
         </div>
       </div>
 
