@@ -6,6 +6,7 @@ import Link from "next/link"
 import { ArrowUpRight, Menu, X } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
+import { AnimatedThemeToggler } from "@/components/animated-theme-toggler"
 import { GitHubIcon } from "@/components/icons"
 
 const NAV_LINKS = [
@@ -114,31 +115,35 @@ export function MainNav() {
           </a>
         </div>
 
-        <Button
-          asChild
-          className="hidden h-10 min-w-[132px] shrink-0 gap-2 px-4 text-[13px] lg:inline-flex"
-        >
-          <Link href="/#claim">
-            Claim a domain
-            <ArrowUpRight className="size-[15px]" aria-hidden="true" />
-          </Link>
-        </Button>
+        <div className="flex items-center gap-1 lg:gap-2">
+          <AnimatedThemeToggler />
 
-        <button
-          ref={triggerRef}
-          type="button"
-          aria-label={open ? "Close menu" : "Open menu"}
-          aria-expanded={open}
-          aria-controls="mobile-menu"
-          onClick={() => setOpen((v) => !v)}
-          className="flex size-11 shrink-0 items-center justify-center text-foreground transition-colors duration-[140ms] hover:text-accent lg:hidden"
-        >
-          {open ? (
-            <X className="size-5" aria-hidden="true" />
-          ) : (
-            <Menu className="size-5" aria-hidden="true" />
-          )}
-        </button>
+          <Button
+            asChild
+            className="hidden h-10 min-w-[132px] shrink-0 gap-2 px-4 text-[13px] lg:inline-flex"
+          >
+            <Link href="/#claim">
+              Claim a domain
+              <ArrowUpRight className="size-[15px]" aria-hidden="true" />
+            </Link>
+          </Button>
+
+          <button
+            ref={triggerRef}
+            type="button"
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            onClick={() => setOpen((v) => !v)}
+            className="flex size-11 shrink-0 items-center justify-center text-foreground transition-colors duration-[140ms] hover:text-accent lg:hidden"
+          >
+            {open ? (
+              <X className="size-5" aria-hidden="true" />
+            ) : (
+              <Menu className="size-5" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </Container>
 
       {open && (

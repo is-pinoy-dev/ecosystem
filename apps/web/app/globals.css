@@ -2,6 +2,14 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Let the theme toggler drive a clean circular clip-path reveal instead of the
+   default cross-fade between the old and new view-transition snapshots. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
 body {
   min-width: 320px;
 }
