@@ -7,6 +7,7 @@ import { ArrowUpRight, Menu, X } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { AnimatedThemeToggler } from "@/components/animated-theme-toggler"
+import { GitHubStars } from "@/components/github-stars"
 import { GitHubIcon } from "@/components/icons"
 
 const NAV_LINKS = [
@@ -117,6 +118,8 @@ export function MainNav() {
 
         <div className="flex items-center gap-1 lg:gap-2">
           <AnimatedThemeToggler />
+
+          <GitHubStars className="hidden lg:inline-flex" />
 
           <Button
             asChild
