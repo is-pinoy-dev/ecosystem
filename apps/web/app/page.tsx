@@ -83,7 +83,7 @@ export default function Page() {
               className="relative flex justify-center border-t border-border px-5 pt-9 pb-11 md:px-8 md:pt-11 md:pb-14 lg:items-center lg:border-t-0 lg:border-l lg:py-14 lg:pr-10 lg:pl-16"
             >
               <div
-                className="hero-grid-motif pointer-events-none absolute inset-0"
+                className="hero-dot-motif pointer-events-none absolute inset-0"
                 aria-hidden="true"
               />
               <div className="relative lg:mt-3">
