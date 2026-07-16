@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { Code2, Sun, Users } from "lucide-react"
+import { Code2, Gift, Users } from "lucide-react"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { MainNav } from "@/components/main-nav"
 import { SubdomainChecker } from "@/components/subdomain-checker"
@@ -18,7 +18,7 @@ import {
 } from "@/components/showcase-grid"
 
 const TRUST_ITEMS = [
-  { icon: Sun, label: "Always free", tone: "text-primary" },
+  { icon: Gift, label: "Always free", tone: "text-foreground" },
   { icon: Code2, label: "Open source", tone: "text-foreground" },
   { icon: Users, label: "Community-run", tone: "text-foreground" },
 ]
