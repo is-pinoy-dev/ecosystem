@@ -1,8 +1,7 @@
 import Link from "next/link"
 import { Button } from "@is-pinoy-dev/ui/components/button"
+import { Container } from "@is-pinoy-dev/ui/components/container"
 import { MainNav } from "@/components/main-nav"
-import { ScanlineOverlay } from "@/components/scanline-overlay"
-import { TopMarquee } from "@/components/top-marquee"
 
 interface DocLayoutProps {
   title: string
@@ -13,48 +12,40 @@ interface DocLayoutProps {
 export function DocLayout({ title, effectiveDate, children }: DocLayoutProps) {
   return (
     <>
-      <ScanlineOverlay />
-      <TopMarquee />
       <MainNav />
 
-      <main className="doc-main max-w-[700px] mx-auto pt-[150px] px-10 pb-20">
-        {/* Eyebrow badge */}
-        <div className="font-pixel text-[8px] text-primary bg-primary/10 border-2 border-primary px-4 py-2 tracking-[0.1875em] uppercase inline-block mb-6">
-          {"// LEGAL"}
-        </div>
+      <Container className="doc-main max-w-[780px] pt-12 pb-20 sm:pt-16">
+        <p className="m-0 mb-5 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+          Legal
+        </p>
 
-        {/* Title */}
-        <h1
-          className="font-pixel text-foreground leading-[1.6] m-0 mb-4"
-          style={{ fontSize: "clamp(0.875rem, 2.5vw, 1.625rem)" }}
-        >
+        <h1 className="m-0 mb-4 text-4xl font-semibold tracking-[-0.035em] text-foreground sm:text-5xl">
           {title}
         </h1>
 
         {/* Effective date */}
-        <p className="font-mono text-[11px] text-muted-foreground uppercase tracking-[0.0625em] m-0 mb-8">
+        <p className="m-0 mb-8 font-mono text-xs tracking-[0.06em] text-muted-foreground uppercase">
           Effective: {effectiveDate}
         </p>
 
-        {/* Gold divider */}
-        <div className="h-[3px] bg-primary mb-12" />
+        <div className="mb-12 h-px bg-border" />
 
         {/* MDX content */}
         <article className="doc-content">{children}</article>
 
         {/* Back link */}
-        <div className="mt-16 pt-8 border-t-2 border-card">
+        <div className="mt-16 border-t border-border pt-8">
           <Button
             asChild
             variant="link"
-            className="font-mono text-[11px] text-muted-foreground uppercase tracking-[0.0625em] transition-colors duration-100 hover:text-primary p-0 h-auto"
+            className="font-mono text-xs tracking-[0.06em] uppercase"
           >
             <Link href="/" aria-label="Back to home">
-              ← BACK TO HOME
+              ← Back to home
             </Link>
           </Button>
         </div>
-      </main>
+      </Container>
     </>
   )
 }

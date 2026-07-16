@@ -1,55 +1,71 @@
+import { Suspense } from "react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
-import { GitHubIcon, DiscordIcon } from "@/components/icons"
+import { Container } from "@is-pinoy-dev/ui/components/container"
+import {
+  ContributionGrid,
+  ContributionGridSkeleton,
+} from "@/components/contribution-grid"
+import { DiscordIcon, GitHubIcon } from "@/components/icons"
 
-export function CTASection() {
+export function CommunitySection() {
   return (
-    <section className="w-full border-t-2 border-primary bg-primary/5">
-      <div className="mx-auto flex max-w-[960px] flex-col items-center gap-8 px-10 py-20 text-center">
-        {/* Eyebrow */}
-        <span className="font-pixel text-[7px] tracking-[0.15em] text-primary uppercase">
-          {"// PARA SA LAHAT NG PINOY DEVS"}
-        </span>
+    <section
+      className="border-b border-border py-7 sm:py-10 lg:py-14"
+      aria-labelledby="community-title"
+    >
+      <Container className="grid min-w-0 gap-10 lg:grid-cols-[0.36fr_0.64fr] lg:gap-16">
+        <div className="min-w-0">
+          <h2
+            id="community-title"
+            className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase"
+          >
+            Open source. Built together.
+          </h2>
+          <p className="m-0 mt-[18px] max-w-[320px] text-sm leading-[1.7] text-foreground">
+            is-pinoy.dev is a volunteer-run project by Filipino developers.
+            Contributions—big or small—make this possible.
+          </p>
 
-        {/* Heading */}
-        <h2
-          className="m-0 max-w-[640px] font-pixel leading-[1.8] text-foreground"
-          style={{ fontSize: "clamp(0.6rem, 1.8vw, 1rem)" }}
-        >
-          Built by the community,
-          <br />
-          for the community.
-        </h2>
-
-        {/* Body */}
-        <p className="m-0 max-w-[480px] font-sans text-[15px] leading-[1.7] text-muted-foreground">
-          Have an idea? Want to add a provider? Found a bug? All contributions
-          are welcome — open an issue, start a discussion, or just say hi on
-          Discord.
-        </p>
-
-        {/* CTAs */}
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <Button asChild variant="default-shadow">
-            <a
-              href="https://github.com/is-pinoy-dev"
-              target="_blank"
-              rel="noopener noreferrer"
+          <div className="mt-5 flex flex-col gap-2">
+            <Button
+              asChild
+              className="h-[42px] w-full gap-2 sm:w-[200px]"
             >
-              <GitHubIcon size={14} />
-              CONTRIBUTE
-            </a>
-          </Button>
-          <Button asChild variant="outline-shadow">
-            <a
-              href="https://github.com/orgs/is-pinoy-dev/discussions"
-              target="_blank"
-              rel="noopener noreferrer"
+              <a
+                href="https://github.com/is-pinoy-dev"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <GitHubIcon size={16} />
+                Contribute on GitHub
+              </a>
+            </Button>
+            <Button
+              asChild
+              variant="outline-shadow"
+              className="h-[42px] w-full gap-2 border-accent text-accent sm:w-[200px]"
             >
-              SHARE AN IDEA
-            </a>
-          </Button>
+              <a
+                href={
+                  process.env.NEXT_PUBLIC_DISCORD_LINK ??
+                  "https://discord.gg/MVrgEfFExh"
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <DiscordIcon size={16} />
+                Join our Discord
+              </a>
+            </Button>
+          </div>
         </div>
-      </div>
+
+        <div className="min-w-0 lg:-mt-1">
+          <Suspense fallback={<ContributionGridSkeleton />}>
+            <ContributionGrid />
+          </Suspense>
+        </div>
+      </Container>
     </section>
   )
 }

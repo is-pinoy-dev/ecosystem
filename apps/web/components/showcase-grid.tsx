@@ -20,15 +20,20 @@ async function fetchOgImage(subdomain: string): Promise<string | null> {
     const res = await fetch(baseUrl, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "is-pinoy.dev-showcase/1.0 (+https://is-pinoy.dev/showcase)",
+        "User-Agent":
+          "is-pinoy.dev-showcase/1.0 (+https://is-pinoy.dev/showcase)",
       },
       next: { revalidate: 3600 },
     })
     if (!res.ok) return null
     const html = await res.text()
     const match =
-      html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ??
-      html.match(/<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']/i)
+      html.match(
+        /<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i
+      ) ??
+      html.match(
+        /<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']/i
+      )
     const raw = match?.[1]?.trim()
     if (!raw) return null
     try {
@@ -43,7 +48,7 @@ async function fetchOgImage(subdomain: string): Promise<string | null> {
   }
 }
 
-async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
+async function fetchAllSubdomains(limit?: number): Promise<SubdomainEntry[]> {
   let names: string[] = []
   try {
     const res = await fetch(
@@ -64,6 +69,7 @@ async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
   }
 
   if (names.length === 0) return []
+  if (limit) names = names.slice(0, limit)
 
   // TODO: at large scale (100+ subdomains) the per-subdomain OG-image fetch
   // fan-out will make revalidation slow. Consider a pre-built JSON manifest
@@ -79,7 +85,9 @@ async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
         fetchOgImage(subdomain),
       ])
       if (!jsonRes.ok) return null
-      const data = (await jsonRes.json()) as Omit<SubdomainEntry, "ogImage"> & { destroy?: boolean }
+      const data = (await jsonRes.json()) as Omit<SubdomainEntry, "ogImage"> & {
+        destroy?: boolean
+      }
       if (data.destroy) return null
       return { ...data, ogImage }
     })
@@ -102,28 +110,30 @@ function ShowcaseCard({ entry }: { entry: SubdomainEntry }) {
       href={`https://${entry.subdomain}.is-pinoy.dev`}
       target="_blank"
       rel="noopener noreferrer"
-      className="no-underline group block"
+      className="group block no-underline"
     >
-      <Card className="h-full overflow-hidden border-[3px] border-card bg-background shadow-[5px_5px_0_#000] transition-all duration-100 group-hover:-translate-x-px group-hover:-translate-y-px group-hover:border-primary group-hover:shadow-[6px_6px_0_var(--color-primary-dark)]">
+      <Card className="h-full overflow-hidden bg-card py-0 transition-colors duration-150 group-hover:border-accent/50">
         {/* Preview */}
-        <div className="relative h-[180px] overflow-hidden border-b-2 border-border bg-card">
-          <ShowcaseCardImage ogImage={entry.ogImage} subdomain={entry.subdomain} />
+        <div className="relative h-[180px] overflow-hidden border-b border-border bg-muted">
+          <ShowcaseCardImage
+            ogImage={entry.ogImage}
+            subdomain={entry.subdomain}
+            owner={entry.owner.github}
+          />
           <div className="absolute inset-0 bg-primary/0 transition-colors group-hover:bg-primary/5" />
         </div>
 
         <CardContent className="flex flex-col p-0">
           {/* Site info */}
           <div className="flex flex-col gap-1 px-4 pt-4 pb-3">
-            <span className="truncate font-pixel text-[8px] leading-[1.8] tracking-[0.05em] text-primary">
-              {entry.subdomain}
+            <span className="truncate font-mono text-sm font-semibold text-foreground">
+              {entry.subdomain}.is-pinoy.dev
             </span>
             <div className="flex items-center justify-between gap-2">
-              <span className="truncate font-mono text-[10px] text-muted-foreground/60">
-                .is-pinoy.dev
+              <span className="truncate text-xs text-muted-foreground">
+                Portfolio
               </span>
-              <span className="shrink-0 font-mono text-[13px] text-muted-foreground transition-colors group-hover:text-primary">
-                →
-              </span>
+              <span className="shrink-0 text-sm text-accent">→</span>
             </div>
           </div>
 
@@ -132,12 +142,12 @@ function ShowcaseCard({ entry }: { entry: SubdomainEntry }) {
           <div className="flex items-center gap-2 px-4 py-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={`https://github.com/${entry.owner.github}.png?size=32`}
+              src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
               alt=""
               aria-hidden
-              className="h-4 w-4 shrink-0 [image-rendering:pixelated]"
+              className="h-5 w-5 shrink-0 border border-border object-cover"
             />
-            <span className="truncate font-mono text-[10px] text-muted-foreground">
+            <span className="truncate font-mono text-xs text-muted-foreground">
               @{entry.owner.github}
             </span>
           </div>
@@ -151,9 +161,9 @@ function ShowcaseCard({ entry }: { entry: SubdomainEntry }) {
 
 function CardSkeleton() {
   return (
-    <div className="overflow-hidden border-[3px] border-card bg-background shadow-[5px_5px_0_#000]">
+    <div className="overflow-hidden border border-border bg-card">
       {/* Image area — slightly lighter than bg-card so the pulse is visible */}
-      <Skeleton className="h-[180px] w-full border-b-2 border-border bg-muted/30" />
+      <Skeleton className="h-[180px] w-full border-b border-border bg-muted" />
       <div className="flex flex-col p-0">
         <div className="flex flex-col gap-2 px-4 pt-4 pb-3">
           <Skeleton className="h-2.5 w-20" />
@@ -169,12 +179,11 @@ function CardSkeleton() {
   )
 }
 
-export function ShowcaseGridSkeleton() {
+export function ShowcaseGridSkeleton({ limit = 6 }: { limit?: number }) {
   return (
     <div className="flex flex-col gap-8">
-      <Skeleton className="h-7 w-20" />
       <div className="grid grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: limit }).map((_, i) => (
           <CardSkeleton key={i} />
         ))}
       </div>
@@ -184,12 +193,12 @@ export function ShowcaseGridSkeleton() {
 
 // ─── Grid (async, streamed) ───────────────────────────────────────────────────
 
-export async function ShowcaseGrid() {
-  const entries = await fetchAllSubdomains()
+export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
+  const entries = await fetchAllSubdomains(limit)
 
   return (
     <div className="flex flex-col gap-8">
-      <span className="self-start border-2 border-primary/30 bg-primary/10 px-3 py-1.5 font-pixel text-[7px] tracking-[0.1em] text-primary">
+      <span className="self-start border border-border bg-muted px-3 py-1.5 font-mono text-xs font-medium text-muted-foreground">
         {entries.length} SITE{entries.length !== 1 ? "S" : ""}
       </span>
 
@@ -200,10 +209,157 @@ export async function ShowcaseGrid() {
           ))}
         </div>
       ) : (
-        <div className="border-[3px] border-card bg-background p-16 text-center">
-          <span className="font-pixel text-[8px] tracking-[0.1em] text-muted-foreground">
-            NO ENTRIES YET
+        <div className="border border-border bg-card p-16 text-center">
+          <span className="font-mono text-xs tracking-[0.1em] text-muted-foreground uppercase">
+            No entries yet
           </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Landing highlights (asymmetric featured + secondary) ────────────────────
+
+function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
+  return (
+    <div className="flex items-center justify-between gap-3 bg-card px-3.5 py-3">
+      <div className="min-w-0">
+        <p className="m-0 truncate font-mono text-[13px] font-semibold text-foreground">
+          {entry.subdomain}.is-pinoy.dev
+        </p>
+        <p className="m-0 mt-[3px] truncate text-xs text-muted-foreground">
+          Portfolio
+        </p>
+      </div>
+      <span className="view-site shrink-0 text-xs font-semibold text-accent">
+        View site →
+      </span>
+    </div>
+  )
+}
+
+function HighlightCard({
+  entry,
+  previewClassName,
+  featured,
+}: {
+  entry: SubdomainEntry
+  previewClassName: string
+  featured?: boolean
+}) {
+  return (
+    <a
+      href={`https://${entry.subdomain}.is-pinoy.dev`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group block border border-border no-underline transition-colors duration-[140ms] hover:border-accent/60 [&:hover_.view-site]:underline"
+    >
+      <div
+        className={`relative overflow-hidden border-b border-border bg-muted ${previewClassName}`}
+      >
+        <ShowcaseCardImage
+          ogImage={entry.ogImage}
+          subdomain={entry.subdomain}
+          owner={entry.owner.github}
+          size={featured ? "lg" : "sm"}
+        />
+      </div>
+      <HighlightMeta entry={entry} />
+    </a>
+  )
+}
+
+function HighlightCardSkeleton({
+  previewClassName,
+}: {
+  previewClassName: string
+}) {
+  return (
+    <div className="border border-border">
+      <Skeleton className={`w-full border-b border-border bg-muted ${previewClassName}`} />
+      <div className="flex items-center justify-between gap-3 bg-card px-3.5 py-3">
+        <div className="flex min-w-0 flex-col gap-2">
+          <Skeleton className="h-2.5 w-24" />
+          <Skeleton className="h-2 w-16" />
+        </div>
+        <Skeleton className="h-2 w-14 shrink-0" />
+      </div>
+    </div>
+  )
+}
+
+export function ShowcaseHighlightsSkeleton() {
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.18fr_0.92fr] lg:gap-6">
+      <HighlightCardSkeleton previewClassName="aspect-video lg:aspect-auto lg:h-[300px]" />
+      <div className="flex flex-col gap-4">
+        <HighlightCardSkeleton previewClassName="aspect-video lg:aspect-auto lg:h-32" />
+        <HighlightCardSkeleton previewClassName="aspect-video lg:aspect-auto lg:h-32" />
+      </div>
+    </div>
+  )
+}
+
+export async function ShowcaseHighlights() {
+  const entries = await fetchAllSubdomains()
+
+  if (entries.length === 0) {
+    return (
+      <div className="grid gap-4 lg:grid-cols-[1.18fr_0.92fr] lg:gap-6">
+        <div className="flex aspect-video items-center justify-center border border-border bg-card p-8 text-center lg:aspect-auto lg:h-[380px]">
+          <div>
+            <p className="m-0 font-mono text-xs tracking-[0.1em] text-muted-foreground uppercase">
+              No sites yet
+            </p>
+            <a
+              href="https://docs.is-pinoy.dev/guides"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block text-[13px] font-semibold text-accent no-underline hover:underline"
+            >
+              Claim the first subdomain →
+            </a>
+          </div>
+        </div>
+        <div className="flex flex-col gap-4">
+          <div className="aspect-video border border-border bg-card lg:aspect-auto lg:h-32" />
+          <div className="aspect-video border border-border bg-card lg:aspect-auto lg:h-32" />
+        </div>
+      </div>
+    )
+  }
+
+  // Prefer entries with a real OG image so the featured slot has the
+  // strongest preview; secondary slots then favor a different owner so the
+  // row doesn't visually repeat the featured site.
+  const withImage = entries.filter((e) => e.ogImage)
+  const withoutImage = entries.filter((e) => !e.ogImage)
+  const ordered = [...withImage, ...withoutImage]
+  const featured = ordered[0]!
+  const secondary = ordered
+    .slice(1)
+    .filter((e) => e.owner.github !== featured.owner.github)
+  const fallbackSecondary = ordered.slice(1)
+  const pool = secondary.length >= 2 ? secondary : fallbackSecondary
+  const secondaryEntries = pool.slice(0, 2)
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.18fr_0.92fr] lg:gap-6">
+      <HighlightCard
+        entry={featured}
+        previewClassName="aspect-video lg:aspect-auto lg:h-[300px]"
+        featured
+      />
+      {secondaryEntries.length > 0 && (
+        <div className="flex flex-col gap-4">
+          {secondaryEntries.map((entry) => (
+            <HighlightCard
+              key={entry.subdomain}
+              entry={entry}
+              previewClassName="aspect-video lg:aspect-auto lg:h-32"
+            />
+          ))}
         </div>
       )}
     </div>
@@ -212,22 +368,22 @@ export async function ShowcaseGrid() {
 
 export function ShowcaseCTA() {
   return (
-    <div className="mt-12 flex items-center justify-between gap-6 border-t-2 border-primary/20 pt-10 max-sm:flex-col max-sm:items-start">
+    <div className="mt-12 flex items-center justify-between gap-6 border-t border-border pt-10 max-sm:flex-col max-sm:items-start">
       <div className="flex flex-col gap-1.5">
-        <span className="font-pixel text-[7px] leading-[1.8] tracking-[0.1em] text-foreground">
-          WANT TO BE FEATURED?
+        <span className="font-mono text-xs font-semibold tracking-[0.1em] text-foreground uppercase">
+          Want to be featured?
         </span>
         <span className="font-sans text-[13px] leading-[1.7] text-muted-foreground">
           Register your free subdomain and join the community.
         </span>
       </div>
-      <Button asChild variant="default-shadow" className="shrink-0">
+      <Button asChild className="shrink-0">
         <a
           href="https://github.com/is-pinoy-dev/domains"
           target="_blank"
           rel="noopener noreferrer"
         >
-          CLAIM YOURS
+          Claim yours
         </a>
       </Button>
     </div>

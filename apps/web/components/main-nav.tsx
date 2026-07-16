@@ -1,88 +1,197 @@
 "use client"
 
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { ArrowUpRight, Menu, X } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
-import { GitHubIcon, DiscordIcon } from "@/components/icons"
+import { Container } from "@is-pinoy-dev/ui/components/container"
+import { GitHubIcon } from "@/components/icons"
 
-function NavButton({
-  href,
-  label,
-  variant = "solid",
-  children,
-}: {
-  href: string
-  label: string
-  variant?: "solid" | "outline"
-  children: React.ReactNode
-}) {
+const NAV_LINKS = [
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/showcase", label: "Showcase" },
+  { href: "https://docs.is-pinoy.dev", label: "Docs", external: true },
+]
+
+function BrandLink() {
   return (
-    <Button
-      asChild
-      variant={variant === "outline" ? "outline-shadow" : "default-shadow"}
-      className="nav-btn"
-      aria-label={label}
+    <Link
+      href="/"
+      className="flex max-w-[220px] min-w-0 shrink-0 items-center gap-2.5 no-underline"
+      aria-label="is-pinoy.dev home"
     >
-      <a href={href} target="_blank" rel="noopener noreferrer">
-        {children}
-      </a>
-    </Button>
+      <Image
+        src="/logo.png"
+        alt=""
+        width={32}
+        height={32}
+        className="size-8 shrink-0 object-contain object-left [image-rendering:pixelated]"
+      />
+      <Image
+        src="/banner.gif"
+        alt="is-pinoy.dev"
+        width={200}
+        height={26}
+        unoptimized
+        priority
+        className="h-6 w-auto max-w-[150px] object-contain object-left"
+      />
+    </Link>
   )
 }
 
 export function MainNav() {
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        !triggerRef.current?.contains(event.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    document.addEventListener("mousedown", handlePointerDown)
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown)
+      document.removeEventListener("mousedown", handlePointerDown)
+    }
+  }, [open])
+
+  const closeMenu = () => setOpen(false)
+
   return (
-    <nav className="nav-root fixed top-[46px] right-0 left-0 z-[100] flex h-16 items-center justify-between border-b-[3px] border-b-primary bg-background/85 px-8 backdrop-blur">
-      <div className="flex items-center gap-6">
-        <Link href="/" className="flex items-center gap-3 no-underline">
-          <Image
-            src="/logo.png"
-            alt="is-pinoy.dev logo"
-            width={48}
-            height={48}
-            className="h-10 w-auto [image-rendering:pixelated] hover:animate-spin"
-          />
-          <Image
-            src="/banner.gif"
-            alt="is-pinoy.dev"
-            width={200}
-            height={40}
-            unoptimized
-            className="-ml-4 hidden h-9 w-auto md:block"
-          />
-        </Link>
-        <a
-          href="https://docs.is-pinoy.dev"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-pixel text-[9px] tracking-[0.05em] text-muted-foreground transition-colors duration-100 hover:text-primary no-underline"
+    <nav className="sticky top-0 z-50 h-[60px] border-b border-border bg-background/98 lg:h-16">
+      <Container className="flex h-full items-center justify-between gap-6">
+        <BrandLink />
+
+        <div className="hidden items-center gap-9 lg:flex xl:gap-11">
+          {NAV_LINKS.map((link) =>
+            link.external ? (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[13px] font-medium text-foreground/85 no-underline transition-colors duration-[140ms] hover:text-accent focus-visible:text-accent"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-[13px] font-medium text-foreground/85 no-underline transition-colors duration-[140ms] hover:text-accent focus-visible:text-accent"
+              >
+                {link.label}
+              </Link>
+            )
+          )}
+          <a
+            href="https://github.com/is-pinoy-dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground/85 no-underline transition-colors duration-[140ms] hover:text-accent focus-visible:text-accent"
+          >
+            <GitHubIcon size={16} />
+            GitHub
+          </a>
+        </div>
+
+        <Button
+          asChild
+          className="hidden h-10 min-w-[132px] shrink-0 gap-2 px-4 text-[13px] lg:inline-flex"
         >
-          DOCS
-        </a>
-        <Link
-          href="/showcase"
-          className="font-pixel text-[9px] tracking-[0.05em] text-muted-foreground transition-colors duration-100 hover:text-primary no-underline"
+          <Link href="/#claim">
+            Claim a domain
+            <ArrowUpRight className="size-[15px]" aria-hidden="true" />
+          </Link>
+        </Button>
+
+        <button
+          ref={triggerRef}
+          type="button"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          aria-controls="mobile-menu"
+          onClick={() => setOpen((v) => !v)}
+          className="flex size-11 shrink-0 items-center justify-center text-foreground transition-colors duration-[140ms] hover:text-accent lg:hidden"
         >
-          SHOWCASE
-        </Link>
-      </div>
-      <div className="flex gap-3">
-        <NavButton
-          href={process.env.NEXT_PUBLIC_DISCORD_LINK ?? "#"}
-          label="Join is-pinoy-dev on Discord"
-          variant="outline"
+          {open ? (
+            <X className="size-5" aria-hidden="true" />
+          ) : (
+            <Menu className="size-5" aria-hidden="true" />
+          )}
+        </button>
+      </Container>
+
+      {open && (
+        <div
+          ref={menuRef}
+          id="mobile-menu"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Site menu"
+          className="absolute inset-x-0 top-full border-x border-b border-border bg-background lg:hidden"
         >
-          <DiscordIcon size={14} />
-          <span className="nav-btn-text">DISCORD</span>
-        </NavButton>
-        <NavButton
-          href="https://github.com/is-pinoy-dev"
-          label="Visit is-pinoy-dev on GitHub"
-        >
-          <GitHubIcon size={14} />
-          <span className="nav-btn-text">GITHUB</span>
-        </NavButton>
-      </div>
+          {NAV_LINKS.map((link) =>
+            link.external ? (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeMenu}
+                className="flex min-h-12 items-center border-b border-border px-5 text-sm font-medium text-foreground no-underline transition-colors duration-[140ms] hover:text-accent"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={closeMenu}
+                className="flex min-h-12 items-center border-b border-border px-5 text-sm font-medium text-foreground no-underline transition-colors duration-[140ms] hover:text-accent"
+              >
+                {link.label}
+              </Link>
+            )
+          )}
+          <a
+            href="https://github.com/is-pinoy-dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={closeMenu}
+            className="flex min-h-12 items-center gap-2 border-b border-border px-5 text-sm font-medium text-foreground no-underline transition-colors duration-[140ms] hover:text-accent"
+          >
+            <GitHubIcon size={16} />
+            GitHub
+          </a>
+          <Link
+            href="/#claim"
+            onClick={closeMenu}
+            className="flex min-h-12 items-center justify-center bg-primary px-5 text-[13px] font-semibold text-primary-foreground no-underline transition-colors duration-[140ms] hover:bg-primary-light"
+          >
+            Claim a domain
+          </Link>
+        </div>
+      )}
     </nav>
   )
 }

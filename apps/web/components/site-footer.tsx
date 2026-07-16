@@ -1,141 +1,124 @@
 import Image from "next/image"
 import Link from "next/link"
-import { Button } from "@is-pinoy-dev/ui/components/button"
-import { GitHubIcon, DiscordIcon } from "@/components/icons"
+import { Sun } from "lucide-react"
+import { Container } from "@is-pinoy-dev/ui/components/container"
+
+const RESOURCE_LINKS = [
+  { label: "Docs", href: "https://docs.is-pinoy.dev", external: true },
+  { label: "Showcase", href: "/showcase" },
+  { label: "Status", href: "https://status.is-pinoy.dev", external: true },
+]
+
+const LEGAL_LINKS = [
+  { label: "Terms of Service", href: "/tos" },
+  { label: "Privacy Policy", href: "/privacy" },
+  {
+    label: "Report abuse",
+    href: "https://github.com/is-pinoy-dev/domains/issues/new?template=abuse-report.md&title=%5BABUSE%5D+",
+    external: true,
+  },
+]
+
+const COMMUNITY_LINKS = [
+  { label: "GitHub", href: "https://github.com/is-pinoy-dev", external: true },
+  { label: "Discord", href: "https://discord.gg/MVrgEfFExh", external: true },
+]
 
 function FooterLink({
+  label,
   href,
   external,
-  children,
 }: {
+  label: string
   href: string
   external?: boolean
-  children: React.ReactNode
 }) {
-  const linkClass =
-    "font-sans text-[13px] text-muted-foreground no-underline leading-[1.7] transition-colors duration-100 hover:text-primary h-auto p-0 justify-start"
-
-  if (external) {
-    return (
-      <Button asChild variant="link" className={linkClass}>
-        <a href={href} target="_blank" rel="noopener noreferrer">
-          {children}
-        </a>
-      </Button>
-    )
-  }
-
-  return (
-    <Button asChild variant="link" className={linkClass}>
-      <Link href={href}>{children}</Link>
-    </Button>
+  const className =
+    "text-xs leading-[1.5] text-foreground no-underline transition-colors duration-[140ms] hover:text-accent hover:underline"
+  return external ? (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+      {label}
+    </a>
+  ) : (
+    <Link href={href} className={className}>
+      {label}
+    </Link>
   )
 }
 
-function IconLink({
-  href,
-  label,
-  children,
+function FooterColumn({
+  heading,
+  links,
 }: {
-  href: string
-  label: string
-  children: React.ReactNode
+  heading: string
+  links: typeof RESOURCE_LINKS
 }) {
   return (
-    <Button
-      asChild
-      variant="ghost"
-      size="icon"
-      className="border-2 border-card bg-background text-muted-foreground shadow-[3px_3px_0_#111] transition-all duration-100 hover:border-primary hover:bg-background hover:text-primary"
-      aria-label={label}
-    >
-      <a href={href} target="_blank" rel="noopener noreferrer">
-        {children}
-      </a>
-    </Button>
+    <div className="flex flex-col gap-[6px]">
+      <p className="m-0 mb-[3px] font-mono text-[10px] font-semibold tracking-[0.1em] text-foreground uppercase">
+        {heading}
+      </p>
+      {links.map((link) => (
+        <FooterLink key={link.label} {...link} />
+      ))}
+    </div>
   )
 }
 
 export function SiteFooter() {
+  const updated = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+
   return (
-    <footer className="border-t-2 border-primary bg-background">
-      <div className="mx-auto grid max-w-[960px] grid-cols-3 items-start gap-10 px-10 py-12 max-sm:grid-cols-1">
-        {/* Left: Logo + tagline */}
-        <div className="flex flex-col gap-4">
-          <Link href="/" className="flex items-center gap-2 no-underline">
+    <footer className="bg-background">
+      <Container className="grid gap-8 py-8 md:grid-cols-[1.6fr_0.75fr_0.85fr] lg:grid-cols-[1.6fr_0.75fr_0.85fr_0.75fr_0.8fr] lg:gap-10 lg:py-6 xl:py-8">
+        <div className="md:col-span-3 lg:col-span-1">
+          <Link
+            href="/"
+            className="flex items-center gap-2 no-underline"
+            aria-label="is-pinoy.dev home"
+          >
             <Image
               src="/logo.png"
-              alt="is-pinoy.dev logo"
-              width={32}
-              height={32}
-              className="h-6 w-auto [image-rendering:pixelated] hover:animate-spin"
+              alt=""
+              width={27}
+              height={27}
+              className="size-[27px] [image-rendering:pixelated]"
             />
             <Image
               src="/banner.gif"
               alt="is-pinoy.dev"
-              width={120}
-              height={24}
+              width={160}
+              height={21}
               unoptimized
-              className="-ml-2 h-5 w-auto"
+              className="h-[21px] w-auto object-contain object-left"
             />
           </Link>
-          <span className="max-w-[220px] font-sans text-[13px] leading-[1.7] text-muted-foreground">
-            Free subdomains for Filipino developers. Open source,
-            community-driven, forever free.
-          </span>
+          <p className="m-0 mt-2 text-xs text-muted-foreground">
+            Libre. Gawang komunidad.
+          </p>
+          <p className="m-0 mt-4 text-[11px] text-muted-foreground">
+            © 2026 is-pinoy.dev
+          </p>
+          <p className="m-0 mt-1 text-[11px] text-muted-foreground">
+            Updated {updated}
+          </p>
         </div>
 
-        {/* Center: Links */}
-        <div className="flex gap-10">
-          <div className="flex flex-col gap-3">
-            <span className="mb-1 font-pixel text-[7px] leading-[1.6] tracking-[0.1em] text-foreground">
-              LINKS
-            </span>
-            <FooterLink href="https://docs.is-pinoy.dev" external>
-              Documentation
-            </FooterLink>
-            <FooterLink href="https://status.is-pinoy.dev" external>
-              Operational Status
-            </FooterLink>
-            <FooterLink href="/showcase">Showcase</FooterLink>
-          </div>
-          <div className="flex flex-col gap-3">
-            <span className="mb-1 font-pixel text-[7px] leading-[1.6] tracking-[0.1em] text-foreground">
-              LEGAL
-            </span>
-            <FooterLink href="/tos">Terms of Service</FooterLink>
-            <FooterLink href="/privacy">Privacy Policy</FooterLink>
-            <FooterLink href="https://github.com/is-pinoy-dev/domains/issues/new?template=abuse-report.md&title=%5BABUSE%5D+" external>
-              Report Abuse
-            </FooterLink>
-          </div>
-        </div>
+        <FooterColumn heading="Resources" links={RESOURCE_LINKS} />
+        <FooterColumn heading="Legal" links={LEGAL_LINKS} />
+        <FooterColumn heading="Community" links={COMMUNITY_LINKS} />
 
-        {/* Right: Social + pride */}
-        <div className="flex flex-col items-end gap-4">
-          <div className="flex gap-2">
-            <IconLink
-              href={process.env.NEXT_PUBLIC_DISCORD_LINK ?? "#"}
-              label="Join Discord"
-            >
-              <DiscordIcon />
-            </IconLink>
-            <IconLink href="https://github.com/is-pinoy-dev" label="GitHub">
-              <GitHubIcon />
-            </IconLink>
-          </div>
-          <span className="font-sans text-[12px] leading-[1.7] text-muted-foreground">
-            Made with pride 🇵🇭
-          </span>
+        <div className="flex items-end justify-start md:col-span-3 md:justify-end lg:col-span-1">
+          <p className="m-0 flex items-center gap-2 text-[11px] text-foreground">
+            Made with pride
+            <Sun className="size-[13px] text-primary" aria-hidden="true" />
+          </p>
         </div>
-      </div>
-
-      {/* Bottom bar */}
-      <div className="border-t border-[#1A1A1A] px-10 py-4 text-center max-[479px]:px-3.5 max-sm:px-5">
-        <span className="font-mono text-[11px] tracking-[0.0625em] text-muted uppercase">
-          © 2026 is-pinoy.dev
-        </span>
-      </div>
+      </Container>
     </footer>
   )
 }
