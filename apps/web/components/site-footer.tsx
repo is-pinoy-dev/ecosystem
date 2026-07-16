@@ -36,7 +36,12 @@ function FooterLink({
   const className =
     "text-xs leading-[1.5] text-foreground no-underline transition-colors duration-[140ms] hover:text-accent hover:underline"
   return external ? (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+    >
       {label}
     </a>
   ) : (
@@ -98,7 +103,7 @@ export function SiteFooter() {
             />
           </Link>
           <p className="m-0 mt-2 text-xs text-muted-foreground">
-            Libre. Gawang komunidad.
+            Free forever, built by the community.
           </p>
           <p className="m-0 mt-4 text-[11px] text-muted-foreground">
             © 2026 is-pinoy.dev
