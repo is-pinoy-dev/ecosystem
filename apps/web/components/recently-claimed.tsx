@@ -108,6 +108,33 @@ function MarqueeRow({
   )
 }
 
+// Varied chip widths so each row reads like real domain chips rather than a
+// uniform grid; enough total width to overflow the container and clip under
+// the marquee edge fade, matching the loaded state.
+const SKELETON_CHIP_WIDTHS = [
+  "w-[132px]",
+  "w-[168px]",
+  "w-[112px]",
+  "w-[148px]",
+  "w-[96px]",
+  "w-[160px]",
+  "w-[120px]",
+  "w-[144px]",
+  "w-[104px]",
+  "w-[156px]",
+]
+
+function SkeletonChip({ widthClass }: { widthClass: string }) {
+  return (
+    <div
+      className={`flex h-7 shrink-0 items-center gap-1.5 border border-border bg-background px-2 ${widthClass}`}
+    >
+      <span className="size-[18px] shrink-0 animate-pulse bg-muted" />
+      <span className="h-3 grow animate-pulse bg-muted" />
+    </div>
+  )
+}
+
 export function RecentlyClaimedSkeleton() {
   return (
     <section className="border-b border-border py-6" aria-hidden="true">
@@ -117,14 +144,19 @@ export function RecentlyClaimedSkeleton() {
             <StatusIndicator tone="brand" className="size-[7px]" />
             Recently claimed
           </div>
+          <span className="h-4 w-[92px] shrink-0 animate-pulse bg-muted" />
         </div>
         <div className="mt-[18px] flex flex-col gap-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3">
-              {Array.from({ length: 5 }).map((_, j) => (
-                <span
+          {Array.from({ length: ROW_COUNT }).map((_, i) => (
+            <div key={i} className="marquee-row flex items-center gap-3 py-1">
+              {SKELETON_CHIP_WIDTHS.map((_, j) => (
+                <SkeletonChip
                   key={j}
-                  className="h-7 w-28 shrink-0 animate-pulse border border-border bg-muted"
+                  widthClass={
+                    SKELETON_CHIP_WIDTHS[
+                      (j + i * 3) % SKELETON_CHIP_WIDTHS.length
+                    ]!
+                  }
                 />
               ))}
             </div>
