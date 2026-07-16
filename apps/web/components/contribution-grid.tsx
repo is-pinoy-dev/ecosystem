@@ -199,7 +199,7 @@ function ContributionGridView({
   const gridTemplateColumns = `repeat(${WEEKS}, 10px)`
 
   return (
-    <div>
+    <div className="w-fit max-w-full">
       <div className="flex gap-2">
         <div
           className="flex shrink-0 flex-col gap-[3px] text-[10px] leading-none text-muted-foreground"
@@ -212,7 +212,7 @@ function ContributionGridView({
           ))}
         </div>
 
-        <div className="min-w-0 flex-1 overflow-x-auto pb-1">
+        <div className="min-w-0 overflow-x-auto pb-1">
           <div
             className="grid min-w-max gap-[3px]"
             style={{ gridTemplateColumns }}
