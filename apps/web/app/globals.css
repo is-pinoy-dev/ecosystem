@@ -93,17 +93,17 @@ a {
   mask-image: radial-gradient(
     ellipse closest-side at center,
     transparent 0%,
-    transparent 40%,
-    black 52%,
-    black 64%,
+    transparent 20%,
+    black 38%,
+    black 82%,
     transparent 100%
   );
   -webkit-mask-image: radial-gradient(
     ellipse closest-side at center,
     transparent 0%,
-    transparent 40%,
-    black 52%,
-    black 64%,
+    transparent 20%,
+    black 38%,
+    black 82%,
     transparent 100%
   );
 }
