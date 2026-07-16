@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og"
+import { getRegisteredSubdomains } from "@/lib/subdomains"
 
 export const runtime = "edge"
 export const alt = "is-pinoy.dev — Free subdomains for Filipino developers."
@@ -10,7 +11,14 @@ const gold = "#F9B900"
 const paper = "#F7F3EE"
 const muted = "#AAA493"
 
-export default function OgImage() {
+export default async function OgImage() {
+  const subdomainCount = await getRegisteredSubdomains()
+    .then((subdomains) => subdomains.length)
+    .catch(() => null)
+
+  const countLabel =
+    subdomainCount === null ? "—" : subdomainCount.toLocaleString("en")
+
   return new ImageResponse(
     <div
       style={{
@@ -197,7 +205,40 @@ export default function OgImage() {
           borderTop: `2px solid ${navy}`,
         }}
       >
-        <div style={{ flex: 1 }} />
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 18,
+            color: navy,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              fontSize: 48,
+              fontWeight: 800,
+              letterSpacing: "-0.04em",
+            }}
+          >
+            {countLabel}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              fontFamily: "monospace",
+              fontSize: 18,
+              letterSpacing: "0.12em",
+              lineHeight: 1.15,
+            }}
+          >
+            <span>SUBDOMAINS</span>
+            <span>CLAIMED</span>
+          </div>
+        </div>
         <div style={{ width: 2, backgroundColor: navy, opacity: 0.9 }} />
         <div
           style={{
