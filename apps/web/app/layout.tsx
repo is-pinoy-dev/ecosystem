@@ -50,23 +50,23 @@ export const metadata: Metadata = {
     locale: "en_PH",
     url: "https://is-pinoy.dev",
     siteName: "is-pinoy.dev",
-    title: "is-pinoy.dev — Free Subdomains for Filipino Developers",
+    title: "is-pinoy.dev — Free subdomains for Filipino developers.",
     description:
-      "Claim your free .is-pinoy.dev subdomain. Open source, community-driven, forever free.",
+      "A community-run home for Pinoy developers to claim free is-pinoy.dev subdomains.",
     images: [
       {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "is-pinoy.dev — Free Subdomains for Filipino Developers",
+        alt: "is-pinoy.dev — Free subdomains for Filipino developers.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "is-pinoy.dev — Free Subdomains for Filipino Developers",
+    title: "is-pinoy.dev — Free subdomains for Filipino developers.",
     description:
-      "Claim your free .is-pinoy.dev subdomain. Open source, community-driven, forever free.",
+      "A community-run home for Pinoy developers to claim free is-pinoy.dev subdomains.",
     images: ["/opengraph-image"],
   },
   robots: {

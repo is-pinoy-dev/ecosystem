@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { Code2, Gift, Users } from "lucide-react"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { MainNav } from "@/components/main-nav"
@@ -16,6 +17,32 @@ import {
   ShowcaseHighlights,
   ShowcaseHighlightsSkeleton,
 } from "@/components/showcase-grid"
+
+export const metadata: Metadata = {
+  title: "is-pinoy.dev — Free subdomains for Filipino developers.",
+  description:
+    "Claim a free is-pinoy.dev subdomain for your portfolio, project, or profile. Community-run for Filipino developers.",
+  openGraph: {
+    title: "is-pinoy.dev — Free subdomains for Filipino developers.",
+    description:
+      "Claim a free is-pinoy.dev subdomain for your portfolio, project, or profile. Community-run for Filipino developers.",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "is-pinoy.dev — Free subdomains for Filipino developers.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "is-pinoy.dev — Free subdomains for Filipino developers.",
+    description:
+      "Claim a free is-pinoy.dev subdomain for your portfolio, project, or profile. Community-run for Filipino developers.",
+    images: ["/opengraph-image"],
+  },
+}
 
 const TRUST_ITEMS = [
   { icon: Gift, label: "Always free", tone: "text-foreground" },
