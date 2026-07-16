@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowUpRight, Menu, X } from "lucide-react"
+import { ArrowRight, Menu, X } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { AnimatedThemeToggler } from "@/components/animated-theme-toggler"
@@ -127,7 +127,7 @@ export function MainNav() {
           >
             <Link href="/#claim">
               Claim a domain
-              <ArrowUpRight className="size-[15px]" aria-hidden="true" />
+              <ArrowRight className="size-[15px]" aria-hidden="true" />
             </Link>
           </Button>
 
