@@ -91,15 +91,19 @@ a {
   background-size: 16px 16px;
   background-position: center;
   mask-image: radial-gradient(
-    ellipse 72% 78% at center,
-    black 0%,
-    black 42%,
+    ellipse closest-side at center,
+    transparent 0%,
+    transparent 40%,
+    black 52%,
+    black 64%,
     transparent 100%
   );
   -webkit-mask-image: radial-gradient(
-    ellipse 72% 78% at center,
-    black 0%,
-    black 42%,
+    ellipse closest-side at center,
+    transparent 0%,
+    transparent 40%,
+    black 52%,
+    black 64%,
     transparent 100%
   );
 }
