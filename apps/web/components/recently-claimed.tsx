@@ -3,52 +3,28 @@ import { ArrowRight } from "lucide-react"
 import { Badge } from "@is-pinoy-dev/ui/components/badge"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
+import { getRegisteredSubdomains } from "@/lib/subdomains"
 
 const ROW_COUNT = 3
 const ROW_DURATIONS = ["72s", "60s", "82s"]
+
+// Show only the most recently registered sites. With ROW_COUNT rows and a
+// round-robin split, 24 fills each of the 3 rows with 8 chips — enough motion
+// without an ever-growing DOM as the registry scales.
+const RECENTLY_CLAIMED_LIMIT = 24
 
 interface ClaimedDomain {
   subdomain: string
   owner: string
 }
 
-async function fetchOperationalSubdomains(): Promise<ClaimedDomain[]> {
-  try {
-    const res = await fetch(
-      "https://api.github.com/repos/is-pinoy-dev/domains/contents/subdomains",
-      {
-        headers: { Accept: "application/vnd.github+json" },
-        next: { revalidate: 3600 },
-      }
-    )
-    if (!res.ok) return []
-    const files = (await res.json()) as { name: string }[]
-    const names = files
-      .filter((file) => file.name.endsWith(".json"))
-      .map((file) => file.name.replace(/\.json$/, ""))
-
-    const results = await Promise.allSettled(
-      names.map(async (subdomain): Promise<ClaimedDomain | null> => {
-        const res = await fetch(
-          `https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains/${subdomain}.json`,
-          { next: { revalidate: 3600 } }
-        )
-        if (!res.ok) return null
-        const data = (await res.json()) as { owner?: { github?: string } }
-        if (!data.owner?.github) return null
-        return { subdomain, owner: data.owner.github }
-      })
-    )
-
-    return results
-      .filter(
-        (r): r is PromiseFulfilledResult<ClaimedDomain> =>
-          r.status === "fulfilled" && r.value !== null
-      )
-      .map((r) => r.value)
-  } catch {
-    return []
-  }
+async function fetchRecentlyClaimed(): Promise<ClaimedDomain[]> {
+  // Single source of truth, already sorted newest-registered first, so this
+  // section is genuinely "recently claimed" rather than alphabetical.
+  const registered = await getRegisteredSubdomains()
+  return registered
+    .slice(0, RECENTLY_CLAIMED_LIMIT)
+    .map((entry) => ({ subdomain: entry.subdomain, owner: entry.owner.github }))
 }
 
 function splitIntoRows(domains: ClaimedDomain[]): ClaimedDomain[][] {
@@ -160,7 +136,7 @@ export function RecentlyClaimedSkeleton() {
 }
 
 export async function RecentlyClaimed() {
-  const domains = await fetchOperationalSubdomains()
+  const domains = await fetchRecentlyClaimed()
   const rows = splitIntoRows(domains)
 
   return (
