@@ -105,15 +105,6 @@ export function MainNav() {
               </Link>
             )
           )}
-          <a
-            href="https://github.com/is-pinoy-dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground/85 no-underline transition-colors duration-[140ms] hover:text-accent focus-visible:text-accent"
-          >
-            <GitHubIcon size={16} />
-            GitHub
-          </a>
         </div>
 
         <div className="flex items-center gap-1 lg:gap-2">
