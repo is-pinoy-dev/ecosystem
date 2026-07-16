@@ -18,11 +18,26 @@ import {
 export const metadata: Metadata = {
   title: "Showcase",
   description:
-    "Explore Filipino developer portfolios and projects built on is-pinoy.dev subdomains.",
+    "Browse the community showcase of portfolios, experiments, and projects published with is-pinoy.dev subdomains.",
   openGraph: {
-    title: "Showcase | is-pinoy.dev",
+    title: "Showcase — Filipino developer projects on is-pinoy.dev",
     description:
-      "Explore Filipino developer portfolios and projects built on is-pinoy.dev subdomains.",
+      "Browse the community showcase of portfolios, experiments, and projects published with is-pinoy.dev subdomains.",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Community showcase for is-pinoy.dev subdomains",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Showcase — Filipino developer projects on is-pinoy.dev",
+    description:
+      "Browse portfolios, experiments, and projects from the is-pinoy.dev community.",
+    images: ["/opengraph-image"],
   },
 }
 
