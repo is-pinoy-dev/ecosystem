@@ -215,7 +215,7 @@ function ContributionGridView({
         <div className="min-w-0 flex-1 overflow-x-auto pb-1">
           <div
             className="grid min-w-max gap-[3px]"
-            style={{ gridTemplateColumns, justifyContent: "space-between" }}
+            style={{ gridTemplateColumns }}
             aria-hidden="true"
           >
             {tones.map((week, wi) => (
@@ -231,8 +231,8 @@ function ContributionGridView({
             ))}
           </div>
           <div
-            className="mt-1.5 grid min-w-max text-[10px] leading-none text-muted-foreground"
-            style={{ gridTemplateColumns, justifyContent: "space-between" }}
+            className="mt-1.5 grid min-w-max gap-[3px] text-[10px] leading-none text-muted-foreground"
+            style={{ gridTemplateColumns }}
             aria-hidden="true"
           >
             {monthLabels.map((month, i) =>
