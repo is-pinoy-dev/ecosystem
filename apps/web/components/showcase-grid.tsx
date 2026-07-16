@@ -2,13 +2,11 @@ import { Card, CardContent } from "@is-pinoy-dev/ui/components/card"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Skeleton } from "@is-pinoy-dev/ui/components/skeleton"
 import { ShowcaseCardImage } from "@/components/showcase-card-image"
+import { getRegisteredSubdomains, type RegisteredSubdomain } from "@/lib/subdomains"
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
-interface SubdomainEntry {
-  subdomain: string
-  owner: { github: string; email?: string }
-  records: Record<string, unknown>
+interface SubdomainEntry extends RegisteredSubdomain {
   ogImage: string | null
 }
 
@@ -49,57 +47,26 @@ async function fetchOgImage(subdomain: string): Promise<string | null> {
 }
 
 async function fetchAllSubdomains(limit?: number): Promise<SubdomainEntry[]> {
-  let names: string[] = []
-  try {
-    const res = await fetch(
-      "https://api.github.com/repos/is-pinoy-dev/domains/contents/subdomains",
-      {
-        headers: { Accept: "application/vnd.github+json" },
-        next: { revalidate: 3600 },
-      }
-    )
-    if (res.ok) {
-      const files = (await res.json()) as { name: string }[]
-      names = files
-        .filter((f) => f.name.endsWith(".json"))
-        .map((f) => f.name.replace(/\.json$/, ""))
-    }
-  } catch {
-    // no-op
-  }
-
-  if (names.length === 0) return []
-  if (limit) names = names.slice(0, limit)
+  // Single source of truth for the registered list (already sorted newest-first
+  // by registration date). Slice before the OG-image fan-out so we only fetch
+  // images for the entries we render.
+  const registered = await getRegisteredSubdomains()
+  const entries = limit ? registered.slice(0, limit) : registered
+  if (entries.length === 0) return []
 
   // TODO: at large scale (100+ subdomains) the per-subdomain OG-image fetch
   // fan-out will make revalidation slow. Consider a pre-built JSON manifest
   // (generated in CI) that stores ogImage URLs so this page only needs one
   // fetch instead of N+1.
-  const results = await Promise.allSettled(
-    names.map(async (subdomain) => {
-      const [jsonRes, ogImage] = await Promise.all([
-        fetch(
-          `https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains/${subdomain}.json`,
-          { next: { revalidate: 3600 } }
-        ),
-        fetchOgImage(subdomain),
-      ])
-      if (!jsonRes.ok) return null
-      const data = (await jsonRes.json()) as Omit<SubdomainEntry, "ogImage"> & {
-        destroy?: boolean
-      }
-      if (data.destroy) return null
-      return { ...data, ogImage }
-    })
+  const withImages = await Promise.all(
+    entries.map(async (entry) => ({
+      ...entry,
+      ogImage: await fetchOgImage(entry.subdomain),
+    }))
   )
 
-  return results
-    .filter(
-      (r): r is PromiseFulfilledResult<SubdomainEntry> =>
-        r.status === "fulfilled" && r.value !== null
-    )
-    .map((r) => r.value)
-    .sort((a, b) => a.subdomain.localeCompare(b.subdomain))
+  // Preserve the utility's chronological (newest-first) ordering.
+  return withImages
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
