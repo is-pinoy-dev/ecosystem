@@ -1,5 +1,12 @@
 # web
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [8f79768]
+  - @is-pinoy-dev/validate@1.0.2
+
 ## 0.0.4
 
 ### Patch Changes
