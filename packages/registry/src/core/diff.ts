@@ -11,8 +11,8 @@ function toFQDN(subdomain: string) {
   return `${subdomain}.${env("DOMAIN")}`;
 }
 
-function toTXTRecordFQDN(provider: string) {
-  return `_${provider}.${env("DOMAIN")}`;
+function toTXTRecordFQDN(provider: string, subdomain: string) {
+  return `_${provider}.${subdomain}.${env("DOMAIN")}`;
 }
 
 function expandDomain(domain: Domain) {
@@ -26,7 +26,7 @@ function expandDomain(domain: Domain) {
       const dnsRecord = { type: type as DNSRecord["type"], ...record } as DNSRecord;
       let fqdn = baseFqdn;
       if (type === "TXT" && "provider" in record) {
-        fqdn = toTXTRecordFQDN(record.provider as string);
+        fqdn = toTXTRecordFQDN(record.provider as string, domain.subdomain);
       }
       result.push({ fqdn, record: dnsRecord });
     }

@@ -116,7 +116,7 @@ describe("diff", () => {
     const result = diff(desired, actual);
     expect(result).toHaveLength(1);
     expect(result[0]?.type).toBe("CREATE");
-    expect(result[0]?.fqdn).toBe("_vercel.is-pinoy.dev");
+    expect(result[0]?.fqdn).toBe("_vercel.test.is-pinoy.dev");
   });
 
   it("TXT records match existing _{provider}.{domain} records", () => {
@@ -135,7 +135,7 @@ describe("diff", () => {
     const actual: CloudflareRecord[] = [
       {
         id: "456",
-        name: "_vercel.is-pinoy.dev",
+        name: "_vercel.test.is-pinoy.dev",
         type: "TXT",
         content: '"vc-domain-verify=test.is-pinoy.dev,abc123"',
       },
@@ -160,7 +160,7 @@ describe("diff", () => {
     const actual: CloudflareRecord[] = [
       {
         id: "456",
-        name: "_vercel.is-pinoy.dev",
+        name: "_vercel.test.is-pinoy.dev",
         type: "TXT",
         content: '"vc-domain-verify=test.is-pinoy.dev,abc123"',
       },
@@ -348,6 +348,61 @@ describe("diff", () => {
     ];
     const result = diff(desired, actual);
     expect(result).toHaveLength(0);
+  });
+
+  it("TXT records for different subdomains do not collide on the same name", () => {
+    // Regression: dropping the subdomain from the TXT name made every provider
+    // TXT record resolve to _vercel.is-pinoy.dev, so records for one subdomain
+    // were reported as CREATE/UPDATE against another subdomain's PR.
+    const desired: Domain[] = [
+      {
+        subdomain: "foo",
+        owner: { github: "foo" },
+        records: {
+          TXT: { value: "vc-domain-verify=foo,abc", provider: "vercel" },
+        },
+      },
+      {
+        subdomain: "bar",
+        owner: { github: "bar" },
+        records: {
+          TXT: { value: "vc-domain-verify=bar,xyz", provider: "vercel" },
+        },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "1",
+        name: "_vercel.foo.is-pinoy.dev",
+        type: "TXT",
+        content: '"vc-domain-verify=foo,abc"',
+      },
+      {
+        id: "2",
+        name: "_vercel.bar.is-pinoy.dev",
+        type: "TXT",
+        content: '"vc-domain-verify=bar,xyz"',
+      },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(0);
+  });
+
+  it("supports non-vercel providers in TXT record naming", () => {
+    const desired: Domain[] = [
+      {
+        subdomain: "site",
+        owner: { github: "site" },
+        records: {
+          TXT: { value: "netlify-verify=abc123", provider: "netlify" },
+        },
+      },
+    ];
+    const actual: CloudflareRecord[] = [];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.type).toBe("CREATE");
+    expect(result[0]?.fqdn).toBe("_netlify.site.is-pinoy.dev");
   });
 
   it("destroy deletes both CNAME and TXT records", () => {

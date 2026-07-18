@@ -59,7 +59,7 @@ Used for domain verification — most commonly when a platform (like Vercel or G
 }
 ```
 
-When the TXT record comes from Vercel, you must also include the `provider` field:
+When a TXT record is a domain-verification record from your host, you must also include the `provider` field:
 
 ```json
 "records": {
@@ -70,8 +70,10 @@ When the TXT record comes from Vercel, you must also include the `provider` fiel
 }
 ```
 
+The `provider` field accepts one of: `vercel`, `netlify`, `github`, `cloudflare`. It determines the DNS record name — a verification TXT is created at `_<provider>.yourname.is-pinoy.dev`.
+
 <Callout type="warn">
-  The `"provider": "vercel"` field is **required** whenever you add a TXT record from Vercel. The validator will fail without it.
+  The `provider` field is **required** whenever you add a verification TXT record. The validator will fail without it, or if the provider is not one of the supported values.
 </Callout>
 
 ## Combining records

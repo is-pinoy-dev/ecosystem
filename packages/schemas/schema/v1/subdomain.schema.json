@@ -135,7 +135,10 @@
                 "provider": {
                   "type": "string",
                   "enum": [
-                    "vercel"
+                    "vercel",
+                    "netlify",
+                    "github",
+                    "cloudflare"
                   ]
                 }
               },
@@ -160,7 +163,10 @@
                   "provider": {
                     "type": "string",
                     "enum": [
-                      "vercel"
+                      "vercel",
+                      "netlify",
+                      "github",
+                      "cloudflare"
                     ]
                   }
                 },

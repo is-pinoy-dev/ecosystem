@@ -18,9 +18,16 @@ export const cnameRecord = baseRecord.extend({
   proxied: z.boolean().optional(),
 });
 
+export const SUPPORTED_PROVIDERS = [
+  "vercel",
+  "netlify",
+  "github",
+  "cloudflare",
+] as const;
+
 export const txtRecord = baseRecord.extend({
   value: z.string().min(1),
-  provider: z.enum(["vercel"]),
+  provider: z.enum(SUPPORTED_PROVIDERS),
 });
 
 const singleOrArray = <T extends z.ZodTypeAny>(schema: T) =>
