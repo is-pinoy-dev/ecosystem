@@ -24,6 +24,10 @@ const domainSchema = z.object({
   records: z.record(z.string(), z.unknown()),
   status: z.enum(["synced", "failed", "pending"]).default("synced"),
   error: z.string().nullish(),
+  // Git-derived dates: first commit that added the file and the last commit
+  // touching it. Optional — without them, insert time / syncedAt are used.
+  createdAt: z.iso.datetime().optional(),
+  updatedAt: z.iso.datetime().optional(),
 })
 
 const payloadSchema = z.object({
@@ -79,6 +83,10 @@ export async function POST(request: Request) {
 
     for (const domain of domains) {
       const current = existingByName.get(domain.subdomain)
+      const createdAt = domain.createdAt ? new Date(domain.createdAt) : null
+      const contentUpdatedAt = domain.updatedAt
+        ? new Date(domain.updatedAt)
+        : null
       const syncFields = {
         syncStatus: domain.status,
         lastError: domain.status === "failed" ? (domain.error ?? "unknown error") : null,
@@ -92,6 +100,12 @@ export async function POST(request: Request) {
           ownerEmail: domain.owner.email ?? null,
           records: domain.records,
           ...syncFields,
+          // Prefer git-derived dates so a backfill of an old registry keeps
+          // real registration dates instead of the insert time.
+          ...(createdAt && { createdAt }),
+          ...((contentUpdatedAt ?? createdAt) && {
+            updatedAt: contentUpdatedAt ?? createdAt ?? undefined,
+          }),
         })
         inserted++
         continue
@@ -102,17 +116,31 @@ export async function POST(request: Request) {
         (current.ownerEmail ?? undefined) !== domain.owner.email ||
         JSON.stringify(current.records) !== JSON.stringify(domain.records)
 
+      // Payload dates correct rows that were first inserted without git
+      // dates (their timestamps are the backfill time, not registration or
+      // the last real content change).
+      const createdAtDrifted =
+        createdAt !== null && current.createdAt.getTime() !== createdAt.getTime()
+      const updatedAtDrifted =
+        !contentChanged &&
+        contentUpdatedAt !== null &&
+        current.updatedAt.getTime() !== contentUpdatedAt.getTime()
+
       await tx
         .update(subdomains)
         .set({
           ...syncFields,
+          ...(createdAtDrifted && { createdAt: createdAt ?? undefined }),
+          ...(updatedAtDrifted && {
+            updatedAt: contentUpdatedAt ?? undefined,
+          }),
           // Only bump updatedAt when the record content actually changed —
           // a routine resync of unchanged domains is not an update.
           ...(contentChanged && {
             ownerGithub: domain.owner.github,
             ownerEmail: domain.owner.email ?? null,
             records: domain.records,
-            updatedAt: syncedAt,
+            updatedAt: contentUpdatedAt ?? syncedAt,
           }),
         })
         .where(eq(subdomains.name, domain.subdomain))

@@ -64,11 +64,20 @@ Content-Type: application/json
       "owner": { "github": "juandelacruz", "email": "juan@example.com" },
       "records": { "CNAME": "juandelacruz.github.io" },
       "status": "synced",          // "synced" | "failed" | "pending"
-      "error": null                 // set when status is "failed"
+      "error": null,                // set when status is "failed"
+      "createdAt": "2025-11-02T08:15:00Z",  // optional: first commit that added the file
+      "updatedAt": "2026-03-19T14:02:00Z"   // optional: last commit touching the file
     }
   ]
 }
 ```
+
+`createdAt`/`updatedAt` are optional git-derived dates
+(`git log --follow --format=%cI -- subdomains/<name>.json` — last line is the
+first commit, first line the latest). When provided they become the row's
+registration and last-change dates — including retroactively, so rows from an
+earlier backfill without dates are corrected on the next sync. Without them,
+insert time and `syncedAt` are used.
 
 The handler reconciles the table against the snapshot (upsert + delete +
 `updated_at` bumped only when a record's content actually changed), so

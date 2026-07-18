@@ -53,9 +53,15 @@ Start the server with `DATABASE_URL` and `REGISTRY_SYNC_SECRET=<secret>`, then
 drive `POST /api/registry/events` (`Authorization: Bearer <secret>`, full
 snapshot payload — see README contract). Checks worth repeating: 401 without/
 with wrong secret, 400 on bad JSON/payload, replayed snapshot → all counts 0,
-changed records → `updated:1` and `updated_at` = payload `syncedAt`, missing
-domain → deleted. Without `DATABASE_URL` the pages fall back to the GitHub
-fetch and the events endpoint refuses everything.
+changed records → `updated:1` and `updated_at` = payload `updatedAt` (or
+`syncedAt` when absent), missing domain → deleted, payload `createdAt`/
+`updatedAt` retroactively heal rows inserted without git dates. Without
+`DATABASE_URL` the pages fall back to the GitHub fetch and the events
+endpoint refuses everything.
+
+Note: the sandbox may reset the `o+x` bits on the scratchpad path chain
+between commands — re-run the chmod line if pg_ctl reports
+"Permission denied" on a dir that worked before.
 
 ## Gotchas
 
