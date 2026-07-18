@@ -81,8 +81,29 @@ runs:
       if: steps.validate.outputs.failed == 'false' && inputs.cloudflare-api-token != '' && inputs.cloudflare-zone-id != ''
       shell: bash
       run: |
+        # On a pull request, scope the dry-run strictly to the subdomain files
+        # the PR actually changed, so drift on unrelated subdomains never shows
+        # up as a phantom CREATE/UPDATE. On push events (e.g. merge to main),
+        # PR_NUMBER is empty and we fall through to a full-registry dry-run.
+        ONLY_ARGS=""
+        if [ "$GITHUB_EVENT_NAME" = "pull_request" ] || [ "$GITHUB_EVENT_NAME" = "pull_request_target" ]; then
+          DIR_PREFIX="${INPUT_DIR#./}"
+          DIR_PREFIX="${DIR_PREFIX%/}"
+          CHANGED=$(gh pr diff "$PR_NUMBER" --repo "$REPO" --name-only 2>/dev/null \
+            | grep -E "^${DIR_PREFIX}/[^/]+\.json$" || true)
+          if [ -n "$CHANGED" ]; then
+            # shellcheck disable=SC2086
+            ONLY_ARGS="--only $(printf '%s ' $CHANGED)"
+          else
+            # PR touched no subdomain files — scope to a sentinel that matches
+            # nothing so the dry-run reports no changes instead of the whole registry.
+            ONLY_ARGS="--only __no_changed_subdomains__.json"
+          fi
+        fi
+
         set +e
-        OUTPUT=$(is-pinoy registry sync --dir "$INPUT_DIR" --dry-run 2>&1)
+        # shellcheck disable=SC2086
+        OUTPUT=$(is-pinoy registry sync --dir "$INPUT_DIR" --dry-run $ONLY_ARGS 2>&1)
         set -e
 
         CLEAN=$(printf '%s' "$OUTPUT" | sed 's/\x1b\[[0-9;]*[mGKHFJ]//g')
@@ -97,6 +118,10 @@ runs:
         INPUT_DIR: ${{ inputs.dir }}
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ZONE_ID: ${{ inputs.cloudflare-zone-id }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
 
     - name: Update comment on success
       if: steps.validate.outputs.failed == 'false' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')

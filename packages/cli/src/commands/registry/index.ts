@@ -23,11 +23,19 @@ export function registerRegistryCommand(program: Command): void {
     .option("-d, --dir <path>", "Domains directory", "./domains")
     .option("--zone-id <id>", "Cloudflare zone ID (overrides CLOUDFLARE_ZONE_ID env)")
     .option("--api-key <key>", "Cloudflare API token (overrides CLOUDFLARE_API_TOKEN env)")
+    .option(
+      "--only <files...>",
+      "Restrict the diff to the given changed domain files (e.g. from git diff)",
+    )
     .action(async (options) => {
-      await handleDiff(options.dir, {
-        apiKey: options.apiKey,
-        zoneId: options.zoneId,
-      });
+      await handleDiff(
+        options.dir,
+        {
+          apiKey: options.apiKey,
+          zoneId: options.zoneId,
+        },
+        options.only,
+      );
     });
 
   registry
@@ -38,12 +46,17 @@ export function registerRegistryCommand(program: Command): void {
     .option("--api-key <key>", "Cloudflare API token (overrides CLOUDFLARE_API_TOKEN env)")
     .option("-y, --yes", "Skip confirmation prompt")
     .option("--dry-run", "Preview changes without applying them")
+    .option(
+      "--only <files...>",
+      "Restrict the sync to the given changed domain files (e.g. from git diff)",
+    )
     .action(async (options) => {
       await handleSync(
         options.dir,
         { apiKey: options.apiKey, zoneId: options.zoneId },
         options.yes,
         options.dryRun,
+        options.only,
       );
     });
 
