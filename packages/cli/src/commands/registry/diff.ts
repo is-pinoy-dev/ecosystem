@@ -2,18 +2,25 @@ import {
   resolveCloudflareCreds,
   setCloudflareEnv,
 } from "../../utils/cloudflare.js";
+import { filterDomainsByChangedFiles } from "../../utils/filter.js";
 import { info, warning, success, divider, printActionTable } from "../../utils/output.js";
 
 export async function handleDiff(
   dir: string,
   credsOptions: { apiKey?: string; zoneId?: string },
+  only?: string[],
 ): Promise<void> {
   const creds = resolveCloudflareCreds(credsOptions);
   setCloudflareEnv(creds);
 
   const registry = await import("@is-pinoy-dev/registry");
-  const domains = registry.loadDomains(dir);
+  let domains = registry.loadDomains(dir);
   info(`Loaded ${domains.length} domain(s) from ${dir}`);
+
+  if (only && only.length > 0) {
+    domains = filterDomainsByChangedFiles(domains, only);
+    info(`Scoped to ${domains.length} changed domain(s) from --only`);
+  }
 
   const records = await registry.listRecords();
   const recordsArray = Array.isArray(records) ? records : [records];
