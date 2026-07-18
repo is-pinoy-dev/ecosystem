@@ -17,6 +17,22 @@ export function domainFileUrl(subdomain: string) {
   return `${DOMAINS_REPO_URL}/blob/main/subdomains/${subdomain}.json`
 }
 
+// Registered domains without database-backed sync info read as operational —
+// they only reach the registry after a merged, synced PR.
+export function syncTone(
+  status: RegistrySubdomain["syncStatus"],
+): "success" | "warning" | "destructive" {
+  if (status === "failed") return "destructive"
+  if (status === "pending") return "warning"
+  return "success"
+}
+
+export function syncLabel(status: RegistrySubdomain["syncStatus"]): string {
+  if (status === "failed") return "Sync failed"
+  if (status === "pending") return "Sync pending"
+  return "Active"
+}
+
 /** Ruled-row list of registered subdomains — rows and rules, not card grids. */
 export function DomainRows({ domains }: { domains: RegistrySubdomain[] }) {
   return (
@@ -27,7 +43,8 @@ export function DomainRows({ domains }: { domains: RegistrySubdomain[] }) {
           className="flex min-h-14 flex-wrap items-center gap-x-4 gap-y-2 border-b border-border py-3"
         >
           <span className="flex min-w-0 items-center gap-2.5">
-            <StatusIndicator tone="success" />
+            <StatusIndicator tone={syncTone(domain.syncStatus)} />
+            <span className="sr-only">{syncLabel(domain.syncStatus)}</span>
             <a
               href={`https://${domain.subdomain}.is-pinoy.dev`}
               target="_blank"
@@ -38,6 +55,9 @@ export function DomainRows({ domains }: { domains: RegistrySubdomain[] }) {
             </a>
           </span>
           <span className="flex flex-1 items-center justify-end gap-2">
+            {domain.syncStatus === "failed" && (
+              <Badge variant="destructive">SYNC FAILED</Badge>
+            )}
             {recordTypes(domain.records).map((type) => (
               <Badge key={type} variant="outline">
                 {type}

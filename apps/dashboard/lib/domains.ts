@@ -1,10 +1,16 @@
 // Registry data for the dashboard.
 //
-// Subdomain records live as `subdomains/<name>.json` files in the
-// is-pinoy-dev/domains repo (same source the public website reads). The
-// dashboard only needs the record contents — no commit-timestamp enrichment —
-// so this is a leaner fetch than `apps/web/lib/subdomains.ts`: one listing
-// call plus one raw-content fetch per file, cached via Next's `revalidate`.
+// Primary source is the local database — a read model of the
+// is-pinoy-dev/domains repo kept current by the sync workflow POSTing to
+// /api/registry/events after each Cloudflare sync. When DATABASE_URL is not
+// configured the dashboard falls back to reading the repo directly via the
+// GitHub API (same source the public website reads): one listing call plus
+// one raw-content fetch per file, cached via Next's `revalidate`.
+
+import { asc } from "drizzle-orm"
+
+import { getDb, hasDatabase } from "@/lib/db"
+import { subdomains, type SyncStatus } from "@/lib/db/schema"
 
 const DOMAINS_REPO = "is-pinoy-dev/domains"
 const REVALIDATE_SECONDS = 300
@@ -13,6 +19,12 @@ export interface RegistrySubdomain {
   subdomain: string
   owner: { github: string; email?: string }
   records: Record<string, unknown>
+  /** Only available when reading from the database. */
+  syncStatus?: SyncStatus
+  lastError?: string | null
+  lastSyncedAt?: Date | null
+  createdAt?: Date | null
+  updatedAt?: Date | null
 }
 
 function githubHeaders(): Record<string, string> {
@@ -25,8 +37,30 @@ function githubHeaders(): Record<string, string> {
   return headers
 }
 
+async function getSubdomainsFromDb(): Promise<RegistrySubdomain[]> {
+  const rows = await getDb()
+    .select()
+    .from(subdomains)
+    .orderBy(asc(subdomains.name))
+
+  return rows.map((row) => ({
+    subdomain: row.name,
+    owner: { github: row.ownerGithub, email: row.ownerEmail ?? undefined },
+    records: row.records,
+    syncStatus: row.syncStatus,
+    lastError: row.lastError,
+    lastSyncedAt: row.lastSyncedAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }))
+}
+
 /** Every registered (non-destroyed) subdomain in the registry, sorted by name. */
 export async function getRegistrySubdomains(): Promise<RegistrySubdomain[]> {
+  if (hasDatabase()) {
+    return getSubdomainsFromDb()
+  }
+
   let names: string[] = []
   try {
     const res = await fetch(

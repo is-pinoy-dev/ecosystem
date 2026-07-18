@@ -26,3 +26,69 @@ pnpm --filter dashboard dev   # http://localhost:3001
 
 Ownership is matched by GitHub username: after signing in, the dashboard lists
 every registry record whose `owner.github` equals your login.
+
+## Database (optional but recommended)
+
+Git stays the source of truth: the merged JSON in
+[is-pinoy-dev/domains](https://github.com/is-pinoy-dev/domains) is authoritative
+and CI keeps syncing it to Cloudflare exactly as before. The database is a
+**read model** — a projection of the repo plus the outcome of the last sync —
+so it can always be rebuilt from the repo and a failed write never affects DNS.
+
+Without `DATABASE_URL` the dashboard falls back to reading the repo via the
+GitHub API (slower, rate-limited, no timestamps or sync status).
+
+### Setup
+
+1. Provision any Postgres (Neon, Supabase, self-hosted) and set `DATABASE_URL`.
+2. Apply the schema: `pnpm --filter dashboard db:migrate`
+   (or `db:push` during development).
+3. Set `REGISTRY_SYNC_SECRET` (e.g. `openssl rand -hex 32`) in the dashboard
+   deployment and in the domains repo's Actions secrets.
+
+### Sync event contract
+
+After each Cloudflare sync run, the domains-repo workflow POSTs the **full
+registry snapshot** with per-domain results to the dashboard:
+
+```
+POST /api/registry/events
+Authorization: Bearer $REGISTRY_SYNC_SECRET
+Content-Type: application/json
+
+{
+  "syncedAt": "2026-07-18T10:00:00Z",
+  "domains": [
+    {
+      "subdomain": "juan",
+      "owner": { "github": "juandelacruz", "email": "juan@example.com" },
+      "records": { "CNAME": "juandelacruz.github.io" },
+      "status": "synced",          // "synced" | "failed" | "pending"
+      "error": null                 // set when status is "failed"
+    }
+  ]
+}
+```
+
+The handler reconciles the table against the snapshot (upsert + delete +
+`updated_at` bumped only when a record's content actually changed), so
+duplicate or replayed deliveries are idempotent. Because it is a full
+snapshot, a lost delivery heals itself on the next sync — and a manual
+backfill is just re-running the same POST.
+
+Example workflow step for the domains repo, after the existing sync step:
+
+```yaml
+- name: Notify dashboard
+  if: always()
+  run: |
+    curl -sf -X POST "$DASHBOARD_URL/api/registry/events" \
+      -H "Authorization: Bearer ${{ secrets.REGISTRY_SYNC_SECRET }}" \
+      -H "Content-Type: application/json" \
+      --data @snapshot.json
+  env:
+    DASHBOARD_URL: https://dashboard.is-pinoy.dev
+```
+
+where `snapshot.json` is assembled from the `subdomains/*.json` files plus the
+sync results of the run.

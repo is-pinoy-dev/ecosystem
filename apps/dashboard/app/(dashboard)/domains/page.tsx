@@ -12,7 +12,12 @@ import {
 } from "@is-pinoy-dev/ui/components/card"
 import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
 import { auth } from "@/auth"
-import { domainFileUrl, NoDomains } from "@/components/domain-list"
+import {
+  domainFileUrl,
+  NoDomains,
+  syncLabel,
+  syncTone,
+} from "@/components/domain-list"
 import { PageHeader } from "@/components/page-header"
 import { getSubdomainsForOwner, type RegistrySubdomain } from "@/lib/domains"
 
@@ -26,14 +31,26 @@ function formatRecordValue(value: unknown): string {
   return JSON.stringify(value)
 }
 
+function formatDate(date: Date | null | undefined): string | null {
+  if (!date) return null
+  return date.toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
 function DomainCard({ domain }: { domain: RegistrySubdomain }) {
   const entries = Object.entries(domain.records)
+  const registered = formatDate(domain.createdAt)
+  const synced = formatDate(domain.lastSyncedAt)
 
   return (
     <Card>
       <CardHeader className="border-b [.border-b]:pb-5">
         <CardTitle className="flex items-center gap-2.5 font-mono text-base font-semibold">
-          <StatusIndicator tone="success" />
+          <StatusIndicator tone={syncTone(domain.syncStatus)} />
+          <span className="sr-only">{syncLabel(domain.syncStatus)}</span>
           <a
             href={`https://${domain.subdomain}.is-pinoy.dev`}
             target="_blank"
@@ -42,9 +59,14 @@ function DomainCard({ domain }: { domain: RegistrySubdomain }) {
           >
             {domain.subdomain}.is-pinoy.dev
           </a>
+          {domain.syncStatus === "failed" && (
+            <Badge variant="destructive">SYNC FAILED</Badge>
+          )}
         </CardTitle>
         <CardDescription>
           Owned by <span className="font-mono">@{domain.owner.github}</span>
+          {registered && <> · Registered {registered}</>}
+          {synced && <> · Last synced {synced}</>}
         </CardDescription>
         <CardAction>
           <Button asChild variant="outline" size="sm">
@@ -59,6 +81,11 @@ function DomainCard({ domain }: { domain: RegistrySubdomain }) {
         </CardAction>
       </CardHeader>
       <CardContent>
+        {domain.syncStatus === "failed" && domain.lastError && (
+          <p className="mt-0 mb-3 border border-destructive/30 bg-destructive/10 px-3 py-2 font-mono text-xs/relaxed text-destructive">
+            {domain.lastError}
+          </p>
+        )}
         <ul className="m-0 list-none p-0">
           {entries.map(([type, value]) => (
             <li
