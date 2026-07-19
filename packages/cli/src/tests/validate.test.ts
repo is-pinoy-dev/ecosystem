@@ -16,6 +16,7 @@ describe("handleValidate", () => {
     vi.mocked(validateDomains).mockReturnValue({
       ok: true,
       errors: [],
+      warnings: [],
     });
 
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
@@ -32,6 +33,7 @@ describe("handleValidate", () => {
     vi.mocked(validateDomains).mockReturnValue({
       ok: false,
       errors: ["Duplicate subdomain: test", "Reserved subdomain: admin"],
+      warnings: [],
     });
 
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);

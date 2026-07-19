@@ -5,6 +5,7 @@ export function validateDomains(dir?: string) {
   const domains = loadDomains(dir);
 
   const errors: string[] = [];
+  const warnings: string[] = [];
   const seen = new Set<string>();
 
   for (const domain of domains) {
@@ -22,7 +23,8 @@ export function validateDomains(dir?: string) {
     // ResolvedDomain includes a `file` field not in domainSchema — Zod strips unknown keys, so this is safe.
     const result = validateDomain(domain);
     errors.push(...result.errors);
+    warnings.push(...result.warnings);
   }
 
-  return { ok: errors.length === 0, errors };
+  return { ok: errors.length === 0, errors, warnings };
 }
