@@ -6,6 +6,7 @@ import {
 } from "@is-pinoy-dev/schemas";
 import { env } from "./env.js";
 import { normalizeContent, normalizeRecordContent } from "./normalize.js";
+import { verificationTargetFqdn } from "./vercel.js";
 
 function toFQDN(subdomain: string) {
   return `${subdomain}.${env("DOMAIN")}`;
@@ -125,11 +126,47 @@ export function diff(
     actions.push({ type: "CREATE", fqdn: d.fqdn, record: d.record });
   }
 
+  // Vercel verification TXTs live at the shared challenge name and are
+  // single-use: once no active domain file declares a value, it is an orphan
+  // (e.g. removed by the cleanup flow after the domain verified). Deletion is
+  // tightly scoped — only vc-domain-verify values whose embedded target is a
+  // strict subdomain of the zone, so the org's own apex verification and any
+  // unrelated TXT records are never touched.
+  const vercelChallengeFqdn = toTXTRecordFQDN("vercel");
+  const desiredChallengeValues = new Set(
+    desiredFlat
+      .filter((d) => d.fqdn === vercelChallengeFqdn)
+      .map((d) => normalizeRecordContent(d.record)),
+  );
+
+  // The registry writes challenges at `_vercel.<zone>`, but legacy records
+  // may sit at `_vercel.<subdomain>.<zone>` — cover both name shapes.
+  function isVercelChallengeName(name: string): boolean {
+    return (
+      name === vercelChallengeFqdn ||
+      (name.startsWith("_vercel.") && name.endsWith(`.${env("DOMAIN")}`))
+    );
+  }
+
+  function isOrphanedVerification(a: CloudflareRecord): boolean {
+    if (a.type !== "TXT" || !isVercelChallengeName(a.name)) return false;
+    if (claimed.has(a.id)) return false;
+    if (desiredChallengeValues.has(normalizeContent(a.type, a.content))) {
+      return false;
+    }
+    const target = verificationTargetFqdn(a.content);
+    return target !== null && target.endsWith(`.${env("DOMAIN")}`);
+  }
+
   for (const a of actual) {
     const isTXTRecordMatch =
       a.type === "TXT" && destroyedTXTValues.has(a.content);
 
-    if (destroyedFqdns.has(a.name) || isTXTRecordMatch) {
+    if (
+      destroyedFqdns.has(a.name) ||
+      isTXTRecordMatch ||
+      isOrphanedVerification(a)
+    ) {
       actions.push({ type: "DELETE", id: a.id, fqdn: a.name });
     }
   }

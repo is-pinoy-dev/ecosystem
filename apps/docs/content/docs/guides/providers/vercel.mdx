@@ -114,6 +114,7 @@ This guide walks you through finding the CNAME and TXT values you need from Verc
 - **Trailing dot** — the CNAME value must end with `.` exactly as Vercel shows it
 - **`"provider": "vercel"`** — required whenever you include a TXT record from Vercel; validation will fail without it
 - **"Invalid Configuration" on Vercel's dashboard** — Vercel will show this warning until your PR is merged and DNS has propagated. This is expected. Vercel cannot verify the record until it's live.
+- **The TXT record is temporary** — Vercel only checks it once, during verification. After your subdomain is verified and live, the registry may automatically remove the TXT record from your JSON file (via a cleanup PR). This is safe and expected — if you ever move the subdomain to a different Vercel account, Vercel issues a fresh verification value anyway.
 
 ---
 

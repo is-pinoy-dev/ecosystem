@@ -6,7 +6,20 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"],
-      "env": ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ZONE_ID", "GITHUB_TOKEN", "GH_TOKEN"]
+      "env": [
+        "CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_ZONE_ID",
+        "DOMAIN",
+        "GITHUB_TOKEN",
+        "GH_TOKEN",
+        "AUTH_SECRET",
+        "AUTH_GITHUB_ID",
+        "AUTH_GITHUB_SECRET",
+        "AUTH_URL",
+        "AUTH_TRUST_HOST",
+        "DATABASE_URL",
+        "REGISTRY_SYNC_SECRET"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]

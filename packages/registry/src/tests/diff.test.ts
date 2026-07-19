@@ -422,4 +422,104 @@ describe("diff", () => {
     expect(result[0]?.type).toBe("DELETE");
     expect(result[1]?.type).toBe("DELETE");
   });
+
+  it("deletes an orphaned vc-domain-verify TXT no active domain declares", () => {
+    // jun removed the verification TXT from his file after Vercel verified.
+    const desired: Domain[] = [
+      {
+        subdomain: "jun",
+        owner: { github: "jun" },
+        records: { CNAME: { value: "cname.vercel-dns.com." } },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "1",
+        name: "jun.is-pinoy.dev",
+        type: "CNAME",
+        content: "cname.vercel-dns.com",
+      },
+      {
+        id: "2",
+        name: "_vercel.is-pinoy.dev",
+        type: "TXT",
+        content: '"vc-domain-verify=jun.is-pinoy.dev,abc123"',
+      },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ type: "DELETE", id: "2" });
+  });
+
+  it("keeps vc-domain-verify TXT records that are still declared", () => {
+    const desired: Domain[] = [
+      {
+        subdomain: "jun",
+        owner: { github: "jun" },
+        records: {
+          CNAME: { value: "cname.vercel-dns.com." },
+          TXT: {
+            value: "vc-domain-verify=jun.is-pinoy.dev,abc123",
+            provider: "vercel",
+          },
+        },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "1",
+        name: "jun.is-pinoy.dev",
+        type: "CNAME",
+        content: "cname.vercel-dns.com",
+      },
+      {
+        id: "2",
+        name: "_vercel.is-pinoy.dev",
+        type: "TXT",
+        content: '"vc-domain-verify=jun.is-pinoy.dev,abc123"',
+      },
+    ];
+    expect(diff(desired, actual)).toHaveLength(0);
+  });
+
+  it("never deletes non-verification TXT or apex verification records", () => {
+    const desired: Domain[] = [];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "1",
+        name: "_vercel.is-pinoy.dev",
+        type: "TXT",
+        // Verifies the zone apex itself (the org's own record) — protected.
+        content: '"vc-domain-verify=is-pinoy.dev,xyz789"',
+      },
+      {
+        id: "2",
+        name: "_vercel.is-pinoy.dev",
+        type: "TXT",
+        content: '"some-unrelated-value"',
+      },
+      {
+        id: "3",
+        name: "is-pinoy.dev",
+        type: "TXT",
+        content: '"v=spf1 -all"',
+      },
+    ];
+    expect(diff(desired, actual)).toHaveLength(0);
+  });
+
+  it("deletes orphaned verification TXT at legacy per-subdomain names", () => {
+    const desired: Domain[] = [];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "1",
+        name: "_vercel.jun.is-pinoy.dev",
+        type: "TXT",
+        content: '"vc-domain-verify=jun.is-pinoy.dev,abc123"',
+      },
+    ];
+    const result = diff(desired, actual);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ type: "DELETE", id: "1" });
+  });
 });
