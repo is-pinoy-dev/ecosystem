@@ -1,5 +1,12 @@
 # site-audit
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [b69735b]
+  - @is-pinoy-dev/schemas@1.3.0
+
 ## 0.2.3
 
 ### Patch Changes
