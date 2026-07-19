@@ -99,7 +99,10 @@ describe("diff", () => {
     expect(result).toHaveLength(0);
   });
 
-  it("TXT records use _{provider}.{domain} naming", () => {
+  it("TXT records use the shared _{provider}.{zone} naming", () => {
+    // Not _{provider}.{subdomain}.{zone}: Vercel's own ownership check
+    // resolves at the registrable-domain boundary, which for a non-PSL zone
+    // is the zone itself — a per-subdomain name is never queried by Vercel.
     const desired: Domain[] = [
       {
         subdomain: "test",
@@ -116,10 +119,10 @@ describe("diff", () => {
     const result = diff(desired, actual);
     expect(result).toHaveLength(1);
     expect(result[0]?.type).toBe("CREATE");
-    expect(result[0]?.fqdn).toBe("_vercel.test.is-pinoy.dev");
+    expect(result[0]?.fqdn).toBe("_vercel.is-pinoy.dev");
   });
 
-  it("TXT records match existing _{provider}.{domain} records", () => {
+  it("TXT records match existing records at the shared _{provider}.{zone} name", () => {
     const desired: Domain[] = [
       {
         subdomain: "test",
@@ -135,7 +138,7 @@ describe("diff", () => {
     const actual: CloudflareRecord[] = [
       {
         id: "456",
-        name: "_vercel.test.is-pinoy.dev",
+        name: "_vercel.is-pinoy.dev",
         type: "TXT",
         content: '"vc-domain-verify=test.is-pinoy.dev,abc123"',
       },
@@ -160,7 +163,7 @@ describe("diff", () => {
     const actual: CloudflareRecord[] = [
       {
         id: "456",
-        name: "_vercel.test.is-pinoy.dev",
+        name: "_vercel.is-pinoy.dev",
         type: "TXT",
         content: '"vc-domain-verify=test.is-pinoy.dev,abc123"',
       },
@@ -350,42 +353,51 @@ describe("diff", () => {
     expect(result).toHaveLength(0);
   });
 
-  it("TXT records for different subdomains do not collide on the same name", () => {
-    // Regression: dropping the subdomain from the TXT name made every provider
-    // TXT record resolve to _vercel.is-pinoy.dev, so records for one subdomain
-    // were reported as CREATE/UPDATE against another subdomain's PR.
+  it("TXT records for different subdomains do not collide at the shared name", () => {
+    // Both foo and bar's TXT records resolve to the same shared
+    // _vercel.is-pinoy.dev name. foo's exact value already matches an
+    // existing actual record; bar's is new. A byTypeMap fallback keyed on
+    // fqdn+type alone would find bar's desired record "matches" foo's
+    // unclaimed actual record (same fqdn+type) and emit a bogus UPDATE that
+    // overwrites foo's still-valid challenge — then foo, now unable to claim
+    // its own already-matching actual record, would also emit a spurious
+    // CREATE. Keying on the embedded vc-domain-verify target keeps them apart.
     const desired: Domain[] = [
       {
         subdomain: "foo",
         owner: { github: "foo" },
         records: {
-          TXT: { value: "vc-domain-verify=foo,abc", provider: "vercel" },
+          TXT: {
+            value: "vc-domain-verify=foo.is-pinoy.dev,abc",
+            provider: "vercel",
+          },
         },
       },
       {
         subdomain: "bar",
         owner: { github: "bar" },
         records: {
-          TXT: { value: "vc-domain-verify=bar,xyz", provider: "vercel" },
+          TXT: {
+            value: "vc-domain-verify=bar.is-pinoy.dev,xyz",
+            provider: "vercel",
+          },
         },
       },
     ];
     const actual: CloudflareRecord[] = [
       {
         id: "1",
-        name: "_vercel.foo.is-pinoy.dev",
+        name: "_vercel.is-pinoy.dev",
         type: "TXT",
-        content: '"vc-domain-verify=foo,abc"',
-      },
-      {
-        id: "2",
-        name: "_vercel.bar.is-pinoy.dev",
-        type: "TXT",
-        content: '"vc-domain-verify=bar,xyz"',
+        content: '"vc-domain-verify=foo.is-pinoy.dev,abc"',
       },
     ];
     const result = diff(desired, actual);
-    expect(result).toHaveLength(0);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ type: "CREATE", fqdn: "_vercel.is-pinoy.dev" });
+    if (result[0]?.type === "CREATE") {
+      expect(result[0].record.value).toBe("vc-domain-verify=bar.is-pinoy.dev,xyz");
+    }
   });
 
   it("destroy deletes both CNAME and TXT records", () => {
@@ -412,7 +424,7 @@ describe("diff", () => {
       },
       {
         id: "2",
-        name: "_vercel.test.is-pinoy.dev",
+        name: "_vercel.is-pinoy.dev",
         type: "TXT",
         content: '"vc-domain-verify=test.is-pinoy.dev,abc123"',
       },
