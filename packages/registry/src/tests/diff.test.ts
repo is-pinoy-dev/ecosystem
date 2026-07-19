@@ -474,7 +474,7 @@ describe("diff", () => {
       },
       {
         id: "2",
-        name: "_vercel.is-pinoy.dev",
+        name: "_vercel.jun.is-pinoy.dev",
         type: "TXT",
         content: '"vc-domain-verify=jun.is-pinoy.dev,abc123"',
       },

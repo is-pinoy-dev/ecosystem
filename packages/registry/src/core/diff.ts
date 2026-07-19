@@ -126,32 +126,19 @@ export function diff(
     actions.push({ type: "CREATE", fqdn: d.fqdn, record: d.record });
   }
 
-  // Vercel verification TXTs live at the shared challenge name and are
-  // single-use: once no active domain file declares a value, it is an orphan
-  // (e.g. removed by the cleanup flow after the domain verified). Deletion is
-  // tightly scoped — only vc-domain-verify values whose embedded target is a
-  // strict subdomain of the zone, so the org's own apex verification and any
-  // unrelated TXT records are never touched.
-  const vercelChallengeFqdn = toTXTRecordFQDN("vercel");
-  const desiredChallengeValues = new Set(
-    desiredFlat
-      .filter((d) => d.fqdn === vercelChallengeFqdn)
-      .map((d) => normalizeRecordContent(d.record)),
-  );
-
-  // The registry writes challenges at `_vercel.<zone>`, but legacy records
-  // may sit at `_vercel.<subdomain>.<zone>` — cover both name shapes.
-  function isVercelChallengeName(name: string): boolean {
-    return (
-      name === vercelChallengeFqdn ||
-      (name.startsWith("_vercel.") && name.endsWith(`.${env("DOMAIN")}`))
-    );
-  }
-
+  // Vercel verification TXTs are single-use: once a domain is verified the
+  // record is dead weight, and the cleanup flow may strip it from the domain
+  // file while it still lingers in Cloudflare. TXT challenges are written at
+  // a per-subdomain name (`_vercel.<subdomain>.<zone>`), so if a domain still
+  // declares its record, the matching loop above already claimed the actual
+  // record at that exact name (as either an exact match or an UPDATE) — any
+  // unclaimed TXT at a `_vercel.*` name is therefore an orphan. Deletion is
+  // tightly scoped to values whose embedded target is a strict subdomain of
+  // the zone, so the org's own apex verification and unrelated TXT records
+  // are never touched.
   function isOrphanedVerification(a: CloudflareRecord): boolean {
-    if (a.type !== "TXT" || !isVercelChallengeName(a.name)) return false;
-    if (claimed.has(a.id)) return false;
-    if (desiredChallengeValues.has(normalizeContent(a.type, a.content))) {
+    if (a.type !== "TXT" || claimed.has(a.id)) return false;
+    if (!a.name.startsWith("_vercel.") || !a.name.endsWith(`.${env("DOMAIN")}`)) {
       return false;
     }
     const target = verificationTargetFqdn(a.content);
