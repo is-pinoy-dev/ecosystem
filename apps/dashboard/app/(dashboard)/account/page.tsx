@@ -4,13 +4,6 @@ import { redirect } from "next/navigation"
 import { LogOut } from "lucide-react"
 import { Badge } from "@is-pinoy-dev/ui/components/badge"
 import { Button } from "@is-pinoy-dev/ui/components/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@is-pinoy-dev/ui/components/card"
 import { auth } from "@/auth"
 import { GitHubIcon } from "@/components/icons"
 import { PageHeader } from "@/components/page-header"
@@ -35,81 +28,76 @@ export default async function AccountPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex max-w-[720px] flex-col gap-10">
       <PageHeader
         eyebrow="Account"
         title="Your account"
         description="Subdomain ownership is verified against this GitHub account. The dashboard only reads your public profile."
       />
 
-      <Card>
-        <CardHeader className="border-b [.border-b]:pb-5">
-          <div className="flex items-center gap-4">
-            {image ? (
-              <Image
-                src={image}
-                alt=""
-                width={56}
-                height={56}
-                className="size-14 shrink-0 border border-border"
-              />
-            ) : (
-              <span
-                aria-hidden="true"
-                className="flex size-14 shrink-0 items-center justify-center border border-border bg-secondary font-mono text-lg font-semibold text-secondary-foreground uppercase"
-              >
-                {login.slice(0, 2)}
-              </span>
-            )}
-            <div className="flex min-w-0 flex-col gap-1">
-              <CardTitle className="truncate text-lg font-semibold">
-                {name ?? login}
-              </CardTitle>
-              <CardDescription className="flex items-center gap-2">
-                <Badge variant="secondary" className="gap-1.5">
-                  <GitHubIcon size={12} />@{login}
-                </Badge>
-              </CardDescription>
-            </div>
+      <section className="flex flex-col gap-5">
+        <div className="flex items-center gap-4">
+          {image ? (
+            <Image
+              src={image}
+              alt=""
+              width={64}
+              height={64}
+              className="size-16 shrink-0 border border-border"
+            />
+          ) : (
+            <span
+              aria-hidden="true"
+              className="flex size-16 shrink-0 items-center justify-center border border-border bg-secondary font-mono text-xl font-semibold text-secondary-foreground uppercase"
+            >
+              {login.slice(0, 2)}
+            </span>
+          )}
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <span className="truncate text-xl font-semibold tracking-[-0.02em] text-foreground">
+              {name ?? login}
+            </span>
+            <Badge variant="secondary" className="gap-1.5 self-start">
+              <GitHubIcon size={12} />@{login}
+            </Badge>
           </div>
-        </CardHeader>
-        <CardContent className="flex flex-col">
-          <ul className="m-0 list-none p-0">
-            {details.map((detail) => (
-              <li
-                key={detail.label}
-                className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border py-2.5"
-              >
-                <span className="font-mono text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  {detail.label}
-                </span>
-                <span
-                  className={
-                    detail.mono
-                      ? "font-mono text-sm text-foreground"
-                      : "text-sm text-foreground"
-                  }
-                >
-                  {detail.value}
-                </span>
-              </li>
-            ))}
-            <li className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
+        </div>
+
+        <ul className="m-0 list-none border-t border-border p-0">
+          {details.map((detail) => (
+            <li
+              key={detail.label}
+              className="grid min-h-12 items-center gap-x-6 gap-y-0.5 border-b border-border py-3 sm:grid-cols-[180px_1fr]"
+            >
               <span className="font-mono text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                OAuth access
+                {detail.label}
               </span>
-              <a
-                href="https://github.com/settings/applications"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-accent underline"
+              <span
+                className={
+                  detail.mono
+                    ? "min-w-0 truncate font-mono text-sm text-foreground"
+                    : "min-w-0 truncate text-sm text-foreground"
+                }
               >
-                Manage on GitHub
-              </a>
+                {detail.value}
+              </span>
             </li>
-          </ul>
-        </CardContent>
-      </Card>
+          ))}
+          <li className="grid min-h-12 items-center gap-x-6 gap-y-0.5 border-b border-border py-3 sm:grid-cols-[180px_1fr]">
+            <span className="font-mono text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+              OAuth access
+            </span>
+            <a
+              href="https://github.com/settings/applications"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="justify-self-start text-sm text-accent underline"
+            >
+              Manage on GitHub
+            </a>
+          </li>
+        </ul>
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="m-0 text-lg font-semibold tracking-[-0.02em] text-foreground">

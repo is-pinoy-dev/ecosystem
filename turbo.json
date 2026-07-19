@@ -17,8 +17,11 @@
         "AUTH_GITHUB_SECRET",
         "AUTH_URL",
         "AUTH_TRUST_HOST",
-        "DATABASE_URL",
-        "REGISTRY_SYNC_SECRET"
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_D1_DATABASE_ID",
+        "CLOUDFLARE_D1_API_TOKEN",
+        "REGISTRY_SYNC_SECRET",
+        "VERCEL_GIT_COMMIT_SHA"
       ]
     },
     "lint": {

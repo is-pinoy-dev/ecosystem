@@ -2,8 +2,8 @@
 //
 // Primary source is the local database — a read model of the
 // is-pinoy-dev/domains repo kept current by the sync workflow POSTing to
-// /api/registry/events after each Cloudflare sync. When DATABASE_URL is not
-// configured the dashboard falls back to reading the repo directly via the
+// /api/registry/events after each Cloudflare sync. When the Cloudflare D1 env
+// vars are not configured the dashboard falls back to reading the repo via the
 // GitHub API (same source the public website reads): one listing call plus
 // one raw-content fetch per file, cached via Next's `revalidate`.
 

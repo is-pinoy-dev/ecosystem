@@ -35,15 +35,20 @@ and CI keeps syncing it to Cloudflare exactly as before. The database is a
 **read model** — a projection of the repo plus the outcome of the last sync —
 so it can always be rebuilt from the repo and a failed write never affects DNS.
 
-Without `DATABASE_URL` the dashboard falls back to reading the repo via the
-GitHub API (slower, rate-limited, no timestamps or sync status).
+The read model is backed by **Cloudflare D1** (serverless SQLite), reached over
+the D1 HTTP API — no Worker required, so it runs the same on Vercel as it does
+locally. Without the D1 env vars the dashboard falls back to reading the repo
+via the GitHub API (slower, rate-limited, no timestamps or sync status).
 
 ### Setup
 
-1. Provision any Postgres (Neon, Supabase, self-hosted) and set `DATABASE_URL`.
-2. Apply the schema: `pnpm --filter dashboard db:migrate`
+1. Create the database and note its `database_id`:
+   `pnpm dlx wrangler d1 create dashboard-db`
+2. Set `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, and a `D1:Edit`
+   `CLOUDFLARE_D1_API_TOKEN` (all three are required for the DB path to activate).
+3. Apply the schema: `pnpm --filter dashboard db:migrate`
    (or `db:push` during development).
-3. Set `REGISTRY_SYNC_SECRET` (e.g. `openssl rand -hex 32`) in the dashboard
+4. Set `REGISTRY_SYNC_SECRET` (e.g. `openssl rand -hex 32`) in the dashboard
    deployment and in the domains repo's Actions secrets.
 
 ### Sync event contract
