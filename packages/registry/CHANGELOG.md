@@ -1,5 +1,26 @@
 # @is-pinoy-dev/registry
 
+## 0.0.13
+
+### Patch Changes
+
+- b69735b: Restrict `txtRecord.provider` to `vercel` only.
+
+  The `netlify`, `github`, and `cloudflare` values added in the previous release
+  never mapped to a real DNS verification flow: Netlify and Cloudflare Pages do
+  not verify subdomains with a DNS TXT challenge, and GitHub Pages uses a
+  challenge name that embeds the user's GitHub username
+  (`_github-pages-challenge-<username>`), which cannot be derived from a provider
+  enum. Accepting these values created records no provider ever queries while
+  telling users verification was set up.
+
+  The `provider` field remains required on verification TXT records so the intent
+  stays explicit in the JSON file. Regenerated `schema/v1/subdomain.schema.json`.
+
+- Updated dependencies [b69735b]
+  - @is-pinoy-dev/schemas@1.3.0
+  - @is-pinoy-dev/validate@1.0.3
+
 ## 0.0.12
 
 ### Patch Changes
