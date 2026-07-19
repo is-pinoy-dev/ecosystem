@@ -35,33 +35,29 @@ AUTH_SECRET="any-long-test-secret" AUTH_GITHUB_ID=dummy AUTH_GITHUB_SECRET=dummy
 
 ## Database-backed registry (optional)
 
-Postgres 16 is preinstalled at `/usr/lib/postgresql/16/bin` but must run as
-the `postgres` user (root is refused), and the data dir's parent chain needs
-`o+x` so that user can traverse into the scratchpad:
+The read model is **Cloudflare D1** over the HTTP API — there is no local
+database to stand up. Point the app at a real D1 by setting all three env vars,
+then apply the schema against it:
 
 ```bash
-chmod o+x <each scratchpad path component>
-mkdir -p $SCRATCH/pgdata $SCRATCH/pgsock && chown postgres:postgres $SCRATCH/pgdata $SCRATCH/pgsock
-su postgres -s /bin/bash -c "$PGBIN/initdb -D $SCRATCH/pgdata -U dashuser --auth=trust"
-touch $SCRATCH/pg.log && chown postgres:postgres $SCRATCH/pg.log
-su postgres -s /bin/bash -c "$PGBIN/pg_ctl -D $SCRATCH/pgdata -o '-p 5433 -k $SCRATCH/pgsock -c listen_addresses=127.0.0.1' -l $SCRATCH/pg.log start"
-createdb -h 127.0.0.1 -p 5433 -U dashuser dashboard
-DATABASE_URL="postgres://dashuser@127.0.0.1:5433/dashboard" pnpm db:migrate
+export CLOUDFLARE_ACCOUNT_ID=<account id>
+export CLOUDFLARE_D1_DATABASE_ID=<database id>
+export CLOUDFLARE_D1_API_TOKEN=<D1:Edit token>
+pnpm --filter dashboard db:migrate
 ```
 
-Start the server with `DATABASE_URL` and `REGISTRY_SYNC_SECRET=<secret>`, then
-drive `POST /api/registry/events` (`Authorization: Bearer <secret>`, full
+Use a throwaway database so test writes stay out of production:
+`pnpm dlx wrangler d1 create dashboard-verify` and pass its id.
+
+Start the server with those three vars plus `REGISTRY_SYNC_SECRET=<secret>`,
+then drive `POST /api/registry/events` (`Authorization: Bearer <secret>`, full
 snapshot payload — see README contract). Checks worth repeating: 401 without/
 with wrong secret, 400 on bad JSON/payload, replayed snapshot → all counts 0,
 changed records → `updated:1` and `updated_at` = payload `updatedAt` (or
 `syncedAt` when absent), missing domain → deleted, payload `createdAt`/
-`updatedAt` retroactively heal rows inserted without git dates. Without
-`DATABASE_URL` the pages fall back to the GitHub fetch and the events
-endpoint refuses everything.
-
-Note: the sandbox may reset the `o+x` bits on the scratchpad path chain
-between commands — re-run the chmod line if pg_ctl reports
-"Permission denied" on a dir that worked before.
+`updatedAt` retroactively heal rows inserted without git dates. When the D1 env
+vars are unset the pages fall back to the GitHub fetch and the events endpoint
+refuses everything.
 
 ## Gotchas
 

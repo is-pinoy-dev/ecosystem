@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm"
 import { z } from "zod"
 
 import { getDb, hasDatabase } from "@/lib/db"
+import { reconcile } from "@/lib/db/reconcile"
 import { subdomains } from "@/lib/db/schema"
 
 // Called by the domains-repo sync workflow after each Cloudflare sync run.
@@ -73,87 +74,30 @@ export async function POST(request: Request) {
   const syncedAt = parsed.data.syncedAt ? new Date(parsed.data.syncedAt) : new Date()
 
   const db = getDb()
-  const counts = await db.transaction(async (tx) => {
-    const existing = await tx.select().from(subdomains)
-    const existingByName = new Map(existing.map((row) => [row.name, row]))
-    const incomingNames = new Set(domains.map((d) => d.subdomain))
 
-    let inserted = 0
-    let updated = 0
+  // D1's HTTP API has no interactive transactions, so we read the current
+  // rows, compute the diff in memory, and apply it as one atomic batch. The
+  // payload is a full snapshot, so a partial failure heals on the next sync.
+  const existing = await db.select().from(subdomains)
+  const { statements, counts } = reconcile(existing, domains, syncedAt)
 
-    for (const domain of domains) {
-      const current = existingByName.get(domain.subdomain)
-      const createdAt = domain.createdAt ? new Date(domain.createdAt) : null
-      const contentUpdatedAt = domain.updatedAt
-        ? new Date(domain.updatedAt)
-        : null
-      const syncFields = {
-        syncStatus: domain.status,
-        lastError: domain.status === "failed" ? (domain.error ?? "unknown error") : null,
-        lastSyncedAt: syncedAt,
-      }
-
-      if (!current) {
-        await tx.insert(subdomains).values({
-          name: domain.subdomain,
-          ownerGithub: domain.owner.github,
-          ownerEmail: domain.owner.email ?? null,
-          records: domain.records,
-          ...syncFields,
-          // Prefer git-derived dates so a backfill of an old registry keeps
-          // real registration dates instead of the insert time.
-          ...(createdAt && { createdAt }),
-          ...((contentUpdatedAt ?? createdAt) && {
-            updatedAt: contentUpdatedAt ?? createdAt ?? undefined,
-          }),
-        })
-        inserted++
-        continue
-      }
-
-      const contentChanged =
-        current.ownerGithub !== domain.owner.github ||
-        (current.ownerEmail ?? undefined) !== domain.owner.email ||
-        JSON.stringify(current.records) !== JSON.stringify(domain.records)
-
-      // Payload dates correct rows that were first inserted without git
-      // dates (their timestamps are the backfill time, not registration or
-      // the last real content change).
-      const createdAtDrifted =
-        createdAt !== null && current.createdAt.getTime() !== createdAt.getTime()
-      const updatedAtDrifted =
-        !contentChanged &&
-        contentUpdatedAt !== null &&
-        current.updatedAt.getTime() !== contentUpdatedAt.getTime()
-
-      await tx
-        .update(subdomains)
-        .set({
-          ...syncFields,
-          ...(createdAtDrifted && { createdAt: createdAt ?? undefined }),
-          ...(updatedAtDrifted && {
-            updatedAt: contentUpdatedAt ?? undefined,
-          }),
-          // Only bump updatedAt when the record content actually changed —
-          // a routine resync of unchanged domains is not an update.
-          ...(contentChanged && {
-            ownerGithub: domain.owner.github,
-            ownerEmail: domain.owner.email ?? null,
-            records: domain.records,
-            updatedAt: contentUpdatedAt ?? syncedAt,
-          }),
-        })
-        .where(eq(subdomains.name, domain.subdomain))
-      if (contentChanged) updated++
+  const ops = statements.map((stmt) => {
+    switch (stmt.type) {
+      case "insert":
+        return db.insert(subdomains).values(stmt.values)
+      case "update":
+        return db
+          .update(subdomains)
+          .set(stmt.set)
+          .where(eq(subdomains.name, stmt.name))
+      case "delete":
+        return db.delete(subdomains).where(eq(subdomains.name, stmt.name))
     }
-
-    const toDelete = existing.filter((row) => !incomingNames.has(row.name))
-    for (const row of toDelete) {
-      await tx.delete(subdomains).where(eq(subdomains.name, row.name))
-    }
-
-    return { inserted, updated, deleted: toDelete.length, total: domains.length }
   })
+
+  if (ops.length > 0) {
+    await db.batch(ops as [(typeof ops)[number], ...(typeof ops)[number][]])
+  }
 
   return NextResponse.json({ ok: true, ...counts })
 }
