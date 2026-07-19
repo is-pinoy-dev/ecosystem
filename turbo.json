@@ -9,6 +9,7 @@
       "env": [
         "CLOUDFLARE_API_TOKEN",
         "CLOUDFLARE_ZONE_ID",
+        "DOMAIN",
         "GITHUB_TOKEN",
         "GH_TOKEN",
         "AUTH_SECRET",
