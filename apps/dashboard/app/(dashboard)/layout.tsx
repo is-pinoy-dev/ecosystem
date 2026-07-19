@@ -2,7 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
-import { MobileNav, SidebarNav } from "@/components/dashboard-nav"
+import { DashboardTabs } from "@/components/dashboard-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UserMenu } from "@/components/user-menu"
 
@@ -20,8 +20,8 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="sticky top-0 z-50 h-16 border-b border-border bg-background/98">
-        <div className="flex h-full items-center justify-between gap-4 px-5 sm:px-8">
+      <header className="sticky top-0 z-50 border-b border-border bg-background/98">
+        <div className="mx-auto flex h-16 w-full max-w-[1180px] items-center justify-between gap-4 px-5 sm:px-8">
           <Link
             href="/"
             className="flex min-w-0 shrink-0 items-center gap-2.5 no-underline"
@@ -61,22 +61,12 @@ export default async function DashboardLayout({
             <UserMenu name={name} login={login} email={email} image={image} />
           </div>
         </div>
+        <DashboardTabs />
       </header>
 
-      <div className="flex flex-1">
-        <aside className="hidden w-60 shrink-0 border-r border-border bg-sidebar lg:block">
-          <div className="sticky top-16">
-            <SidebarNav />
-          </div>
-        </aside>
-
-        <div className="flex min-w-0 flex-1 flex-col">
-          <MobileNav />
-          <main className="mx-auto w-full max-w-[960px] flex-1 px-5 py-10 sm:px-8 lg:py-12">
-            {children}
-          </main>
-        </div>
-      </div>
+      <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-10 sm:px-8 lg:py-12">
+        {children}
+      </main>
     </div>
   )
 }
