@@ -70,10 +70,14 @@ When a TXT record is a domain-verification record from your host, you must also 
 }
 ```
 
-The `provider` field accepts one of: `vercel`, `netlify`, `github`, `cloudflare`. It determines the DNS record name — a verification TXT is created at `_<provider>.yourname.is-pinoy.dev`.
+The `provider` field currently accepts only `vercel`. It determines the DNS record name — a verification TXT is created at `_<provider>.yourname.is-pinoy.dev`.
 
 <Callout type="warn">
   The `provider` field is **required** whenever you add a verification TXT record. The validator will fail without it, or if the provider is not one of the supported values.
+</Callout>
+
+<Callout type="info">
+  **Why only Vercel?** Vercel is the only supported host that verifies domain ownership through a DNS TXT challenge the registry can create for you. Other platforms either don't require DNS verification for subdomains (Netlify, Cloudflare Pages) or use a challenge record name tied to your account name that can't be derived from a provider value (GitHub Pages). See the [Provider Guides](/guides/providers) for platform-specific setup.
 </Callout>
 
 ## Combining records

@@ -83,31 +83,19 @@ describe("validateDomain", () => {
     expect(result.errors).toEqual([])
   })
 
-  it("accepts all supported TXT providers", () => {
-    for (const provider of ["vercel", "netlify", "github", "cloudflare"] as const) {
+  it("rejects TXT providers other than vercel", () => {
+    for (const provider of ["netlify", "github", "cloudflare", "fly"]) {
       const result = validateDomain({
         subdomain: "jun",
         owner: { github: "bosquejun" },
         records: {
+          // @ts-expect-error — only "vercel" is a supported provider
           TXT: { value: `${provider}-challenge-abc123`, provider },
         },
       })
-      expect(result.ok).toBe(true)
-      expect(result.errors).toEqual([])
+      expect(result.ok).toBe(false)
+      expect(result.errors.length).toBeGreaterThan(0)
     }
-  })
-
-  it("rejects an unknown TXT provider", () => {
-    const result = validateDomain({
-      subdomain: "jun",
-      owner: { github: "bosquejun" },
-      records: {
-        // @ts-expect-error — "fly" is not a supported provider
-        TXT: { value: "fly-challenge-abc123", provider: "fly" },
-      },
-    })
-    expect(result.ok).toBe(false)
-    expect(result.errors.length).toBeGreaterThan(0)
   })
 
   it("returns ok for a valid A record domain", () => {

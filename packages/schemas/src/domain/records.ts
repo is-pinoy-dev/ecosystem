@@ -18,12 +18,11 @@ export const cnameRecord = baseRecord.extend({
   proxied: z.boolean().optional(),
 });
 
-export const SUPPORTED_PROVIDERS = [
-  "vercel",
-  "netlify",
-  "github",
-  "cloudflare",
-] as const;
+// Only Vercel uses a DNS TXT challenge that this registry can serve. Other
+// hosts either need no DNS verification (Netlify, Cloudflare Pages) or use a
+// challenge name that embeds the user's account name and cannot be derived
+// from a provider enum (GitHub Pages: _github-pages-challenge-<username>).
+export const SUPPORTED_PROVIDERS = ["vercel"] as const;
 
 export const txtRecord = baseRecord.extend({
   value: z.string().min(1),

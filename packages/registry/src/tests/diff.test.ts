@@ -388,23 +388,6 @@ describe("diff", () => {
     expect(result).toHaveLength(0);
   });
 
-  it("supports non-vercel providers in TXT record naming", () => {
-    const desired: Domain[] = [
-      {
-        subdomain: "site",
-        owner: { github: "site" },
-        records: {
-          TXT: { value: "netlify-verify=abc123", provider: "netlify" },
-        },
-      },
-    ];
-    const actual: CloudflareRecord[] = [];
-    const result = diff(desired, actual);
-    expect(result).toHaveLength(1);
-    expect(result[0]?.type).toBe("CREATE");
-    expect(result[0]?.fqdn).toBe("_netlify.site.is-pinoy.dev");
-  });
-
   it("destroy deletes both CNAME and TXT records", () => {
     const desired: Domain[] = [
       {
