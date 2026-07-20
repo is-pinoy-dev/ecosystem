@@ -12,6 +12,27 @@ describe("validateDomain", () => {
     expect(result.errors).toEqual([])
   })
 
+  it("warns when a CNAME points at a bare vercel.app alias", () => {
+    const result = validateDomain({
+      subdomain: "jun",
+      owner: { github: "bosquejun" },
+      records: { CNAME: { value: "jun.vercel.app" } },
+    })
+    expect(result.ok).toBe(true)
+    expect(result.warnings).toHaveLength(1)
+    expect(result.warnings[0]).toContain("jun.vercel.app")
+  })
+
+  it("does not warn for a proper vercel-dns CNAME target", () => {
+    const result = validateDomain({
+      subdomain: "jun",
+      owner: { github: "bosquejun" },
+      records: { CNAME: { value: "abc123.vercel-dns-017.com." } },
+    })
+    expect(result.ok).toBe(true)
+    expect(result.warnings).toEqual([])
+  })
+
   it("returns errors for invalid schema (missing owner)", () => {
     const result = validateDomain({
       subdomain: "jun",
