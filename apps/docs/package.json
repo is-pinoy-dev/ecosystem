@@ -43,7 +43,7 @@
     "@types/react-dom": "catalog:",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "postcss": "^8.5.14",
+    "postcss": "^8.5.16",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
   }
