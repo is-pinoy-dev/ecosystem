@@ -9,7 +9,8 @@ import {
   type VercelCleanupCandidate,
   type VercelProbeResult,
 } from "@is-pinoy-dev/registry";
-import { success, warning, info, divider } from "../../utils/output.js";
+import { filterDomainsByChangedFiles } from "../../utils/filter.js";
+import { success, warning, info, error, divider } from "../../utils/output.js";
 
 interface CleanupReport {
   subdomain: string;
@@ -34,9 +35,18 @@ function removeTxtFromFile(dir: string, candidate: VercelCleanupCandidate): void
 
 export async function handleVercelCleanup(
   dir: string,
-  options: { write: boolean; json: boolean; timeout: number },
+  options: {
+    write: boolean;
+    json: boolean;
+    timeout: number;
+    check?: boolean;
+    only?: string[];
+  },
 ): Promise<void> {
-  const domains = loadDomains(dir);
+  let domains = loadDomains(dir);
+  if (options.only && options.only.length > 0) {
+    domains = filterDomainsByChangedFiles(domains, options.only);
+  }
   const { candidates, skipped } = findVercelCleanupCandidates(domains);
 
   const reports: CleanupReport[] = await Promise.all(
@@ -46,7 +56,8 @@ export async function handleVercelCleanup(
       });
       const eligible = probe.healthy;
       let written = false;
-      if (eligible && options.write) {
+      // Check mode is a read-only gate — never mutate files even with --write.
+      if (eligible && options.write && !options.check) {
         removeTxtFromFile(dir, candidate);
         written = true;
       }
@@ -60,6 +71,32 @@ export async function handleVercelCleanup(
       };
     }),
   );
+
+  // Check mode: fail if any (scoped) domain still declares a vc-domain-verify
+  // TXT for a domain that is already attached and verified on Vercel. That's a
+  // re-add of a single-use challenge the cleanup already removed — the record
+  // must be dropped again before merge, or the next cleanup run just re-strips
+  // it. Domains not yet verified probe unhealthy and are correctly allowed.
+  if (options.check) {
+    const violations = reports.filter((r) => r.eligible);
+    if (options.json) {
+      console.log(JSON.stringify({ violations, reports, skipped }, null, 2));
+    }
+    if (violations.length > 0) {
+      if (!options.json) {
+        for (const v of violations) {
+          error(
+            `${pc.bold(v.fqdn)} is already verified and live on Vercel — remove its vc-domain-verify TXT record from ${v.file} (it is single-use and no longer needed).`,
+          );
+        }
+      }
+      process.exit(1);
+    }
+    if (!options.json) {
+      success("No re-added verification TXT records.");
+    }
+    return;
+  }
 
   if (options.json) {
     console.log(JSON.stringify({ reports, skipped }, null, 2));

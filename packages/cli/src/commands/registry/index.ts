@@ -68,13 +68,23 @@ export function registerRegistryCommand(program: Command): void {
     )
     .option("-d, --dir <path>", "Domains directory", "./domains")
     .option("--write", "Remove eligible TXT records from the domain JSON files")
+    .option(
+      "--check",
+      "Exit non-zero if any (scoped) domain re-declares a verification TXT for an already-verified Vercel domain; never writes",
+    )
     .option("--json", "Machine-readable JSON output")
     .option("--timeout <ms>", "Probe timeout per domain in milliseconds", "10000")
+    .option(
+      "--only <files...>",
+      "Restrict to the given changed domain files (e.g. from git diff)",
+    )
     .action(async (options) => {
       await handleVercelCleanup(options.dir, {
         write: Boolean(options.write),
         json: Boolean(options.json),
+        check: Boolean(options.check),
         timeout: Number(options.timeout),
+        only: options.only,
       });
     });
 
