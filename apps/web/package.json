@@ -18,7 +18,7 @@
     "@is-pinoy-dev/ui": "workspace:*",
     "@is-pinoy-dev/validate": "workspace:*",
     "lucide-react": "catalog:",
-    "next": "16.1.6",
+    "next": "16.2.6",
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"

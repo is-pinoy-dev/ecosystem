@@ -15,7 +15,7 @@
   "dependencies": {
     "@jsquash/webp": "^1.4.0",
     "@resvg/resvg-wasm": "^2.6.2",
-    "hono": "^4.7.11"
+    "hono": "^4.12.25"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260527.1",
