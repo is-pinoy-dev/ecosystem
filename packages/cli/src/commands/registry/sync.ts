@@ -35,8 +35,9 @@ export async function handleSync(
   let domains = registry.loadDomains(dir);
   info(`Loaded ${domains.length} domain(s) from ${dir}`);
 
-  if (only && only.length > 0) {
-    domains = filterDomainsByChangedFiles(domains, only);
+  const scoped = Boolean(only && only.length > 0);
+  if (scoped) {
+    domains = filterDomainsByChangedFiles(domains, only!);
     info(`Scoped to ${domains.length} changed domain(s) from --only`);
   }
 
@@ -44,7 +45,7 @@ export async function handleSync(
   const recordsArray = Array.isArray(records) ? records : [records];
   info(`Fetched ${recordsArray.length} DNS record(s) from Cloudflare`);
 
-  const actions = registry.diff(domains, recordsArray);
+  const actions = registry.diff(domains, recordsArray, { scoped });
 
   if (actions.length === 0) {
     success("No changes needed. All domains are in sync.");
