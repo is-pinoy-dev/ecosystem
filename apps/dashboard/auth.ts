@@ -14,6 +14,17 @@ declare module "next-auth" {
 }
 
 const nextAuth = NextAuth({
+  // Vercel preview deployments get a fresh, unguessable URL per commit, so the
+  // request Host can't be pinned to a single AUTH_URL — trust the platform's
+  // forwarded Host header instead.
+  trustHost: true,
+  // A GitHub OAuth app has one fixed callback URL, but preview URLs are
+  // dynamic. When AUTH_REDIRECT_PROXY_URL points at a stable deployment (e.g.
+  // https://dashboard.is-pinoy.dev/api/auth), Auth.js routes the OAuth
+  // handshake through it and then redirects back to the originating preview,
+  // so sign-in works on every preview without registering each URL. Unset in
+  // production and locally, where the callback URL is already stable.
+  redirectProxyUrl: process.env.AUTH_REDIRECT_PROXY_URL,
   providers: [GitHub],
   pages: {
     signIn: "/login",
