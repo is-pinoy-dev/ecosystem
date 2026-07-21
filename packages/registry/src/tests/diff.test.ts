@@ -534,4 +534,66 @@ describe("diff", () => {
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ type: "DELETE", id: "1" });
   });
+
+  it("scoped diff does not delete a verification TXT owned by an out-of-scope subdomain", () => {
+    // A PR touches only `alice`, so the diff is scoped to alice. bob's TXT is
+    // still declared in bob.json — it's just not in this scope. It must NOT be
+    // reported as an orphan, or the scoped dry-run shows a phantom DELETE the
+    // full sync never performs.
+    const desired: Domain[] = [
+      {
+        subdomain: "alice",
+        owner: { github: "alice" },
+        records: { CNAME: { value: "cname.vercel-dns.com." } },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "1",
+        name: "alice.is-pinoy.dev",
+        type: "CNAME",
+        content: "cname.vercel-dns.com",
+      },
+      {
+        id: "2",
+        name: "_vercel.is-pinoy.dev",
+        type: "TXT",
+        content: '"vc-domain-verify=bob.is-pinoy.dev,bobtoken"',
+      },
+    ];
+    expect(diff(desired, actual, { scoped: true })).toHaveLength(0);
+    // Unscoped (full registry) the same record IS a genuine orphan.
+    const unscoped = diff(desired, actual);
+    expect(unscoped).toHaveLength(1);
+    expect(unscoped[0]).toMatchObject({ type: "DELETE", id: "2" });
+  });
+
+  it("scoped diff still deletes a verification TXT the in-scope subdomain stopped declaring", () => {
+    // alice removed her TXT after Vercel verified and opened a PR. alice IS in
+    // scope, so her now-orphaned record is safe to delete even under --only.
+    const desired: Domain[] = [
+      {
+        subdomain: "alice",
+        owner: { github: "alice" },
+        records: { CNAME: { value: "cname.vercel-dns.com." } },
+      },
+    ];
+    const actual: CloudflareRecord[] = [
+      {
+        id: "1",
+        name: "alice.is-pinoy.dev",
+        type: "CNAME",
+        content: "cname.vercel-dns.com",
+      },
+      {
+        id: "2",
+        name: "_vercel.is-pinoy.dev",
+        type: "TXT",
+        content: '"vc-domain-verify=alice.is-pinoy.dev,alicetoken"',
+      },
+    ];
+    const result = diff(desired, actual, { scoped: true });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ type: "DELETE", id: "2" });
+  });
 });

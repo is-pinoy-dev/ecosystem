@@ -59,9 +59,24 @@ function typeMatchKey(fqdn: string, type: string, content: string): string {
   return target ? `${fqdn}:${type}:${target}` : `${fqdn}:${type}`;
 }
 
+export interface DiffOptions {
+  /**
+   * When true, `desired` is a *scoped subset* of the registry (e.g. the result
+   * of `--only <changed files>`), not a complete snapshot. Deletions of Vercel
+   * verification TXTs are then restricted to subdomains that appear in
+   * `desired`: a `_vercel` record owned by an out-of-scope subdomain is simply
+   * unknown here, not orphaned, and must not be flagged for deletion. Without
+   * this guard a scoped diff/dry-run reports phantom DELETEs for every other
+   * subdomain's still-valid challenge — deletes that the full-registry sync
+   * (which claims those records) will never perform.
+   */
+  scoped?: boolean;
+}
+
 export function diff(
   desired: Domain[],
   actual: CloudflareRecord[],
+  options: DiffOptions = {},
 ): DNSAction[] {
   const actions: DNSAction[] = [];
 
@@ -73,6 +88,10 @@ export function diff(
   const destroyedFqdns = new Set(
     destroyedDomains.map((d) => toFQDN(d.subdomain)),
   );
+
+  // FQDNs of every subdomain in scope (active or destroyed). Used to keep
+  // orphan deletion from reaching subdomains the caller didn't hand us.
+  const inScopeFqdns = new Set(desired.map((d) => toFQDN(d.subdomain)));
 
   const destroyedTXTValues = new Set(
     destroyedDomains.flatMap((d) => {
@@ -166,7 +185,12 @@ export function diff(
       return false;
     }
     const target = verificationTargetFqdn(a.content);
-    return target !== null && target.endsWith(`.${env("DOMAIN")}`);
+    if (target === null || !target.endsWith(`.${env("DOMAIN")}`)) return false;
+    // Under a scoped diff we only know the desired state of the subdomains we
+    // were given. A record whose target subdomain isn't in scope is unknown,
+    // not orphaned — deleting it here would be a phantom the full sync reverts.
+    if (options.scoped && !inScopeFqdns.has(target)) return false;
+    return true;
   }
 
   for (const a of actual) {
