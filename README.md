@@ -89,6 +89,28 @@ CLOUDFLARE_ZONE_ID=
 
 ---
 
+## 🏷️ Badge kit
+
+Building on an is-pinoy.dev subdomain? Wear it. The official badges are
+self-contained SVGs served from `badges.is-pinoy.dev` (see
+[`packages/badge-kit`](packages/badge-kit)) — pick a theme that suits your
+README and paste the snippet.
+
+<p>
+  <img src="https://badges.is-pinoy.dev/badge/juan?type=subdomain&theme=light&preview=true" alt="Deployed on is-pinoy.dev" />
+  <img src="https://badges.is-pinoy.dev/badge/juan?type=subdomain&theme=dark&preview=true" alt="Deployed on is-pinoy.dev" />
+  <img src="https://badges.is-pinoy.dev/badge/juan?type=subdomain&theme=gold&preview=true" alt="Deployed on is-pinoy.dev" />
+</p>
+
+```md
+[![Deployed on is-pinoy.dev](https://badges.is-pinoy.dev/badge/juan?type=subdomain)](https://juan.is-pinoy.dev)
+```
+
+Browse every badge, banner, theme, and format at
+**[is-pinoy.dev/badges](https://is-pinoy.dev/badges)**.
+
+---
+
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.

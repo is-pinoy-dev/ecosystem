@@ -1,211 +1,131 @@
 # is-pinoy.dev — Badge & Banner Kit
 
-**Component:** Embeddable badge + banner service
-**Status:** Design spec for implementation
-**Design system:** is-pinoy.dev (retro pixel-art × modern dev tool)
-**Reference mockup:** `Banners and Badges.html` (interactive showcase, source of truth for visuals)
+**Component:** Embeddable badge + banner service (`badges.is-pinoy.dev`)
+**Design system:** is-pinoy.dev **Banig Grid v2.0** (see the repo-root `DESIGN.md`)
+
+> **v0.3 redesign.** The kit was rebuilt on the Banig Grid system. The earlier
+> retro pixel-art look — Press Start 2P, CRT scanlines, glow-pulse, hard pixel
+> shadows, the 8-ray pixel sun, the holographic tilt/shimmer web component — is
+> retired. `Banners and Badges.html` is kept only as a historical mockup of that
+> earlier look; it is no longer the source of truth.
 
 ---
 
 ## 1. Purpose
 
-A ProductHunt-style badge kit for is-pinoy.dev. Any developer who has claimed a
-`<handle>.is-pinoy.dev` subdomain can grab a badge or banner to display on their
-GitHub README, profile, portfolio, or any deployed site — driving recognition and
-backlinks to the network.
-
-Two surfaces ship:
-
-1. **A showcase page** (`/badges`) — where users pick a badge, set their handle, choose a
-   theme, and copy embed code. The reference mockup is this page.
-2. **The embed runtime** — what those snippets actually load on the user's own site
-   (a web component) or render in their README (an SVG endpoint).
+A badge kit for is-pinoy.dev. Any developer who has claimed a
+`<handle>.is-pinoy.dev` subdomain can grab a badge or banner for their GitHub
+README, profile, portfolio, or deployed site — driving recognition and
+backlinks to the network. Two surfaces ship: the **SVG endpoints** (for READMEs,
+where no JS runs) and the **`<is-pinoy-badge>` web component** (for HTML pages).
 
 ---
 
 ## 2. Taxonomy
 
-Eight badge/banner types in three categories. **Type is the semantic role; theme is the
-skin.** Every type ships in multiple themes (below).
+Type is the semantic role; theme is the skin. Every type ships in every theme.
 
-### Category 01 — Website Badges
-For a deployed project, repo, or README — the thing lives at a subdomain.
+### Badges
 
-| Type id | Label | Handle? | Notes |
+| Type id | Renders | Handle? | Default theme |
 |---|---|---|---|
-| `deployed-on` | Deployed On | required | "Deployed on `handle`.is-pinoy.dev". Two-line: mono eyebrow + pixel value. Blinking status dot. |
-| `pinoy-made` | Pinoy-Made | none | Origin/quality stamp. No handle — links to is-pinoy.dev root. |
-| `built-by` | Built By | required | "Built by a Pinoy Dev" + handle. Credits the builder. |
+| `subdomain` (a.k.a. `deployed-on`) | eyebrow label over `handle`**.is-pinoy.dev** | required | `light` |
+| `member` | `is-pinoy.dev` │ `handle` inline chip | required | `light` |
+| `pinoy-made` | `PINOY-MADE` origin stamp | none | `light` |
+| `certified` | `CERTIFIED` over `PINOY DEV` | none | `gold` |
 
-### Category 02 — Developer Badges
-Identity badges for a person — GitHub profile, bio, footer.
+### Banners
 
-| Type id | Label | Handle? | Notes |
+| Type id | Size | Handle? | Default theme |
 |---|---|---|---|
-| `proud-pinoy-dev` | Proud Pinoy Dev | required | Identity-first. Dark theme has the glow-pulse animation. |
-| `certified` | Certified Pinoy Dev | required | Premium. Gold treatment + double-border. "// CERTIFIED" eyebrow over "PINOY DEV". |
-| `member` | Member | required | Compact inline chip. `is-pinoy.dev | handle`. Fits in a sentence. |
+| `readme` | 640 × 96 | required | `light` |
+| `profile` | 720 × 140 | required | `gold` |
 
-### Category 03 — Banners
-Wide-format blocks.
-
-| Type id | Label | Handle? | Notes |
-|---|---|---|---|
-| `readme-banner` | README Banner | required | Top-of-README block. Sun + handle left, "Subdomain by is-pinoy.dev" right. ~88px tall. |
-| `profile-banner` | Profile Banner | required | GitHub profile / portfolio hero. Full-width, CRT scanline overlay, tagline. ~120px tall. |
+The `subdomain` and `member` badges verify the handle against the registry and
+fall back to a neutral **not found** state (never a broken image).
 
 ---
 
 ## 3. Themes
 
-Not every type supports every theme. The matrix below is the contract — the showcase only
-renders combinations marked ✓.
+Four skins, resolved from the Banig Grid tokens. Each is one flat surface, a 1px
+border, and one navy/gold brand mark — no gradients, no shadows.
 
-| Theme | deployed-on | pinoy-made | built-by | proud-pinoy-dev | certified | member | readme | profile |
-|---|---|---|---|---|---|---|---|---|
-| `dark` (bg #0D0D0D, gold border) | ✓ | ✓ | ✓ | ✓ (glow) | ✓ | ✓ | ✓ | ✓ |
-| `gold` (bg #F5C800, black border) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `light` (bg #FAFAF5, black border) | ✓ | — | — | — | — | — | — | — |
-| `outlined` (transparent, gold border) | — | — | ✓ | ✓ | — | ✓ | — | — |
-| `retro` (double-border pixel frame) | ✓ | — | — | — | ✓ | — | — | — |
-| `split` (two-panel: dark icon + gold label) | — | ✓ | — | — | — | — | — | — |
-
-**Default theme per type:** `deployed-on`→dark, `pinoy-made`→split, `built-by`→dark,
-`proud-pinoy-dev`→dark, `certified`→gold, `member`→dark, `readme-banner`→dark,
-`profile-banner`→gold.
-
-### Retro theme — implementation note
-The retro double-border is a **pixel frame built from stacked `box-shadow` spread rings**,
-NOT a CSS `outline` (outline + offset leaves a disconnected floating gap and reads as broken).
-
-```css
-/* retro on dark bg */
-box-shadow: 0 0 0 3px #0D0D0D, 0 0 0 6px #F5C800, 8px 8px 0 #D4A800;
-/* retro on gold bg (certified) */
-box-shadow: 0 0 0 3px #F5C800, 0 0 0 6px #0D0D0D, 8px 8px 0 #0D0D0D;
-```
+| Theme | Surface | Text | Mark cell | Reads best on |
+|---|---|---|---|---|
+| `light` | `#FFFFFF` white | navy `#0B1F44` | navy cell, gold glyph | light READMEs (default) |
+| `dark` | navy `#0B1F44` | warm white `#FAF9F5` | gold cell, navy glyph | dark READMEs |
+| `gold` | gold `#F5C800` | navy `#0B1F44` | navy cell, gold glyph | a bold accent |
+| `outlined` | transparent | gold `#F5C800` | gold glyph, no fill | any background |
 
 ---
 
 ## 4. Design system grounding
 
-Pull every value from the is-pinoy.dev design system. Do not invent colors, type, or radii.
+Every value comes from the root `DESIGN.md`. Do not invent colors, type, or radii.
 
-**Colors** — `#F5C800` primary gold, `#D4A800` gold-dark (pixel-shadow depth),
-`#0D0D0D` near-black bg, `#FAFAF5` warm white text, `#888` muted, `#444`/`#1E1E1E`
-borders/surfaces, `#39D353` success (copy confirmation only), `#6b5200` is the
-dark-gold used for muted text **on** gold backgrounds.
+**Color** — navy `#0B1F44` (structure/text), warm white `#FAF9F5` (text on
+navy), white `#FFFFFF` (light surface), gold `#F5C800` primary, gold-dark
+`#D4A800`, muted `#667085` (`#9DABC6` on navy, `#7A6600` on gold), border
+`#DED9CD` (`#24365F` on navy), not-found `#98A2B3`. Gold appears **only** as the
+brand mark — a moment of recognition — never as decoration.
 
-**Type** — `Press Start 2P` for all labels, handles, headings (line-height ≥ 1.6 always;
-sizes 0.5–0.875rem only). `IBM Plex Mono` for eyebrows/metadata/code. `IBM Plex Sans` for
-the banner tagline sentence. Never mix Sans and Mono in one label.
+**Type** — **IBM Plex Mono only**, base64-embedded so it renders through
+GitHub's camo proxy. Eyebrows are 10–11px uppercase with `0.12em` tracking and
+muted; values are 13–24px in the text color. Weight contrast is avoided (a
+single embedded weight rasterizes identically in SVG and PNG); hierarchy comes
+from size and color. Glyph widths are pinned with `textLength` so browser and
+resvg layouts match.
 
-**Shape** — `border-radius: 0` everywhere, no exceptions.
+**Shape** — `border-radius: 0` everywhere. Borders are 1px. No pixel shadows.
 
-**Shadow** — hard-offset pixel shadows, zero blur. Rest `5px 5px 0`, hover collapses to
-`2px 2px 0` with `transform: translate(3px,3px)` and `transition: 0.1s` (snappy, mechanical —
-no easing curves, no bounce). The glow-pulse (proud-pinoy-dev dark) animates `box-shadow`
-between `0 0 20px rgba(245,200,0,0.15)` and `0 0 36px rgba(245,200,0,0.45)` on a 2.5s loop.
+**Mark** — the brand mark is a five-square "plus": a sun reduced to axis-aligned
+squares, scaled to fill the square mark cell. No icon library, no emoji.
 
-**Iconography** — the 8-ray pixel sun, drawn inline as SVG (8 rotated rects on a 100×100
-grid). No icon library, no emoji. Sizes used: 16px (member), 24–28px (badges), 34px
-(certified), 44px (readme banner), 52px (profile banner).
-
-**Texture** — banners carry the CRT scanline overlay (`repeating-linear-gradient`, 4px
-bands, ~5% black). The showcase page also carries the 24px pixel grid + page-level scanlines.
+**Motion** (web component only) — a single 140ms border/opacity hover. No tilt,
+glare, shimmer, scanline, or glow. Honors `prefers-reduced-motion`.
 
 ---
 
 ## 5. Embed APIs
 
-Users get two embed formats per type. The showcase exposes both in an HTML / Markdown
-tab switcher.
+### 5a. SVG endpoint (GitHub READMEs)
 
-### 5a. Web component (for HTML sites, portfolios)
-Best fidelity — supports animation, hover, live links.
+```
+https://badges.is-pinoy.dev/badge/<handle>?type=subdomain|member&theme=<theme>&format=svg|png|webp
+https://badges.is-pinoy.dev/badge?type=pinoy-made|certified&theme=<theme>
+https://badges.is-pinoy.dev/banner/<handle>?type=readme|profile&theme=<theme>
+```
+
+Markdown pattern:
+
+```md
+[![Deployed on is-pinoy.dev](https://badges.is-pinoy.dev/badge/juan?type=subdomain)](https://juan.is-pinoy.dev)
+```
+
+- `?theme=` selects the skin; invalid/omitted falls back to the type default.
+- `?preview=true` bypasses the registry check (used by the showcase gallery).
+- Cached at the edge for one day (see `lib/cache.ts`).
+
+### 5b. Web component (HTML pages)
 
 ```html
-<script src="https://is-pinoy.dev/badge.js"></script>
-
-<is-pinoy-badge handle="juan" type="deployed-on" theme="dark"></is-pinoy-badge>
-<is-pinoy-banner handle="juan" type="profile" theme="gold"></is-pinoy-banner>
+<script src="https://badges.is-pinoy.dev/badge.js"></script>
+<is-pinoy-badge handle="juan" type="deployed-on" theme="light"></is-pinoy-badge>
 ```
 
-- One script tag per page (idempotent — guard against double-registration).
-- `<is-pinoy-badge>` for the 6 badge types; `<is-pinoy-banner>` for the 2 banners
-  (`type="readme" | "profile"`).
-- Attributes: `handle` (omit for `pinoy-made`), `type`, `theme`. Invalid `theme` for a
-  type falls back to that type's default.
-- Render into Shadow DOM so the host page's CSS can't bleed in. Inline the fonts or
-  `@import` Google Fonts inside the shadow root.
-- The whole badge is an `<a>` to `https://<handle>.is-pinoy.dev` (or root for
-  `pinoy-made`), `target="_blank" rel="noopener"`.
-
-### 5b. SVG endpoint (for GitHub READMEs — no JS allowed there)
-GitHub strips `<script>`, so READMEs need a static image. Serve a rendered SVG.
-
-```
-https://badge.is-pinoy.dev/<type>/<handle>.svg?theme=<theme>
-https://banner.is-pinoy.dev/<readme|profile>/<handle>.svg?theme=<theme>
-pinoy-made (no handle): https://badge.is-pinoy.dev/pinoy-made.svg?theme=<theme>
-```
-
-Markdown snippet pattern:
-```md
-[![Deployed on is-pinoy.dev](https://badge.is-pinoy.dev/deployed-on/juan.svg)](https://juan.is-pinoy.dev)
-```
-
-- Server renders the badge to a self-contained SVG (fonts embedded as paths or
-  base64 web-font, since GitHub's camo proxy won't fetch external font files).
-- `?theme=` query param selects skin; defaults to type default if omitted/invalid.
-- Set sensible cache headers (see §6). Animations degrade gracefully — SVG can carry
-  SMIL/CSS for the blink + glow, but static is acceptable for the README surface.
-- Validate `<handle>` against the claimed-subdomain registry; unknown handle → 404 SVG
-  (or a neutral "claim this" badge), never a broken image.
+Renders into Shadow DOM (host CSS can't bleed in), mirrors the SVG exactly, and
+adds only the quiet hover. Attributes: `handle` (omit for `pinoy-made`), `type`,
+`theme`, `label` (custom eyebrow for `subdomain`).
 
 ---
 
-## 6. Visit-count variant (cached)
+## 6. Acceptance checklist
 
-There's appetite for a **"Deployed On" badge with a visit counter** (ProductHunt-style).
-Spec it as a *variant flag*, not a new type:
-
-```
-https://badge.is-pinoy.dev/deployed-on/juan.svg?theme=dark&visits=true
-<is-pinoy-badge handle="juan" type="deployed-on" theme="dark" visits></is-pinoy-badge>
-```
-
-- Adds a right-hand count cell: mono eyebrow "VISITS" over a Press Start 2P numeral,
-  comma-grouped (`12,480`), divider rule between it and the handle block.
-- **Counts are server-side and cached** — the badge does not count its own impressions.
-  Source the number from the subdomain's existing analytics/visit tally.
-- **Cache aggressively.** Serve the SVG with `Cache-Control: max-age=300, s-maxage=300`
-  (GitHub camo caches ~minutes regardless; don't fight it). The number is "recent," not
-  live — label it as a rolling total, not real-time.
-- Counter increments on **subdomain page hits**, not badge renders, to avoid camo-proxy
-  prefetch inflation. Debounce per-IP server-side.
-- If visit data is unavailable, drop the count cell entirely rather than show `0` or `—`.
-
-> Decision needed from product: is the count **all-time**, **30-day rolling**, or
-> **today**? The label text and cache window follow from that. Defaulting to 30-day
-> rolling unless told otherwise.
-
----
-
-## 7. Acceptance checklist
-
-- [ ] All 8 types render in every ✓ theme from the matrix; non-✓ combos are not offered.
-- [ ] `border-radius: 0` holds everywhere; no rounded corners leak in.
-- [ ] Retro frames use stacked `box-shadow` rings, not `outline` (no floating gap).
-- [ ] Web component is Shadow-DOM isolated and survives hostile host CSS.
-- [ ] SVG endpoints embed fonts (render correctly through GitHub's camo proxy).
-- [ ] Hover = `translate(3px,3px)` + shadow collapse, `0.1s`, no easing bounce.
-- [ ] Showcase handle input sanitizes to `[a-z0-9-]` and updates all previews live.
-- [ ] Copy button confirms with the green success state, then reverts.
-- [ ] Visit-count cell is cached, server-sourced, and hidden when data is missing.
-- [ ] No emoji, no icon library, no gradients, no white backgrounds.
-
----
-
-*Visual source of truth: `Banners and Badges.html`. When this spec and the mockup
-disagree, the mockup wins for appearance and this doc wins for API/behavior.*
+- [x] All types render in all four themes.
+- [x] `border-radius: 0` holds everywhere; no rounded corners.
+- [x] No Press Start 2P, no scanlines, no glow, no pixel shadows, no tilt/shimmer.
+- [x] SVGs embed IBM Plex Mono and render through GitHub's camo proxy.
+- [x] Web component is Shadow-DOM isolated and survives hostile host CSS.
+- [x] Handle sanitizes to `[a-z0-9-]`; interpolated text is escaped.
+- [x] `subdomain`/`member` show a neutral not-found state, never a broken image.

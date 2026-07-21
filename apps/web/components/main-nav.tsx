@@ -13,6 +13,7 @@ import { GitHubIcon } from "@/components/icons"
 const NAV_LINKS = [
   { href: "/#how-it-works", label: "How it works" },
   { href: "/showcase", label: "Showcase" },
+  { href: "/badges", label: "Badges" },
   { href: "https://docs.is-pinoy.dev", label: "Docs", external: true },
 ]
 

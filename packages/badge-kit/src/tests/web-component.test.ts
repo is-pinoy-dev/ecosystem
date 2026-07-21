@@ -15,24 +15,17 @@ describe('web component source', () => {
   })
 
   it('observes the configurable attributes', () => {
-    for (const attr of ['handle', 'type', 'theme', 'label', 'shimmer', 'shimmer-color', 'tilt']) {
+    for (const attr of ['handle', 'type', 'theme', 'label']) {
       expect(WEB_COMPONENT_JS).toContain(attr)
     }
   })
 
-  it('supports every shimmer mode', () => {
-    expect(WEB_COMPONENT_JS).toContain('sh-off')
-    expect(WEB_COMPONENT_JS).toContain('sh-sweep')
-    expect(WEB_COMPONENT_JS).toContain('sh-loop')
-    expect(WEB_COMPONENT_JS).toContain('sh-always')
-    expect(WEB_COMPONENT_JS).toContain('@keyframes ipd-shimmer')
-  })
-
-  it('implements the ID-card tilt with pointer tracking', () => {
-    expect(WEB_COMPONENT_JS).toContain('pointermove')
-    expect(WEB_COMPONENT_JS).toContain('pointerleave')
-    expect(WEB_COMPONENT_JS).toContain('rotateX(var(--rx')
-    expect(WEB_COMPONENT_JS).toContain('rotateY(var(--ry')
+  it('uses a quiet hover instead of arcade motion', () => {
+    // v2.0 limits motion to color/border/opacity — no tilt, glare, or shimmer.
+    expect(WEB_COMPONENT_JS).toContain('.ipd-card:hover')
+    expect(WEB_COMPONENT_JS).not.toContain('rotateX')
+    expect(WEB_COMPONENT_JS).not.toContain('ipd-shimmer')
+    expect(WEB_COMPONENT_JS).not.toContain('Press Start 2P')
   })
 
   it('honors prefers-reduced-motion', () => {
