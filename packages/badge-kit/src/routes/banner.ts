@@ -1,6 +1,7 @@
 import type { Hono } from 'hono'
 import type { BannerType, Theme, OutputFormat } from '../lib/svg.ts'
 import { generateBannerSvg, DEFAULT_BANNER_THEME, VALID_BANNER_THEMES } from '../lib/svg.ts'
+import { parseOverrides } from '../lib/color.ts'
 import { svgToPng, svgToWebp } from '../lib/render.ts'
 import { badgeCacheHeaders } from '../lib/cache.ts'
 import type { Env } from '../index.ts'
@@ -40,8 +41,9 @@ export function registerBannerRoute(app: Hono<{ Bindings: Env }>): void {
     const type: BannerType = rawType === 'profile' ? 'profile' : 'readme'
     const theme = parseTheme(c.req.query('theme'), type)
     const format = parseFormat(c.req.query('format'))
+    const overrides = parseOverrides((k) => c.req.query(k))
 
-    const svg = generateBannerSvg({ subdomain, type, theme })
+    const svg = generateBannerSvg({ subdomain, type, theme, overrides })
     return respond(svg, format)
   })
 }

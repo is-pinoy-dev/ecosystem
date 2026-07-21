@@ -34,6 +34,37 @@ Cloudflare Worker at `badges.is-pinoy.dev` that renders SVG/PNG/WebP badges and 
 | `theme` | `light`, `dark`, `gold`, `outlined` | Per-type default |
 | `format` | `svg`, `png`, `webp` | `svg` |
 | `preview` | `true` bypasses the registry check (showcase only) | — |
+| `bg` `text` `muted` `border` `mark` `markbg` | color overrides — see below | Theme value |
+
+### Custom colors
+
+Any theme color can be overridden per request to match your own brand. Each
+param takes a **hex value** (`#RRGGBB`, `#RGB`, `#RGBA`, `#RRGGBBAA`, with or
+without the `#`) or the keyword `transparent`. Start from the closest `theme`
+and override only what you need; the square geometry, mark, and type stay
+on-brand.
+
+| Param | Overrides |
+|-------|-----------|
+| `bg` | surface background |
+| `text` | primary text (handle / value) |
+| `muted` | eyebrow + secondary text |
+| `border` | outer border **and** the inner divider rule |
+| `mark` | brand-mark glyph |
+| `markbg` | brand-mark cell background |
+
+```
+# a violet mark on the default light badge
+/badge/juan?type=subdomain&mark=%23FFFFFF&markbg=6D28D9
+
+# match a GitHub-dark README
+/badge/juan?theme=dark&bg=0D1117&text=E6EDF3&muted=7D8590&border=30363D&markbg=238636&mark=FFFFFF
+```
+
+Invalid or unsafe values are ignored and fall back to the theme color, so a
+malformed param never breaks the image (or injects markup — colors are
+validated, never echoed raw into the SVG). `#` must be URL-encoded as `%23` in a
+query string; the bare hex form (`markbg=238636`) avoids the encoding.
 
 ### Badge Types
 
@@ -92,10 +123,12 @@ shimmer. It honors `prefers-reduced-motion`.
 | `type` | `deployed-on` (alias `subdomain`), `member`, `pinoy-made`, `certified` | `deployed-on` |
 | `theme` | `light`, `dark`, `gold`, `outlined` | `light` |
 | `label` | custom eyebrow for `deployed-on` | `DEPLOYED ON` |
+| `bg` `text` `muted` `border` `mark` `markbg` | color overrides (hex or `transparent`, same as the SVG params) | Theme value |
 
 ```html
 <is-pinoy-badge handle="juan" type="certified" theme="gold"></is-pinoy-badge>
 <is-pinoy-badge handle="juan" type="member" theme="dark"></is-pinoy-badge>
+<is-pinoy-badge handle="juan" type="deployed-on" markbg="#6D28D9" mark="#FFFFFF"></is-pinoy-badge>
 ```
 
 ## Scripts

@@ -13,18 +13,32 @@ export type OutputFormat = 'svg' | 'png' | 'webp'
 export const LABEL_MAX_LENGTH = 15
 export const DEFAULT_SUBDOMAIN_LABEL = 'DEPLOYED ON'
 
+// Per-request color overrides. Any slot left undefined keeps the theme color.
+// Populated from validated query params (see lib/color.ts) — callers must never
+// pass unvalidated user input here.
+export interface PaletteOverride {
+  bg?: string
+  text?: string
+  muted?: string
+  border?: string
+  mark?: string
+  markBg?: string
+}
+
 export interface BadgeOptions {
   subdomain: string
   type: BadgeType
   theme: Theme
   notFound: boolean
   label?: string
+  overrides?: PaletteOverride
 }
 
 export interface BannerOptions {
   subdomain: string
   type: BannerType
   theme: Theme
+  overrides?: PaletteOverride
 }
 
 // ─── Default / valid themes ─────────────────────────────────────────────────
@@ -129,6 +143,21 @@ function resolvePalette(theme: Theme): Palette {
   }
 }
 
+// Layer validated color overrides on top of a resolved theme palette. `border`
+// also drives the divider so the outer and inner rules stay consistent.
+function applyOverrides(p: Palette, o?: PaletteOverride): Palette {
+  if (!o) return p
+  return {
+    surface: o.bg ?? p.surface,
+    text: o.text ?? p.text,
+    muted: o.muted ?? p.muted,
+    border: o.border ?? p.border,
+    markBg: o.markBg ?? p.markBg,
+    markGlyph: o.mark ?? p.markGlyph,
+    divider: o.border ?? p.divider,
+  }
+}
+
 // ─── Internal helpers ────────────────────────────────────────────────────────
 
 const FONT = "'IBM Plex Mono',ui-monospace,'DejaVu Sans Mono',monospace"
@@ -223,10 +252,9 @@ function frame(
 function subdomainBadgeSvg(
   subdomain: string,
   label: string,
-  theme: Theme,
+  p: Palette,
   notFound: boolean
 ): string {
-  const p = resolvePalette(theme)
   const H = 48
   const markCell = H
   const padX = 14
@@ -266,8 +294,7 @@ function subdomainBadgeSvg(
   return frame(totalW, H, p, markCell, inner)
 }
 
-function memberSvg(subdomain: string, theme: Theme, notFound: boolean): string {
-  const p = resolvePalette(theme)
+function memberSvg(subdomain: string, p: Palette, notFound: boolean): string {
   const H = 30
   const markCell = H
   const padX = 12
@@ -301,8 +328,7 @@ function memberSvg(subdomain: string, theme: Theme, notFound: boolean): string {
   return frame(totalW, H, p, markCell, inner)
 }
 
-function pinoyMadeSvg(theme: Theme): string {
-  const p = resolvePalette(theme)
+function pinoyMadeSvg(p: Palette): string {
   const H = 36
   const markCell = H
   const padX = 14
@@ -319,8 +345,7 @@ function pinoyMadeSvg(theme: Theme): string {
   return frame(totalW, H, p, markCell, inner)
 }
 
-function certifiedSvg(theme: Theme): string {
-  const p = resolvePalette(theme)
+function certifiedSvg(p: Palette): string {
   const H = 48
   const markCell = H
   const padX = 14
@@ -347,8 +372,7 @@ function certifiedSvg(theme: Theme): string {
 
 // ─── Banner generators ───────────────────────────────────────────────────────
 
-function readmeBannerSvg(subdomain: string, theme: Theme): string {
-  const p = resolvePalette(theme)
+function readmeBannerSvg(subdomain: string, p: Palette): string {
   const W = 640
   const H = 96
   const markCell = H
@@ -376,8 +400,7 @@ function readmeBannerSvg(subdomain: string, theme: Theme): string {
 </svg>`
 }
 
-function profileBannerSvg(subdomain: string, theme: Theme): string {
-  const p = resolvePalette(theme)
+function profileBannerSvg(subdomain: string, p: Palette): string {
   const W = 720
   const H = 140
   const markCell = H
@@ -408,25 +431,27 @@ function profileBannerSvg(subdomain: string, theme: Theme): string {
 // ─── Main exported functions ─────────────────────────────────────────────────
 
 export function generateBadgeSvg(opts: BadgeOptions): string {
-  const { subdomain, type, theme, notFound, label } = opts
+  const { subdomain, type, theme, notFound, label, overrides } = opts
+  const p = applyOverrides(resolvePalette(theme), overrides)
   switch (type) {
     case 'subdomain':
-      return subdomainBadgeSvg(subdomain, label ?? DEFAULT_SUBDOMAIN_LABEL, theme, notFound)
+      return subdomainBadgeSvg(subdomain, label ?? DEFAULT_SUBDOMAIN_LABEL, p, notFound)
     case 'member':
-      return memberSvg(subdomain, theme, notFound)
+      return memberSvg(subdomain, p, notFound)
     case 'pinoy-made':
-      return pinoyMadeSvg(theme)
+      return pinoyMadeSvg(p)
     case 'certified':
-      return certifiedSvg(theme)
+      return certifiedSvg(p)
   }
 }
 
 export function generateBannerSvg(opts: BannerOptions): string {
-  const { subdomain, type, theme } = opts
+  const { subdomain, type, theme, overrides } = opts
+  const p = applyOverrides(resolvePalette(theme), overrides)
   switch (type) {
     case 'readme':
-      return readmeBannerSvg(subdomain, theme)
+      return readmeBannerSvg(subdomain, p)
     case 'profile':
-      return profileBannerSvg(subdomain, theme)
+      return profileBannerSvg(subdomain, p)
   }
 }

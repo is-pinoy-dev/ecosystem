@@ -104,6 +104,10 @@ Markdown pattern:
 ```
 
 - `?theme=` selects the skin; invalid/omitted falls back to the type default.
+- `?bg=` `?text=` `?muted=` `?border=` `?mark=` `?markbg=` override individual
+  palette slots for brand-matching. Values are strictly validated (hex or
+  `transparent`, see `lib/color.ts`) and fall back to the theme color when
+  invalid — user input is never echoed raw into the SVG.
 - `?preview=true` bypasses the registry check (used by the showcase gallery).
 - Cached at the edge for one day (see `lib/cache.ts`).
 

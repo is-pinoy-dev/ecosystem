@@ -8,6 +8,7 @@ import {
   LABEL_MAX_LENGTH,
 } from '../lib/svg.ts'
 import { isSubdomainRegistered } from '../lib/registry.ts'
+import { parseOverrides } from '../lib/color.ts'
 import { svgToPng, svgToWebp } from '../lib/render.ts'
 import { badgeCacheHeaders } from '../lib/cache.ts'
 import type { Env } from '../index.ts'
@@ -57,9 +58,11 @@ export function registerBadgeRoute(app: Hono<{ Bindings: Env }>): void {
     const format = parseFormat(c.req.query('format'))
     const label = parseLabel(c.req.query('label'))
 
+    const overrides = parseOverrides((k) => c.req.query(k))
+
     const preview = c.req.query('preview') === 'true'
     const registered = preview || await isSubdomainRegistered(subdomain)
-    const svg = generateBadgeSvg({ subdomain, type, theme, notFound: !registered, label })
+    const svg = generateBadgeSvg({ subdomain, type, theme, notFound: !registered, label, overrides })
 
     return respond(svg, format)
   })
@@ -70,8 +73,9 @@ export function registerBadgeRoute(app: Hono<{ Bindings: Env }>): void {
     const type = PLATFORM_TYPES.has(rawType as string) ? (rawType as 'pinoy-made' | 'certified') : 'pinoy-made'
     const theme = parseTheme(c.req.query('theme'), type)
     const format = parseFormat(c.req.query('format'))
+    const overrides = parseOverrides((k) => c.req.query(k))
 
-    const svg = generateBadgeSvg({ subdomain: '', type, theme, notFound: false })
+    const svg = generateBadgeSvg({ subdomain: '', type, theme, notFound: false, overrides })
     return respond(svg, format)
   })
 }

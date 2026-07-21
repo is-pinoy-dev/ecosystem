@@ -38,6 +38,33 @@ export const WEB_COMPONENT_JS = `(function () {
     return String(raw || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
   }
 
+  var HEX = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+  // Validate a color attribute the same way the SVG endpoint does: hex or the
+  // 'transparent' keyword only, so nothing unsafe reaches the inline styles.
+  function parseColor(raw) {
+    if (!raw) return null;
+    var v = String(raw).trim();
+    if (v.toLowerCase() === 'transparent') return 'transparent';
+    if (HEX.test(v)) return v.charAt(0) === '#' ? v : '#' + v;
+    return null;
+  }
+
+  // Layer validated color attributes on top of a theme palette (mirrors
+  // applyOverrides in svg.ts). 'border' also drives the divider.
+  function applyOverrides(base, el) {
+    var map = { bg: 'surface', text: 'text', muted: 'muted', border: 'border', mark: 'mark', markbg: 'markBg' };
+    var p = {}, key;
+    for (key in base) { if (Object.prototype.hasOwnProperty.call(base, key)) p[key] = base[key]; }
+    for (var attr in map) {
+      if (!Object.prototype.hasOwnProperty.call(map, attr)) continue;
+      var c = parseColor(el.getAttribute(attr));
+      if (c) p[map[attr]] = c;
+    }
+    if (parseColor(el.getAttribute('border'))) p.divider = parseColor(el.getAttribute('border'));
+    return p;
+  }
+
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
@@ -116,7 +143,7 @@ export const WEB_COMPONENT_JS = `(function () {
   IsPinoyBadge.prototype.constructor = IsPinoyBadge;
   Object.setPrototypeOf(IsPinoyBadge, HTMLElement);
 
-  IsPinoyBadge.observedAttributes = ['handle', 'type', 'theme', 'label'];
+  IsPinoyBadge.observedAttributes = ['handle', 'type', 'theme', 'label', 'bg', 'text', 'muted', 'border', 'mark', 'markbg'];
 
   IsPinoyBadge.prototype.connectedCallback = function () { this._render(); };
   IsPinoyBadge.prototype.attributeChangedCallback = function () {
@@ -127,7 +154,7 @@ export const WEB_COMPONENT_JS = `(function () {
     var type = TYPE_ALIASES[this.getAttribute('type') || ''] || 'subdomain';
     var theme = this.getAttribute('theme');
     if (!PALETTES[theme]) theme = DEFAULT_THEME;
-    var p = PALETTES[theme];
+    var p = applyOverrides(PALETTES[theme], this);
 
     var handle = sanitizeHandle(this.getAttribute('handle')) || 'yourname';
     var label = (this.getAttribute('label') || 'DEPLOYED ON').toUpperCase();
