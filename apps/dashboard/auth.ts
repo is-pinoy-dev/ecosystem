@@ -15,6 +15,10 @@ declare module "next-auth" {
 
 const nextAuth = NextAuth({
   providers: [GitHub],
+  // Auth.js auto-trusts the host in dev and on Vercel, but throws
+  // UntrustedHost under `next start` on any other host. The dashboard always
+  // runs behind a trusted platform/proxy, so trust the forwarded host.
+  trustHost: true,
   pages: {
     signIn: "/login",
   },
