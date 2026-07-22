@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import "@is-pinoy-dev/ui/globals.css"
 import "./globals.css"
+import "./themes.css"
 
 export const viewport: Viewport = {
   width: "device-width",

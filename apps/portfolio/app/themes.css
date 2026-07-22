@@ -1,0 +1,35 @@
+/* Portfolio themes. Each theme re-defines the base design tokens for its
+   subtree; because the tokens cascade as CSS custom properties, every shadcn
+   utility (text-primary, bg-background, border-border, …) picks up the override
+   automatically. `gold-dark` is the default and needs no block — it inherits
+   the app's base .dark tokens. Applied via [data-theme] on the portfolio shell. */
+
+[data-theme="mono"] {
+  --primary: #f2f1ec;
+  --primary-foreground: #0b0d12;
+  --primary-dark: #c9c8c2;
+  --accent: #b8bcc4;
+  --accent-foreground: #0b0d12;
+  --ring: #b8bcc4;
+}
+
+[data-theme="matrix"] {
+  --background: #030503;
+  --foreground: #b9f7c0;
+  --card: #071009;
+  --card-foreground: #b9f7c0;
+  --primary: #39ff14;
+  --primary-foreground: #030503;
+  --primary-dark: #26b70f;
+  --secondary: #0a1a0d;
+  --muted: #0a1a0d;
+  --muted-foreground: #5a8f63;
+  --accent: #35c65a;
+  --accent-foreground: #030503;
+  --border: #123317;
+  --input: #1c4423;
+  --ring: #35c65a;
+  --surface: #071009;
+  --surface-subtle: #050805;
+  --code-bg: #010301;
+}

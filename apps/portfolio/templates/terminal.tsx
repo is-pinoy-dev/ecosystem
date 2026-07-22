@@ -2,25 +2,15 @@ import Image from "next/image"
 import { MapPin, Star, Users } from "lucide-react"
 import { Badge } from "@is-pinoy-dev/ui/components/badge"
 import type { PortfolioData } from "@/lib/portfolio-data"
-import type { PortfolioTheme } from "./index"
 
-// The one template built for the spike: a terminal-style single column that
-// leans into the retro pixel-art system (Press Start 2P headings, hard borders,
-// gold-on-dark). README content is injected as pre-sanitized HTML.
-export function TerminalTemplate({
-  data,
-  theme = "gold-dark",
-}: {
-  data: PortfolioData
-  theme?: PortfolioTheme
-}) {
+// A terminal-style single column that leans into the retro pixel-art system
+// (mono headings, hard borders). README content is injected as pre-sanitized
+// HTML. Theme colors and the page frame come from the shell.
+export function TerminalTemplate({ data }: { data: PortfolioData }) {
   const { profile, readmeHtml, repos, stats } = data
 
   return (
-    <main
-      data-theme={theme}
-      className="mx-auto min-h-screen max-w-3xl px-4 py-10 sm:px-6"
-    >
+    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <header className="flex flex-col items-start gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:gap-6">
         <Image
           src={profile.avatar}
