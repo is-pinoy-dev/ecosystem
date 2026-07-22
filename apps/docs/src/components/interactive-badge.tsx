@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CodeBlock, Pre } from 'fumadocs-ui/components/codeblock'
+import { DynamicCodeBlock } from 'fumadocs-ui/components/dynamic-codeblock'
 import { BADGE_HOST } from '@/lib/badge-host'
 import { useSubdomainStore } from '@/store/subdomain'
 
@@ -148,9 +148,7 @@ export function InteractiveBadge() {
         <code>animate=&quot;hover&quot;</code>, hover the badge to see the turn.
       </p>
 
-      <CodeBlock>
-        <Pre className="px-4">{snippet}</Pre>
-      </CodeBlock>
+      <DynamicCodeBlock lang="html" code={snippet} />
     </div>
   )
 }

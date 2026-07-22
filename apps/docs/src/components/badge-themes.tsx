@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Tabs, Tab } from "fumadocs-ui/components/tabs"
-import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock"
+import { DynamicCodeBlock } from "fumadocs-ui/components/dynamic-codeblock"
 import { BADGE_HOST } from "@/lib/badge-host"
 import { useSubdomainStore } from "@/store/subdomain"
 
@@ -79,14 +79,10 @@ function Embed({ embedUrl, linkUrl }: { embedUrl: string; linkUrl: string }) {
   return (
     <Tabs items={["Markdown", "HTML"]}>
       <Tab value="Markdown">
-        <CodeBlock>
-          <Pre className="px-4">{md}</Pre>
-        </CodeBlock>
+        <DynamicCodeBlock lang="markdown" code={md} />
       </Tab>
       <Tab value="HTML">
-        <CodeBlock>
-          <Pre className="px-4">{html}</Pre>
-        </CodeBlock>
+        <DynamicCodeBlock lang="html" code={html} />
       </Tab>
     </Tabs>
   )
