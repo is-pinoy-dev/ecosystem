@@ -4,16 +4,21 @@
 // isolated custom element for real HTML pages (portfolios, docs, footers).
 //
 // It mirrors the static SVG badges (packages/badge-kit/src/lib/svg.ts) exactly
-// — same Banig Grid palette, same 8-ray sun mark, same IBM Plex Mono voice —
-// and adds only a single quiet hover: a 140ms border/opacity shift. The old
-// arcade effects (3D tilt, holographic glare, diagonal shimmer, pixel shadow)
-// are retired along with the retro design system; motion is now limited to
-// color, border, and small opacity changes per the v2.0 spec.
+// — same Banig Grid palette, same 8-ray sun mark, same IBM Plex Mono voice.
+// By default the only motion is a quiet 140ms border hover, per the v2.0 spec.
+//
+// The richer arcade effects are available but strictly opt-in, so the default
+// badge stays calm:
+//   • animate="spin|hover" — on-brand sun rotation (moves only the mark)
+//   • tilt="true"          — an "ID card" 3D tilt that follows the cursor,
+//                            with a pointer-tracking glare
+//   • shimmer="sweep|loop|always" (+ shimmer-color) — a diagonal light sweep
+// All of them honor prefers-reduced-motion.
 //
 // Authored as a plain string (no backticks, no ${} inside) so it can be embedded
 // in this TS template literal and shipped to the browser without a build step.
 
-export const WEB_COMPONENT_VERSION = '0.3.0'
+export const WEB_COMPONENT_VERSION = '0.4.0'
 
 export const WEB_COMPONENT_JS = `(function () {
   'use strict';
@@ -65,6 +70,22 @@ export const WEB_COMPONENT_JS = `(function () {
     return p;
   }
 
+  // Validate a CSS color for the shimmer sweep. Accepts hex, a plain named
+  // color, or rgb()/rgba()/hsl()/hsla() with a numeric-only inner list -- never
+  // anything that could smuggle url() or extra declarations into the stylesheet.
+  function shimmerColor(raw) {
+    var d = 'rgba(255,255,255,0.55)';
+    if (!raw) return d;
+    var v = String(raw).trim();
+    if (v.charAt(0) === '#' && /^[0-9a-fA-F]{3,8}$/.test(v.slice(1))) return v;
+    if (/^[a-zA-Z]{3,20}$/.test(v)) return v;
+    var lower = v.toLowerCase(), fns = ['rgb(', 'rgba(', 'hsl(', 'hsla('];
+    for (var i = 0; i < fns.length; i++) {
+      if (lower.indexOf(fns[i]) === 0 && v.charAt(v.length - 1) === ')' && /^[0-9.,%/ ]+$/.test(v.slice(fns[i].length, -1))) return v;
+    }
+    return d;
+  }
+
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
@@ -106,11 +127,11 @@ export const WEB_COMPONENT_JS = `(function () {
       + '</span>';
   }
 
-  function styles(p) {
+  function styles(p, shimmer) {
     return FONTS
       + ':host{display:inline-block;}'
       + '*{box-sizing:border-box;border-radius:0;margin:0;padding:0;}'
-      + '.ipd-card{position:relative;display:inline-flex;align-items:stretch;text-decoration:none;cursor:pointer;'
+      + '.ipd-card{position:relative;display:inline-flex;align-items:stretch;overflow:hidden;text-decoration:none;cursor:pointer;'
       +   'border:1px solid ' + p.border + ';background:' + p.surface + ';'
       +   'transition:border-color .14s ease,box-shadow .14s ease;}'
       + '.ipd-card:hover{border-color:' + p.hover + ';box-shadow:inset 0 0 0 1px ' + p.hover + ';}'
@@ -137,9 +158,21 @@ export const WEB_COMPONENT_JS = `(function () {
       + '.ipd-card.a-spin .ipd-glyph{transform-origin:50% 50%;animation:ipd-spin 14s linear infinite;}'
       + '.ipd-card.a-hover .ipd-glyph{transform-origin:50% 50%;transition:transform .5s cubic-bezier(.34,1.5,.64,1);}'
       + '.ipd-card.a-hover:hover .ipd-glyph{transform:rotate(45deg);}'
+      // Opt-in arcade effects (tilt + shimmer), off by default so the standard
+      // badge stays calm. Kept behind the tilt/shimmer attributes.
+      + '.ipd-card.tilt{transform:perspective(620px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transform-style:preserve-3d;will-change:transform;transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease-out;}'
+      + '.ipd-glare{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:2;transition:opacity .2s;mix-blend-mode:overlay;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,0.35),transparent 45%);}'
+      + '.ipd-card.tilt:hover .ipd-glare{opacity:1;}'
+      + '.ipd-shimmer{position:absolute;top:0;left:0;height:100%;width:60%;pointer-events:none;z-index:3;transform:translateX(-180%) skewX(-18deg);background:linear-gradient(100deg,transparent 8%,' + shimmer + ' 38%,' + shimmer + ' 62%,transparent 92%);}'
+      + '.ipd-card:hover .sh-sweep{animation:ipd-shimmer .85s ease-out;}'
+      + '.ipd-card:hover .sh-loop{animation:ipd-shimmer 1.6s linear infinite;}'
+      + '.sh-always{animation:ipd-shimmer 2.6s linear infinite;}'
+      + '@keyframes ipd-shimmer{from{transform:translateX(-180%) skewX(-18deg);}to{transform:translateX(300%) skewX(-18deg);}}'
       + '@media (prefers-reduced-motion: reduce){'
       +   '.ipd-card{transition:none;}'
       +   '.ipd-glyph{animation:none!important;transition:none!important;transform:none!important;}'
+      +   '.ipd-card.tilt{transform:none!important;}'
+      +   '.ipd-shimmer,.ipd-glare{display:none!important;}'
       + '}';
   }
 
@@ -155,10 +188,15 @@ export const WEB_COMPONENT_JS = `(function () {
   IsPinoyBadge.prototype.constructor = IsPinoyBadge;
   Object.setPrototypeOf(IsPinoyBadge, HTMLElement);
 
-  IsPinoyBadge.observedAttributes = ['handle', 'type', 'theme', 'label', 'icon', 'animate', 'bg', 'text', 'muted', 'border', 'mark', 'markbg'];
+  IsPinoyBadge.observedAttributes = ['handle', 'type', 'theme', 'label', 'icon', 'animate', 'shimmer', 'shimmer-color', 'tilt', 'bg', 'text', 'muted', 'border', 'mark', 'markbg'];
 
   var MARK_OFF = { 'false': 1, 'off': 1, '0': 1, 'no': 1 };
   var ANIM = { spin: 1, hover: 1 };
+  var SHIMMER = { off: 1, sweep: 1, loop: 1, always: 1 };
+  var TILT_ON = { 'true': 1, 'on': 1, '1': 1, 'yes': 1 };
+  var prefersReducedMotion = window.matchMedia
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
 
   IsPinoyBadge.prototype.connectedCallback = function () { this._render(); };
   IsPinoyBadge.prototype.attributeChangedCallback = function () {
@@ -183,15 +221,47 @@ export const WEB_COMPONENT_JS = `(function () {
     var anim = (this.getAttribute('animate') || '').toLowerCase();
     var animClass = showMark && ANIM[anim] ? ' a-' + anim : '';
 
-    var html = '<style>' + styles(p) + '</style>'
-      + '<a class="ipd-card t-' + type + animClass + '" part="card" style="height:' + h + 'px" '
+    // Opt-in arcade effects, disabled under reduced motion.
+    var shimmer = (this.getAttribute('shimmer') || 'off').toLowerCase();
+    if (!SHIMMER[shimmer]) shimmer = 'off';
+    var shColor = shimmerColor(this.getAttribute('shimmer-color'));
+    var tiltOn = !!TILT_ON[(this.getAttribute('tilt') || '').toLowerCase()] && !prefersReducedMotion;
+
+    var html = '<style>' + styles(p, shColor) + '</style>'
+      + '<a class="ipd-card t-' + type + animClass + (tiltOn ? ' tilt' : '') + '" part="card" style="height:' + h + 'px" '
       +   'href="' + esc(href) + '" target="_blank" rel="noopener" '
       +   'aria-label="' + esc(handle) + ' on is-pinoy.dev">'
       +   (showMark ? '<span class="ipd-mark">' + mark(p.mark) + '</span>' : '')
       +   '<span class="ipd-body">' + body(type, p, handle, label) + '</span>'
+      +   (tiltOn ? '<span class="ipd-glare" aria-hidden="true"></span>' : '')
+      +   (shimmer !== 'off' ? '<span class="ipd-shimmer sh-' + shimmer + '" aria-hidden="true"></span>' : '')
       + '</a>';
 
     this._root.innerHTML = html;
+
+    if (tiltOn) this._attachTilt(this._root.querySelector('.ipd-card'));
+  };
+
+  // "ID card" tilt: rotate toward the cursor and track the glare hotspot.
+  IsPinoyBadge.prototype._attachTilt = function (card) {
+    if (!card) return;
+    var MAX = 9; // degrees at the card edges
+    card.addEventListener('pointermove', function (e) {
+      var r = card.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var px = (e.clientX - r.left) / r.width;
+      var py = (e.clientY - r.top) / r.height;
+      card.style.setProperty('--ry', ((px - 0.5) * 2 * MAX).toFixed(2) + 'deg');
+      card.style.setProperty('--rx', ((0.5 - py) * 2 * MAX).toFixed(2) + 'deg');
+      card.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
+      card.style.setProperty('--my', (py * 100).toFixed(1) + '%');
+    });
+    card.addEventListener('pointerleave', function () {
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+      card.style.removeProperty('--mx');
+      card.style.removeProperty('--my');
+    });
   };
 
   window.customElements.define('is-pinoy-badge', IsPinoyBadge);

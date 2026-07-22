@@ -21,6 +21,9 @@ declare module 'react' {
         label?: string
         icon?: string
         animate?: string
+        shimmer?: string
+        'shimmer-color'?: string
+        tilt?: string
       }
     }
   }
@@ -29,10 +32,12 @@ declare module 'react' {
 type BadgeType = 'deployed-on' | 'member' | 'pinoy-made' | 'certified'
 type ThemeName = 'dark' | 'gold' | 'light' | 'outlined'
 type AnimateMode = 'none' | 'spin' | 'hover'
+type ShimmerMode = 'off' | 'sweep' | 'loop' | 'always'
 
 const TYPES: BadgeType[] = ['deployed-on', 'member', 'pinoy-made', 'certified']
 const THEMES: ThemeName[] = ['light', 'dark', 'gold', 'outlined']
 const ANIMATIONS: AnimateMode[] = ['none', 'spin', 'hover']
+const SHIMMERS: ShimmerMode[] = ['off', 'sweep', 'loop', 'always']
 
 const DEFAULT_THEME: Record<BadgeType, ThemeName> = {
   'deployed-on': 'light',
@@ -100,6 +105,8 @@ export function InteractiveBadge() {
   const [theme, setTheme] = useState<ThemeName>('light')
   const [animate, setAnimate] = useState<AnimateMode>('none')
   const [icon, setIcon] = useState(true)
+  const [shimmer, setShimmer] = useState<ShimmerMode>('off')
+  const [tilt, setTilt] = useState(false)
 
   // Switching type resets to that type's default theme so the preview stays valid.
   const onType = (next: BadgeType) => {
@@ -115,6 +122,8 @@ export function InteractiveBadge() {
     `type="${type}"`,
     `theme="${theme}"`,
     animate !== 'none' ? `animate="${animate}"` : null,
+    shimmer !== 'off' ? `shimmer="${shimmer}"` : null,
+    tilt ? 'tilt="true"' : null,
     !icon ? 'icon="false"' : null,
   ].filter(Boolean)
   const snippet = `<script src="https://badges.is-pinoy.dev/badge.js"></script>\n\n<is-pinoy-badge ${attrs.join(' ')}></is-pinoy-badge>`
@@ -125,6 +134,13 @@ export function InteractiveBadge() {
         <Segmented label="type" value={type} options={TYPES} onChange={onType} />
         <Segmented label="theme" value={theme} options={THEMES} onChange={setTheme} />
         <Segmented label="animate" value={animate} options={ANIMATIONS} onChange={setAnimate} />
+        <Segmented label="shimmer" value={shimmer} options={SHIMMERS} onChange={setShimmer} />
+        <Segmented
+          label="tilt"
+          value={tilt ? 'on' : 'off'}
+          options={['on', 'off'] as const}
+          onChange={(v) => setTilt(v === 'on')}
+        />
         <Segmented
           label="icon"
           value={icon ? 'on' : 'off'}
@@ -135,17 +151,19 @@ export function InteractiveBadge() {
 
       <div className="flex items-center justify-center border border-fd-border bg-fd-muted p-8">
         <is-pinoy-badge
-          key={`${type}-${theme}-${animate}-${icon}-${name}`}
+          key={`${type}-${theme}-${animate}-${shimmer}-${tilt}-${icon}-${name}`}
           {...(needsHandle ? { handle: name } : {})}
           type={type}
           theme={theme}
           {...(animate !== 'none' ? { animate } : {})}
+          {...(shimmer !== 'off' ? { shimmer } : {})}
+          {...(tilt ? { tilt: 'true' } : {})}
           {...(icon ? {} : { icon: 'false' })}
         />
       </div>
       <p className="m-0 font-mono text-[11px] text-fd-muted-foreground">
-        Motion moves only the sun mark and switches off under reduced-motion. On{' '}
-        <code>animate=&quot;hover&quot;</code>, hover the badge to see the turn.
+        Effects are off by default. Hover the badge to see <code>shimmer</code>{' '}
+        and the <code>tilt</code> glare; all motion honors reduced-motion.
       </p>
 
       <DynamicCode lang="html" code={snippet} />

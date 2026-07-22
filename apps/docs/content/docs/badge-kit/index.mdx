@@ -53,9 +53,9 @@ Wider assets for README headers and GitHub profiles.
 
 ## Interactive HTML badge
 
-For your own website, portfolio, or footer — anywhere real HTML runs — use the `<is-pinoy-badge>` web component instead of a static image. On top of the static badge it can add on-brand sun motion: a slow continuous rotation or a springy turn on hover. Motion moves only the mark and switches off under `prefers-reduced-motion`. (GitHub READMEs strip scripts, so keep using the SVG/Markdown embeds there.)
+For your own website, portfolio, or footer — anywhere real HTML runs — use the `<is-pinoy-badge>` web component instead of a static image. By default it stays calm (just a quiet border on hover), but you can opt into extra motion: on-brand **sun rotation** (`animate`), a diagonal **shimmer** sweep, and an "ID card" **tilt** that follows your cursor. Every effect is off by default and honors `prefers-reduced-motion`. (GitHub READMEs strip scripts, so keep using the SVG/Markdown embeds there.)
 
-Try it live — pick a type, theme, and motion:
+Try it live — pick a type and theme, then turn on the effects:
 
 <InteractiveBadge />
 
@@ -76,11 +76,15 @@ It renders into Shadow DOM, so your page's CSS can't bleed in, and it respects `
 | `theme` | `light`, `dark`, `gold`, `outlined` | per-type default |
 | `label` | custom eyebrow for `deployed-on` | `DEPLOYED ON` |
 | `icon` | `false` hides the sun mark cell | shown |
-| `animate` | `spin` (continuous) or `hover` (on hover) | none |
+| `animate` | `spin` (continuous) or `hover` (on hover) sun rotation | none |
+| `shimmer` | `sweep` (once on hover), `loop` (while hovered), `always` | `off` |
+| `shimmer-color` | any CSS color for the sweep | translucent white |
+| `tilt` | `true` enables the 3D cursor tilt + glare | off |
 | `bg` `text` `muted` `border` `mark` `markbg` | color overrides (hex or `transparent`) | theme value |
 
 ```html
-<is-pinoy-badge handle="yourname" type="certified" theme="gold" shimmer="loop"></is-pinoy-badge>
+<!-- opt into the shimmer sweep and the cursor tilt -->
+<is-pinoy-badge handle="yourname" type="certified" theme="gold" shimmer="sweep" tilt="true"></is-pinoy-badge>
 ```
 
 ## Not found state

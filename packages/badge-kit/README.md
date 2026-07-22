@@ -113,9 +113,10 @@ are available, unlike a GitHub README — load the web component once and drop i
 ```
 
 The component renders into Shadow DOM, so the host page's CSS can't bleed in. It
-mirrors the static SVG badge exactly and adds only a single quiet hover (a 140ms
-border/opacity shift), in line with the v2.0 motion rules — no tilt, glare, or
-shimmer. It honors `prefers-reduced-motion`.
+mirrors the static SVG badge exactly. By default the only motion is a quiet
+140ms border hover (per the v2.0 spec); richer effects — sun rotation, a
+diagonal shimmer sweep, and an "ID card" cursor tilt — are available but strictly
+opt-in. Every effect honors `prefers-reduced-motion`.
 
 ### Attributes
 
@@ -127,19 +128,21 @@ shimmer. It honors `prefers-reduced-motion`.
 | `label` | custom eyebrow for `deployed-on` | `DEPLOYED ON` |
 | `icon` | `false`/`off`/`0`/`no` hides the sun mark cell | shown |
 | `animate` | `spin` (slow continuous sun rotation) or `hover` (springy 45° turn on hover) | none |
+| `shimmer` | `sweep` (once on hover), `loop` (while hovered), `always` | `off` |
+| `shimmer-color` | any CSS color for the sweep (hex, `rgb()/rgba()/hsl()/hsla()`, or a named color) | translucent white |
+| `tilt` | `true`/`on` enables the 3D cursor tilt + glare | off |
 | `bg` `text` `muted` `border` `mark` `markbg` | color overrides (hex or `transparent`, same as the SVG params) | Theme value |
 
-Animation only moves the sun mark — an echo of the animated sun banner, not
-arcade motion — and is disabled under `prefers-reduced-motion`. It is
-web-component-only; README SVGs stay static (GitHub runs no JS).
+All of these are web-component-only; README SVGs stay static (GitHub runs no JS).
 
 ```html
 <is-pinoy-badge handle="juan" type="certified" theme="gold"></is-pinoy-badge>
-<is-pinoy-badge handle="juan" type="member" theme="dark"></is-pinoy-badge>
 <is-pinoy-badge handle="juan" type="deployed-on" markbg="#6D28D9" mark="#FFFFFF"></is-pinoy-badge>
 <is-pinoy-badge handle="juan" type="deployed-on" icon="false"></is-pinoy-badge>
 <is-pinoy-badge handle="juan" type="deployed-on" animate="spin"></is-pinoy-badge>
-<is-pinoy-badge handle="juan" type="certified" theme="gold" animate="hover"></is-pinoy-badge>
+<!-- opt into the arcade effects -->
+<is-pinoy-badge handle="juan" type="certified" theme="gold" shimmer="sweep" tilt="true"></is-pinoy-badge>
+<is-pinoy-badge handle="juan" type="member" theme="dark" shimmer="always" shimmer-color="rgba(245,200,0,0.6)"></is-pinoy-badge>
 ```
 
 ## Scripts
