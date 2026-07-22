@@ -173,20 +173,36 @@ The dashboard already has GitHub auth, so we know the user's login:
 
 ## Rollout (phased)
 
-1. **Schema** — add `portfolio` block, regenerate JSON Schema, land validation.
-2. **Spike** — `apps/portfolio` with the fetcher + sanitizing parser + **one**
-   template, driven by a hardcoded subdomain. Prove a real README renders
-   end-to-end, safely.
-3. **Resolver + middleware** — Host → domains-repo lookup, ISR caching, 404
-   path. Point `portfolio.is-pinoy.dev` at the deployment.
-4. **Templates** — flesh out the remaining templates + themes.
-5. **Onboarding** — dashboard picker, live preview, auto-PR flow.
+1. **Schema** ✅ — `portfolio` block added, JSON Schema regenerated, additive
+   and backward-compatible.
+2. **Spike** ✅ — `apps/portfolio` fetcher + sanitizing parser + terminal
+   template. Sanitizer proven against an XSS matrix.
+3. **Routing** ✅ — `proxy.ts` extracts the subdomain from the Host header into
+   `x-portfolio-subdomain`; `getRenderContext()` resolves it against the domains
+   repo and loads the portfolio; unresolved → 404. Route is dynamic per
+   subdomain, upstream GitHub fetches ISR-cached (1h).
+4. **Templates + themes** ✅ — terminal, pixel-card, minimal templates;
+   gold-dark / mono / matrix themes via token re-scoping in a shared shell.
+5. **Onboarding** ⬜ — dashboard picker, live preview, auto-PR flow. *Not yet
+   built* — see the open decision below.
 
-## Open items to verify before build
+## Status of pre-build open items
 
-- Confirm `SubdomainChecker` availability keys off the JSON files (git), not DNS
-  resolution.
-- Decide the deployment target/host behind `portfolio.is-pinoy.dev` and wire the
-  CNAME target accordingly.
-- GitHub API rate limits — reuse the token pattern from `lib/subdomains.ts`
-  (`GITHUB_TOKEN`/`GH_TOKEN`) for the renderer's fetches.
+- ✅ **`SubdomainChecker` keys off git, not DNS.** Confirmed: it fetches
+  `raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains/<name>.json`.
+  Availability is DNS-agnostic, as the design assumed.
+- ✅ **GitHub API rate limits.** `lib/github.ts` reuses the
+  `GITHUB_TOKEN`/`GH_TOKEN` pattern and ISR-caches all fetches. (In sandbox,
+  unauthenticated `api.github.com` returns 403; the renderer degrades to a clean
+  404 — a token is required for live rendering.)
+- ⬜ **Deployment host behind `portfolio.is-pinoy.dev`.** Still to decide; the
+  portfolio subdomains' CNAME target depends on it.
+
+## Remaining decision — Phase 5 onboarding
+
+Before building the dashboard flow, one product/security decision: should
+"confirm" **auto-open a PR** to `is-pinoy-dev/domains` on the user's behalf
+(needs a repo-scoped GitHub token and diverges from today's "submit your own
+PR" flow), or should it **generate the JSON and hand the user a prefilled PR
+link** to submit themselves (keeps the current governance, no elevated token)?
+The renderer is agnostic to this choice.
