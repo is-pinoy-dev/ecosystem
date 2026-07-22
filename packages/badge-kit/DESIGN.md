@@ -107,6 +107,8 @@ Markdown pattern:
 ```
 
 - `?theme=` selects the skin; invalid/omitted falls back to the type default.
+- `?icon=false` (or `off`/`0`/`no`) drops the sun mark cell and divider, leaving
+  a plain bordered text badge.
 - `?bg=` `?text=` `?muted=` `?border=` `?mark=` `?markbg=` override individual
   palette slots for brand-matching. Values are strictly validated (hex or
   `transparent`, see `lib/color.ts`) and fall back to the theme color when

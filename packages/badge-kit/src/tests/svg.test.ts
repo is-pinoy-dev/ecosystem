@@ -119,6 +119,34 @@ describe('generateBadgeSvg — platform badges', () => {
   })
 })
 
+describe('icon toggle', () => {
+  // SUN_RAY starts with this move command; its presence marks a rendered sun.
+  const SUN = '<path d="M50 6.5'
+
+  it('renders the sun mark by default', () => {
+    const svg = generateBadgeSvg({ subdomain: 'juan', type: 'subdomain', theme: 'light', notFound: false })
+    expect(svg).toContain(SUN)
+  })
+
+  it('omits the mark, divider, and cell when showMark is false', () => {
+    const svg = generateBadgeSvg({ subdomain: 'juan', type: 'subdomain', theme: 'light', notFound: false, showMark: false })
+    expect(svg).not.toContain(SUN)
+  })
+
+  it('produces a narrower badge without the mark', () => {
+    const withMark = generateBadgeSvg({ subdomain: 'juan', type: 'subdomain', theme: 'light', notFound: false })
+    const noMark = generateBadgeSvg({ subdomain: 'juan', type: 'subdomain', theme: 'light', notFound: false, showMark: false })
+    const widthOf = (svg: string): number => Number(svg.match(/width="(\d+)"/)![1])
+    expect(widthOf(noMark)).toBeLessThan(widthOf(withMark))
+  })
+
+  it('honors the toggle on banners too', () => {
+    const svg = generateBannerSvg({ subdomain: 'juan', type: 'readme', theme: 'light', showMark: false })
+    expect(svg).not.toContain(SUN)
+    expect(svg).toContain('width="640"')
+  })
+})
+
 describe('generateBannerSvg', () => {
   it('readme banner is 640 wide', () => {
     const svg = generateBannerSvg({ subdomain: 'juan', type: 'readme', theme: 'light' })

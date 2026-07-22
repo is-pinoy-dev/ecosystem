@@ -32,6 +32,8 @@ export interface BadgeOptions {
   notFound: boolean
   label?: string
   overrides?: PaletteOverride
+  /** Show the sun mark cell. Defaults to true. */
+  showMark?: boolean
 }
 
 export interface BannerOptions {
@@ -39,6 +41,8 @@ export interface BannerOptions {
   type: BannerType
   theme: Theme
   overrides?: PaletteOverride
+  /** Show the sun mark cell. Defaults to true. */
+  showMark?: boolean
 }
 
 // ─── Default / valid themes ─────────────────────────────────────────────────
@@ -222,7 +226,9 @@ function text(
 }
 
 // Standard frame: 1px square border, an optional filled mark cell on the left,
-// a 1px divider, and the brand mark. No shadow, no radius.
+// a 1px divider, and the brand mark. When `markCell` is 0 the mark, divider,
+// and cell are omitted and the badge is a plain bordered text pill. No shadow,
+// no radius.
 function frame(
   totalW: number,
   H: number,
@@ -230,16 +236,16 @@ function frame(
   markCell: number,
   extra: string
 ): string {
-  const markFill =
-    p.markBg === 'transparent'
-      ? ''
-      : `<rect x="0" y="0" width="${markCell}" height="${H}" fill="${p.markBg}"/>`
+  const markEls =
+    markCell > 0
+      ? `${p.markBg === 'transparent' ? '' : `<rect x="0" y="0" width="${markCell}" height="${H}" fill="${p.markBg}"/>`}
+  <line x1="${markCell}" y1="0.5" x2="${markCell}" y2="${H - 0.5}" stroke="${p.divider}"/>
+  ${mark(0, 0, markCell, p.markGlyph)}`
+      : ''
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${H}" viewBox="0 0 ${totalW} ${H}" role="img">
   <defs><style>${fontFaceStyles()}</style></defs>
   <rect x="0.5" y="0.5" width="${totalW - 1}" height="${H - 1}" fill="${p.surface}" stroke="${p.border}"/>
-  ${markFill}
-  <line x1="${markCell}" y1="0.5" x2="${markCell}" y2="${H - 0.5}" stroke="${p.divider}"/>
-  ${mark(0, 0, markCell, p.markGlyph)}
+  ${markEls}
   ${extra}
 </svg>`
 }
@@ -250,10 +256,11 @@ function subdomainBadgeSvg(
   subdomain: string,
   label: string,
   p: Palette,
-  notFound: boolean
+  notFound: boolean,
+  showMark: boolean
 ): string {
   const H = 48
-  const markCell = H
+  const markCell = showMark ? H : 0
   const padX = 14
   const textX = markCell + padX
 
@@ -291,9 +298,14 @@ function subdomainBadgeSvg(
   return frame(totalW, H, p, markCell, inner)
 }
 
-function memberSvg(subdomain: string, p: Palette, notFound: boolean): string {
+function memberSvg(
+  subdomain: string,
+  p: Palette,
+  notFound: boolean,
+  showMark: boolean
+): string {
   const H = 30
-  const markCell = H
+  const markCell = showMark ? H : 0
   const padX = 12
   const gap = 10
   const size = 11
@@ -325,9 +337,9 @@ function memberSvg(subdomain: string, p: Palette, notFound: boolean): string {
   return frame(totalW, H, p, markCell, inner)
 }
 
-function pinoyMadeSvg(p: Palette): string {
+function pinoyMadeSvg(p: Palette, showMark: boolean): string {
   const H = 36
-  const markCell = H
+  const markCell = showMark ? H : 0
   const padX = 14
   const size = 12
   const startX = markCell + padX
@@ -342,9 +354,9 @@ function pinoyMadeSvg(p: Palette): string {
   return frame(totalW, H, p, markCell, inner)
 }
 
-function certifiedSvg(p: Palette): string {
+function certifiedSvg(p: Palette, showMark: boolean): string {
   const H = 48
-  const markCell = H
+  const markCell = showMark ? H : 0
   const padX = 14
   const startX = markCell + padX
 
@@ -369,10 +381,10 @@ function certifiedSvg(p: Palette): string {
 
 // ─── Banner generators ───────────────────────────────────────────────────────
 
-function readmeBannerSvg(subdomain: string, p: Palette): string {
+function readmeBannerSvg(subdomain: string, p: Palette, showMark: boolean): string {
   const W = 640
   const H = 96
-  const markCell = H
+  const markCell = showMark ? H : 0
   const padX = 28
   const textX = markCell + padX
 
@@ -383,13 +395,17 @@ function readmeBannerSvg(subdomain: string, p: Palette): string {
   const valueW = mw(handle + suffix, valueSize)
 
   const rightX = W - padX
+  const markEls =
+    markCell > 0
+      ? `${p.markBg === 'transparent' ? '' : `<rect x="0" y="0" width="${markCell}" height="${H}" fill="${p.markBg}"/>`}
+  <line x1="${markCell}" y1="0.5" x2="${markCell}" y2="${H - 0.5}" stroke="${p.divider}"/>
+  ${mark(0, 0, markCell, p.markGlyph)}`
+      : ''
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img">
   <defs><style>${fontFaceStyles()}</style></defs>
   <rect x="0.5" y="0.5" width="${W - 1}" height="${H - 1}" fill="${p.surface}" stroke="${p.border}"/>
-  ${p.markBg === 'transparent' ? '' : `<rect x="0" y="0" width="${markCell}" height="${H}" fill="${p.markBg}"/>`}
-  <line x1="${markCell}" y1="0.5" x2="${markCell}" y2="${H - 0.5}" stroke="${p.divider}"/>
-  ${mark(0, 0, markCell, p.markGlyph)}
+  ${markEls}
   ${text(textX, H / 2 - 12, 'DEPLOYED ON', eyebrowSize, p.muted, { tracking: 1.6, width: mw('DEPLOYED ON', eyebrowSize) })}
   <text x="${textX}" y="${H / 2 + 12}" font-family="${FONT}" font-size="${valueSize}" text-anchor="start" dominant-baseline="central" textLength="${valueW.toFixed(2)}" lengthAdjust="spacingAndGlyphs"><tspan fill="${p.text}">${handle}</tspan><tspan fill="${p.muted}">${suffix}</tspan></text>
   ${text(rightX, H / 2 - 10, 'SUBDOMAIN BY', 10, p.muted, { anchor: 'end', tracking: 1.4, width: mw('SUBDOMAIN BY', 10) })}
@@ -397,10 +413,10 @@ function readmeBannerSvg(subdomain: string, p: Palette): string {
 </svg>`
 }
 
-function profileBannerSvg(subdomain: string, p: Palette): string {
+function profileBannerSvg(subdomain: string, p: Palette, showMark: boolean): string {
   const W = 720
   const H = 140
-  const markCell = H
+  const markCell = showMark ? H : 0
   const padX = 36
   const textX = markCell + padX
 
@@ -412,13 +428,17 @@ function profileBannerSvg(subdomain: string, p: Palette): string {
     'The free subdomain network for Filipino developers.'
   const taglineSize = 12
   const eyebrow = 'IS-PINOY.DEV NETWORK'
+  const markEls =
+    markCell > 0
+      ? `${p.markBg === 'transparent' ? '' : `<rect x="0" y="0" width="${markCell}" height="${H}" fill="${p.markBg}"/>`}
+  <line x1="${markCell}" y1="0.5" x2="${markCell}" y2="${H - 0.5}" stroke="${p.divider}"/>
+  ${mark(0, 0, markCell, p.markGlyph)}`
+      : ''
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img">
   <defs><style>${fontFaceStyles()}</style></defs>
   <rect x="0.5" y="0.5" width="${W - 1}" height="${H - 1}" fill="${p.surface}" stroke="${p.border}"/>
-  ${p.markBg === 'transparent' ? '' : `<rect x="0" y="0" width="${markCell}" height="${H}" fill="${p.markBg}"/>`}
-  <line x1="${markCell}" y1="0.5" x2="${markCell}" y2="${H - 0.5}" stroke="${p.divider}"/>
-  ${mark(0, 0, markCell, p.markGlyph)}
+  ${markEls}
   ${text(textX, H / 2 - 26, eyebrow, 11, p.muted, { tracking: 1.8, width: mw(eyebrow, 11) })}
   ${text(textX, H / 2 + 2, value, valueSize, p.text, { width: valueW })}
   ${text(textX, H / 2 + 28, tagline, taglineSize, p.muted, { width: mw(tagline, taglineSize) })}
@@ -430,25 +450,27 @@ function profileBannerSvg(subdomain: string, p: Palette): string {
 export function generateBadgeSvg(opts: BadgeOptions): string {
   const { subdomain, type, theme, notFound, label, overrides } = opts
   const p = applyOverrides(resolvePalette(theme), overrides)
+  const showMark = opts.showMark ?? true
   switch (type) {
     case 'subdomain':
-      return subdomainBadgeSvg(subdomain, label ?? DEFAULT_SUBDOMAIN_LABEL, p, notFound)
+      return subdomainBadgeSvg(subdomain, label ?? DEFAULT_SUBDOMAIN_LABEL, p, notFound, showMark)
     case 'member':
-      return memberSvg(subdomain, p, notFound)
+      return memberSvg(subdomain, p, notFound, showMark)
     case 'pinoy-made':
-      return pinoyMadeSvg(p)
+      return pinoyMadeSvg(p, showMark)
     case 'certified':
-      return certifiedSvg(p)
+      return certifiedSvg(p, showMark)
   }
 }
 
 export function generateBannerSvg(opts: BannerOptions): string {
   const { subdomain, type, theme, overrides } = opts
   const p = applyOverrides(resolvePalette(theme), overrides)
+  const showMark = opts.showMark ?? true
   switch (type) {
     case 'readme':
-      return readmeBannerSvg(subdomain, p)
+      return readmeBannerSvg(subdomain, p, showMark)
     case 'profile':
-      return profileBannerSvg(subdomain, p)
+      return profileBannerSvg(subdomain, p, showMark)
   }
 }

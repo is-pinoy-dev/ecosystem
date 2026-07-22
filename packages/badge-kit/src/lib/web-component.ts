@@ -145,7 +145,9 @@ export const WEB_COMPONENT_JS = `(function () {
   IsPinoyBadge.prototype.constructor = IsPinoyBadge;
   Object.setPrototypeOf(IsPinoyBadge, HTMLElement);
 
-  IsPinoyBadge.observedAttributes = ['handle', 'type', 'theme', 'label', 'bg', 'text', 'muted', 'border', 'mark', 'markbg'];
+  IsPinoyBadge.observedAttributes = ['handle', 'type', 'theme', 'label', 'icon', 'bg', 'text', 'muted', 'border', 'mark', 'markbg'];
+
+  var MARK_OFF = { 'false': 1, 'off': 1, '0': 1, 'no': 1 };
 
   IsPinoyBadge.prototype.connectedCallback = function () { this._render(); };
   IsPinoyBadge.prototype.attributeChangedCallback = function () {
@@ -166,12 +168,13 @@ export const WEB_COMPONENT_JS = `(function () {
       : 'https://' + handle + '.is-pinoy.dev';
 
     var h = HEIGHTS[type];
+    var showMark = !MARK_OFF[(this.getAttribute('icon') || '').toLowerCase()];
 
     var html = '<style>' + styles(p) + '</style>'
       + '<a class="ipd-card t-' + type + '" part="card" style="height:' + h + 'px" '
       +   'href="' + esc(href) + '" target="_blank" rel="noopener" '
       +   'aria-label="' + esc(handle) + ' on is-pinoy.dev">'
-      +   '<span class="ipd-mark">' + mark(p.mark) + '</span>'
+      +   (showMark ? '<span class="ipd-mark">' + mark(p.mark) + '</span>' : '')
       +   '<span class="ipd-body">' + body(type, p, handle, label) + '</span>'
       + '</a>';
 

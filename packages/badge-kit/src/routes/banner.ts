@@ -17,6 +17,11 @@ function parseFormat(raw: string | undefined): OutputFormat {
   return VALID_FORMATS.has(raw as OutputFormat) ? (raw as OutputFormat) : 'svg'
 }
 
+const OFF = new Set(['false', 'off', '0', 'no'])
+function parseShowMark(raw: string | undefined): boolean {
+  return !OFF.has((raw ?? '').toLowerCase())
+}
+
 async function respond(svg: string, format: OutputFormat): Promise<Response> {
   const headers = badgeCacheHeaders()
 
@@ -42,8 +47,9 @@ export function registerBannerRoute(app: Hono<{ Bindings: Env }>): void {
     const theme = parseTheme(c.req.query('theme'), type)
     const format = parseFormat(c.req.query('format'))
     const overrides = parseOverrides((k) => c.req.query(k))
+    const showMark = parseShowMark(c.req.query('icon'))
 
-    const svg = generateBannerSvg({ subdomain, type, theme, overrides })
+    const svg = generateBannerSvg({ subdomain, type, theme, overrides, showMark })
     return respond(svg, format)
   })
 }

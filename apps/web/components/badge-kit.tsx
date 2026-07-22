@@ -33,6 +33,11 @@ const FORMAT_OPTIONS: { value: Format; label: string }[] = [
   { value: "url", label: "URL" },
 ]
 
+const ICON_OPTIONS: { value: "on" | "off"; label: string }[] = [
+  { value: "on", label: "On" },
+  { value: "off", label: "Off" },
+]
+
 interface BadgeItem {
   id: string
   name: string
@@ -215,9 +220,11 @@ function CodeBlock({ value }: { value: string }) {
 export function BadgeKit() {
   const [theme, setTheme] = useState<Theme>("light")
   const [format, setFormat] = useState<Format>("markdown")
+  const [icon, setIcon] = useState<"on" | "off">("on")
   const [handleInput, setHandleInput] = useState("")
 
   const handle = sanitizeHandle(handleInput) || "juan"
+  const iconParam = icon === "off" ? "&icon=false" : ""
 
   return (
     <div className="flex flex-col gap-12">
@@ -234,12 +241,18 @@ export function BadgeKit() {
           <InputGroupAddon>.is-pinoy.dev</InputGroupAddon>
         </InputGroup>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-6">
           <Segmented
             label="Theme"
             options={THEME_OPTIONS}
             value={theme}
             onChange={setTheme}
+          />
+          <Segmented
+            label="Icon"
+            options={ICON_OPTIONS}
+            value={icon}
+            onChange={setIcon}
           />
           <Segmented
             label="Format"
@@ -252,8 +265,8 @@ export function BadgeKit() {
 
       <div className="grid gap-8 sm:grid-cols-2">
         {ITEMS.map((item) => {
-          const previewSrc = WORKER + item.buildPath(handle, theme, true)
-          const copyUrl = WORKER + item.buildPath(handle, theme, false)
+          const previewSrc = WORKER + item.buildPath(handle, theme, true) + iconParam
+          const copyUrl = WORKER + item.buildPath(handle, theme, false) + iconParam
           const link = item.buildLink(handle)
 
           return (

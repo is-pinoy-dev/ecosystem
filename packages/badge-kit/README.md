@@ -33,6 +33,7 @@ Cloudflare Worker at `badges.is-pinoy.dev` that renders SVG/PNG/WebP badges and 
 | `type` | See badge/banner types below | `subdomain` (badge), `readme` (banner) |
 | `theme` | `light`, `dark`, `gold`, `outlined` | Per-type default |
 | `format` | `svg`, `png`, `webp` | `svg` |
+| `icon` | `false`/`off`/`0`/`no` hides the sun mark cell | shown |
 | `preview` | `true` bypasses the registry check (showcase only) | — |
 | `bg` `text` `muted` `border` `mark` `markbg` | color overrides — see below | Theme value |
 
@@ -94,6 +95,7 @@ query string; the bare hex form (`markbg=238636`) avoids the encoding.
 /badge/juan?type=subdomain&format=png
 /badge?type=certified&theme=gold
 /badge?type=pinoy-made&theme=outlined
+/badge/juan?type=subdomain&icon=false
 /banner/juan?type=readme&theme=dark
 /banner/juan?type=profile&theme=gold&format=webp
 ```
@@ -123,12 +125,14 @@ shimmer. It honors `prefers-reduced-motion`.
 | `type` | `deployed-on` (alias `subdomain`), `member`, `pinoy-made`, `certified` | `deployed-on` |
 | `theme` | `light`, `dark`, `gold`, `outlined` | `light` |
 | `label` | custom eyebrow for `deployed-on` | `DEPLOYED ON` |
+| `icon` | `false`/`off`/`0`/`no` hides the sun mark cell | shown |
 | `bg` `text` `muted` `border` `mark` `markbg` | color overrides (hex or `transparent`, same as the SVG params) | Theme value |
 
 ```html
 <is-pinoy-badge handle="juan" type="certified" theme="gold"></is-pinoy-badge>
 <is-pinoy-badge handle="juan" type="member" theme="dark"></is-pinoy-badge>
 <is-pinoy-badge handle="juan" type="deployed-on" markbg="#6D28D9" mark="#FFFFFF"></is-pinoy-badge>
+<is-pinoy-badge handle="juan" type="deployed-on" icon="false"></is-pinoy-badge>
 ```
 
 ## Scripts

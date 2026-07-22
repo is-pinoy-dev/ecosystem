@@ -32,6 +32,12 @@ function parseLabel(raw: string | undefined): string {
   return label.slice(0, LABEL_MAX_LENGTH)
 }
 
+// The sun mark shows by default; `icon=false|off|0|no` hides it.
+const OFF = new Set(['false', 'off', '0', 'no'])
+function parseShowMark(raw: string | undefined): boolean {
+  return !OFF.has((raw ?? '').toLowerCase())
+}
+
 async function respond(svg: string, format: OutputFormat): Promise<Response> {
   const headers = badgeCacheHeaders()
 
@@ -59,10 +65,11 @@ export function registerBadgeRoute(app: Hono<{ Bindings: Env }>): void {
     const label = parseLabel(c.req.query('label'))
 
     const overrides = parseOverrides((k) => c.req.query(k))
+    const showMark = parseShowMark(c.req.query('icon'))
 
     const preview = c.req.query('preview') === 'true'
     const registered = preview || await isSubdomainRegistered(subdomain)
-    const svg = generateBadgeSvg({ subdomain, type, theme, notFound: !registered, label, overrides })
+    const svg = generateBadgeSvg({ subdomain, type, theme, notFound: !registered, label, overrides, showMark })
 
     return respond(svg, format)
   })
@@ -74,8 +81,9 @@ export function registerBadgeRoute(app: Hono<{ Bindings: Env }>): void {
     const theme = parseTheme(c.req.query('theme'), type)
     const format = parseFormat(c.req.query('format'))
     const overrides = parseOverrides((k) => c.req.query(k))
+    const showMark = parseShowMark(c.req.query('icon'))
 
-    const svg = generateBadgeSvg({ subdomain: '', type, theme, notFound: false, overrides })
+    const svg = generateBadgeSvg({ subdomain: '', type, theme, notFound: false, overrides, showMark })
     return respond(svg, format)
   })
 }
