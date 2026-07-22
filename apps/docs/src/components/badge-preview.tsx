@@ -16,7 +16,7 @@ export function BadgePreview({ path, alt = 'Badge preview' }: BadgePreviewProps)
   return (
     <div className="my-3">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} style={{ imageRendering: 'pixelated' }} />
+      <img src={src} alt={alt} />
     </div>
   )
 }

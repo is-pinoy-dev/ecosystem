@@ -42,28 +42,20 @@ export function BadgeThemes({
             <button
               key={theme}
               onClick={() => setSelected(theme)}
-              className="flex cursor-pointer flex-col items-start gap-1.5"
+              className="flex cursor-pointer flex-col items-start gap-1.5 border-none bg-transparent p-0"
               style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                opacity: active ? 1 : 0.45,
+                opacity: active ? 1 : 0.5,
                 transition: "opacity 0.15s",
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={toSrc(theme)}
-                alt={`${alt} — ${theme}`}
-                style={{ imageRendering: "pixelated" }}
-              />
+              <img src={toSrc(theme)} alt={`${alt} — ${theme}`} />
               <span
-                style={{
-                  fontFamily: "monospace",
-                  fontSize: "11px",
-                  color: active ? "#fff" : "#666",
-                  fontWeight: active ? "bold" : "normal",
-                }}
+                className={`font-mono text-[11px] ${
+                  active
+                    ? "font-bold text-fd-foreground"
+                    : "font-normal text-fd-muted-foreground"
+                }`}
               >
                 {active ? "▶ " : ""}
                 {theme}

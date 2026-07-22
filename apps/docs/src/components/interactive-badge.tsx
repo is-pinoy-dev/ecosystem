@@ -19,9 +19,8 @@ declare module 'react' {
         type?: string
         theme?: string
         label?: string
-        shimmer?: string
-        'shimmer-color'?: string
-        tilt?: string
+        icon?: string
+        animate?: string
       }
     }
   }
@@ -29,16 +28,16 @@ declare module 'react' {
 
 type BadgeType = 'deployed-on' | 'member' | 'pinoy-made' | 'certified'
 type ThemeName = 'dark' | 'gold' | 'light' | 'outlined'
-type ShimmerMode = 'off' | 'sweep' | 'loop' | 'always'
+type AnimateMode = 'none' | 'spin' | 'hover'
 
 const TYPES: BadgeType[] = ['deployed-on', 'member', 'pinoy-made', 'certified']
-const THEMES: ThemeName[] = ['dark', 'gold', 'light', 'outlined']
-const SHIMMERS: ShimmerMode[] = ['off', 'sweep', 'loop', 'always']
+const THEMES: ThemeName[] = ['light', 'dark', 'gold', 'outlined']
+const ANIMATIONS: AnimateMode[] = ['none', 'spin', 'hover']
 
 const DEFAULT_THEME: Record<BadgeType, ThemeName> = {
-  'deployed-on': 'dark',
-  member: 'dark',
-  'pinoy-made': 'dark',
+  'deployed-on': 'light',
+  member: 'light',
+  'pinoy-made': 'light',
   certified: 'gold',
 }
 
@@ -68,15 +67,7 @@ function Segmented<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span
-        className="shrink-0"
-        style={{
-          fontFamily: 'monospace',
-          fontSize: '11px',
-          color: '#888',
-          width: '64px',
-        }}
-      >
+      <span className="w-16 shrink-0 font-mono text-[11px] text-fd-muted-foreground">
         {label}
       </span>
       <div className="flex flex-wrap gap-1.5">
@@ -86,16 +77,11 @@ function Segmented<T extends string>({
             <button
               key={option}
               onClick={() => onChange(option)}
-              className="cursor-pointer"
-              style={{
-                fontFamily: 'monospace',
-                fontSize: '11px',
-                padding: '3px 8px',
-                border: `1px solid ${active ? '#F5C800' : '#333'}`,
-                background: active ? 'rgba(245,200,0,0.08)' : 'transparent',
-                color: active ? '#F5C800' : '#888',
-                transition: 'all 0.1s',
-              }}
+              className={`cursor-pointer border px-2 py-[3px] font-mono text-[11px] transition-colors ${
+                active
+                  ? 'border-[#F5C800] bg-[#F5C800]/10 font-semibold text-fd-foreground'
+                  : 'border-fd-border text-fd-muted-foreground hover:text-fd-foreground'
+              }`}
             >
               {option}
             </button>
@@ -111,9 +97,9 @@ export function InteractiveBadge() {
   const { name } = useSubdomainStore()
 
   const [type, setType] = useState<BadgeType>('deployed-on')
-  const [theme, setTheme] = useState<ThemeName>('dark')
-  const [shimmer, setShimmer] = useState<ShimmerMode>('sweep')
-  const [tilt, setTilt] = useState(true)
+  const [theme, setTheme] = useState<ThemeName>('light')
+  const [animate, setAnimate] = useState<AnimateMode>('none')
+  const [icon, setIcon] = useState(true)
 
   // Switching type resets to that type's default theme so the preview stays valid.
   const onType = (next: BadgeType) => {
@@ -128,8 +114,8 @@ export function InteractiveBadge() {
     needsHandle ? `handle="${name}"` : null,
     `type="${type}"`,
     `theme="${theme}"`,
-    shimmer !== 'sweep' ? `shimmer="${shimmer}"` : null,
-    !tilt ? 'tilt="false"' : null,
+    animate !== 'none' ? `animate="${animate}"` : null,
+    !icon ? 'icon="false"' : null,
   ].filter(Boolean)
   const snippet = `<script src="https://badges.is-pinoy.dev/badge.js"></script>\n\n<is-pinoy-badge ${attrs.join(' ')}></is-pinoy-badge>`
 
@@ -138,36 +124,28 @@ export function InteractiveBadge() {
       <div className="space-y-2">
         <Segmented label="type" value={type} options={TYPES} onChange={onType} />
         <Segmented label="theme" value={theme} options={THEMES} onChange={setTheme} />
-        <Segmented label="shimmer" value={shimmer} options={SHIMMERS} onChange={setShimmer} />
+        <Segmented label="animate" value={animate} options={ANIMATIONS} onChange={setAnimate} />
         <Segmented
-          label="tilt"
-          value={tilt ? 'on' : 'off'}
+          label="icon"
+          value={icon ? 'on' : 'off'}
           options={['on', 'off'] as const}
-          onChange={(v) => setTilt(v === 'on')}
+          onChange={(v) => setIcon(v === 'on')}
         />
       </div>
 
-      <div
-        className="flex items-center justify-center"
-        style={{
-          minHeight: '120px',
-          padding: '32px',
-          background:
-            'repeating-linear-gradient(45deg, #141414, #141414 10px, #181818 10px, #181818 20px)',
-          border: '1px solid #2a2a2a',
-        }}
-      >
+      <div className="flex items-center justify-center border border-fd-border bg-fd-muted p-8">
         <is-pinoy-badge
-          key={`${type}-${theme}-${shimmer}-${tilt}-${name}`}
+          key={`${type}-${theme}-${animate}-${icon}-${name}`}
           {...(needsHandle ? { handle: name } : {})}
           type={type}
           theme={theme}
-          shimmer={shimmer}
-          {...(tilt ? {} : { tilt: 'false' })}
+          {...(animate !== 'none' ? { animate } : {})}
+          {...(icon ? {} : { icon: 'false' })}
         />
       </div>
-      <p style={{ fontFamily: 'monospace', fontSize: '11px', color: '#666', margin: 0 }}>
-        Hover the badge to see the shimmer; move your cursor across it for the tilt.
+      <p className="m-0 font-mono text-[11px] text-fd-muted-foreground">
+        Motion moves only the sun mark and switches off under reduced-motion. On{' '}
+        <code>animate=&quot;hover&quot;</code>, hover the badge to see the turn.
       </p>
 
       <CodeBlock>

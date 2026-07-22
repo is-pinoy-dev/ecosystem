@@ -22,22 +22,26 @@ Base URL: `https://badges.is-pinoy.dev`
 | `theme` | Visual theme (see table below) | Depends on type |
 | `format` | Output format: `svg`, `png`, `webp` | `svg` |
 | `label` | Eyebrow text for `subdomain` type, max 15 chars | `DEPLOYED ON` |
+| `icon` | `false`/`off`/`0`/`no` hides the sun mark cell | shown |
+| `bg` `text` `muted` `border` `mark` `markbg` | Per-slot color overrides — hex (with or without `#`) or `transparent`; invalid values fall back to the theme | theme value |
+
+Animation is web-component-only — see [`animate`](/docs/badge-kit#interactive-html-badge). Static SVG badges cannot animate (GitHub runs no JavaScript).
 
 ## Badge types
 
 | Type | Route | Default theme |
 |------|-------|---------------|
-| `subdomain` | `/badge/:subdomain` | `dark` |
-| `member` | `/badge/:subdomain?type=member` | `dark` |
-| `pinoy-made` | `/badge?type=pinoy-made` | `split` |
+| `subdomain` | `/badge/:subdomain` | `light` |
+| `member` | `/badge/:subdomain?type=member` | `light` |
+| `pinoy-made` | `/badge?type=pinoy-made` | `light` |
 | `certified` | `/badge?type=certified` | `gold` |
 
 ## Banner types
 
 | Type | Width | Default theme |
 |------|-------|---------------|
-| `readme` | 646px | `dark` |
-| `profile` | 726px | `gold` |
+| `readme` | 640px | `light` |
+| `profile` | 720px | `gold` |
 
 ## Themes
 
@@ -60,7 +64,7 @@ All badges are cached at the CDN edge for **24 hours** (`Cache-Control: public, 
 
 <Tabs items={["Default", "Gold", "Outlined PNG", "Custom label"]}>
   <Tab value="Default">
-    ```text title="Dark theme, DEPLOYED ON eyebrow"
+    ```text title="Light theme (default), DEPLOYED ON eyebrow"
     https://badges.is-pinoy.dev/badge/yourname
     ```
   </Tab>
@@ -85,7 +89,7 @@ All badges are cached at the CDN edge for **24 hours** (`Cache-Control: public, 
 
 <Tabs items={["Default", "Light", "Outlined WebP"]}>
   <Tab value="Default">
-    ```text title="Dark theme"
+    ```text title="Light theme (default)"
     https://badges.is-pinoy.dev/badge/yourname?type=member
     ```
   </Tab>
