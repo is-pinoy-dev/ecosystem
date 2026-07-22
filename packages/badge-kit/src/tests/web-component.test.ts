@@ -20,16 +20,25 @@ describe('web component source', () => {
     }
   })
 
-  it('uses a quiet hover instead of arcade motion', () => {
-    // v2.0 limits motion to color/border/opacity — no tilt, glare, or shimmer.
+  it('uses a quiet hover, not arcade motion', () => {
+    // v2.0 retires the tilt/glare/shimmer; hover is a plain border/opacity shift.
     expect(WEB_COMPONENT_JS).toContain('.ipd-card:hover')
     expect(WEB_COMPONENT_JS).not.toContain('rotateX')
     expect(WEB_COMPONENT_JS).not.toContain('ipd-shimmer')
     expect(WEB_COMPONENT_JS).not.toContain('Press Start 2P')
   })
 
-  it('honors prefers-reduced-motion', () => {
+  it('offers opt-in sun motion that only moves the mark', () => {
+    expect(WEB_COMPONENT_JS).toContain('@keyframes ipd-spin')
+    expect(WEB_COMPONENT_JS).toContain('.ipd-card.a-spin .ipd-glyph')
+    expect(WEB_COMPONENT_JS).toContain('.ipd-card.a-hover:hover .ipd-glyph')
+    // motion targets the glyph, never the text
+    expect(WEB_COMPONENT_JS).not.toContain('.ipd-value{animation')
+  })
+
+  it('honors prefers-reduced-motion, including the sun animation', () => {
     expect(WEB_COMPONENT_JS).toContain('prefers-reduced-motion')
+    expect(WEB_COMPONENT_JS).toContain('.ipd-glyph{animation:none!important')
   })
 
   it('sanitizes the handle to [a-z0-9-]', () => {

@@ -13,7 +13,7 @@
 // Authored as a plain string (no backticks, no ${} inside) so it can be embedded
 // in this TS template literal and shipped to the browser without a build step.
 
-export const WEB_COMPONENT_VERSION = '0.2.0'
+export const WEB_COMPONENT_VERSION = '0.3.0'
 
 export const WEB_COMPONENT_JS = `(function () {
   'use strict';
@@ -130,7 +130,17 @@ export const WEB_COMPONENT_JS = `(function () {
       + ".ipd-sfx{font-weight:400;}"
       + ".ipd-brand{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;line-height:1;}"
       + ".ipd-handle{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:400;line-height:1;}"
-      + '@media (prefers-reduced-motion: reduce){.ipd-card{transition:none;}}';
+      // On-brand sun motion (opt-in via the animate attribute). It moves only
+      // the sun mark -- an echo of the animated sun banner, not arcade motion.
+      // The sun is 8-fold symmetric, so a 45deg step reads as a full turn.
+      + '@keyframes ipd-spin{to{transform:rotate(360deg);}}'
+      + '.ipd-card.a-spin .ipd-glyph{transform-origin:50% 50%;animation:ipd-spin 14s linear infinite;}'
+      + '.ipd-card.a-hover .ipd-glyph{transform-origin:50% 50%;transition:transform .5s cubic-bezier(.34,1.5,.64,1);}'
+      + '.ipd-card.a-hover:hover .ipd-glyph{transform:rotate(45deg);}'
+      + '@media (prefers-reduced-motion: reduce){'
+      +   '.ipd-card{transition:none;}'
+      +   '.ipd-glyph{animation:none!important;transition:none!important;transform:none!important;}'
+      + '}';
   }
 
   // Per-type card height keeps the square mark cell proportional.
@@ -145,9 +155,10 @@ export const WEB_COMPONENT_JS = `(function () {
   IsPinoyBadge.prototype.constructor = IsPinoyBadge;
   Object.setPrototypeOf(IsPinoyBadge, HTMLElement);
 
-  IsPinoyBadge.observedAttributes = ['handle', 'type', 'theme', 'label', 'icon', 'bg', 'text', 'muted', 'border', 'mark', 'markbg'];
+  IsPinoyBadge.observedAttributes = ['handle', 'type', 'theme', 'label', 'icon', 'animate', 'bg', 'text', 'muted', 'border', 'mark', 'markbg'];
 
   var MARK_OFF = { 'false': 1, 'off': 1, '0': 1, 'no': 1 };
+  var ANIM = { spin: 1, hover: 1 };
 
   IsPinoyBadge.prototype.connectedCallback = function () { this._render(); };
   IsPinoyBadge.prototype.attributeChangedCallback = function () {
@@ -169,9 +180,11 @@ export const WEB_COMPONENT_JS = `(function () {
 
     var h = HEIGHTS[type];
     var showMark = !MARK_OFF[(this.getAttribute('icon') || '').toLowerCase()];
+    var anim = (this.getAttribute('animate') || '').toLowerCase();
+    var animClass = showMark && ANIM[anim] ? ' a-' + anim : '';
 
     var html = '<style>' + styles(p) + '</style>'
-      + '<a class="ipd-card t-' + type + '" part="card" style="height:' + h + 'px" '
+      + '<a class="ipd-card t-' + type + animClass + '" part="card" style="height:' + h + 'px" '
       +   'href="' + esc(href) + '" target="_blank" rel="noopener" '
       +   'aria-label="' + esc(handle) + ' on is-pinoy.dev">'
       +   (showMark ? '<span class="ipd-mark">' + mark(p.mark) + '</span>' : '')

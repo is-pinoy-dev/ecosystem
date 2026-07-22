@@ -126,13 +126,20 @@ shimmer. It honors `prefers-reduced-motion`.
 | `theme` | `light`, `dark`, `gold`, `outlined` | `light` |
 | `label` | custom eyebrow for `deployed-on` | `DEPLOYED ON` |
 | `icon` | `false`/`off`/`0`/`no` hides the sun mark cell | shown |
+| `animate` | `spin` (slow continuous sun rotation) or `hover` (springy 45° turn on hover) | none |
 | `bg` `text` `muted` `border` `mark` `markbg` | color overrides (hex or `transparent`, same as the SVG params) | Theme value |
+
+Animation only moves the sun mark — an echo of the animated sun banner, not
+arcade motion — and is disabled under `prefers-reduced-motion`. It is
+web-component-only; README SVGs stay static (GitHub runs no JS).
 
 ```html
 <is-pinoy-badge handle="juan" type="certified" theme="gold"></is-pinoy-badge>
 <is-pinoy-badge handle="juan" type="member" theme="dark"></is-pinoy-badge>
 <is-pinoy-badge handle="juan" type="deployed-on" markbg="#6D28D9" mark="#FFFFFF"></is-pinoy-badge>
 <is-pinoy-badge handle="juan" type="deployed-on" icon="false"></is-pinoy-badge>
+<is-pinoy-badge handle="juan" type="deployed-on" animate="spin"></is-pinoy-badge>
+<is-pinoy-badge handle="juan" type="certified" theme="gold" animate="hover"></is-pinoy-badge>
 ```
 
 ## Scripts
