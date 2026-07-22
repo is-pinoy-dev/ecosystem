@@ -79,8 +79,11 @@ resvg layouts match.
 
 **Shape** — `border-radius: 0` everywhere. Borders are 1px. No pixel shadows.
 
-**Mark** — the brand mark is a five-square "plus": a sun reduced to axis-aligned
-squares, scaled to fill the square mark cell. No icon library, no emoji.
+**Mark** — the brand mark is the official is-pinoy.dev **8-ray sun**, rebuilt as
+a compact vector (`SUN_RAY` in `lib/svg.ts`) so it recolors per theme and stays
+crisp at any size. The source logo is a gold-only 437KB PNG — too heavy to embed
+and impossible to recolor — so the vector is the canonical mark for the kit. No
+icon library, no emoji.
 
 **Motion** (web component only) — a single 140ms border/opacity hover. No tilt,
 glare, shimmer, scanline, or glow. Honors `prefers-reduced-motion`.

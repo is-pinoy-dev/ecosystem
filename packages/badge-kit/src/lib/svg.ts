@@ -183,28 +183,25 @@ function esc(value: string): string {
     .replace(/'/g, '&apos;')
 }
 
-// The brand mark: a five-square "plus" — a sun reduced to axis-aligned squares.
-// Geometric, minimal, and true to the square-geometry brand trait. Drawn to
-// fill a `cell` × `cell` region positioned at (x, y).
+// The official is-pinoy.dev mark: the 8-ray Philippine sun, rebuilt as a
+// compact vector so it recolors per theme and stays crisp at any size (the
+// source logo is a 437KB gold-only PNG — too heavy to embed and impossible to
+// recolor). One tapered ray points up on a 100×100 grid; eight rotations form
+// the sun. The rounded, slightly organic ray keeps the hand-drawn character of
+// the original.
+const SUN_RAY =
+  'M50 6.5 C46.8 7 46.2 12 46.5 19 C46.8 27 48.1 35 48.6 40.5 C48.85 43.2 51.15 43.2 51.4 40.5 C51.9 35 53.2 27 53.5 19 C53.8 12 53.2 7 50 6.5 Z'
+const SUN_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]
+
+// Draw the sun mark filling ~66% of a `cell` × `cell` region at (x, y).
 function mark(x: number, y: number, cell: number, color: string): string {
-  const s = Math.max(2, Math.round(cell * 0.15))
-  const pitch = s * 2
-  const span = s + pitch * 2
-  const ox = x + (cell - span) / 2
-  const oy = y + (cell - span) / 2
-  const cells = [
-    [1, 0],
-    [0, 1],
-    [1, 1],
-    [2, 1],
-    [1, 2],
-  ]
-  return cells
-    .map(
-      ([col, row]) =>
-        `<rect x="${(ox + col * pitch).toFixed(2)}" y="${(oy + row * pitch).toFixed(2)}" width="${s}" height="${s}" fill="${color}"/>`
-    )
-    .join('')
+  const size = cell * 0.66
+  const off = (cell - size) / 2
+  const scale = size / 100
+  const rays = SUN_ANGLES.map(
+    (a) => `<path d="${SUN_RAY}" transform="rotate(${a} 50 50)"/>`
+  ).join('')
+  return `<g transform="translate(${(x + off).toFixed(2)} ${(y + off).toFixed(2)}) scale(${scale.toFixed(4)})" fill="${color}">${rays}</g>`
 }
 
 function text(

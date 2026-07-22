@@ -4,7 +4,7 @@
 // isolated custom element for real HTML pages (portfolios, docs, footers).
 //
 // It mirrors the static SVG badges (packages/badge-kit/src/lib/svg.ts) exactly
-// — same Banig Grid palette, same square-plus mark, same IBM Plex Mono voice —
+// — same Banig Grid palette, same 8-ray sun mark, same IBM Plex Mono voice —
 // and adds only a single quiet hover: a 140ms border/opacity shift. The old
 // arcade effects (3D tilt, holographic glare, diagonal shimmer, pixel shadow)
 // are retired along with the retro design system; motion is now limited to
@@ -69,14 +69,16 @@ export const WEB_COMPONENT_JS = `(function () {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // The five-square "plus" brand mark, on a 100x100 grid.
+  // The official 8-ray is-pinoy.dev sun, on a 100x100 grid (mirrors SUN_RAY in
+  // packages/badge-kit/src/lib/svg.ts).
+  var SUN_RAY = 'M50 6.5 C46.8 7 46.2 12 46.5 19 C46.8 27 48.1 35 48.6 40.5 C48.85 43.2 51.15 43.2 51.4 40.5 C51.9 35 53.2 27 53.5 19 C53.8 12 53.2 7 50 6.5 Z';
   function mark(color) {
-    var cells = [[42.5, 12.5], [12.5, 42.5], [42.5, 42.5], [72.5, 42.5], [42.5, 72.5]];
-    var rects = '';
-    for (var i = 0; i < cells.length; i++) {
-      rects += '<rect x="' + cells[i][0] + '" y="' + cells[i][1] + '" width="15" height="15" fill="' + color + '"/>';
+    var angles = [0, 45, 90, 135, 180, 225, 270, 315];
+    var rays = '';
+    for (var i = 0; i < angles.length; i++) {
+      rays += '<path d="' + SUN_RAY + '" transform="rotate(' + angles[i] + ' 50 50)"/>';
     }
-    return '<svg class="ipd-glyph" viewBox="0 0 100 100" aria-hidden="true" focusable="false">' + rects + '</svg>';
+    return '<svg class="ipd-glyph" viewBox="0 0 100 100" fill="' + color + '" aria-hidden="true" focusable="false">' + rays + '</svg>';
   }
 
   function body(type, p, handle, label) {
@@ -114,7 +116,7 @@ export const WEB_COMPONENT_JS = `(function () {
       + '.ipd-card:hover{border-color:' + p.hover + ';box-shadow:inset 0 0 0 1px ' + p.hover + ';}'
       + '.ipd-mark{flex:0 0 auto;align-self:stretch;aspect-ratio:1;display:grid;place-items:center;'
       +   'background:' + p.markBg + ';border-right:1px solid ' + p.divider + ';}'
-      + '.ipd-glyph{width:40%;height:40%;display:block;}'
+      + '.ipd-glyph{width:66%;height:66%;display:block;}'
       + '.ipd-body{display:flex;align-items:center;}'
       + '.ipd-card.t-member .ipd-body{padding:0 12px;}'
       + '.ipd-card.t-pinoy-made .ipd-body{padding:0 14px;}'
