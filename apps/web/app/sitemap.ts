@@ -9,6 +9,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
+      url: "https://is-pinoy.dev/badges",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
       url: "https://is-pinoy.dev/privacy",
       lastModified: new Date(),
       changeFrequency: "monthly",

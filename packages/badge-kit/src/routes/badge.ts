@@ -8,6 +8,7 @@ import {
   LABEL_MAX_LENGTH,
 } from '../lib/svg.ts'
 import { isSubdomainRegistered } from '../lib/registry.ts'
+import { parseOverrides } from '../lib/color.ts'
 import { svgToPng, svgToWebp } from '../lib/render.ts'
 import { badgeCacheHeaders } from '../lib/cache.ts'
 import type { Env } from '../index.ts'
@@ -29,6 +30,12 @@ function parseFormat(raw: string | undefined): OutputFormat {
 function parseLabel(raw: string | undefined): string {
   const label = (raw ?? DEFAULT_SUBDOMAIN_LABEL).toUpperCase().trim()
   return label.slice(0, LABEL_MAX_LENGTH)
+}
+
+// The sun mark shows by default; `icon=false|off|0|no` hides it.
+const OFF = new Set(['false', 'off', '0', 'no'])
+function parseShowMark(raw: string | undefined): boolean {
+  return !OFF.has((raw ?? '').toLowerCase())
 }
 
 async function respond(svg: string, format: OutputFormat): Promise<Response> {
@@ -57,9 +64,12 @@ export function registerBadgeRoute(app: Hono<{ Bindings: Env }>): void {
     const format = parseFormat(c.req.query('format'))
     const label = parseLabel(c.req.query('label'))
 
+    const overrides = parseOverrides((k) => c.req.query(k))
+    const showMark = parseShowMark(c.req.query('icon'))
+
     const preview = c.req.query('preview') === 'true'
     const registered = preview || await isSubdomainRegistered(subdomain)
-    const svg = generateBadgeSvg({ subdomain, type, theme, notFound: !registered, label })
+    const svg = generateBadgeSvg({ subdomain, type, theme, notFound: !registered, label, overrides, showMark })
 
     return respond(svg, format)
   })
@@ -70,8 +80,10 @@ export function registerBadgeRoute(app: Hono<{ Bindings: Env }>): void {
     const type = PLATFORM_TYPES.has(rawType as string) ? (rawType as 'pinoy-made' | 'certified') : 'pinoy-made'
     const theme = parseTheme(c.req.query('theme'), type)
     const format = parseFormat(c.req.query('format'))
+    const overrides = parseOverrides((k) => c.req.query(k))
+    const showMark = parseShowMark(c.req.query('icon'))
 
-    const svg = generateBadgeSvg({ subdomain: '', type, theme, notFound: false })
+    const svg = generateBadgeSvg({ subdomain: '', type, theme, notFound: false, overrides, showMark })
     return respond(svg, format)
   })
 }

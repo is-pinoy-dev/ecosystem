@@ -19,7 +19,6 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260527.1",
-    "@fontsource/press-start-2p": "^5.2.7",
     "@types/node": "catalog:",
     "@workspace/typescript-config": "workspace:*",
     "typescript": "catalog:",

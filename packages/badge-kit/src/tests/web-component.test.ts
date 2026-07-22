@@ -15,28 +15,30 @@ describe('web component source', () => {
   })
 
   it('observes the configurable attributes', () => {
-    for (const attr of ['handle', 'type', 'theme', 'label', 'shimmer', 'shimmer-color', 'tilt']) {
+    for (const attr of ['handle', 'type', 'theme', 'label']) {
       expect(WEB_COMPONENT_JS).toContain(attr)
     }
   })
 
-  it('supports every shimmer mode', () => {
-    expect(WEB_COMPONENT_JS).toContain('sh-off')
-    expect(WEB_COMPONENT_JS).toContain('sh-sweep')
-    expect(WEB_COMPONENT_JS).toContain('sh-loop')
-    expect(WEB_COMPONENT_JS).toContain('sh-always')
-    expect(WEB_COMPONENT_JS).toContain('@keyframes ipd-shimmer')
+  it('uses a quiet hover, not arcade motion', () => {
+    // v2.0 retires the tilt/glare/shimmer; hover is a plain border/opacity shift.
+    expect(WEB_COMPONENT_JS).toContain('.ipd-card:hover')
+    expect(WEB_COMPONENT_JS).not.toContain('rotateX')
+    expect(WEB_COMPONENT_JS).not.toContain('ipd-shimmer')
+    expect(WEB_COMPONENT_JS).not.toContain('Press Start 2P')
   })
 
-  it('implements the ID-card tilt with pointer tracking', () => {
-    expect(WEB_COMPONENT_JS).toContain('pointermove')
-    expect(WEB_COMPONENT_JS).toContain('pointerleave')
-    expect(WEB_COMPONENT_JS).toContain('rotateX(var(--rx')
-    expect(WEB_COMPONENT_JS).toContain('rotateY(var(--ry')
+  it('offers opt-in sun motion that only moves the mark', () => {
+    expect(WEB_COMPONENT_JS).toContain('@keyframes ipd-spin')
+    expect(WEB_COMPONENT_JS).toContain('.ipd-card.a-spin .ipd-glyph')
+    expect(WEB_COMPONENT_JS).toContain('.ipd-card.a-hover:hover .ipd-glyph')
+    // motion targets the glyph, never the text
+    expect(WEB_COMPONENT_JS).not.toContain('.ipd-value{animation')
   })
 
-  it('honors prefers-reduced-motion', () => {
+  it('honors prefers-reduced-motion, including the sun animation', () => {
     expect(WEB_COMPONENT_JS).toContain('prefers-reduced-motion')
+    expect(WEB_COMPONENT_JS).toContain('.ipd-glyph{animation:none!important')
   })
 
   it('sanitizes the handle to [a-z0-9-]', () => {
