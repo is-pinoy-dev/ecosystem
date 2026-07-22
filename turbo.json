@@ -21,7 +21,10 @@
         "CLOUDFLARE_D1_DATABASE_ID",
         "CLOUDFLARE_D1_API_TOKEN",
         "REGISTRY_SYNC_SECRET",
-        "VERCEL_GIT_COMMIT_SHA"
+        "VERCEL_GIT_COMMIT_SHA",
+        "PORTFOLIO_ROOT_DOMAIN",
+        "PORTFOLIO_SPIKE_SUBDOMAIN",
+        "PORTFOLIO_SPIKE_LOGIN"
       ]
     },
     "lint": {
