@@ -194,6 +194,37 @@
       },
       "additionalProperties": false
     },
+    "portfolio": {
+      "type": "object",
+      "properties": {
+        "template": {
+          "type": "string",
+          "enum": [
+            "terminal",
+            "pixel-card",
+            "minimal"
+          ]
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "gold-dark",
+            "mono",
+            "matrix"
+          ]
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "template"
+      ],
+      "additionalProperties": false
+    },
     "destroy": {
       "type": "boolean"
     }
