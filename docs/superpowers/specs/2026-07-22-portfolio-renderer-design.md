@@ -183,8 +183,12 @@ The dashboard already has GitHub auth, so we know the user's login:
    subdomain, upstream GitHub fetches ISR-cached (1h).
 4. **Templates + themes** ✅ — terminal, pixel-card, minimal templates;
    gold-dark / mono / matrix themes via token re-scoping in a shared shell.
-5. **Onboarding** ⬜ — dashboard picker, live preview, auto-PR flow. *Not yet
-   built* — see the open decision below.
+5. **Onboarding** ✅ — `apps/dashboard` `/claim` flow: subdomain input, template
+   + theme selectors, live Preview link (renderer `?preview=` mode), and
+   **auto-open PR** to the domains repo (chosen over the prefilled-link option).
+   The GitHub OAuth provider now requests `public_repo`; the token is persisted
+   in the encrypted JWT only and read server-side to fork → branch → add the
+   file → open the PR.
 
 ## Status of pre-build open items
 
@@ -198,11 +202,20 @@ The dashboard already has GitHub auth, so we know the user's login:
 - ⬜ **Deployment host behind `portfolio.is-pinoy.dev`.** Still to decide; the
   portfolio subdomains' CNAME target depends on it.
 
-## Remaining decision — Phase 5 onboarding
+## Phase 5 decision (resolved) — auto-open PR
 
-Before building the dashboard flow, one product/security decision: should
-"confirm" **auto-open a PR** to `is-pinoy-dev/domains` on the user's behalf
-(needs a repo-scoped GitHub token and diverges from today's "submit your own
-PR" flow), or should it **generate the JSON and hand the user a prefilled PR
-link** to submit themselves (keeps the current governance, no elevated token)?
-The renderer is agnostic to this choice.
+Resolved in favor of **auto-open**: on confirm, the dashboard forks the domains
+repo and opens the claim PR using the user's `public_repo` OAuth token. The PR
+is authored by the user, keeping the same maintainer-merge governance as the
+manual flow — only the mechanics are automated. Security posture: the access
+token lives solely in the encrypted session JWT (never the client session) and
+is decoded server-side per request.
+
+## Remaining before production
+
+- **Deployment host behind `portfolio.is-pinoy.dev`** — still to decide; the
+  portfolio subdomains' CNAME target depends on it.
+- **`GITHUB_TOKEN` for the renderer** — required for live rendering (anonymous
+  `api.github.com` is rate-limited/403).
+- **Live OAuth + PR creation** — exercisable only outside the sandbox (needs a
+  real GitHub OAuth app and API access).
