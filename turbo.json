@@ -24,7 +24,8 @@
         "VERCEL_GIT_COMMIT_SHA",
         "PORTFOLIO_ROOT_DOMAIN",
         "PORTFOLIO_SPIKE_SUBDOMAIN",
-        "PORTFOLIO_SPIKE_LOGIN"
+        "PORTFOLIO_SPIKE_LOGIN",
+        "NEXT_PUBLIC_PORTFOLIO_URL"
       ]
     },
     "lint": {

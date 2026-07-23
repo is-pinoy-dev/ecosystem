@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Globe, LayoutDashboard, UserRound } from "lucide-react"
+import { Globe, LayoutDashboard, Sparkles, UserRound } from "lucide-react"
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/domains", label: "Domains", icon: Globe },
+  { href: "/claim", label: "Claim", icon: Sparkles },
   { href: "/account", label: "Account", icon: UserRound },
 ]
 

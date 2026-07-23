@@ -97,9 +97,15 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@is-pinoy-dev/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@is-pinoy-dev/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@is-pinoy-dev/validate':
+        specifier: workspace:*
+        version: link:../../packages/validate
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@cloudflare/workers-types@4.20260527.1)(@opentelemetry/api@1.9.1)(postgres@3.4.9)
