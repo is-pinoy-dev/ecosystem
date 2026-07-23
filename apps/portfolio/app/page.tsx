@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { PortfolioShell } from "@/components/portfolio-shell"
-import { getRenderContext } from "@/lib/context"
+import { getRenderContext, parsePreview } from "@/lib/context"
 import { renderTemplate } from "@/templates"
 
 // Reading the Host-derived header makes this route dynamic per subdomain; the
@@ -9,8 +9,15 @@ import { renderTemplate } from "@/templates"
 // freshness stays pure revalidation without statically pinning one profile.
 export const dynamic = "force-dynamic"
 
-export async function generateMetadata(): Promise<Metadata> {
-  const ctx = await getRenderContext()
+type SearchParams = Record<string, string | string[] | undefined>
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}): Promise<Metadata> {
+  const preview = parsePreview(await searchParams)
+  const ctx = await getRenderContext(preview)
   if (!ctx) return { title: "Not found — is-pinoy.dev" }
 
   const { profile } = ctx.data
@@ -30,8 +37,13 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function PortfolioPage() {
-  const ctx = await getRenderContext()
+export default async function PortfolioPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const preview = parsePreview(await searchParams)
+  const ctx = await getRenderContext(preview)
   if (!ctx) notFound()
 
   return (
