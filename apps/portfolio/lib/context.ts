@@ -19,7 +19,14 @@ export interface PreviewParams {
 }
 
 const TEMPLATES: TemplateName[] = ["terminal", "pixel-card", "minimal"]
-const THEMES: PortfolioTheme[] = ["gold-dark", "mono", "matrix"]
+const THEMES: PortfolioTheme[] = [
+  "gold-dark",
+  "mono",
+  "matrix",
+  "midnight",
+  "crimson",
+  "sunset",
+]
 
 // Cached by primitive keys so generateMetadata and the page share one fetch
 // per request even though React `cache` keys on argument identity.

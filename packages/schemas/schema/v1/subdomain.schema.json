@@ -210,7 +210,10 @@
           "enum": [
             "gold-dark",
             "mono",
-            "matrix"
+            "matrix",
+            "midnight",
+            "crimson",
+            "sunset"
           ]
         },
         "sections": {

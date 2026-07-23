@@ -22,7 +22,9 @@ export const domainFeaturesSchema = z.object({
 export const portfolioSchema = z
   .object({
     template: z.enum(["terminal", "pixel-card", "minimal"]),
-    theme: z.enum(["gold-dark", "mono", "matrix"]).optional(),
+    theme: z
+      .enum(["gold-dark", "mono", "matrix", "midnight", "crimson", "sunset"])
+      .optional(),
     // Optional allow-list / reordering of README sections by heading slug.
     // Omitted → render every section in document order.
     sections: z.array(z.string()).optional(),

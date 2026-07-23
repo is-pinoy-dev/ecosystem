@@ -33,3 +33,69 @@
   --surface-subtle: #050805;
   --code-bg: #010301;
 }
+
+/* Deep indigo with a teal accent — calm, engineering-forward. */
+[data-theme="midnight"] {
+  --background: #0a0f1e;
+  --foreground: #e6ebf5;
+  --card: #111834;
+  --card-foreground: #e6ebf5;
+  --primary: #7c9cff;
+  --primary-foreground: #0a0f1e;
+  --primary-dark: #5a78e0;
+  --secondary: #141c3a;
+  --muted: #141c3a;
+  --muted-foreground: #8b95b5;
+  --accent: #4fd1c5;
+  --accent-foreground: #0a0f1e;
+  --border: #23305c;
+  --input: #2c3a6e;
+  --ring: #7c9cff;
+  --surface: #111834;
+  --surface-subtle: #0a0f1e;
+  --code-bg: #060a16;
+}
+
+/* Rose-red on near-black with a warm peach accent — bold, confident. */
+[data-theme="crimson"] {
+  --background: #14090b;
+  --foreground: #f5e9ea;
+  --card: #200e12;
+  --card-foreground: #f5e9ea;
+  --primary: #ff5470;
+  --primary-foreground: #14090b;
+  --primary-dark: #d63a55;
+  --secondary: #2a1218;
+  --muted: #2a1218;
+  --muted-foreground: #b58f96;
+  --accent: #ffab76;
+  --accent-foreground: #14090b;
+  --border: #3d1a22;
+  --input: #4d2029;
+  --ring: #ff5470;
+  --surface: #200e12;
+  --surface-subtle: #170a0c;
+  --code-bg: #0d0507;
+}
+
+/* Dusk plum with orange + violet accents — warm, creative. */
+[data-theme="sunset"] {
+  --background: #16101d;
+  --foreground: #f6ecf0;
+  --card: #1f1629;
+  --card-foreground: #f6ecf0;
+  --primary: #ff8c42;
+  --primary-foreground: #16101d;
+  --primary-dark: #e0702a;
+  --secondary: #271a33;
+  --muted: #271a33;
+  --muted-foreground: #ab9bb5;
+  --accent: #c084fc;
+  --accent-foreground: #16101d;
+  --border: #382745;
+  --input: #45304f;
+  --ring: #ff8c42;
+  --surface: #1f1629;
+  --surface-subtle: #0e0813;
+  --code-bg: #0e0813;
+}

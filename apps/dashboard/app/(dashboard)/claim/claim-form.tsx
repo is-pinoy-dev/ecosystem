@@ -20,6 +20,9 @@ const THEMES: { value: NonNullable<ClaimInput["portfolio"]["theme"]>; label: str
   { value: "gold-dark", label: "Gold Dark" },
   { value: "mono", label: "Mono" },
   { value: "matrix", label: "Matrix" },
+  { value: "midnight", label: "Midnight" },
+  { value: "crimson", label: "Crimson" },
+  { value: "sunset", label: "Sunset" },
 ]
 
 const PORTFOLIO_URL =
