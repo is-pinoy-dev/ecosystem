@@ -11,11 +11,25 @@ Cloudflare Worker at `badges.is-pinoy.dev` that renders SVG/PNG/WebP badges and 
    # edit .dev.vars with real CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID
    ```
 
-2. Start the dev server:
+2. Start the dev server (Wrangler, usually on `http://localhost:8787`):
 
    ```bash
    pnpm dev
    ```
+
+### Previewing component changes in the web/docs apps
+
+The docs "Try it" builder and every badge image load from
+`${NEXT_PUBLIC_BADGE_HOST}` (default `https://badges.is-pinoy.dev`) — i.e. the
+**deployed** worker, not your local checkout. So edits to `badge.js` (the
+`<is-pinoy-badge>` web component) won't appear in the live previews until this
+worker is deployed. To preview local changes, run this worker and point the app
+at it:
+
+```bash
+pnpm --filter @is-pinoy-dev/badge-kit dev            # serves /badge.js on :8787
+NEXT_PUBLIC_BADGE_HOST=http://localhost:8787 pnpm --filter docs dev
+```
 
 ## Endpoints
 
