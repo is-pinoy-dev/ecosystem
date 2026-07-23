@@ -27,6 +27,33 @@ pnpm --filter dashboard dev   # http://localhost:3001
 Ownership is matched by GitHub username: after signing in, the dashboard lists
 every registry record whose `owner.github` equals your login.
 
+## Deploying to Vercel (preview + production)
+
+`vercel.json` in this directory sets the framework and an
+[`turbo-ignore`](https://turbo.build/repo/docs/reference/turbo-ignore) build
+step so a preview only rebuilds when `dashboard` or one of its workspace
+dependencies (e.g. `@is-pinoy-dev/ui`) actually changed. The rest is Vercel
+project configuration — do it once in the dashboard:
+
+1. **Import the repo** into Vercel and set **Root Directory** to
+   `apps/dashboard`. Vercel auto-detects the pnpm workspace and installs from
+   the repo root; `transpilePackages` handles the workspace UI package, so no
+   pre-build step is needed.
+2. **Environment variables** (set the Preview and Production scopes):
+   - `AUTH_SECRET` — a stable value shared across both scopes (`npx auth secret`).
+   - `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` — from the GitHub OAuth app.
+   - `AUTH_REDIRECT_PROXY_URL` — **Preview scope only**, set to the production
+     auth route, e.g. `https://dashboard.is-pinoy.dev/api/auth`.
+   - The D1 vars and `REGISTRY_SYNC_SECRET` are optional (see below); without
+     them a preview falls back to the GitHub-API read path.
+3. **GitHub OAuth callback** — register the single production callback
+   `https://dashboard.is-pinoy.dev/api/auth/callback/github`. Because previews
+   route through `AUTH_REDIRECT_PROXY_URL`, their per-commit URLs do **not**
+   each need registering.
+
+With the native Git integration connected, every branch and PR then gets its
+own preview URL automatically.
+
 ## Database (optional but recommended)
 
 Git stays the source of truth: the merged JSON in
