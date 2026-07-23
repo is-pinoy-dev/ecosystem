@@ -49,11 +49,10 @@ export function SubdomainBanner() {
           spellCheck={false}
           autoCapitalize="none"
           autoCorrect="off"
-          className="text-xs font-mono bg-transparent outline-none"
+          className="text-xs font-mono bg-transparent outline-none text-fd-foreground font-semibold"
           style={{
             border: 'none',
             borderBottom: '1px solid #F5C800',
-            color: '#F5C800',
             caretColor: '#F5C800',
             minWidth: '8ch',
             width: `${Math.max((draft.length || 8), 8)}ch`,
@@ -63,9 +62,8 @@ export function SubdomainBanner() {
         <button
           onClick={startEdit}
           title="Click to change your subdomain"
-          className="text-xs font-mono bg-transparent border-none cursor-text p-0 flex items-center gap-1"
+          className="text-xs font-mono font-semibold text-fd-foreground bg-transparent border-none cursor-text p-0 flex items-center gap-1"
           style={{
-            color: '#F5C800',
             borderBottom: '1px dashed #F5C800',
           }}
         >

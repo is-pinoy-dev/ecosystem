@@ -20,11 +20,8 @@ describe('web component source', () => {
     }
   })
 
-  it('uses a quiet hover, not arcade motion', () => {
-    // v2.0 retires the tilt/glare/shimmer; hover is a plain border/opacity shift.
+  it('has a quiet border hover as the default, not Press Start 2P', () => {
     expect(WEB_COMPONENT_JS).toContain('.ipd-card:hover')
-    expect(WEB_COMPONENT_JS).not.toContain('rotateX')
-    expect(WEB_COMPONENT_JS).not.toContain('ipd-shimmer')
     expect(WEB_COMPONENT_JS).not.toContain('Press Start 2P')
   })
 
@@ -36,9 +33,29 @@ describe('web component source', () => {
     expect(WEB_COMPONENT_JS).not.toContain('.ipd-value{animation')
   })
 
-  it('honors prefers-reduced-motion, including the sun animation', () => {
+  it('offers opt-in tilt + shimmer, gated behind attributes', () => {
+    // effects exist…
+    expect(WEB_COMPONENT_JS).toContain('rotateX(var(--rx')
+    expect(WEB_COMPONENT_JS).toContain('@keyframes ipd-shimmer')
+    expect(WEB_COMPONENT_JS).toContain('pointermove')
+    // …but only when the class is present (default badge has neither)
+    expect(WEB_COMPONENT_JS).toContain('.ipd-card.tilt{')
+    expect(WEB_COMPONENT_JS).toContain("tiltOn ? ' tilt' : ''")
+    expect(WEB_COMPONENT_JS).toContain("shimmer !== 'off'")
+    for (const attr of ['shimmer', 'shimmer-color', 'tilt']) {
+      expect(WEB_COMPONENT_JS).toContain(attr)
+    }
+  })
+
+  it('validates the shimmer color so it cannot inject CSS', () => {
+    expect(WEB_COMPONENT_JS).toContain('function shimmerColor')
+  })
+
+  it('honors prefers-reduced-motion for every effect', () => {
     expect(WEB_COMPONENT_JS).toContain('prefers-reduced-motion')
     expect(WEB_COMPONENT_JS).toContain('.ipd-glyph{animation:none!important')
+    expect(WEB_COMPONENT_JS).toContain('.ipd-card.tilt{transform:none!important')
+    expect(WEB_COMPONENT_JS).toContain('.ipd-shimmer,.ipd-glare{display:none!important')
   })
 
   it('sanitizes the handle to [a-z0-9-]', () => {

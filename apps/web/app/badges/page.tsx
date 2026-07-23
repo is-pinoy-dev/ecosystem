@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { ArrowRight } from "lucide-react"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import {
   SectionDescription,
@@ -90,7 +91,25 @@ export default function BadgesPage() {
 
             <BadgeKit />
 
-            <div className="mt-14 flex flex-col gap-3 border-t border-border pt-6">
+            <div className="mt-14 flex flex-col gap-4 border-t border-border pt-6">
+              <div className="flex flex-col gap-3 border border-border bg-muted/40 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Full badge kit reference
+                  </p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Every type, theme, format, banner, and query parameter —
+                    plus the interactive web component.
+                  </p>
+                </div>
+                <a
+                  href="https://docs.is-pinoy.dev/docs/badge-kit"
+                  className="inline-flex shrink-0 items-center gap-1.5 font-mono text-sm font-medium text-accent underline-offset-4 hover:underline"
+                >
+                  Read the docs
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </a>
+              </div>
               <p className="text-sm text-muted-foreground">
                 Building an actual web page instead of a README? Load the
                 interactive{" "}
@@ -101,7 +120,14 @@ export default function BadgesPage() {
                 <code className="font-mono text-[13px] text-foreground">
                   badges.is-pinoy.dev/badge.js
                 </code>{" "}
-                for a live link and hover.
+                for a live link and{" "}
+                <a
+                  href="https://docs.is-pinoy.dev/docs/badge-kit#interactive-html-badge"
+                  className="text-accent underline-offset-4 hover:underline"
+                >
+                  optional sun motion
+                </a>
+                .
               </p>
               <p className="text-sm text-muted-foreground">
                 Please use the official badges as-is and keep them linked back

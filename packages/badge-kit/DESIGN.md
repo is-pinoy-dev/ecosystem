@@ -85,8 +85,11 @@ crisp at any size. The source logo is a gold-only 437KB PNG — too heavy to emb
 and impossible to recolor — so the vector is the canonical mark for the kit. No
 icon library, no emoji.
 
-**Motion** (web component only) — a single 140ms border/opacity hover. No tilt,
-glare, shimmer, scanline, or glow. Honors `prefers-reduced-motion`.
+**Motion** (web component only) — the default is a single 140ms border hover;
+no scanline, flicker, or glow. Sun rotation, a diagonal shimmer sweep, and an
+"ID card" tilt are available but strictly opt-in (off by default) via the
+`animate` / `shimmer` / `tilt` attributes, so the standard badge stays calm.
+Every effect honors `prefers-reduced-motion`.
 
 ---
 
@@ -133,7 +136,7 @@ adds only the quiet hover. Attributes: `handle` (omit for `pinoy-made`), `type`,
 
 - [x] All types render in all four themes.
 - [x] `border-radius: 0` holds everywhere; no rounded corners.
-- [x] No Press Start 2P, no scanlines, no glow, no pixel shadows, no tilt/shimmer.
+- [x] No Press Start 2P, no scanlines, no glow, no pixel shadows. Tilt/shimmer exist only as opt-in web-component attributes (off by default).
 - [x] SVGs embed IBM Plex Mono and render through GitHub's camo proxy.
 - [x] Web component is Shadow-DOM isolated and survives hostile host CSS.
 - [x] Handle sanitizes to `[a-z0-9-]`; interpolated text is escaped.

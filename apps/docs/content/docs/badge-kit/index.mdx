@@ -15,17 +15,17 @@ Click any theme to select it and copy the embed code.
 
 A compact inline identity badge — your subdomain next to the is-pinoy.dev brand.
 
-<BadgeThemes basePath="/badge/yourname?type=member" themes={["dark", "gold", "light", "outlined"]} alt="member badge" />
+<BadgeThemes basePath="/badge/yourname?type=member" themes={["light", "dark", "gold", "outlined"]} alt="member badge" />
 
 ## Subdomain Badge
 
 The general-purpose badge. Shows your subdomain with a customizable eyebrow label (max 20 characters, defaults to `DEPLOYED ON`).
 
-<BadgeThemes basePath="/badge/yourname" themes={["dark", "gold", "light", "outlined"]} alt="subdomain badge" />
+<BadgeThemes basePath="/badge/yourname" themes={["light", "dark", "gold", "outlined"]} alt="subdomain badge" />
 
 Custom label via `?label=`:
 
-<BadgeThemes basePath="/badge/yourname?label=BUILT+BY" themes={["dark", "gold", "light", "outlined"]} alt="subdomain badge with custom label" />
+<BadgeThemes basePath="/badge/yourname?label=BUILT+BY" themes={["light", "dark", "gold", "outlined"]} alt="subdomain badge with custom label" />
 
 ## Platform Badges
 
@@ -33,29 +33,29 @@ Standalone marks — no subdomain needed.
 
 ### Pinoy Made
 
-<BadgeThemes basePath="/badge?type=pinoy-made" themes={["dark", "gold", "light", "outlined"]} alt="pinoy-made badge" />
+<BadgeThemes basePath="/badge?type=pinoy-made" themes={["light", "dark", "gold", "outlined"]} alt="pinoy-made badge" />
 
 ### Certified Pinoy Dev
 
-<BadgeThemes basePath="/badge?type=certified" themes={["dark", "gold", "light", "outlined"]} alt="certified badge" />
+<BadgeThemes basePath="/badge?type=certified" themes={["light", "dark", "gold", "outlined"]} alt="certified badge" />
 
 ## Banners
 
 Wider assets for README headers and GitHub profiles.
 
-### README banner (646px)
+### README banner (640px)
 
-<BadgeThemes basePath="/banner/yourname?type=readme" themes={["dark", "gold"]} alt="readme banner" />
+<BadgeThemes basePath="/banner/yourname?type=readme" themes={["light", "dark", "gold"]} alt="readme banner" />
 
-### Profile banner (726px)
+### Profile banner (720px)
 
-<BadgeThemes basePath="/banner/yourname?type=profile" themes={["gold", "dark"]} alt="profile banner" />
+<BadgeThemes basePath="/banner/yourname?type=profile" themes={["gold", "dark", "light"]} alt="profile banner" />
 
 ## Interactive HTML badge
 
-For your own website, portfolio, or footer — anywhere real HTML runs — use the `<is-pinoy-badge>` web component instead of a static image. It adds an "ID card" tilt that follows your cursor and a configurable shimmer sweep on hover. (GitHub READMEs strip scripts, so keep using the SVG/Markdown embeds there.)
+For your own website, portfolio, or footer — anywhere real HTML runs — use the `<is-pinoy-badge>` web component instead of a static image. By default it stays calm (just a quiet border on hover), but you can opt into extra motion: on-brand **sun rotation** (`animate`), a diagonal **shimmer** sweep, and an "ID card" **tilt** that follows your cursor. Every effect is off by default and honors `prefers-reduced-motion`. (GitHub READMEs strip scripts, so keep using the SVG/Markdown embeds there.)
 
-Try it live — pick a type, theme, and shimmer mode, then hover the badge:
+Try it live — pick a type and theme, then turn on the effects:
 
 <InteractiveBadge />
 
@@ -64,23 +64,27 @@ Load the component once per page, then drop in as many badges as you like:
 ```html
 <script src="https://badges.is-pinoy.dev/badge.js"></script>
 
-<is-pinoy-badge handle="yourname" type="deployed-on" theme="dark"></is-pinoy-badge>
+<is-pinoy-badge handle="yourname" type="deployed-on" theme="light"></is-pinoy-badge>
 ```
 
 It renders into Shadow DOM, so your page's CSS can't bleed in, and it respects `prefers-reduced-motion`.
 
 | Attribute | Values | Default |
 |-----------|--------|---------|
-| `handle` | your subdomain (omit for `pinoy-made`) | — |
+| `handle` | your subdomain (omit for `pinoy-made`/`certified`) | — |
 | `type` | `deployed-on`, `member`, `pinoy-made`, `certified` | `deployed-on` |
-| `theme` | `dark`, `gold`, `light`, `outlined` | per-type default |
+| `theme` | `light`, `dark`, `gold`, `outlined` | per-type default |
 | `label` | custom eyebrow for `deployed-on` | `DEPLOYED ON` |
-| `shimmer` | `off`, `sweep`, `loop`, `always` | `sweep` |
-| `shimmer-color` | any CSS color | translucent white |
-| `tilt` | `false` to disable the 3D tilt | enabled |
+| `icon` | `false` hides the sun mark cell | shown |
+| `animate` | `spin` (continuous) or `hover` (on hover) sun rotation | none |
+| `shimmer` | `sweep` (once on hover), `loop` (while hovered), `always` | `off` |
+| `shimmer-color` | any CSS color for the sweep | translucent white |
+| `tilt` | `true` enables the 3D cursor tilt + glare | off |
+| `bg` `text` `muted` `border` `mark` `markbg` | color overrides (hex or `transparent`) | theme value |
 
 ```html
-<is-pinoy-badge handle="yourname" type="certified" theme="gold" shimmer="loop"></is-pinoy-badge>
+<!-- opt into the shimmer sweep and the cursor tilt -->
+<is-pinoy-badge handle="yourname" type="certified" theme="gold" shimmer="sweep" tilt="true"></is-pinoy-badge>
 ```
 
 ## Not found state

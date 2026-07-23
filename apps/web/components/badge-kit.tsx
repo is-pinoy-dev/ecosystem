@@ -140,32 +140,36 @@ function Segmented<T extends string>({
   onChange: (value: T) => void
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-3">
       <span className="font-mono text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
         {label}
       </span>
-      <div
-        role="group"
-        aria-label={label}
-        className="inline-flex border border-border"
-      >
-        {options.map((option, index) => (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={value === option.value}
-            onClick={() => onChange(option.value)}
-            className={cn(
-              "h-8 px-3 font-mono text-xs font-medium transition-colors duration-[140ms]",
-              index > 0 && "border-l border-border",
-              value === option.value
-                ? "bg-primary text-primary-foreground"
-                : "bg-background text-foreground hover:bg-muted",
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
+      {/* Scroll within its own bounds on very narrow screens rather than
+          pushing the page wide. */}
+      <div className="max-w-full overflow-x-auto">
+        <div
+          role="group"
+          aria-label={label}
+          className="flex w-max border border-border"
+        >
+          {options.map((option, index) => (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={value === option.value}
+              onClick={() => onChange(option.value)}
+              className={cn(
+                "h-8 shrink-0 px-3 font-mono text-xs font-medium whitespace-nowrap transition-colors duration-[140ms]",
+                index > 0 && "border-l border-border",
+                value === option.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-foreground hover:bg-muted",
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -205,8 +209,8 @@ function CopyButton({ value }: { value: string }) {
 function CodeBlock({ value }: { value: string }) {
   return (
     <div className="flex items-stretch justify-between gap-3 border border-border bg-code-bg">
-      <pre className="min-w-0 flex-1 overflow-x-auto px-3 py-2.5">
-        <code className="font-mono text-xs break-all text-[#E7ECF5]">
+      <pre className="min-w-0 flex-1 overflow-hidden px-3 py-2.5">
+        <code className="font-mono text-xs break-all whitespace-pre-wrap text-[#E7ECF5]">
           {value}
         </code>
       </pre>
@@ -241,7 +245,7 @@ export function BadgeKit() {
           <InputGroupAddon>.is-pinoy.dev</InputGroupAddon>
         </InputGroup>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-start sm:gap-x-10 sm:gap-y-4">
           <Segmented
             label="Theme"
             options={THEME_OPTIONS}
@@ -270,7 +274,7 @@ export function BadgeKit() {
           const link = item.buildLink(handle)
 
           return (
-            <div key={item.id} className="flex flex-col gap-4">
+            <div key={item.id} className="flex min-w-0 flex-col gap-4">
               <div>
                 <h3 className="text-base font-semibold text-foreground">
                   {item.name}
@@ -285,7 +289,7 @@ export function BadgeKit() {
                 <img
                   src={previewSrc}
                   alt={item.alt}
-                  className="max-w-full"
+                  className="h-auto max-w-full"
                   loading="lazy"
                 />
               </div>

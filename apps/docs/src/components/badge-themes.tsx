@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Tabs, Tab } from "fumadocs-ui/components/tabs"
-import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock"
+import { DynamicCode } from "./dynamic-code"
 import { BADGE_HOST } from "@/lib/badge-host"
 import { useSubdomainStore } from "@/store/subdomain"
 
@@ -42,28 +42,20 @@ export function BadgeThemes({
             <button
               key={theme}
               onClick={() => setSelected(theme)}
-              className="flex cursor-pointer flex-col items-start gap-1.5"
+              className="flex cursor-pointer flex-col items-start gap-1.5 border-none bg-transparent p-0"
               style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                opacity: active ? 1 : 0.45,
+                opacity: active ? 1 : 0.5,
                 transition: "opacity 0.15s",
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={toSrc(theme)}
-                alt={`${alt} — ${theme}`}
-                style={{ imageRendering: "pixelated" }}
-              />
+              <img src={toSrc(theme)} alt={`${alt} — ${theme}`} />
               <span
-                style={{
-                  fontFamily: "monospace",
-                  fontSize: "11px",
-                  color: active ? "#fff" : "#666",
-                  fontWeight: active ? "bold" : "normal",
-                }}
+                className={`font-mono text-[11px] ${
+                  active
+                    ? "font-bold text-fd-foreground"
+                    : "font-normal text-fd-muted-foreground"
+                }`}
               >
                 {active ? "▶ " : ""}
                 {theme}
@@ -87,14 +79,10 @@ function Embed({ embedUrl, linkUrl }: { embedUrl: string; linkUrl: string }) {
   return (
     <Tabs items={["Markdown", "HTML"]}>
       <Tab value="Markdown">
-        <CodeBlock>
-          <Pre className="px-4">{md}</Pre>
-        </CodeBlock>
+        <DynamicCode lang="markdown" code={md} />
       </Tab>
       <Tab value="HTML">
-        <CodeBlock>
-          <Pre className="px-4">{html}</Pre>
-        </CodeBlock>
+        <DynamicCode lang="html" code={html} />
       </Tab>
     </Tabs>
   )
