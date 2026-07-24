@@ -128,32 +128,52 @@ export function ClaimForm({ login }: { login: string }) {
         )}
       </div>
 
-      <ThumbSelector
-        legend="Layout"
-        hint="Pick a layout, then a color theme below. Previews shown in Gold Dark."
-        options={LAYOUTS}
-        value={template}
-        onChange={setTemplate}
-      />
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium text-foreground">Choose a style</span>
+        <p className="m-0 text-xs text-muted-foreground">
+          Pick <span className="font-medium text-foreground">one</span>. A{" "}
+          <span className="font-medium text-foreground">layout</span> lets you also
+          pick a color; a{" "}
+          <span className="font-medium text-foreground">designer theme</span> is a
+          complete look with its own colors.
+        </p>
+      </div>
 
-      <ThumbSelector
-        legend="Designer themes"
-        hint="Complete designs — each brings its own layout, type, and colors (no separate theme)."
-        options={DESIGNER}
-        value={template}
-        onChange={setTemplate}
-      />
-
-      {!isDesigner ? (
-        <Selector
-          legend="Theme"
-          options={THEMES}
-          value={theme}
-          onChange={setTheme}
+      <div className="flex flex-col gap-4 border-l-2 border-border pl-4">
+        <ThumbSelector
+          legend="Option A — a layout + color"
+          hint="Previews shown in Gold Dark."
+          options={LAYOUTS}
+          value={template}
+          onChange={setTemplate}
         />
-      ) : null}
+        {!isDesigner ? (
+          <Selector
+            legend="Color"
+            options={THEMES}
+            value={theme}
+            onChange={setTheme}
+          />
+        ) : null}
+      </div>
 
-      <p className="-mt-4 m-0 text-xs text-muted-foreground">
+      <div className="flex items-center gap-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <span className="h-px flex-1 bg-border" />
+        or
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <div className="border-l-2 border-border pl-4">
+        <ThumbSelector
+          legend="Option B — a designer theme"
+          hint="Each is a complete design with its own layout, type, and colors."
+          options={DESIGNER}
+          value={template}
+          onChange={setTemplate}
+        />
+      </div>
+
+      <p className="m-0 text-xs text-muted-foreground">
         Not sure? Use{" "}
         <a
           href={previewUrl}
@@ -163,7 +183,7 @@ export function ClaimForm({ login }: { login: string }) {
         >
           Preview
         </a>{" "}
-        to see your README in this style before claiming.
+        to see your README in the selected style before claiming.
       </p>
 
       <div className="flex flex-wrap items-center gap-3">
