@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { CheckCircle2, ExternalLink, Loader2, XCircle } from "lucide-react"
+import { Check, CheckCircle2, ExternalLink, Loader2, XCircle } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Input } from "@is-pinoy-dev/ui/components/input"
 import {
@@ -13,8 +13,14 @@ import { claimPortfolio, type ClaimInput } from "./actions"
 
 type TemplateValue = ClaimInput["portfolio"]["template"]
 
+interface StyleOption {
+  value: TemplateValue
+  label: string
+  mode?: "Light" | "Dark" | "Color"
+}
+
 // Layout templates are re-colored by the Theme picker below.
-const LAYOUTS: { value: TemplateValue; label: string }[] = [
+const LAYOUTS: StyleOption[] = [
   { value: "terminal", label: "Terminal" },
   { value: "pixel-card", label: "Pixel Card" },
   { value: "minimal", label: "Minimal" },
@@ -22,13 +28,13 @@ const LAYOUTS: { value: TemplateValue; label: string }[] = [
 
 // Designer themes are complete, self-contained designs (own layout, type, and
 // colors) — they ignore the Theme picker.
-const DESIGNER: { value: TemplateValue; label: string }[] = [
-  { value: "concrete", label: "Concrete" },
-  { value: "broadsheet", label: "Broadsheet" },
-  { value: "phosphor", label: "Phosphor" },
-  { value: "draft", label: "Draft" },
-  { value: "bubblegum", label: "Bubblegum" },
-  { value: "grid", label: "Grid" },
+const DESIGNER: StyleOption[] = [
+  { value: "concrete", label: "Concrete", mode: "Light" },
+  { value: "broadsheet", label: "Broadsheet", mode: "Light" },
+  { value: "phosphor", label: "Phosphor", mode: "Dark" },
+  { value: "draft", label: "Draft", mode: "Dark" },
+  { value: "bubblegum", label: "Bubblegum", mode: "Color" },
+  { value: "grid", label: "Grid", mode: "Light" },
 ]
 
 const DESIGNER_SET = new Set<TemplateValue>(DESIGNER.map((d) => d.value))
@@ -122,15 +128,15 @@ export function ClaimForm({ login }: { login: string }) {
         )}
       </div>
 
-      <Selector
+      <ThumbSelector
         legend="Layout"
-        hint="Pick a layout, then a color theme below."
+        hint="Pick a layout, then a color theme below. Previews shown in Gold Dark."
         options={LAYOUTS}
         value={template}
         onChange={setTemplate}
       />
 
-      <Selector
+      <ThumbSelector
         legend="Designer themes"
         hint="Complete designs — each brings its own layout, type, and colors (no separate theme)."
         options={DESIGNER}
@@ -208,6 +214,81 @@ export function ClaimForm({ login }: { login: string }) {
         </div>
       ) : null}
     </div>
+  )
+}
+
+const MODE_STYLES: Record<NonNullable<StyleOption["mode"]>, string> = {
+  Light: "text-amber-600 border-amber-600/40",
+  Dark: "text-blue-500 border-blue-500/40",
+  Color: "text-pink-500 border-pink-500/40",
+}
+
+/** Visual picker: a grid of thumbnail cards, one per style. */
+function ThumbSelector({
+  legend,
+  hint,
+  options,
+  value,
+  onChange,
+}: {
+  legend: string
+  hint?: string
+  options: StyleOption[]
+  value: TemplateValue
+  onChange: (value: TemplateValue) => void
+}) {
+  return (
+    <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
+      <legend className="p-0 text-sm font-medium text-foreground">{legend}</legend>
+      {hint ? <p className="m-0 -mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {options.map((option) => {
+          const selected = value === option.value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onChange(option.value)}
+              aria-pressed={selected}
+              className={cn(
+                "group flex flex-col overflow-hidden border bg-card text-left transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                selected
+                  ? "border-primary ring-2 ring-primary"
+                  : "border-border hover:border-foreground/30",
+              )}
+            >
+              <span className="relative block aspect-[16/10] overflow-hidden border-b border-border bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/themes/${option.value}.webp`}
+                  alt={`${option.label} preview`}
+                  loading="lazy"
+                  className="size-full object-cover object-top"
+                />
+                {selected ? (
+                  <span className="absolute top-1.5 right-1.5 flex size-5 items-center justify-center bg-primary text-primary-foreground">
+                    <Check className="size-3.5" aria-hidden="true" />
+                  </span>
+                ) : null}
+              </span>
+              <span className="flex items-center justify-between gap-2 px-3 py-2">
+                <span className="text-sm font-medium text-foreground">{option.label}</span>
+                {option.mode ? (
+                  <span
+                    className={cn(
+                      "border px-1.5 py-0.5 font-mono text-[10px] tracking-wide uppercase",
+                      MODE_STYLES[option.mode],
+                    )}
+                  >
+                    {option.mode}
+                  </span>
+                ) : null}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </fieldset>
   )
 }
 
