@@ -1,0 +1,1 @@
+export { default } from "@is-pinoy-dev/ui/postcss.config";

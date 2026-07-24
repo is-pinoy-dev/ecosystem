@@ -14,7 +14,17 @@ declare module "next-auth" {
 }
 
 const nextAuth = NextAuth({
-  providers: [GitHub],
+  providers: [
+    GitHub({
+      // `public_repo` lets the dashboard open a portfolio-claim PR against the
+      // public domains repo on the user's behalf (fork + branch + PR). The
+      // access token is persisted in the encrypted JWT only — never in the
+      // session — and read server-side via lib/github-token.ts.
+      authorization: {
+        params: { scope: "read:user user:email public_repo" },
+      },
+    }),
+  ],
   // Auth.js auto-trusts the host in dev and on Vercel, but throws
   // UntrustedHost under `next start` on any other host. The dashboard always
   // runs behind a trusted platform/proxy, so trust the forwarded host.
@@ -23,11 +33,17 @@ const nextAuth = NextAuth({
     signIn: "/login",
   },
   callbacks: {
-    jwt({ token, profile }) {
+    jwt({ token, profile, account }) {
       // Only present on initial sign-in; persist the GitHub username so the
       // dashboard can match registry records owned by this account.
       if (profile?.login) {
         token.login = profile.login
+      }
+      // Persist the OAuth access token in the JWT (server-only). It is
+      // deliberately NOT copied into `session` below, so it never reaches the
+      // client; server code decodes the JWT cookie to use it.
+      if (account?.access_token) {
+        token.accessToken = account.access_token
       }
       return token
     },

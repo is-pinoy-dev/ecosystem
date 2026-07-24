@@ -1,0 +1,166 @@
+/* Designer themes — complete, self-contained portfolio designs. Unlike the
+   layout templates (terminal/pixel-card/minimal) these do not use the shadcn
+   design tokens or the theme system: each owns its full look (layout, type,
+   color, light/dark) and is scoped under a `.dt-<name>` root class. The shared
+   `.dt-readme` block styles the injected, pre-sanitized profile-README HTML to
+   fit each design. */
+
+.dt-root { min-height: 100vh; }
+.dt-readme :where(img) { max-width: 100%; }
+.dt-readme :where(pre) { overflow-x: auto; }
+
+/* ============================ CONCRETE — brutalist, light ============================ */
+.dt-concrete {
+  background: #e8e8e6; color: #0a0a0a;
+  font-family: "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased;
+}
+.dt-concrete .pg { max-width: 1000px; margin: 0 auto; padding: 48px 40px 64px; }
+.dt-concrete .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; border-bottom: 5px solid #0a0a0a; padding-bottom: 14px; font-weight: 700; font-size: 13px; letter-spacing: .02em; text-transform: uppercase; }
+.dt-concrete .top a { color: #0a0a0a; text-decoration: none; border-bottom: 3px solid #0a0a0a; }
+.dt-concrete h1 { font-family: "Arial Black", Impact, sans-serif; font-weight: 900; font-size: clamp(48px, 12vw, 130px); line-height: .84; letter-spacing: -.04em; text-transform: uppercase; margin: 26px 0 0; }
+.dt-concrete .role { font-weight: 900; font-size: clamp(16px, 3vw, 28px); text-transform: uppercase; margin: 8px 0 0; background: #0a0a0a; color: #e8e8e6; display: inline-block; padding: 4px 12px; }
+.dt-concrete .bio { font-size: 21px; line-height: 1.3; font-weight: 600; max-width: 30ch; margin: 30px 0 0; }
+.dt-concrete .meta { display: flex; flex-wrap: wrap; gap: 12px 26px; margin-top: 18px; font-weight: 700; text-transform: uppercase; font-size: 13px; }
+.dt-concrete .sec { margin-top: 50px; border-top: 5px solid #0a0a0a; padding-top: 8px; font-weight: 900; text-transform: uppercase; font-size: 13px; letter-spacing: .08em; }
+.dt-concrete .row { display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 20px; border-bottom: 3px solid #0a0a0a; padding: 16px 0; }
+.dt-concrete .num { font-family: "Arial Black", sans-serif; font-weight: 900; font-size: 38px; line-height: 1; }
+.dt-concrete .rn { font-size: 22px; font-weight: 900; text-transform: uppercase; word-break: break-word; }
+.dt-concrete .rd { font-size: 14px; font-weight: 600; color: #333; }
+.dt-concrete .rs { font-weight: 900; font-size: 18px; white-space: nowrap; }
+.dt-concrete .rl { font-size: 11px; font-weight: 700; text-transform: uppercase; border: 3px solid #0a0a0a; padding: 2px 7px; margin-left: 8px; }
+.dt-concrete .dt-readme { margin-top: 30px; font-size: 16px; line-height: 1.5; max-width: 62ch; }
+.dt-concrete .dt-readme :where(h1,h2,h3) { font-family: "Arial Black", sans-serif; font-weight: 900; text-transform: uppercase; font-size: 22px; margin: 22px 0 8px; }
+.dt-concrete .dt-readme :where(a) { color: #0a0a0a; }
+.dt-concrete .dt-readme :where(pre) { border: 3px solid #0a0a0a; padding: 12px; font-size: 13px; }
+.dt-concrete .foot { margin-top: 40px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.dt-concrete .foot a { color: #0a0a0a; }
+
+/* ============================ BROADSHEET — editorial, warm paper ============================ */
+.dt-broadsheet { background: #f6f2e9; color: #1c1a17; font-family: Georgia, "Times New Roman", serif; }
+.dt-broadsheet .pg { max-width: 760px; margin: 0 auto; padding: 60px 40px 80px; }
+.dt-broadsheet .masthead { text-align: center; border-bottom: 1px solid #1c1a17; padding-bottom: 20px; }
+.dt-broadsheet .kicker { font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: #6b5f4a; }
+.dt-broadsheet .drule { border-top: 3px double #1c1a17; margin: 8px 0; }
+.dt-broadsheet h1 { font-size: clamp(40px, 8vw, 68px); font-weight: 400; margin: 14px 0 6px; font-style: italic; }
+.dt-broadsheet .role { font-size: 14px; letter-spacing: .2em; text-transform: uppercase; color: #6b5f4a; }
+.dt-broadsheet .byline { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 22px; margin-top: 16px; font-size: 13px; font-style: italic; color: #4a4238; }
+.dt-broadsheet .byline a { color: #8a3b2a; text-decoration: none; border-bottom: 1px solid #c9a99a; }
+.dt-broadsheet .dt-readme { font-size: 19px; line-height: 1.6; margin-top: 34px; }
+.dt-broadsheet .dt-readme > :first-child::first-letter { font-size: 68px; float: left; line-height: .72; padding: 8px 12px 0 0; font-weight: 700; }
+.dt-broadsheet .dt-readme :where(h1,h2,h3) { font-style: italic; font-weight: 400; font-size: 24px; margin: 30px 0 6px; }
+.dt-broadsheet .dt-readme :where(a) { color: #8a3b2a; }
+.dt-broadsheet .dt-readme :where(pre) { background: #efe9db; padding: 12px; font-size: 14px; font-family: "Courier New", monospace; }
+.dt-broadsheet .sec { font-size: 12px; letter-spacing: .26em; text-transform: uppercase; color: #6b5f4a; margin: 44px 0 4px; border-bottom: 1px solid #1c1a17; padding-bottom: 8px; }
+.dt-broadsheet .item { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 12px 0; border-bottom: 1px dotted #b7ad97; }
+.dt-broadsheet .it-t { font-size: 18px; font-style: italic; }
+.dt-broadsheet .it-d { font-size: 14px; color: #5a5347; font-style: normal; }
+.dt-broadsheet .dots { flex: 1; border-bottom: 1px dotted #b7ad97; margin: 0 6px; transform: translateY(-4px); }
+.dt-broadsheet .it-s { font-variant-numeric: tabular-nums; font-size: 15px; color: #4a4238; }
+.dt-broadsheet .foot { text-align: center; margin-top: 40px; font-size: 12px; font-style: italic; color: #6b5f4a; }
+.dt-broadsheet .foot a { color: #8a3b2a; }
+
+/* ============================ PHOSPHOR — terminal, dark ============================ */
+.dt-phosphor { background: #020402; font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+.dt-phosphor .pg { max-width: 900px; margin: 0 auto; padding: 40px; }
+.dt-phosphor .win { border: 1px solid #1c3b22; background: #040805; box-shadow: 0 0 60px rgba(51,255,102,.08); }
+.dt-phosphor .bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid #1c3b22; color: #2fbf55; font-size: 12px; }
+.dt-phosphor .dot { width: 11px; height: 11px; border-radius: 50%; background: #153a20; border: 1px solid #2fbf55; }
+.dt-phosphor .body { padding: 22px 24px 30px; color: #33ff66; font-size: 14px; line-height: 1.7; text-shadow: 0 0 6px rgba(51,255,102,.35); }
+.dt-phosphor .dim { color: #2b8f45; }
+.dt-phosphor .amb { color: #ffb454; text-shadow: 0 0 6px rgba(255,180,84,.4); }
+.dt-phosphor h1 { font-size: 30px; margin: 14px 0 2px; letter-spacing: .04em; color: #33ff66; }
+.dt-phosphor .prompt { color: #2fbf55; }
+.dt-phosphor a { color: #7fffa8; text-decoration: none; }
+.dt-phosphor .lsrow { display: grid; grid-template-columns: 110px 64px 1fr auto; gap: 10px; }
+.dt-phosphor .dt-readme { margin: 6px 0 0; }
+.dt-phosphor .dt-readme :where(h1,h2,h3) { color: #7fffa8; font-size: 15px; margin: 14px 0 4px; }
+.dt-phosphor .dt-readme :where(a) { color: #7fffa8; text-decoration: underline; }
+.dt-phosphor .dt-readme :where(pre) { border: 1px solid #1c3b22; padding: 10px; background: #010301; }
+.dt-phosphor .cur { display: inline-block; width: 9px; height: 16px; background: #33ff66; margin-left: 4px; vertical-align: -2px; }
+.dt-phosphor .scan { position: fixed; inset: 0; pointer-events: none; z-index: 50; background: repeating-linear-gradient(to bottom, transparent 0, transparent 2px, rgba(0,0,0,.25) 3px, transparent 4px); }
+
+/* ============================ DRAFT — blueprint, dark ============================ */
+.dt-draft {
+  background: #0a2036; color: #cfe6ff; font-family: "SF Mono", ui-monospace, Menlo, monospace;
+  background-image: linear-gradient(rgba(90,160,230,.10) 1px, transparent 1px), linear-gradient(90deg, rgba(90,160,230,.10) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+.dt-draft .pg { max-width: 940px; margin: 0 auto; padding: 44px 40px; }
+.dt-draft .frame { border: 1px solid #4f9fe0; position: relative; padding: 30px 34px; }
+.dt-draft .frame::before, .dt-draft .frame::after { content: ""; position: absolute; width: 12px; height: 12px; border: 1px solid #6fd3ff; }
+.dt-draft .frame::before { top: -6px; left: -6px; }
+.dt-draft .frame::after { bottom: -6px; right: -6px; }
+.dt-draft .tag { font-size: 11px; letter-spacing: .24em; color: #6fd3ff; text-transform: uppercase; }
+.dt-draft h1 { font-family: "Helvetica Neue", Arial, sans-serif; font-weight: 700; font-size: clamp(34px, 7vw, 58px); letter-spacing: .02em; margin: 6px 0 2px; color: #fff; }
+.dt-draft .role { font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: #9cc7ee; }
+.dt-draft .dim { position: absolute; right: 34px; top: 30px; text-align: right; font-size: 11px; color: #7fb3de; line-height: 1.9; }
+.dt-draft .dim b { color: #6fd3ff; }
+.dt-draft .dt-readme { max-width: 62ch; font-size: 14px; line-height: 1.7; margin: 24px 0; color: #dcefff; }
+.dt-draft .dt-readme :where(h1,h2,h3) { color: #6fd3ff; font-size: 15px; letter-spacing: .04em; margin: 16px 0 4px; }
+.dt-draft .dt-readme :where(a) { color: #6fd3ff; }
+.dt-draft .dt-readme :where(pre) { border: 1px solid #2f5d86; padding: 10px; }
+.dt-draft .grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #2f5d86; margin-top: 16px; }
+.dt-draft .part { border-bottom: 1px solid #2f5d86; border-right: 1px solid #2f5d86; padding: 16px 18px; }
+.dt-draft .part:nth-child(2n) { border-right: none; }
+.dt-draft .pno { font-size: 11px; color: #6fd3ff; letter-spacing: .12em; }
+.dt-draft .pn { font-family: "Helvetica Neue", Arial, sans-serif; font-weight: 700; font-size: 17px; color: #fff; margin: 4px 0; }
+.dt-draft .pd { font-size: 12px; color: #9cc7ee; }
+.dt-draft .pm { margin-top: 8px; font-size: 11px; color: #7fb3de; display: flex; justify-content: space-between; }
+.dt-draft a { color: #6fd3ff; text-decoration: none; }
+.dt-draft .foot { margin-top: 16px; font-size: 12px; color: #9cc7ee; }
+
+/* ============================ BUBBLEGUM — Y2K pop, colorful ============================ */
+.dt-bubblegum {
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif; color: #2a1245;
+  background: radial-gradient(circle at 15% 15%, #ffd6f2 0, transparent 40%), radial-gradient(circle at 85% 10%, #c6f0ff 0, transparent 40%), linear-gradient(135deg, #ffe0ec, #e5dbff 55%, #d6f7ff);
+}
+.dt-bubblegum .pg { max-width: 960px; margin: 0 auto; padding: 44px 36px 70px; }
+.dt-bubblegum .top { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; font-weight: 800; font-size: 13px; }
+.dt-bubblegum .top .brand { font-weight: 900; color: #7b2ff7; }
+.dt-bubblegum .top a { color: #7b2ff7; text-decoration: none; background: #fff; border: 2px solid #2a1245; padding: 4px 10px; box-shadow: 2px 2px 0 #2a1245; display: inline-block; margin-left: 6px; }
+.dt-bubblegum .hero { margin-top: 22px; background: #fff; border: 3px solid #2a1245; box-shadow: 8px 8px 0 #ff5ea8; padding: 26px 28px; }
+.dt-bubblegum h1 { font-size: clamp(38px, 8vw, 68px); line-height: .95; margin: 0; font-weight: 900; letter-spacing: -.02em; background: linear-gradient(90deg, #ff4fa3, #7b2ff7 60%, #2bb3ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dt-bubblegum .role { display: inline-block; margin-top: 12px; font-weight: 800; background: #ffe14d; border: 2px solid #2a1245; padding: 3px 12px; box-shadow: 3px 3px 0 #2a1245; transform: rotate(-2deg); }
+.dt-bubblegum .bio { font-size: 19px; font-weight: 600; line-height: 1.4; margin: 18px 0 0; max-width: 42ch; }
+.dt-bubblegum .meta { margin-top: 14px; font-weight: 800; font-size: 13px; color: #7b2ff7; }
+.dt-bubblegum .dt-readme { background: #fff; border: 3px solid #2a1245; box-shadow: 6px 6px 0 #2bb3ff; padding: 20px 24px; margin-top: 24px; font-size: 15px; line-height: 1.55; }
+.dt-bubblegum .dt-readme :where(h1,h2,h3) { font-weight: 900; font-size: 20px; margin: 16px 0 6px; color: #7b2ff7; }
+.dt-bubblegum .dt-readme :where(a) { color: #ff4fa3; }
+.dt-bubblegum .dt-readme :where(pre) { background: #f3ecff; padding: 12px; border: 2px solid #2a1245; }
+.dt-bubblegum .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 24px; }
+.dt-bubblegum .c { background: #fff; border: 3px solid #2a1245; padding: 18px 20px; box-shadow: 6px 6px 0 #2a1245; }
+.dt-bubblegum .c:nth-child(4n+1) { box-shadow: 6px 6px 0 #ff5ea8; transform: rotate(-1.4deg); }
+.dt-bubblegum .c:nth-child(4n+2) { box-shadow: 6px 6px 0 #2bb3ff; transform: rotate(1.2deg); }
+.dt-bubblegum .c:nth-child(4n+3) { box-shadow: 6px 6px 0 #ffb03a; transform: rotate(1deg); }
+.dt-bubblegum .c:nth-child(4n) { box-shadow: 6px 6px 0 #22c55e; transform: rotate(-1deg); }
+.dt-bubblegum .cn { font-size: 19px; font-weight: 900; }
+.dt-bubblegum .cd { font-size: 14px; font-weight: 600; color: #5a4a72; margin: 4px 0 10px; }
+.dt-bubblegum .cm { font-weight: 800; font-size: 13px; display: flex; gap: 10px; align-items: center; }
+.dt-bubblegum .pill { background: #2a1245; color: #fff; padding: 1px 9px; border-radius: 20px; }
+.dt-bubblegum .foot { margin-top: 30px; font-weight: 800; font-size: 13px; color: #7b2ff7; }
+.dt-bubblegum .foot a { color: #7b2ff7; }
+
+/* ============================ GRID — Swiss, light ============================ */
+.dt-grid { background: #fff; color: #111; font-family: "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+.dt-grid .pg { max-width: 1080px; margin: 0 auto; padding: 56px 48px 80px; }
+.dt-grid .head { display: grid; grid-template-columns: 2fr 1fr; gap: 40px; border-top: 4px solid #e2231a; padding-top: 14px; }
+.dt-grid .idxn { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #111; }
+.dt-grid .idxn.r { text-align: right; white-space: nowrap; }
+.dt-grid h1 { font-size: clamp(36px, 6vw, 64px); font-weight: 700; letter-spacing: -.025em; line-height: 1; margin: 40px 0 0; }
+.dt-grid .rt { font-size: 13px; line-height: 1.6; color: #444; align-self: end; }
+.dt-grid .rt .lbl { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #999; display: block; margin-bottom: 4px; }
+.dt-grid .rt a { color: #e2231a; text-decoration: none; }
+.dt-grid .dt-readme { grid-column: 1 / 2; font-size: 15px; line-height: 1.6; max-width: 52ch; margin-top: 4px; }
+.dt-grid .dt-readme :where(h1,h2,h3) { font-size: 15px; font-weight: 700; letter-spacing: .01em; margin: 18px 0 4px; }
+.dt-grid .dt-readme :where(a) { color: #e2231a; }
+.dt-grid .dt-readme :where(pre) { background: #f4f4f4; padding: 12px; font-size: 13px; }
+.dt-grid .sec { margin-top: 60px; border-top: 1px solid #111; }
+.dt-grid .r { display: grid; grid-template-columns: 38px 1.6fr 2fr 90px 70px; gap: 16px; align-items: baseline; padding: 14px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
+.dt-grid .r .n { color: #e2231a; font-variant-numeric: tabular-nums; font-size: 12px; }
+.dt-grid .r .t { font-weight: 600; }
+.dt-grid .r .d { color: #666; }
+.dt-grid .r .l { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #999; }
+.dt-grid .r .s { text-align: right; font-variant-numeric: tabular-nums; }
+.dt-grid .r.colhead { color: #999; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+.dt-grid .foot { margin-top: 40px; font-size: 12px; color: #999; letter-spacing: .1em; text-transform: uppercase; }
+.dt-grid .foot a { color: #e2231a; text-decoration: none; }

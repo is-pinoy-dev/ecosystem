@@ -1,0 +1,43 @@
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  min-width: 320px;
+}
+
+/* Minimal typographic reset for the injected, pre-sanitized README HTML.
+   Kept in globals because it styles raw HTML that carries no utility classes.
+   Uses the base tokens (--primary/--accent/--border) rather than the
+   @theme-inline --color-* aliases so the active [data-theme] override applies —
+   otherwise README headings would stay gold under the mono/matrix themes. */
+.portfolio-readme :where(h1, h2, h3) {
+  margin: 1.5rem 0 0.75rem;
+  font-family: var(--font-mono, monospace);
+  color: var(--primary);
+}
+
+.portfolio-readme :where(p, ul, ol) {
+  margin: 0.75rem 0;
+}
+
+.portfolio-readme :where(a) {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.portfolio-readme :where(code, pre) {
+  font-family: var(--font-mono, monospace);
+}
+
+.portfolio-readme :where(pre) {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.portfolio-readme :where(img) {
+  display: inline-block;
+  max-width: 100%;
+}

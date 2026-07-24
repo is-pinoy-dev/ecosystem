@@ -1,0 +1,22 @@
+{
+  "extends": "@workspace/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@is-pinoy-dev/ui/*": ["../../packages/ui/src/*"],
+      "@is-pinoy-dev/schemas": ["../../packages/schemas/src/index.ts"]
+    },
+    "plugins": [{ "name": "next" }],
+    "types": ["node", "react", "react-dom"]
+  },
+  "include": [
+    "next-env.d.ts",
+    "next.config.mjs",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}
