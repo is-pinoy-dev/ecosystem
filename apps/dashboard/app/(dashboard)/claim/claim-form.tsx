@@ -86,7 +86,7 @@ export function ClaimForm({ login }: { login: string }) {
             aria-invalid={showInvalid}
             className="h-auto min-w-0 flex-1 border-0 bg-transparent px-4 font-mono text-sm text-foreground shadow-none outline-none focus-visible:border-transparent focus-visible:outline-none"
           />
-          <InputGroupAddon className="whitespace-nowrap px-4 font-mono text-sm text-muted-foreground">
+          <InputGroupAddon className="border-input bg-muted/50 px-4 font-mono text-sm whitespace-nowrap text-muted-foreground">
             .is-pinoy.dev
           </InputGroupAddon>
         </InputGroup>
