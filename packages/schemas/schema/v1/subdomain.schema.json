@@ -202,7 +202,13 @@
           "enum": [
             "terminal",
             "pixel-card",
-            "minimal"
+            "minimal",
+            "concrete",
+            "broadsheet",
+            "phosphor",
+            "draft",
+            "bubblegum",
+            "grid"
           ]
         },
         "theme": {

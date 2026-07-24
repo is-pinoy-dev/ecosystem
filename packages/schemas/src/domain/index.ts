@@ -21,7 +21,20 @@ export const domainFeaturesSchema = z.object({
 // registry/sync engine; only apps/portfolio reads it.
 export const portfolioSchema = z
   .object({
-    template: z.enum(["terminal", "pixel-card", "minimal"]),
+    // The first three are "layout" templates styled by `theme`. The rest are
+    // self-contained "designer themes" — each a complete design (layout + type
+    // + color) that ignores `theme`.
+    template: z.enum([
+      "terminal",
+      "pixel-card",
+      "minimal",
+      "concrete",
+      "broadsheet",
+      "phosphor",
+      "draft",
+      "bubblegum",
+      "grid",
+    ]),
     theme: z
       .enum(["gold-dark", "mono", "matrix", "midnight", "crimson", "sunset"])
       .optional(),

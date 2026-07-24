@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { PortfolioShell } from "@/components/portfolio-shell"
 import { getRenderContext, parsePreview } from "@/lib/context"
-import { renderTemplate } from "@/templates"
+import { renderTemplate, isDesignerTemplate } from "@/templates"
 
 // Reading the Host-derived header makes this route dynamic per subdomain; the
 // upstream GitHub fetches are still ISR-cached (1h) inside lib/github.ts, so
@@ -46,9 +46,15 @@ export default async function PortfolioPage({
   const ctx = await getRenderContext(preview)
   if (!ctx) notFound()
 
+  const rendered = renderTemplate(ctx.template, { data: ctx.data })
+
+  // Designer templates are self-contained (own background + footer); render
+  // them directly. Layout templates get the theme shell.
+  if (isDesignerTemplate(ctx.template)) return rendered
+
   return (
     <PortfolioShell theme={ctx.theme} login={ctx.login}>
-      {renderTemplate(ctx.template, { data: ctx.data })}
+      {rendered}
     </PortfolioShell>
   )
 }

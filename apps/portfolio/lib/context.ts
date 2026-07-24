@@ -18,7 +18,17 @@ export interface PreviewParams {
   theme?: PortfolioTheme
 }
 
-const TEMPLATES: TemplateName[] = ["terminal", "pixel-card", "minimal"]
+const TEMPLATES: TemplateName[] = [
+  "terminal",
+  "pixel-card",
+  "minimal",
+  "concrete",
+  "broadsheet",
+  "phosphor",
+  "draft",
+  "bubblegum",
+  "grid",
+]
 const THEMES: PortfolioTheme[] = [
   "gold-dark",
   "mono",
