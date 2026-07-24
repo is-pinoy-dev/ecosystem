@@ -8,6 +8,7 @@ import {
   InputGroup,
   InputGroupAddon,
 } from "@is-pinoy-dev/ui/components/input-group"
+import { cn } from "@is-pinoy-dev/ui/lib/utils"
 import { claimPortfolio, type ClaimInput } from "./actions"
 
 const TEMPLATES: { value: ClaimInput["portfolio"]["template"]; label: string }[] = [
@@ -16,13 +17,17 @@ const TEMPLATES: { value: ClaimInput["portfolio"]["template"]; label: string }[]
   { value: "minimal", label: "Minimal" },
 ]
 
-const THEMES: { value: NonNullable<ClaimInput["portfolio"]["theme"]>; label: string }[] = [
-  { value: "gold-dark", label: "Gold Dark" },
-  { value: "mono", label: "Mono" },
-  { value: "matrix", label: "Matrix" },
-  { value: "midnight", label: "Midnight" },
-  { value: "crimson", label: "Crimson" },
-  { value: "sunset", label: "Sunset" },
+const THEMES: {
+  value: NonNullable<ClaimInput["portfolio"]["theme"]>
+  label: string
+  swatch: string
+}[] = [
+  { value: "gold-dark", label: "Gold Dark", swatch: "#f5c800" },
+  { value: "mono", label: "Mono", swatch: "#b8bcc4" },
+  { value: "matrix", label: "Matrix", swatch: "#39ff14" },
+  { value: "midnight", label: "Midnight", swatch: "#7c9cff" },
+  { value: "crimson", label: "Crimson", swatch: "#ff5470" },
+  { value: "sunset", label: "Sunset", swatch: "#ff8c42" },
 ]
 
 const PORTFOLIO_URL =
@@ -41,6 +46,7 @@ export function ClaimForm({ login }: { login: string }) {
 
   const normalized = subdomain.trim().toLowerCase()
   const valid = /^[a-z0-9-]{3,63}$/.test(normalized)
+  const showInvalid = subdomain.length > 0 && !valid
 
   const previewUrl = `${PORTFOLIO_URL}/?preview=1&login=${encodeURIComponent(
     login,
@@ -63,7 +69,12 @@ export function ClaimForm({ login }: { login: string }) {
         <label htmlFor="subdomain" className="text-sm font-medium text-foreground">
           Subdomain
         </label>
-        <InputGroup>
+        <InputGroup
+          className={cn(
+            "h-12 bg-card",
+            showInvalid && "border-destructive focus-within:border-destructive",
+          )}
+        >
           <Input
             id="subdomain"
             value={subdomain}
@@ -72,17 +83,26 @@ export function ClaimForm({ login }: { login: string }) {
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            aria-invalid={subdomain.length > 0 && !valid}
+            aria-invalid={showInvalid}
+            className="h-auto min-w-0 flex-1 border-0 bg-transparent px-4 font-mono text-sm text-foreground shadow-none outline-none focus-visible:border-transparent focus-visible:outline-none"
           />
-          <InputGroupAddon className="font-mono text-xs text-muted-foreground">
+          <InputGroupAddon className="whitespace-nowrap px-4 font-mono text-sm text-muted-foreground">
             .is-pinoy.dev
           </InputGroupAddon>
         </InputGroup>
-        {subdomain.length > 0 && !valid ? (
+        {showInvalid ? (
           <p className="m-0 text-xs text-destructive">
-            3–63 chars: lowercase letters, numbers, and hyphens only.
+            3–63 characters: lowercase letters, numbers, and hyphens only.
           </p>
-        ) : null}
+        ) : (
+          <p className="m-0 text-xs text-muted-foreground">
+            This becomes{" "}
+            <span className="font-mono text-foreground">
+              {normalized || "your-name"}.is-pinoy.dev
+            </span>
+            .
+          </p>
+        )}
       </div>
 
       <Selector
@@ -98,6 +118,19 @@ export function ClaimForm({ login }: { login: string }) {
         value={theme}
         onChange={setTheme}
       />
+
+      <p className="-mt-4 m-0 text-xs text-muted-foreground">
+        Not sure? Use{" "}
+        <a
+          href={previewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent underline"
+        >
+          Preview
+        </a>{" "}
+        to see your README in this template and theme before claiming.
+      </p>
 
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={onSubmit} disabled={!valid || pending}>
@@ -157,7 +190,7 @@ function Selector<T extends string>({
   onChange,
 }: {
   legend: string
-  options: { value: T; label: string }[]
+  options: { value: T; label: string; swatch?: string }[]
   value: T
   onChange: (value: T) => void
 }) {
@@ -167,18 +200,30 @@ function Selector<T extends string>({
         {legend}
       </legend>
       <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <Button
-            key={option.value}
-            type="button"
-            variant={value === option.value ? "default" : "outline"}
-            size="sm"
-            onClick={() => onChange(option.value)}
-            aria-pressed={value === option.value}
-          >
-            {option.label}
-          </Button>
-        ))}
+        {options.map((option) => {
+          const selected = value === option.value
+          return (
+            <Button
+              key={option.value}
+              type="button"
+              variant={selected ? "default" : "outline"}
+              onClick={() => onChange(option.value)}
+              aria-pressed={selected}
+            >
+              {option.swatch ? (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "size-3.5 shrink-0 border",
+                    selected ? "border-primary-foreground/40" : "border-border",
+                  )}
+                  style={{ backgroundColor: option.swatch }}
+                />
+              ) : null}
+              {option.label}
+            </Button>
+          )
+        })}
       </div>
     </fieldset>
   )
