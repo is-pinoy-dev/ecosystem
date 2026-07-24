@@ -11,11 +11,27 @@ import {
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 import { claimPortfolio, type ClaimInput } from "./actions"
 
-const TEMPLATES: { value: ClaimInput["portfolio"]["template"]; label: string }[] = [
+type TemplateValue = ClaimInput["portfolio"]["template"]
+
+// Layout templates are re-colored by the Theme picker below.
+const LAYOUTS: { value: TemplateValue; label: string }[] = [
   { value: "terminal", label: "Terminal" },
   { value: "pixel-card", label: "Pixel Card" },
   { value: "minimal", label: "Minimal" },
 ]
+
+// Designer themes are complete, self-contained designs (own layout, type, and
+// colors) — they ignore the Theme picker.
+const DESIGNER: { value: TemplateValue; label: string }[] = [
+  { value: "concrete", label: "Concrete" },
+  { value: "broadsheet", label: "Broadsheet" },
+  { value: "phosphor", label: "Phosphor" },
+  { value: "draft", label: "Draft" },
+  { value: "bubblegum", label: "Bubblegum" },
+  { value: "grid", label: "Grid" },
+]
+
+const DESIGNER_SET = new Set<TemplateValue>(DESIGNER.map((d) => d.value))
 
 const THEMES: {
   value: NonNullable<ClaimInput["portfolio"]["theme"]>
@@ -47,17 +63,18 @@ export function ClaimForm({ login }: { login: string }) {
   const normalized = subdomain.trim().toLowerCase()
   const valid = /^[a-z0-9-]{3,63}$/.test(normalized)
   const showInvalid = subdomain.length > 0 && !valid
+  const isDesigner = DESIGNER_SET.has(template)
 
-  const previewUrl = `${PORTFOLIO_URL}/?preview=1&login=${encodeURIComponent(
-    login,
-  )}&template=${template}&theme=${theme}`
+  const previewUrl =
+    `${PORTFOLIO_URL}/?preview=1&login=${encodeURIComponent(login)}&template=${template}` +
+    (isDesigner ? "" : `&theme=${theme}`)
 
   function onSubmit() {
     setResult(null)
     startTransition(async () => {
       const res = await claimPortfolio({
         subdomain: normalized,
-        portfolio: { template, theme },
+        portfolio: isDesigner ? { template } : { template, theme },
       })
       setResult(res)
     })
@@ -106,18 +123,29 @@ export function ClaimForm({ login }: { login: string }) {
       </div>
 
       <Selector
-        legend="Template"
-        options={TEMPLATES}
+        legend="Layout"
+        hint="Pick a layout, then a color theme below."
+        options={LAYOUTS}
         value={template}
         onChange={setTemplate}
       />
 
       <Selector
-        legend="Theme"
-        options={THEMES}
-        value={theme}
-        onChange={setTheme}
+        legend="Designer themes"
+        hint="Complete designs — each brings its own layout, type, and colors (no separate theme)."
+        options={DESIGNER}
+        value={template}
+        onChange={setTemplate}
       />
+
+      {!isDesigner ? (
+        <Selector
+          legend="Theme"
+          options={THEMES}
+          value={theme}
+          onChange={setTheme}
+        />
+      ) : null}
 
       <p className="-mt-4 m-0 text-xs text-muted-foreground">
         Not sure? Use{" "}
@@ -129,7 +157,7 @@ export function ClaimForm({ login }: { login: string }) {
         >
           Preview
         </a>{" "}
-        to see your README in this template and theme before claiming.
+        to see your README in this style before claiming.
       </p>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -185,20 +213,23 @@ export function ClaimForm({ login }: { login: string }) {
 
 function Selector<T extends string>({
   legend,
+  hint,
   options,
   value,
   onChange,
 }: {
   legend: string
+  hint?: string
   options: { value: T; label: string; swatch?: string }[]
   value: T
   onChange: (value: T) => void
 }) {
   return (
     <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
-      <legend className="mb-1 p-0 text-sm font-medium text-foreground">
+      <legend className="p-0 text-sm font-medium text-foreground">
         {legend}
       </legend>
+      {hint ? <p className="m-0 -mt-1 text-xs text-muted-foreground">{hint}</p> : null}
       <div className="flex flex-wrap gap-2">
         {options.map((option) => {
           const selected = value === option.value

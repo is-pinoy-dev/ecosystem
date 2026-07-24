@@ -21,7 +21,17 @@ const claimInput = z.object({
     .max(63)
     .regex(/^[a-z0-9-]+$/, "Use only lowercase letters, numbers, and hyphens"),
   portfolio: z.object({
-    template: z.enum(["terminal", "pixel-card", "minimal"]),
+    template: z.enum([
+      "terminal",
+      "pixel-card",
+      "minimal",
+      "concrete",
+      "broadsheet",
+      "phosphor",
+      "draft",
+      "bubblegum",
+      "grid",
+    ]),
     theme: z
       .enum(["gold-dark", "mono", "matrix", "midnight", "crimson", "sunset"])
       .optional(),
