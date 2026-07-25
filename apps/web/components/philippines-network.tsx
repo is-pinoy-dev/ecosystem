@@ -7,7 +7,7 @@ import {
   useState,
   type CSSProperties,
 } from "react"
-import { ArrowUpRight, MapPin } from "lucide-react"
+import { ArrowUpRight } from "lucide-react"
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 import {
   NETWORK_LOCATIONS,
@@ -43,15 +43,11 @@ const AREA_DETAILS = [
 
 function DeveloperCard({
   profile,
-  areaIndex,
   onInteractingChange,
 }: {
   profile: CommunityProfile
-  areaIndex: number
   onInteractingChange: (interacting: boolean) => void
 }) {
-  const area = AREA_DETAILS[areaIndex]!
-
   return (
     <div
       className="network-card-shell absolute z-30"
@@ -64,7 +60,7 @@ function DeveloperCard({
         href={profile.profileUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="network-card group flex items-center gap-3 bg-card/95 p-3 text-foreground no-underline backdrop-blur-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="network-card group flex min-h-[68px] items-center gap-3 bg-card/95 p-3 text-foreground no-underline backdrop-blur-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         aria-label={`Visit ${profile.subdomain} by ${profile.github}`}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -84,12 +80,8 @@ function DeveloperCard({
           >
             {profile.subdomain}
           </strong>
-          <span className="mt-1.5 flex min-w-0 items-center gap-1 text-[10px] text-muted-foreground">
-            <MapPin
-              className="size-3 shrink-0 text-accent"
-              aria-hidden="true"
-            />
-            <span className="truncate">{area.label}</span>
+          <span className="mt-1.5 block truncate font-mono text-[10px] text-muted-foreground">
+            @{profile.github}
           </span>
         </span>
         <ArrowUpRight
@@ -102,14 +94,10 @@ function DeveloperCard({
 }
 
 function AreaSummaryCard({
-  areaIndex,
   onInteractingChange,
 }: {
-  areaIndex: number
   onInteractingChange: (interacting: boolean) => void
 }) {
-  const area = AREA_DETAILS[areaIndex]!
-
   return (
     <div
       className="network-card-shell absolute z-30"
@@ -120,15 +108,14 @@ function AreaSummaryCard({
     >
       <a
         href="/showcase"
-        className="network-card group flex items-center gap-3 bg-card/95 p-3 text-foreground no-underline backdrop-blur-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="network-card group flex min-h-[68px] items-center gap-3 bg-card/95 p-3 text-foreground no-underline backdrop-blur-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        <MapPin className="size-5 shrink-0 text-accent" aria-hidden="true" />
         <span className="min-w-0 flex-1">
           <strong className="block truncate text-sm leading-tight font-semibold tracking-[-0.01em]">
-            {area.label}
+            Explore community
           </strong>
           <span className="mt-1 block text-[10px] text-muted-foreground">
-            Explore community
+            Meet Filipino developers
           </span>
         </span>
         <ArrowUpRight
@@ -311,7 +298,6 @@ export function PhilippinesNetwork({
         <DeveloperCard
           key={`${activeAreaIndex}-${activeProfile.id}`}
           profile={activeProfile}
-          areaIndex={activeAreaIndex}
           onInteractingChange={setIsInteracting}
         />
       )}
@@ -319,7 +305,6 @@ export function PhilippinesNetwork({
       {hasEntered && !activeProfile && (
         <AreaSummaryCard
           key={`area-${activeAreaIndex}`}
-          areaIndex={activeAreaIndex}
           onInteractingChange={setIsInteracting}
         />
       )}
