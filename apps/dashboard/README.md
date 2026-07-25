@@ -15,7 +15,7 @@ records registered to your account in the
 
 1. Create a GitHub OAuth app at <https://github.com/settings/developers> with
    the callback URL `http://localhost:3001/api/auth/callback/github`
-   (swap the origin in production).
+   (swap the origin in production — see [Production](#production)).
 2. Copy `.env.example` to `.env.local` and fill in `AUTH_SECRET`
    (`npx auth secret`), `AUTH_GITHUB_ID`, and `AUTH_GITHUB_SECRET`.
 3. Run it:
@@ -23,6 +23,25 @@ records registered to your account in the
 ```bash
 pnpm --filter dashboard dev   # http://localhost:3001
 ```
+
+## Production
+
+The dashboard runs on Vercel behind the custom domain `dashboard.is-pinoy.dev`.
+Two things must line up for GitHub sign-in to work there:
+
+- **`AUTH_URL`** must be set to the canonical origin
+  (`https://dashboard.is-pinoy.dev`, no trailing slash). Auth.js builds the
+  OAuth `redirect_uri` from it. If it is unset, Auth.js falls back to the
+  per-deployment `*.vercel.app` URL, so GitHub gets a `redirect_uri` that is
+  **not** registered on the OAuth app and the sign-in dead-ends on a **GitHub
+  404**. This is the usual cause of "404 on Sign in with GitHub in production."
+- The GitHub OAuth app's **Authorization callback URL** must match exactly:
+  `https://dashboard.is-pinoy.dev/api/auth/callback/github`.
+
+Set `AUTH_URL` (plus `AUTH_SECRET`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`) in
+the Vercel project's environment variables and redeploy. `trustHost` is already
+enabled in `auth.ts`, so no extra host configuration is needed once `AUTH_URL`
+is set.
 
 Ownership is matched by GitHub username: after signing in, the dashboard lists
 every registry record whose `owner.github` equals your login.
