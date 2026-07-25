@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type CSSProperties } from "react"
-import { ArrowUpRight, UserRound } from "lucide-react"
+import { ArrowUpRight } from "lucide-react"
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 import {
   NETWORK_LOCATIONS,
@@ -30,25 +30,35 @@ function DeveloperCard({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "network-card absolute z-20 w-[178px] border border-border bg-card p-3.5 text-foreground no-underline shadow-[0_12px_34px_rgba(11,31,68,0.10)] transition-[opacity,transform,border-color] duration-500 outline-none focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+        "network-card group absolute z-20 w-[204px] border border-border/80 bg-card/95 p-2.5 text-foreground no-underline shadow-[0_16px_40px_rgba(11,31,68,0.12)] backdrop-blur-sm transition-[opacity,transform,border-color,box-shadow] duration-500 outline-none focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         location.cardSide === "left"
-          ? "right-[60%] sm:right-[64%]"
-          : "left-[58%] sm:left-[62%]",
+          ? "right-1/2 sm:right-[64%]"
+          : "left-1/2 sm:left-[62%]",
         active
           ? "translate-y-0 opacity-100"
           : "pointer-events-none translate-y-2 opacity-0"
       )}
       style={{
-        top: `${Math.max(7, Math.min(72, location.coordinates.y / 5 - 10))}%`,
+        top: `${Math.max(5, Math.min(82, location.coordinates.y / 5 - 6))}%`,
       }}
       tabIndex={active ? 0 : -1}
+      aria-hidden={!active}
       onMouseEnter={() => onActiveChange(profile.id)}
       onMouseLeave={() => onActiveChange(null)}
       onFocus={() => onActiveChange(profile.id)}
       onBlur={() => onActiveChange(null)}
-      aria-label={`Visit ${profile.subdomain}, claimed by ${profile.github} on GitHub`}
+      aria-label={`Visit ${profile.subdomain} by ${profile.github}`}
     >
-      <span className="mb-3 flex items-center justify-between">
+      <span
+        className={cn(
+          "absolute top-1/2 size-2.5 -translate-y-1/2 rotate-45 bg-card",
+          location.cardSide === "left"
+            ? "-right-1.5 border-t border-r border-border/80"
+            : "-left-1.5 border-b border-l border-border/80"
+        )}
+        aria-hidden="true"
+      />
+      <span className="relative flex items-center gap-2.5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={profile.avatarUrl}
@@ -57,19 +67,25 @@ function DeveloperCard({
           width="32"
           height="32"
           loading="lazy"
-          className="size-8 border border-border bg-secondary object-cover"
+          className="size-9 shrink-0 border border-border bg-secondary object-cover sm:size-10"
         />
-        <ArrowUpRight className="size-4 text-accent" aria-hidden="true" />
-      </span>
-      <strong className="block text-sm font-semibold">
-        {profile.subdomain}
-      </strong>
-      <span className="mt-1 block text-xs text-muted-foreground">
-        @{profile.github}
-      </span>
-      <span className="mt-2 flex items-center gap-1 font-mono text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-        <UserRound className="size-3 text-primary-dark" aria-hidden="true" />
-        Claimed subdomain
+        <span className="min-w-0 flex-1">
+          <strong
+            className="block truncate text-xs leading-tight font-semibold"
+            title={profile.subdomain}
+          >
+            {profile.subdomain}
+          </strong>
+          <span className="mt-1 block truncate text-[11px] leading-none text-muted-foreground">
+            @{profile.github}
+          </span>
+        </span>
+        <span className="flex size-6 shrink-0 items-center justify-center border border-border bg-background text-accent transition-[background-color,color,border-color] duration-200 group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground sm:size-7">
+          <ArrowUpRight
+            className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            aria-hidden="true"
+          />
+        </span>
       </span>
     </a>
   )

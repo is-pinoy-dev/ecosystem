@@ -111,6 +111,7 @@ body {
 .network-card:focus-visible {
   animation-play-state: paused;
   border-color: var(--accent);
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--foreground) 15%, transparent);
 }
 
 .network-paused *,

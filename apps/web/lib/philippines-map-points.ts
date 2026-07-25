@@ -1,5 +1,6 @@
-// Precomputed from Natural Earth country geometry (public domain).
-// Coordinates use the 320 × 500 visualization viewBox.
+// Precomputed from Natural Earth country geometry (public domain):
+// https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/
+// Coordinates are normalized to the 320 × 500 visualization viewBox.
 export const PHILIPPINES_MAP_POINTS = [
   [164.9, 1.7],
   [162.0, 10.6],
