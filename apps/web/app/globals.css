@@ -50,7 +50,7 @@ body {
 }
 
 .network-stage-grid {
-  opacity: 0.58;
+  opacity: 0.46;
 }
 
 .network-grid-line {
@@ -61,7 +61,7 @@ body {
 
 .network-orbits {
   fill: none;
-  stroke: color-mix(in srgb, var(--accent) 28%, var(--border));
+  stroke: color-mix(in srgb, var(--foreground) 16%, var(--border));
   stroke-dasharray: 2 7;
   stroke-width: 0.8;
 }
@@ -79,6 +79,12 @@ body {
   will-change: transform;
 }
 
+.map-projection {
+  transform: skewX(-15deg) scaleY(0.86);
+  transform-box: view-box;
+  transform-origin: 200px 250px;
+}
+
 .map-dot,
 .map-dot-depth {
   opacity: 0;
@@ -89,16 +95,12 @@ body {
 }
 
 .map-dot {
-  fill: color-mix(in srgb, var(--foreground) 76%, var(--accent));
+  fill: color-mix(in srgb, var(--foreground) 58%, var(--background));
 }
 
 .map-dot-depth {
-  fill: color-mix(in srgb, var(--foreground) 29%, var(--accent));
+  fill: color-mix(in srgb, var(--foreground) 24%, var(--background));
   animation-name: map-depth-in;
-}
-
-.map-dot-accent {
-  fill: var(--primary);
 }
 
 .network-connections path {
@@ -107,26 +109,35 @@ body {
 }
 
 .network-route-base {
-  stroke: color-mix(in srgb, var(--accent) 42%, transparent);
+  stroke: color-mix(in srgb, var(--foreground) 24%, transparent);
   stroke-dasharray: 2 7;
   stroke-width: 0.85;
 }
 
 .network-route-travel {
-  stroke: var(--primary);
+  stroke: color-mix(in srgb, var(--primary) 38%, var(--foreground));
   stroke-dasharray: 1 28;
   stroke-linecap: round;
   stroke-width: 1.7;
+  opacity: 0.48;
   animation: network-travel 7s linear 1.4s infinite;
 }
 
 .active-node {
-  opacity: 0.38;
+  opacity: 0.24;
   transition: opacity 500ms ease;
 }
 
 .active-node.is-active {
   opacity: 1;
+}
+
+.active-node:not(.is-active) .node-ring {
+  stroke: color-mix(in srgb, var(--foreground) 46%, var(--background));
+}
+
+.active-node:not(.is-active) .node-core {
+  fill: color-mix(in srgb, var(--foreground) 46%, var(--background));
 }
 
 .node-pulse {
@@ -274,7 +285,7 @@ body {
     transform: translateY(8px) scale(0.58);
   }
   to {
-    opacity: 0.86;
+    opacity: 0.58;
     transform: translateY(0) scale(1);
   }
 }
@@ -285,7 +296,7 @@ body {
     transform: translate(0, 2px) scale(0.58);
   }
   to {
-    opacity: 0.7;
+    opacity: 0.32;
     transform: translate(0, 0) scale(1);
   }
 }
@@ -530,9 +541,12 @@ a {
     animation: none !important;
   }
 
-  .map-dot,
+  .map-dot {
+    opacity: 0.58;
+  }
+
   .map-dot-depth {
-    opacity: 0.82;
+    opacity: 0.32;
   }
 }
 

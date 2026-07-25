@@ -19,31 +19,33 @@ const SEQUENCE_INTERVAL = 6200
 const MAP_X_OFFSET = 40
 const MAP_CENTER = { x: 200, y: 250 }
 const CAMERA_FOCUS = { x: 150, y: 260 }
+const MAP_SKEW_DEGREES = -15
+const MAP_Y_SCALE = 0.86
 
 const AREA_DETAILS = [
   {
     label: "North Luzon",
     shortLabel: "N. Luzon",
     coordinates: "17.4° N · 121.0° E",
-    cameraScale: 1.18,
+    cameraScale: 1.34,
   },
   {
     label: "Metro Manila",
     shortLabel: "Manila",
     coordinates: "14.6° N · 121.0° E",
-    cameraScale: 1.28,
+    cameraScale: 1.44,
   },
   {
     label: "Central Visayas",
     shortLabel: "Visayas",
     coordinates: "10.3° N · 123.9° E",
-    cameraScale: 1.22,
+    cameraScale: 1.39,
   },
   {
     label: "South Mindanao",
     shortLabel: "Mindanao",
     coordinates: "7.2° N · 125.5° E",
-    cameraScale: 1.15,
+    cameraScale: 1.33,
   },
 ] as const
 
@@ -265,10 +267,16 @@ export function PhilippinesNetwork({
 
   const locationX = activeLocation.coordinates.x + MAP_X_OFFSET
   const locationY = activeLocation.coordinates.y
+  const skewRadians = (MAP_SKEW_DEGREES * Math.PI) / 180
+  const perspectiveY = MAP_CENTER.y + MAP_Y_SCALE * (locationY - MAP_CENTER.y)
+  const perspectiveX =
+    MAP_CENTER.x +
+    (locationX - MAP_CENTER.x) +
+    Math.tan(skewRadians) * (perspectiveY - MAP_CENTER.y)
   const projectedX =
-    MAP_CENTER.x + activeArea.cameraScale * (locationX - MAP_CENTER.x)
+    MAP_CENTER.x + activeArea.cameraScale * (perspectiveX - MAP_CENTER.x)
   const projectedY =
-    MAP_CENTER.y + activeArea.cameraScale * (locationY - MAP_CENTER.y)
+    MAP_CENTER.y + activeArea.cameraScale * (perspectiveY - MAP_CENTER.y)
   const cameraX = CAMERA_FOCUS.x - projectedX
   const cameraY = CAMERA_FOCUS.y - projectedY
   const cameraStyle = {
@@ -354,7 +362,7 @@ export function PhilippinesNetwork({
               dy="9"
               stdDeviation="6"
               floodColor="#0b1f44"
-              floodOpacity="0.16"
+              floodOpacity="0.1"
             />
           </filter>
         </defs>
@@ -374,76 +382,75 @@ export function PhilippinesNetwork({
         </g>
 
         <g className="map-camera" style={cameraStyle} aria-hidden="true">
-          <g transform={`translate(${MAP_X_OFFSET} 0)`}>
-            <g className="map-depth-layer" filter="url(#network-map-shadow)">
-              {PHILIPPINES_MAP_POINTS.map(([x, y], index) => (
-                <circle
-                  key={`depth-${x}-${y}`}
-                  className="map-dot-depth"
-                  cx={x + 2.8}
-                  cy={y + 5.2}
-                  r={1.8 + (y / 500) * 0.65}
-                  style={{ "--dot-index": index } as CSSProperties}
-                />
-              ))}
-            </g>
+          <g className="map-projection">
+            <g transform={`translate(${MAP_X_OFFSET} 0)`}>
+              <g className="map-depth-layer" filter="url(#network-map-shadow)">
+                {PHILIPPINES_MAP_POINTS.map(([x, y], index) => (
+                  <circle
+                    key={`depth-${x}-${y}`}
+                    className="map-dot-depth"
+                    cx={x + 2.8}
+                    cy={y + 5.2}
+                    r={1.8 + (y / 500) * 0.65}
+                    style={{ "--dot-index": index } as CSSProperties}
+                  />
+                ))}
+              </g>
 
-            <g className="map-surface-layer">
-              {PHILIPPINES_MAP_POINTS.map(([x, y], index) => (
-                <circle
-                  key={`${x}-${y}`}
-                  className={cn(
-                    "map-dot",
-                    index % 19 === 4 && "map-dot-accent"
-                  )}
-                  cx={x}
-                  cy={y}
-                  r={1.55 + (y / 500) * 0.62}
-                  style={{ "--dot-index": index } as CSSProperties}
-                />
-              ))}
-            </g>
+              <g className="map-surface-layer">
+                {PHILIPPINES_MAP_POINTS.map(([x, y], index) => (
+                  <circle
+                    key={`${x}-${y}`}
+                    className="map-dot"
+                    cx={x}
+                    cy={y}
+                    r={1.55 + (y / 500) * 0.62}
+                    style={{ "--dot-index": index } as CSSProperties}
+                  />
+                ))}
+              </g>
 
-            <g className="network-connections">
-              <path className="network-route-base" d={mapPath} />
-              <path className="network-route-travel" d={mapPath} />
-            </g>
+              <g className="network-connections">
+                <path className="network-route-base" d={mapPath} />
+                <path className="network-route-travel" d={mapPath} />
+              </g>
 
-            <g>
-              {NETWORK_LOCATIONS.map((location, index) => {
-                const active = hasEntered && activeAreaIndex === index
-                return (
-                  <g
-                    key={location.id}
-                    className={cn("active-node", active && "is-active")}
-                  >
-                    <circle
-                      className="node-pulse"
-                      cx={location.coordinates.x}
-                      cy={location.coordinates.y}
-                      r="10"
-                    />
-                    <circle
-                      className="node-shadow"
-                      cx={location.coordinates.x + 2}
-                      cy={location.coordinates.y + 4}
-                      r="5.5"
-                    />
-                    <circle
-                      className="node-ring"
-                      cx={location.coordinates.x}
-                      cy={location.coordinates.y}
-                      r="5.5"
-                    />
-                    <circle
-                      className="node-core"
-                      cx={location.coordinates.x}
-                      cy={location.coordinates.y}
-                      r="2.5"
-                    />
-                  </g>
-                )
-              })}
+              <g>
+                {NETWORK_LOCATIONS.map((location, index) => {
+                  const active = hasEntered && activeAreaIndex === index
+                  return (
+                    <g
+                      key={location.id}
+                      className={cn("active-node", active && "is-active")}
+                    >
+                      <circle
+                        className="node-pulse"
+                        cx={location.coordinates.x}
+                        cy={location.coordinates.y}
+                        r="10"
+                      />
+                      <circle
+                        className="node-shadow"
+                        cx={location.coordinates.x + 2}
+                        cy={location.coordinates.y + 4}
+                        r="5.5"
+                      />
+                      <circle
+                        className="node-ring"
+                        cx={location.coordinates.x}
+                        cy={location.coordinates.y}
+                        r="5.5"
+                      />
+                      <circle
+                        className="node-core"
+                        cx={location.coordinates.x}
+                        cy={location.coordinates.y}
+                        r="2.5"
+                      />
+                    </g>
+                  )
+                })}
+              </g>
             </g>
           </g>
         </g>
