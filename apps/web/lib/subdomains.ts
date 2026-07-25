@@ -24,6 +24,11 @@ export interface RegisteredSubdomain {
   updatedOn: string | null
 }
 
+export interface RegisteredSubdomainProfile {
+  subdomain: string
+  github: string
+}
+
 type DomainFile = {
   owner: { github: string; email?: string }
   records: Record<string, unknown>
@@ -152,4 +157,53 @@ export async function getRegisteredSubdomains(): Promise<RegisteredSubdomain[]> 
       const tb = b.createdOn ? Date.parse(b.createdOn) : 0
       return tb - ta
     })
+}
+
+/**
+ * Fetch a small profile sample for lightweight community surfaces. Unlike the
+ * full registry loader, this intentionally skips commit-history requests.
+ */
+export async function getRegisteredSubdomainProfiles(
+  limit: number,
+): Promise<RegisteredSubdomainProfile[]> {
+  try {
+    const listResponse = await fetch(
+      `https://api.github.com/repos/${DOMAINS_REPO}/contents/subdomains?ref=main`,
+      {
+        headers: githubHeaders(),
+        next: { revalidate: REVALIDATE_SECONDS },
+      },
+    )
+    if (!listResponse.ok) return []
+
+    const files = (await listResponse.json()) as {
+      name: string
+      download_url: string | null
+    }[]
+    const candidates = files
+      .filter((file) => file.name.endsWith(".json") && file.download_url)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, Math.max(0, limit))
+
+    const profiles = await Promise.all(
+      candidates.map(async (file) => {
+        const response = await fetch(file.download_url!, {
+          next: { revalidate: REVALIDATE_SECONDS },
+        })
+        if (!response.ok) return null
+        const data = (await response.json()) as DomainFile
+        if (data.destroy || !data.owner?.github) return null
+        return {
+          subdomain: file.name.replace(/\.json$/, ""),
+          github: data.owner.github,
+        }
+      }),
+    )
+
+    return profiles.filter(
+      (profile): profile is RegisteredSubdomainProfile => profile !== null,
+    )
+  } catch {
+    return []
+  }
 }

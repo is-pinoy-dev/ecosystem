@@ -14,6 +14,171 @@ body {
   min-width: 320px;
 }
 
+.hero-section::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--border) 35%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--border) 28%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 48px 48px;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    transparent 36%,
+    black 75%,
+    transparent 100%
+  );
+  content: "";
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.hero-copy {
+  animation: hero-copy-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.map-dot {
+  fill: color-mix(in srgb, var(--foreground) 62%, var(--background));
+  opacity: 0;
+  animation: map-dot-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(180ms + var(--dot-index) * 5ms);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.map-dot-accent {
+  fill: var(--accent);
+}
+
+.network-connections path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--primary) 44%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 3 8;
+}
+
+.network-connections .network-travel {
+  stroke: var(--accent);
+  stroke-dasharray: 1 70;
+  stroke-linecap: round;
+  stroke-width: 2;
+  animation: network-travel 8s linear 3.2s infinite;
+}
+
+.active-node {
+  opacity: 0.32;
+  transition: opacity 400ms ease;
+}
+
+.active-node.is-active {
+  opacity: 1;
+}
+
+.node-pulse {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 1.4;
+  opacity: 0;
+}
+
+.is-active .node-pulse {
+  animation: node-pulse 2.8s ease-out infinite;
+}
+
+.node-ring {
+  fill: var(--background);
+  stroke: var(--primary);
+  stroke-width: 1.5;
+}
+
+.node-core {
+  fill: var(--primary);
+}
+
+.network-card {
+  animation: card-float 7s ease-in-out infinite;
+}
+
+.network-card:hover,
+.network-card:focus-visible {
+  animation-play-state: paused;
+  border-color: var(--accent);
+}
+
+.network-paused *,
+.network-paused *::before,
+.network-paused *::after {
+  animation-play-state: paused !important;
+}
+
+.network-paused .network-card {
+  opacity: 0.35 !important;
+}
+
+@keyframes hero-copy-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes map-dot-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.65);
+  }
+  to {
+    opacity: 0.78;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes node-pulse {
+  0%,
+  18% {
+    opacity: 0.65;
+    transform: scale(0.45);
+    transform-origin: center;
+  }
+  55%,
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+    transform-origin: center;
+  }
+}
+
+@keyframes network-travel {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -142;
+  }
+}
+
+@keyframes card-float {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+  50% {
+    margin-top: -4px;
+  }
+}
+
 a {
   text-underline-offset: 3px;
 }
@@ -164,5 +329,36 @@ a {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .hero-copy,
+  .map-dot,
+  .network-card,
+  .network-travel,
+  .node-pulse {
+    animation: none !important;
+  }
+
+  .map-dot {
+    opacity: 0.78;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero-section::before {
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 36%,
+      black 72%,
+      transparent 100%
+    );
+  }
+
+  .network-root {
+    max-width: 390px;
+  }
+
+  .network-card {
+    width: 164px;
   }
 }
