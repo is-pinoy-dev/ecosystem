@@ -1,6 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState, type CSSProperties } from "react"
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react"
 import { ArrowUpRight } from "lucide-react"
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 import {
@@ -9,85 +15,115 @@ import {
 } from "@/lib/community-profiles"
 import { PHILIPPINES_MAP_POINTS } from "@/lib/philippines-map-points"
 
-const SEQUENCE_INTERVAL = 5600
+const SEQUENCE_INTERVAL = 6200
+const MAP_X_OFFSET = 40
+const MAP_CENTER = { x: 200, y: 250 }
+const CAMERA_FOCUS = { x: 150, y: 260 }
+const MAP_SKEW_DEGREES = -15
+const MAP_Y_SCALE = 0.86
+
+const AREA_DETAILS = [
+  {
+    label: "North Luzon",
+    cameraScale: 1.34,
+  },
+  {
+    label: "Metro Manila",
+    cameraScale: 1.44,
+  },
+  {
+    label: "Central Visayas",
+    cameraScale: 1.39,
+  },
+  {
+    label: "South Mindanao",
+    cameraScale: 1.33,
+  },
+] as const
 
 function DeveloperCard({
   profile,
-  locationIndex,
-  active,
-  onActiveChange,
+  onInteractingChange,
 }: {
   profile: CommunityProfile
-  locationIndex: number
-  active: boolean
-  onActiveChange: (id: string | null) => void
+  onInteractingChange: (interacting: boolean) => void
 }) {
-  const location = NETWORK_LOCATIONS[locationIndex % NETWORK_LOCATIONS.length]!
-
   return (
-    <a
-      href={profile.profileUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(
-        "network-card group absolute z-20 w-[204px] border border-border/80 bg-card/95 p-2.5 text-foreground no-underline shadow-[0_16px_40px_rgba(11,31,68,0.12)] backdrop-blur-sm transition-[opacity,transform,border-color,box-shadow] duration-500 outline-none focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-        location.cardSide === "left"
-          ? "right-1/2 sm:right-[64%]"
-          : "left-1/2 sm:left-[62%]",
-        active
-          ? "translate-y-0 opacity-100"
-          : "pointer-events-none translate-y-2 opacity-0"
-      )}
-      style={{
-        top: `${Math.max(5, Math.min(82, location.coordinates.y / 5 - 6))}%`,
-      }}
-      tabIndex={active ? 0 : -1}
-      aria-hidden={!active}
-      onMouseEnter={() => onActiveChange(profile.id)}
-      onMouseLeave={() => onActiveChange(null)}
-      onFocus={() => onActiveChange(profile.id)}
-      onBlur={() => onActiveChange(null)}
-      aria-label={`Visit ${profile.subdomain} by ${profile.github}`}
+    <div
+      className="network-card-shell absolute z-30"
+      onMouseEnter={() => onInteractingChange(true)}
+      onMouseLeave={() => onInteractingChange(false)}
+      onFocusCapture={() => onInteractingChange(true)}
+      onBlurCapture={() => onInteractingChange(false)}
     >
-      <span
-        className={cn(
-          "absolute top-1/2 size-2.5 -translate-y-1/2 rotate-45 bg-card",
-          location.cardSide === "left"
-            ? "-right-1.5 border-t border-r border-border/80"
-            : "-left-1.5 border-b border-l border-border/80"
-        )}
-        aria-hidden="true"
-      />
-      <span className="relative flex items-center gap-2.5">
+      <a
+        href={profile.profileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="network-card group flex min-h-[68px] items-center gap-3 bg-card/95 p-3 text-foreground no-underline backdrop-blur-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        aria-label={`Visit ${profile.subdomain} by ${profile.github}`}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={profile.avatarUrl}
           alt=""
           aria-hidden="true"
-          width="32"
-          height="32"
+          width="44"
+          height="44"
           loading="lazy"
-          className="size-9 shrink-0 border border-border bg-secondary object-cover sm:size-10"
+          className="size-11 shrink-0 bg-secondary object-cover"
         />
         <span className="min-w-0 flex-1">
           <strong
-            className="block truncate text-xs leading-tight font-semibold"
+            className="block truncate text-sm leading-tight font-semibold tracking-[-0.01em]"
             title={profile.subdomain}
           >
             {profile.subdomain}
           </strong>
-          <span className="mt-1 block truncate text-[11px] leading-none text-muted-foreground">
+          <span className="mt-1.5 block truncate font-mono text-[10px] text-muted-foreground">
             @{profile.github}
           </span>
         </span>
-        <span className="flex size-6 shrink-0 items-center justify-center border border-border bg-background text-accent transition-[background-color,color,border-color] duration-200 group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground sm:size-7">
-          <ArrowUpRight
-            className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-            aria-hidden="true"
-          />
+        <ArrowUpRight
+          className="size-4 shrink-0 text-accent transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          aria-hidden="true"
+        />
+      </a>
+    </div>
+  )
+}
+
+function AreaSummaryCard({
+  onInteractingChange,
+}: {
+  onInteractingChange: (interacting: boolean) => void
+}) {
+  return (
+    <div
+      className="network-card-shell absolute z-30"
+      onMouseEnter={() => onInteractingChange(true)}
+      onMouseLeave={() => onInteractingChange(false)}
+      onFocusCapture={() => onInteractingChange(true)}
+      onBlurCapture={() => onInteractingChange(false)}
+    >
+      <a
+        href="/showcase"
+        className="network-card group flex min-h-[68px] items-center gap-3 bg-card/95 p-3 text-foreground no-underline backdrop-blur-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        <span className="min-w-0 flex-1">
+          <strong className="block truncate text-sm leading-tight font-semibold tracking-[-0.01em]">
+            Explore community
+          </strong>
+          <span className="mt-1 block text-[10px] text-muted-foreground">
+            Meet Filipino developers
+          </span>
         </span>
-      </span>
-    </a>
+        <ArrowUpRight
+          className="size-4 shrink-0 text-accent transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          aria-hidden="true"
+        />
+      </a>
+    </div>
   )
 }
 
@@ -97,11 +133,39 @@ export function PhilippinesNetwork({
   profiles: CommunityProfile[]
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [focusedId, setFocusedId] = useState<string | null>(null)
+  const [activeAreaIndex, setActiveAreaIndex] = useState(0)
+  const [activeProfileIndex, setActiveProfileIndex] = useState<number | null>(
+    profiles.length > 0 ? 0 : null
+  )
   const [isVisible, setIsVisible] = useState(true)
   const [reduceMotion, setReduceMotion] = useState(false)
   const [hasEntered, setHasEntered] = useState(false)
+  const [isInteracting, setIsInteracting] = useState(false)
+
+  const activeArea = AREA_DETAILS[activeAreaIndex]!
+  const activeLocation = NETWORK_LOCATIONS[activeAreaIndex]!
+  const activeProfile =
+    activeProfileIndex === null ? undefined : profiles[activeProfileIndex]
+  const isPaused = isInteracting || !isVisible
+
+  const navigateToArea = useCallback(
+    (areaIndex: number) => {
+      const profileIndexes = profiles.reduce<number[]>((indexes, _, index) => {
+        if (index % NETWORK_LOCATIONS.length === areaIndex) indexes.push(index)
+        return indexes
+      }, [])
+
+      setActiveAreaIndex(areaIndex)
+      setActiveProfileIndex((currentIndex) => {
+        if (profileIndexes.length === 0) return null
+        const nextIndex = profileIndexes.find(
+          (profileIndex) => profileIndex > (currentIndex ?? -1)
+        )
+        return nextIndex ?? profileIndexes[0]!
+      })
+    },
+    [profiles]
+  )
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -114,7 +178,7 @@ export function PhilippinesNetwork({
   useEffect(() => {
     const timer = window.setTimeout(
       () => setHasEntered(true),
-      reduceMotion ? 0 : 2100
+      reduceMotion ? 0 : 520
     )
     return () => window.clearTimeout(timer)
   }, [reduceMotion])
@@ -131,112 +195,119 @@ export function PhilippinesNetwork({
   }, [])
 
   useEffect(() => {
-    if (reduceMotion || !isVisible || focusedId) return
-    const timer = window.setInterval(
-      () =>
-        setActiveIndex((index) => {
-          if (profiles.length < 2) return 0
-          const offset = 1 + Math.floor(Math.random() * (profiles.length - 1))
-          return (index + offset) % profiles.length
-        }),
-      SEQUENCE_INTERVAL
-    )
+    if (reduceMotion || isPaused) return
+    const timer = window.setInterval(() => {
+      navigateToArea((activeAreaIndex + 1) % NETWORK_LOCATIONS.length)
+    }, SEQUENCE_INTERVAL)
     return () => window.clearInterval(timer)
-  }, [focusedId, isVisible, profiles.length, reduceMotion])
+  }, [activeAreaIndex, isPaused, navigateToArea, reduceMotion])
 
-  const visibleProfile = focusedId
-    ? profiles.find((profile) => profile.id === focusedId)
-    : profiles[activeIndex]
-  const visibleIndex = visibleProfile
-    ? profiles.findIndex((profile) => profile.id === visibleProfile.id)
-    : -1
+  const locationX = activeLocation.coordinates.x + MAP_X_OFFSET
+  const locationY = activeLocation.coordinates.y
+  const skewRadians = (MAP_SKEW_DEGREES * Math.PI) / 180
+  const perspectiveY = MAP_CENTER.y + MAP_Y_SCALE * (locationY - MAP_CENTER.y)
+  const perspectiveX =
+    MAP_CENTER.x +
+    (locationX - MAP_CENTER.x) +
+    Math.tan(skewRadians) * (perspectiveY - MAP_CENTER.y)
+  const projectedX =
+    MAP_CENTER.x + activeArea.cameraScale * (perspectiveX - MAP_CENTER.x)
+  const projectedY =
+    MAP_CENTER.y + activeArea.cameraScale * (perspectiveY - MAP_CENTER.y)
+  const cameraX = CAMERA_FOCUS.x - projectedX
+  const cameraY = CAMERA_FOCUS.y - projectedY
+  const cameraStyle = {
+    transform: `translate(${cameraX}px, ${cameraY}px) scale(${activeArea.cameraScale})`,
+  } satisfies CSSProperties
 
   return (
     <div
       ref={rootRef}
       className={cn(
-        "network-root relative mx-auto aspect-[4/5] w-full max-w-[500px]",
-        !isVisible && "network-paused"
+        "network-root relative mx-auto aspect-[4/5] w-full max-w-[500px] overflow-hidden bg-background",
+        isPaused && "network-paused"
       )}
     >
-      <p className="absolute top-4 right-2 z-10 m-0 font-mono text-[10px] font-semibold tracking-[0.12em] text-accent uppercase sm:right-5">
-        Across the islands
-      </p>
-
       <svg
-        className="absolute inset-0 size-full overflow-visible"
-        viewBox="-90 -25 500 550"
+        className="absolute inset-0 size-full"
+        viewBox="0 0 400 500"
         role="img"
-        aria-label="A dotted map of the Philippines with illustrative network nodes across Luzon, Visayas, and Mindanao."
+        aria-label={`A three-dimensional dotted map of the Philippines, focused on ${activeArea.label}, with illustrative community network nodes.`}
       >
-        <g className="network-connections" aria-hidden="true">
-          <path d="M123 143 L135 197 L231 327 L288 425" />
-          <path className="network-travel" d="M135 197 L231 327" />
-        </g>
-        <g aria-hidden="true">
-          {PHILIPPINES_MAP_POINTS.map(([x, y], index) => (
-            <circle
-              key={`${x}-${y}`}
-              className={cn("map-dot", index % 17 === 3 && "map-dot-accent")}
-              cx={x}
-              cy={y}
-              r="2.15"
-              style={{ "--dot-index": index } as CSSProperties}
-            />
-          ))}
-        </g>
-        <g aria-hidden="true">
-          {NETWORK_LOCATIONS.map((location, index) => {
-            const active =
-              hasEntered && visibleIndex % NETWORK_LOCATIONS.length === index
-            return (
-              <g
-                key={location.id}
-                className={cn("active-node", active && "is-active")}
-              >
+        <g className="map-camera" style={cameraStyle} aria-hidden="true">
+          <g className="map-projection">
+            <g transform={`translate(${MAP_X_OFFSET} 0)`}>
+              <g className="map-depth-layer">
+                {PHILIPPINES_MAP_POINTS.map(([x, y], index) => (
+                  <circle
+                    key={`depth-${x}-${y}`}
+                    className="map-dot-depth"
+                    cx={x + 2.8}
+                    cy={y + 5.2}
+                    r={1.8 + (y / 500) * 0.65}
+                    style={{ "--dot-index": index } as CSSProperties}
+                  />
+                ))}
+              </g>
+
+              <g className="map-surface-layer">
+                {PHILIPPINES_MAP_POINTS.map(([x, y], index) => (
+                  <circle
+                    key={`${x}-${y}`}
+                    className="map-dot"
+                    cx={x}
+                    cy={y}
+                    r={1.55 + (y / 500) * 0.62}
+                    style={{ "--dot-index": index } as CSSProperties}
+                  />
+                ))}
+              </g>
+
+              <g className={cn("active-node", hasEntered && "is-active")}>
                 <circle
                   className="node-pulse"
-                  cx={location.coordinates.x}
-                  cy={location.coordinates.y}
-                  r="9"
+                  cx={activeLocation.coordinates.x}
+                  cy={activeLocation.coordinates.y}
+                  r="10"
+                />
+                <circle
+                  className="node-shadow"
+                  cx={activeLocation.coordinates.x + 2}
+                  cy={activeLocation.coordinates.y + 4}
+                  r="5.5"
                 />
                 <circle
                   className="node-ring"
-                  cx={location.coordinates.x}
-                  cy={location.coordinates.y}
-                  r="5"
+                  cx={activeLocation.coordinates.x}
+                  cy={activeLocation.coordinates.y}
+                  r="5.5"
                 />
                 <circle
                   className="node-core"
-                  cx={location.coordinates.x}
-                  cy={location.coordinates.y}
-                  r="2.6"
+                  cx={activeLocation.coordinates.x}
+                  cy={activeLocation.coordinates.y}
+                  r="2.5"
                 />
               </g>
-            )
-          })}
+            </g>
+          </g>
         </g>
       </svg>
 
-      {profiles.map((profile, index) => (
+      {hasEntered && activeProfile && (
         <DeveloperCard
-          key={profile.id}
-          profile={profile}
-          locationIndex={index}
-          active={hasEntered && visibleProfile?.id === profile.id}
-          onActiveChange={setFocusedId}
+          key={`${activeAreaIndex}-${activeProfile.id}`}
+          profile={activeProfile}
+          onInteractingChange={setIsInteracting}
         />
-      ))}
-
-      {profiles.length === 0 && (
-        <p className="absolute inset-x-10 bottom-14 m-0 border border-border bg-card p-3 text-center text-xs text-muted-foreground">
-          Community profiles will appear when registry data is available.
-        </p>
       )}
 
-      <span className="absolute right-2 bottom-3 font-mono text-[10px] text-muted-foreground sm:right-5">
-        7°–18° N · connected by community
-      </span>
+      {hasEntered && !activeProfile && (
+        <AreaSummaryCard
+          key={`area-${activeAreaIndex}`}
+          onInteractingChange={setIsInteracting}
+        />
+      )}
     </div>
   )
 }
