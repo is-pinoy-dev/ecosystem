@@ -3,8 +3,20 @@ import { ArrowRight, Code2, Users } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { PhilippinesNetwork } from "@/components/philippines-network"
+import { getRegisteredSubdomainProfiles } from "@/lib/subdomains"
 
-export function HeroSection() {
+const NETWORK_PROFILE_LIMIT = 16
+
+export async function HeroSection() {
+  const registered = await getRegisteredSubdomainProfiles(NETWORK_PROFILE_LIMIT)
+  const profiles = registered.slice(0, NETWORK_PROFILE_LIMIT).map((entry) => ({
+    id: entry.subdomain,
+    subdomain: `${entry.subdomain}.is-pinoy.dev`,
+    github: entry.github,
+    avatarUrl: `https://avatars.githubusercontent.com/${encodeURIComponent(entry.github)}?size=96`,
+    profileUrl: `https://${entry.subdomain}.is-pinoy.dev`,
+  }))
+
   return (
     <section
       className="hero-section relative overflow-hidden border-b border-border"
@@ -68,7 +80,7 @@ export function HeroSection() {
         </div>
 
         <div className="hero-network relative min-h-[430px] md:min-h-0">
-          <PhilippinesNetwork />
+          <PhilippinesNetwork profiles={profiles} />
         </div>
       </Container>
     </section>

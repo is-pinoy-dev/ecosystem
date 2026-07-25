@@ -362,9 +362,3 @@ a {
     width: 164px;
   }
 }
-
-@media (max-width: 419px) {
-  .network-card:nth-of-type(n + 4) {
-    display: none;
-  }
-}

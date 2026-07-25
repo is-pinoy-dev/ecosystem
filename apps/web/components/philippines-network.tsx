@@ -1,11 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState, type CSSProperties } from "react"
-import Link from "next/link"
-import { ArrowUpRight, MapPin } from "lucide-react"
+import { ArrowUpRight, UserRound } from "lucide-react"
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 import {
-  COMMUNITY_PROFILES,
+  NETWORK_LOCATIONS,
   type CommunityProfile,
 } from "@/lib/community-profiles"
 import { PHILIPPINES_MAP_POINTS } from "@/lib/philippines-map-points"
@@ -14,19 +13,25 @@ const SEQUENCE_INTERVAL = 5600
 
 function DeveloperCard({
   profile,
+  locationIndex,
   active,
   onActiveChange,
 }: {
   profile: CommunityProfile
+  locationIndex: number
   active: boolean
   onActiveChange: (id: string | null) => void
 }) {
+  const location = NETWORK_LOCATIONS[locationIndex % NETWORK_LOCATIONS.length]!
+
   return (
-    <Link
+    <a
       href={profile.profileUrl}
+      target="_blank"
+      rel="noopener noreferrer"
       className={cn(
         "network-card absolute z-20 w-[178px] border border-border bg-card p-3.5 text-foreground no-underline shadow-[0_12px_34px_rgba(11,31,68,0.10)] transition-[opacity,transform,border-color] duration-500 outline-none focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-        profile.cardPosition === "left"
+        location.cardSide === "left"
           ? "right-[60%] sm:right-[64%]"
           : "left-[58%] sm:left-[62%]",
         active
@@ -34,36 +39,47 @@ function DeveloperCard({
           : "pointer-events-none translate-y-2 opacity-0"
       )}
       style={{
-        top: `${Math.max(7, Math.min(72, profile.coordinates.y / 5 - 10))}%`,
+        top: `${Math.max(7, Math.min(72, location.coordinates.y / 5 - 10))}%`,
       }}
       tabIndex={active ? 0 : -1}
       onMouseEnter={() => onActiveChange(profile.id)}
       onMouseLeave={() => onActiveChange(null)}
       onFocus={() => onActiveChange(profile.id)}
       onBlur={() => onActiveChange(null)}
-      aria-label={`Explore ${profile.subdomain} projects from ${profile.city}`}
+      aria-label={`Visit ${profile.subdomain}, claimed by ${profile.github} on GitHub`}
     >
       <span className="mb-3 flex items-center justify-between">
-        <span className="flex size-8 items-center justify-center bg-secondary font-mono text-xs font-semibold text-accent">
-          {profile.city.slice(0, 2).toUpperCase()}
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={profile.avatarUrl}
+          alt=""
+          aria-hidden="true"
+          width="32"
+          height="32"
+          loading="lazy"
+          className="size-8 border border-border bg-secondary object-cover"
+        />
         <ArrowUpRight className="size-4 text-accent" aria-hidden="true" />
       </span>
       <strong className="block text-sm font-semibold">
         {profile.subdomain}
       </strong>
       <span className="mt-1 block text-xs text-muted-foreground">
-        {profile.role}
+        @{profile.github}
       </span>
       <span className="mt-2 flex items-center gap-1 font-mono text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-        <MapPin className="size-3 text-primary-dark" aria-hidden="true" />
-        {profile.city}
+        <UserRound className="size-3 text-primary-dark" aria-hidden="true" />
+        Claimed subdomain
       </span>
-    </Link>
+    </a>
   )
 }
 
-export function PhilippinesNetwork() {
+export function PhilippinesNetwork({
+  profiles,
+}: {
+  profiles: CommunityProfile[]
+}) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [focusedId, setFocusedId] = useState<string | null>(null)
@@ -101,15 +117,23 @@ export function PhilippinesNetwork() {
   useEffect(() => {
     if (reduceMotion || !isVisible || focusedId) return
     const timer = window.setInterval(
-      () => setActiveIndex((index) => (index + 1) % COMMUNITY_PROFILES.length),
+      () =>
+        setActiveIndex((index) => {
+          if (profiles.length < 2) return 0
+          const offset = 1 + Math.floor(Math.random() * (profiles.length - 1))
+          return (index + offset) % profiles.length
+        }),
       SEQUENCE_INTERVAL
     )
     return () => window.clearInterval(timer)
-  }, [focusedId, isVisible, reduceMotion])
+  }, [focusedId, isVisible, profiles.length, reduceMotion])
 
   const visibleProfile = focusedId
-    ? COMMUNITY_PROFILES.find((profile) => profile.id === focusedId)
-    : COMMUNITY_PROFILES[activeIndex]
+    ? profiles.find((profile) => profile.id === focusedId)
+    : profiles[activeIndex]
+  const visibleIndex = visibleProfile
+    ? profiles.findIndex((profile) => profile.id === visibleProfile.id)
+    : -1
 
   return (
     <div
@@ -127,7 +151,7 @@ export function PhilippinesNetwork() {
         className="absolute inset-0 size-full overflow-visible"
         viewBox="-90 -25 500 550"
         role="img"
-        aria-label="A dotted map of the Philippines showing developer communities in Baguio, Manila, Cebu, and Davao."
+        aria-label="A dotted map of the Philippines with illustrative network nodes across Luzon, Visayas, and Mindanao."
       >
         <g className="network-connections" aria-hidden="true">
           <path d="M123 143 L135 197 L231 327 L288 425" />
@@ -146,29 +170,30 @@ export function PhilippinesNetwork() {
           ))}
         </g>
         <g aria-hidden="true">
-          {COMMUNITY_PROFILES.map((profile) => {
-            const active = hasEntered && visibleProfile?.id === profile.id
+          {NETWORK_LOCATIONS.map((location, index) => {
+            const active =
+              hasEntered && visibleIndex % NETWORK_LOCATIONS.length === index
             return (
               <g
-                key={profile.id}
+                key={location.id}
                 className={cn("active-node", active && "is-active")}
               >
                 <circle
                   className="node-pulse"
-                  cx={profile.coordinates.x}
-                  cy={profile.coordinates.y}
+                  cx={location.coordinates.x}
+                  cy={location.coordinates.y}
                   r="9"
                 />
                 <circle
                   className="node-ring"
-                  cx={profile.coordinates.x}
-                  cy={profile.coordinates.y}
+                  cx={location.coordinates.x}
+                  cy={location.coordinates.y}
                   r="5"
                 />
                 <circle
                   className="node-core"
-                  cx={profile.coordinates.x}
-                  cy={profile.coordinates.y}
+                  cx={location.coordinates.x}
+                  cy={location.coordinates.y}
                   r="2.6"
                 />
               </g>
@@ -177,14 +202,21 @@ export function PhilippinesNetwork() {
         </g>
       </svg>
 
-      {COMMUNITY_PROFILES.map((profile) => (
+      {profiles.map((profile, index) => (
         <DeveloperCard
           key={profile.id}
           profile={profile}
+          locationIndex={index}
           active={hasEntered && visibleProfile?.id === profile.id}
           onActiveChange={setFocusedId}
         />
       ))}
+
+      {profiles.length === 0 && (
+        <p className="absolute inset-x-10 bottom-14 m-0 border border-border bg-card p-3 text-center text-xs text-muted-foreground">
+          Community profiles will appear when registry data is available.
+        </p>
+      )}
 
       <span className="absolute right-2 bottom-3 font-mono text-[10px] text-muted-foreground sm:right-5">
         7°–18° N · connected by community
