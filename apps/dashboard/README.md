@@ -27,21 +27,25 @@ pnpm --filter dashboard dev   # http://localhost:3001
 ## Production
 
 The dashboard runs on Vercel behind the custom domain `dashboard.is-pinoy.dev`.
-Two things must line up for GitHub sign-in to work there:
+Set **all** of these in the Vercel project's environment variables (they are not
+committed, so a deployment that only has them in a local `.env.local` will be
+missing them) and redeploy:
 
-- **`AUTH_URL`** must be set to the canonical origin
-  (`https://dashboard.is-pinoy.dev`, no trailing slash). Auth.js builds the
-  OAuth `redirect_uri` from it. If it is unset, Auth.js falls back to the
-  per-deployment `*.vercel.app` URL, so GitHub gets a `redirect_uri` that is
-  **not** registered on the OAuth app and the sign-in dead-ends on a **GitHub
-  404**. This is the usual cause of "404 on Sign in with GitHub in production."
-- The GitHub OAuth app's **Authorization callback URL** must match exactly:
-  `https://dashboard.is-pinoy.dev/api/auth/callback/github`.
+- **`AUTH_GITHUB_ID`** / **`AUTH_GITHUB_SECRET`** — the GitHub OAuth app
+  credentials. **If either is missing in production, the GitHub provider sends
+  `client_id=undefined` to `github.com/login/oauth/authorize`, and GitHub
+  answers with a 404** — so clicking "Continue with GitHub" lands the user on a
+  GitHub 404 page. This is the usual cause of "404 on Sign in with GitHub in
+  production." The `/login` page now detects this and shows a configuration
+  message instead of a dead button.
+- **`AUTH_SECRET`** — used to encrypt the session JWT.
+- **`AUTH_URL`** — the canonical origin (`https://dashboard.is-pinoy.dev`, no
+  trailing slash). Pins the OAuth `redirect_uri` to the custom domain rather
+  than the per-deployment `*.vercel.app` URL.
 
-Set `AUTH_URL` (plus `AUTH_SECRET`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`) in
-the Vercel project's environment variables and redeploy. `trustHost` is already
-enabled in `auth.ts`, so no extra host configuration is needed once `AUTH_URL`
-is set.
+The GitHub OAuth app's **Authorization callback URL** must match exactly:
+`https://dashboard.is-pinoy.dev/api/auth/callback/github`. `trustHost` is
+already enabled in `auth.ts`, so no extra host configuration is needed.
 
 Ownership is matched by GitHub username: after signing in, the dashboard lists
 every registry record whose `owner.github` equals your login.

@@ -27,6 +27,14 @@ export default async function LoginPage({
     redirect("/")
   }
 
+  // Without these the GitHub provider sends `client_id=undefined` to GitHub's
+  // authorize endpoint, which answers with a 404 — a confusing dead end for
+  // the user. Detect the misconfiguration and show an actionable message
+  // instead of rendering a button that leads nowhere.
+  const githubConfigured = Boolean(
+    process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET,
+  )
+
   const { error } = await searchParams
 
   return (
@@ -74,12 +82,23 @@ export default async function LoginPage({
                 the is-pinoy.dev application on GitHub.
               </p>
             )}
-            <form action={signInWithGitHub}>
-              <Button type="submit" size="lg" className="w-full gap-2">
-                <GitHubIcon size={16} />
-                Continue with GitHub
-              </Button>
-            </form>
+            {githubConfigured ? (
+              <form action={signInWithGitHub}>
+                <Button type="submit" size="lg" className="w-full gap-2">
+                  <GitHubIcon size={16} />
+                  Continue with GitHub
+                </Button>
+              </form>
+            ) : (
+              <p
+                role="alert"
+                className="m-0 border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs/relaxed text-destructive"
+              >
+                GitHub sign-in isn&apos;t configured on this deployment. Set{" "}
+                <code>AUTH_GITHUB_ID</code> and <code>AUTH_GITHUB_SECRET</code>{" "}
+                in the environment and redeploy.
+              </p>
+            )}
             <p className="m-0 text-xs/relaxed text-muted-foreground">
               No subdomain yet? Claim one for free at{" "}
               <a
