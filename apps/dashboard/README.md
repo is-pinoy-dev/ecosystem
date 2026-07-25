@@ -36,8 +36,13 @@ missing them) and redeploy:
   `client_id=undefined` to `github.com/login/oauth/authorize`, and GitHub
   answers with a 404** — so clicking "Continue with GitHub" lands the user on a
   GitHub 404 page. This is the usual cause of "404 on Sign in with GitHub in
-  production." The `/login` page now detects this and shows a configuration
-  message instead of a dead button.
+  production." The `/login` page now detects a missing value and shows a
+  configuration message instead of a dead button.
+  - **Watch for invisible characters.** Pasting the client id from a file
+    saved as "UTF-8 with BOM" prepends an invisible byte-order mark (`U+FEFF`),
+    so GitHub receives `client_id=%EF%BB%BFOv23…` and 404s even though the var
+    "looks" correct in the Vercel UI. Re-enter the value by typing it. `auth.ts`
+    now strips BOM/zero-width marks and surrounding whitespace as a safety net.
 - **`AUTH_SECRET`** — used to encrypt the session JWT.
 - **`AUTH_URL`** — the canonical origin (`https://dashboard.is-pinoy.dev`, no
   trailing slash). Pins the OAuth `redirect_uri` to the custom domain rather

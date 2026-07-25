@@ -13,9 +13,23 @@ declare module "next-auth" {
   }
 }
 
+// Env values pasted or imported from a BOM-encoded file (e.g. saved as
+// "UTF-8 with BOM") carry an invisible leading byte-order mark (U+FEFF), and
+// copy-paste can add stray whitespace/newlines or a zero-width space (U+200B).
+// A single such character on AUTH_GITHUB_ID makes GitHub receive an unknown
+// `client_id`, which it answers with a 404 — silently breaking sign-in in
+// production. Strip zero-width marks and surrounding whitespace so an invisible
+// character can never take the whole flow down.
+function cleanCredential(value: string | undefined): string | undefined {
+  const cleaned = value?.replace(/[\uFEFF\u200B]/g, "").trim()
+  return cleaned ? cleaned : undefined
+}
+
 const nextAuth = NextAuth({
   providers: [
     GitHub({
+      clientId: cleanCredential(process.env.AUTH_GITHUB_ID),
+      clientSecret: cleanCredential(process.env.AUTH_GITHUB_SECRET),
       // `public_repo` lets the dashboard open a portfolio-claim PR against the
       // public domains repo on the user's behalf (fork + branch + PR). The
       // access token is persisted in the encrypted JWT only — never in the
