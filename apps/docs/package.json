@@ -21,7 +21,7 @@
     "fumadocs-ui": "16.9.1",
     "hast-util-to-jsx-runtime": "^2.3.6",
     "lucide-react": "catalog:",
-    "next": "16.2.6",
+    "next": "16.2.11",
     "react": "catalog:",
     "react-dom": "catalog:",
     "remark": "^15.0.1",
@@ -43,7 +43,7 @@
     "@types/react-dom": "catalog:",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "postcss": "^8.5.16",
+    "postcss": "^8.5.21",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
   }
