@@ -107,7 +107,7 @@ README and paste the snippet.
 ```
 
 Browse every badge, banner, theme, and format at
-**[is-pinoy.dev/badges](https://is-pinoy.dev/badges)**.
+**[docs.is-pinoy.dev/badge-kit](https://docs.is-pinoy.dev/badge-kit)**.
 
 ---
 
