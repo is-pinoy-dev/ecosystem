@@ -1,10 +1,10 @@
-import { createRequestHandler } from "@react-router/cloudflare";
+import { createRequestHandler } from "@react-router/cloudflare"
 // @ts-ignore - build/server is generated at compile time and won't exist during typecheck
-import * as build from "../build/server";
-import { Resvg, initWasm } from "@resvg/resvg-wasm";
-import { buildSvg, type OgData } from "./generate";
+import * as build from "../build/server"
+import { Resvg, initWasm } from "@resvg/resvg-wasm"
+import { buildSvg, type OgData } from "./generate"
 // @ts-ignore - resvg.wasm is copied to worker/ at build time and pre-compiled by wrangler
-import resvgWasmModule from "./resvg.wasm";
+import resvgWasmModule from "./resvg.wasm"
 
 const handleRequest = createRequestHandler({
   build,
@@ -17,55 +17,55 @@ const handleRequest = createRequestHandler({
       caches,
     },
   }),
-});
+})
 
-const PREFIX = "/_tools/og";
-const IMAGE_PATH = "/_tools/og/image";
+const PREFIX = "/_tools/og"
+const IMAGE_PATH = "/_tools/og/image"
 const DOMAINS_RAW_BASE =
-  "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains";
-const DOMAIN_CACHE_TTL = 300;
-const IMAGE_CACHE_TTL = 300;
+  "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains"
+const DOMAIN_CACHE_TTL = 300
+const IMAGE_CACHE_TTL = 300
 
 export interface Env {
-  ASSETS: Fetcher;
+  ASSETS: Fetcher
 }
 
 /** Returns null for apex domain (is-pinoy.dev), otherwise the subdomain label. */
 function extractSubdomain(hostname: string): string | null {
-  const parts = hostname.split(".");
-  return parts.length > 2 ? parts.slice(0, parts.length - 2).join(".") : null;
+  const parts = hostname.split(".")
+  return parts.length > 2 ? parts.slice(0, parts.length - 2).join(".") : null
 }
 
 // Module-level WASM init — runs once per isolate lifetime
-let wasmReady: Promise<void> | null = null;
+let wasmReady: Promise<void> | null = null
 
 async function ensureWasm(): Promise<void> {
-  if (wasmReady) return wasmReady;
-  wasmReady = initWasm(resvgWasmModule);
-  return wasmReady;
+  if (wasmReady) return wasmReady
+  wasmReady = initWasm(resvgWasmModule)
+  return wasmReady
 }
 
 async function fetchSubdomainData(
   subdomain: string,
   ctx: ExecutionContext
 ): Promise<OgData> {
-  const cacheKey = `https://domain-cache.internal/${subdomain}.json`;
+  const cacheKey = `https://domain-cache.internal/${subdomain}.json`
 
   if (typeof caches !== "undefined") {
-    const cached = await caches.default.match(cacheKey);
+    const cached = await caches.default.match(cacheKey)
     if (cached) {
-      const data = await cached.json<{ owner?: { github?: string } }>();
-      return { subdomain, owner: data.owner?.github ?? subdomain, found: true };
+      const data = await cached.json<{ owner?: { github?: string } }>()
+      return { subdomain, owner: data.owner?.github ?? subdomain, found: true }
     }
   }
 
   const res = await fetch(`${DOMAINS_RAW_BASE}/${subdomain}.json`, {
     headers: { "User-Agent": "is-pinoy-dev-og/1.0" },
-  });
+  })
 
-  if (!res.ok) return { subdomain, owner: "", found: false };
+  if (!res.ok) return { subdomain, owner: "", found: false }
 
-  const data = await res.json<{ owner?: { github?: string } }>();
+  const data = await res.json<{ owner?: { github?: string } }>()
 
   if (typeof caches !== "undefined") {
     ctx.waitUntil(
@@ -75,33 +75,87 @@ async function fetchSubdomainData(
           headers: { "Cache-Control": `max-age=${DOMAIN_CACHE_TTL}` },
         })
       )
-    );
+    )
   }
 
-  return { subdomain, owner: data.owner?.github ?? subdomain, found: true };
+  return { subdomain, owner: data.owner?.github ?? subdomain, found: true }
 }
 
-async function loadFont(env: Env, origin: string): Promise<ArrayBuffer> {
-  const fontKey = `${origin}/PressStart2P-Regular.ttf`;
+async function loadAsset(
+  env: Env,
+  origin: string,
+  pathname: string
+): Promise<ArrayBuffer> {
+  const assetKey = `${origin}/${pathname}`
   if (typeof caches !== "undefined") {
-    const cached = await caches.default.match(fontKey);
-    if (cached) return cached.arrayBuffer();
+    const cached = await caches.default.match(assetKey)
+    if (cached) return cached.arrayBuffer()
   }
-  const res = await env.ASSETS.fetch(fontKey);
-  if (!res.ok) throw new Error("Failed to load font from ASSETS");
-  return res.arrayBuffer();
+  const res = await env.ASSETS.fetch(assetKey)
+  if (!res.ok) throw new Error(`Failed to load ${pathname} from ASSETS`)
+  return res.arrayBuffer()
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  const chunkSize = 32_768
+  let binary = ""
+
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize))
+  }
+
+  return btoa(binary)
+}
+
+interface ImageAsset {
+  buffer: ArrayBuffer
+  contentType: string
+}
+
+async function fetchGithubAvatar(username: string): Promise<ImageAsset | null> {
+  try {
+    const res = await fetch(
+      `https://github.com/${encodeURIComponent(username)}.png?size=128`,
+      {
+        headers: {
+          Accept: "image/*",
+          "User-Agent": "is-pinoy-dev-og/1.0",
+        },
+      }
+    )
+
+    const contentType = res.headers.get("content-type")?.split(";")[0] ?? ""
+    if (!res.ok || !contentType.startsWith("image/")) return null
+
+    return {
+      buffer: await res.arrayBuffer(),
+      contentType,
+    }
+  } catch {
+    return null
+  }
 }
 
 async function generateOgPng(
   ogData: OgData,
-  fontBuffer: ArrayBuffer
+  pressStartFont: ArrayBuffer,
+  geistFont: ArrayBuffer,
+  backgroundImage: ArrayBuffer,
+  avatarImage: ImageAsset | null
 ): Promise<Uint8Array> {
-  const svg = buildSvg(ogData);
+  const backgroundDataUri = `data:image/jpeg;base64,${arrayBufferToBase64(backgroundImage)}`
+  const avatarDataUri = avatarImage
+    ? `data:${avatarImage.contentType};base64,${arrayBufferToBase64(avatarImage.buffer)}`
+    : undefined
+  const svg = buildSvg(ogData, backgroundDataUri, avatarDataUri)
   const resvg = new Resvg(svg, {
     fitTo: { mode: "width", value: 1200 },
-    font: { fontBuffers: [new Uint8Array(fontBuffer)] },
-  });
-  return resvg.render().asPng();
+    font: {
+      fontBuffers: [new Uint8Array(pressStartFont), new Uint8Array(geistFont)],
+    },
+  })
+  return resvg.render().asPng()
 }
 
 async function handleImageRequest(
@@ -110,33 +164,45 @@ async function handleImageRequest(
   env: Env,
   ctx: ExecutionContext
 ): Promise<Response> {
-  const url = new URL(request.url);
-  const imageCacheKey = `https://og-cache.internal/${subdomain}.png`;
+  const url = new URL(request.url)
+  const imageCacheKey = `https://og-cache.internal/${subdomain}.png`
 
   if (typeof caches !== "undefined") {
-    const cached = await caches.default.match(imageCacheKey);
-    if (cached) return cached;
+    const cached = await caches.default.match(imageCacheKey)
+    if (cached) return cached
   }
 
-  await ensureWasm();
-  const [ogData, fontBuffer] = await Promise.all([
-    fetchSubdomainData(subdomain, ctx),
-    loadFont(env, url.origin),
-  ]);
+  await ensureWasm()
+  const [ogData, pressStartFont, geistFont, backgroundImage] =
+    await Promise.all([
+      fetchSubdomainData(subdomain, ctx),
+      loadAsset(env, url.origin, "PressStart2P-Regular.ttf"),
+      loadAsset(env, url.origin, "Geist-SemiBold.ttf"),
+      loadAsset(env, url.origin, "subdomain-og-background.jpg"),
+    ])
+  const avatarImage = ogData.found
+    ? await fetchGithubAvatar(ogData.owner)
+    : null
 
-  const png = await generateOgPng(ogData, fontBuffer);
+  const png = await generateOgPng(
+    ogData,
+    pressStartFont,
+    geistFont,
+    backgroundImage,
+    avatarImage
+  )
   const response = new Response(png, {
     headers: {
       "Content-Type": "image/png",
       "Cache-Control": `public, max-age=${IMAGE_CACHE_TTL}`,
     },
-  });
+  })
 
   if (typeof caches !== "undefined") {
-    ctx.waitUntil(caches.default.put(imageCacheKey, response.clone()));
+    ctx.waitUntil(caches.default.put(imageCacheKey, response.clone()))
   }
 
-  return response;
+  return response
 }
 
 export default {
@@ -145,39 +211,39 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<Response> {
-    const url = new URL(request.url);
-    const subdomain = extractSubdomain(url.hostname);
+    const url = new URL(request.url)
+    const subdomain = extractSubdomain(url.hostname)
 
     // /_tools/og/image — return the PNG for this subdomain
     if (url.pathname === IMAGE_PATH || url.pathname === `${IMAGE_PATH}/`) {
       if (!subdomain) {
         return new Response("OG image is only available on subdomains", {
           status: 400,
-        });
+        })
       }
       try {
-        return await handleImageRequest(subdomain, request, env, ctx);
+        return await handleImageRequest(subdomain, request, env, ctx)
       } catch (err) {
         console.error(
           "[og] image generation failed:",
           err instanceof Error ? err.stack : String(err)
-        );
-        return new Response("Image generation failed", { status: 500 });
+        )
+        return new Response("Image generation failed", { status: 500 })
       }
     }
 
     // Strip prefix and serve static assets
     if (url.pathname.startsWith(PREFIX)) {
-      url.pathname = url.pathname.slice(PREFIX.length) || "/";
+      url.pathname = url.pathname.slice(PREFIX.length) || "/"
     }
-    const assetUrl = url.toString();
+    const assetUrl = url.toString()
 
     if (env.ASSETS) {
       try {
         const assetResponse = await env.ASSETS.fetch(
           new Request(assetUrl, request)
-        );
-        if (assetResponse.status !== 404) return assetResponse;
+        )
+        if (assetResponse.status !== 404) return assetResponse
       } catch {
         // fall through to SSR
       }
@@ -194,14 +260,14 @@ export default {
         env,
         params: {},
         data: {},
-      };
-      return await handleRequest(cfContext);
+      }
+      return await handleRequest(cfContext)
     } catch (err) {
       console.error(
         "[og] React Router threw:",
         err instanceof Error ? err.stack : String(err)
-      );
-      return new Response("Internal Server Error", { status: 500 });
+      )
+      return new Response("Internal Server Error", { status: 500 })
     }
   },
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler<Env>

@@ -1,154 +1,129 @@
 export interface OgData {
-  subdomain: string;
-  owner: string;
-  found: boolean;
+  subdomain: string
+  owner: string
+  found: boolean
 }
 
-function escapeXml(s: string): string {
-  return s
+function escapeXml(value: string): string {
+  return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
 }
 
-function subdomainFontSize(len: number): number {
-  if (len <= 5) return 68;
-  if (len <= 8) return 56;
-  if (len <= 11) return 46;
-  if (len <= 15) return 36;
-  if (len <= 20) return 28;
-  if (len <= 27) return 20;
-  if (len <= 35) return 15;
-  return 11;
+function subdomainFontSize(length: number): number {
+  if (length <= 5) return 120
+  if (length <= 8) return 112
+  if (length <= 11) return 104
+  if (length <= 14) return 92
+  if (length <= 18) return 78
+  if (length <= 24) return 62
+  if (length <= 30) return 52
+  if (length <= 36) return 44
+  return 38
 }
 
-/** 8-ray starburst logo mark — matches is-pinoy.dev brand mark */
-function starburst(cx: number, cy: number, size: number, color: string): string {
-  const ry = size * 0.18;
-  const rx = size * 0.042;
-  const gap = size * 0.09;
-  const offset = gap + ry;
-  return Array.from({ length: 8 }, (_, i) =>
-    `<ellipse cx="${cx}" cy="${cy - offset}" rx="${rx}" ry="${ry}" fill="${color}" transform="rotate(${i * 45} ${cx} ${cy})"/>`
-  ).join("");
+/** 8-ray starburst logo mark — matches the is-pinoy.dev brand mark. */
+function starburst(
+  cx: number,
+  cy: number,
+  size: number,
+  color: string
+): string {
+  const ry = size * 0.18
+  const rx = size * 0.042
+  const gap = size * 0.09
+  const offset = gap + ry
+  return Array.from(
+    { length: 8 },
+    (_, index) =>
+      `<ellipse cx="${cx}" cy="${cy - offset}" rx="${rx}" ry="${ry}" fill="${color}" transform="rotate(${index * 45} ${cx} ${cy})"/>`
+  ).join("")
 }
 
-export function buildSvg(data: OgData): string {
-  const { subdomain, owner, found } = data;
-
-  const YELLOW = "#F5C800";
-  const YELLOW_DARK = "#D4A800";
-  const BG = "#0D0D0D";
-  const SURFACE = "#1A1A1A";
-  const MUTED = "#444444";
-  const OWNER_COLOR = "#888888";
-  const GREEN = "#39D353";
-
-  // left panel width
-  const LP = 380;
-  const LCX = LP / 2; // left panel center x
-
-  if (!found) {
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
-      <!-- left panel -->
-      <rect x="0" y="0" width="${LP}" height="630" fill="${SURFACE}"/>
-      <rect x="${LP}" y="0" width="4" height="630" fill="${MUTED}"/>
-      <!-- right panel -->
-      <rect x="${LP + 4}" y="0" width="${1200 - LP - 4}" height="630" fill="${BG}"/>
-
-      <!-- logo mark (muted) -->
-      ${starburst(LCX, 250, 110, MUTED)}
-      <text x="${LCX}" y="340" font-family="Press Start 2P" font-size="10" fill="${MUTED}" text-anchor="middle" letter-spacing="2">IS-PINOY.DEV</text>
-
-      <!-- 404 content -->
-      <text x="796" y="268" font-family="Press Start 2P" font-size="11" fill="${MUTED}" text-anchor="middle" letter-spacing="3">404</text>
-      <text x="796" y="316" font-family="Press Start 2P" font-size="18" fill="#2A2A2A" text-anchor="middle">SUBDOMAIN NOT FOUND</text>
-      <rect x="${LP + 80}" y="328" width="${1200 - LP - 80 - 60}" height="2" fill="${MUTED}" fill-opacity="0.3"/>
-      <text x="796" y="378" font-family="Press Start 2P" font-size="12" fill="#252525" text-anchor="middle">${escapeXml(subdomain)}.is-pinoy.dev</text>
-
-      <!-- bottom left: FREE FOR FILIPINOS -->
-      <text x="${LCX}" y="590" font-family="Press Start 2P" font-size="8" fill="#3A3A3A" text-anchor="middle" letter-spacing="1">FREE FOR FILIPINOS</text>
-    </svg>`;
-  }
-
-  const fs = subdomainFontSize(subdomain.length);
-
-  // vertically center content block in right panel
-  const RCX = LP + 4 + (1200 - LP - 4) / 2; // right panel center x ≈ 792
-  const blockH = fs + 24 + 30 + 40; // text + underline gap + domain + gap
-  const subY = Math.round(315 - blockH / 2 + fs);
-  const underlineY = subY + 14;
-  const domainY = underlineY + 38;
-
-  const ghIconSize = 20;
-  const ghGap = 6;
-  const ghOwnerCharW = 7;
-  const ghOwnerW = (owner.length + 1) * ghOwnerCharW;
-  const ghRowW = ghIconSize + ghGap + ghOwnerW;
-  const ghRowStartX = 1148 - ghRowW;
-  const ghIconX = ghRowStartX;
-  const ghOwnerX = ghRowStartX + ghIconSize + ghGap;
-  const ghIconTopY = 578;
-  const ghOwnerY = 598;
-  const poweredByY = 565;
+function buildNotFoundSvg(subdomain: string): string {
+  const background = "#0D0D0D"
+  const surface = "#1A1A1A"
+  const muted = "#444444"
+  const leftPanelWidth = 380
+  const leftPanelCenter = leftPanelWidth / 2
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
-    <!-- left panel -->
-    <rect x="0" y="0" width="${LP}" height="630" fill="${YELLOW}"/>
+    <rect x="0" y="0" width="${leftPanelWidth}" height="630" fill="${surface}"/>
+    <rect x="${leftPanelWidth}" y="0" width="4" height="630" fill="${muted}"/>
+    <rect x="${leftPanelWidth + 4}" y="0" width="${1200 - leftPanelWidth - 4}" height="630" fill="${background}"/>
 
-    <!-- starburst logo in dark on yellow -->
-    ${starburst(LCX, 238, 120, BG)}
+    ${starburst(leftPanelCenter, 250, 110, muted)}
+    <text x="${leftPanelCenter}" y="340" font-family="Press Start 2P" font-size="10" fill="${muted}" text-anchor="middle" letter-spacing="2">IS-PINOY.DEV</text>
 
-    <!-- IS-PINOY.DEV label -->
-    <text x="${LCX}" y="336" font-family="Press Start 2P" font-size="11" fill="${BG}" text-anchor="middle" letter-spacing="2">IS-PINOY.DEV</text>
+    <text x="796" y="268" font-family="Press Start 2P" font-size="11" fill="${muted}" text-anchor="middle" letter-spacing="3">404</text>
+    <text x="796" y="316" font-family="Press Start 2P" font-size="18" fill="#2A2A2A" text-anchor="middle">SUBDOMAIN NOT FOUND</text>
+    <rect x="${leftPanelWidth + 80}" y="328" width="${1200 - leftPanelWidth - 80 - 60}" height="2" fill="${muted}" fill-opacity="0.3"/>
+    <text x="796" y="378" font-family="Press Start 2P" font-size="12" fill="#252525" text-anchor="middle">${escapeXml(subdomain)}.is-pinoy.dev</text>
 
-    <!-- thin separator -->
-    <rect x="40" y="358" width="${LP - 80}" height="2" fill="${YELLOW_DARK}"/>
+    <text x="${leftPanelCenter}" y="590" font-family="Press Start 2P" font-size="8" fill="#3A3A3A" text-anchor="middle" letter-spacing="1">FREE FOR FILIPINOS</text>
+  </svg>`
+}
 
-    <!-- FREE FOR FILIPINOS -->
-    <text x="${LCX}" y="388" font-family="Press Start 2P" font-size="8" fill="${YELLOW_DARK}" text-anchor="middle" letter-spacing="1">FREE FOR FILIPINOS</text>
+export function buildSvg(
+  data: OgData,
+  backgroundDataUri: string,
+  avatarDataUri?: string
+): string {
+  const { subdomain, owner, found } = data
 
-    <!-- divider bar -->
-    <rect x="${LP}" y="0" width="4" height="630" fill="${BG}"/>
+  if (!found) return buildNotFoundSvg(subdomain)
 
-    <!-- right panel background -->
-    <rect x="${LP + 4}" y="0" width="${1200 - LP - 4}" height="630" fill="${BG}"/>
+  const fontSize = subdomainFontSize(subdomain.length)
+  const ownerInitial = owner.slice(0, 1).toUpperCase()
+  const avatar = avatarDataUri
+    ? `<image
+        href="${avatarDataUri}"
+        x="70"
+        y="92"
+        width="48"
+        height="48"
+        preserveAspectRatio="xMidYMid slice"
+        clip-path="url(#github-avatar)"
+      />`
+    : `<circle cx="94" cy="116" r="24" fill="#E8F0FC"/>
+      <text
+        x="94"
+        y="124"
+        font-family="Geist"
+        font-size="22"
+        font-weight="600"
+        fill="#175CD3"
+        text-anchor="middle"
+      >${escapeXml(ownerInitial)}</text>`
 
-    <!-- subtle top + bottom accent lines on right panel -->
-    <rect x="${LP + 4}" y="0" width="${1200 - LP - 4}" height="4" fill="${YELLOW}" fill-opacity="0.15"/>
-    <rect x="${LP + 4}" y="626" width="${1200 - LP - 4}" height="4" fill="${YELLOW}" fill-opacity="0.15"/>
-
-    <!-- pixel corner marks (top-right, bottom-right) -->
-    <rect x="${1200 - 44}" y="20" width="20" height="3" fill="${YELLOW}" fill-opacity="0.4"/>
-    <rect x="${1200 - 27}" y="20" width="3" height="20" fill="${YELLOW}" fill-opacity="0.4"/>
-    <rect x="${1200 - 44}" y="607" width="20" height="3" fill="${YELLOW}" fill-opacity="0.4"/>
-    <rect x="${1200 - 27}" y="587" width="3" height="20" fill="${YELLOW}" fill-opacity="0.4"/>
-
-    <!-- pixel corner marks (top-left of right panel) -->
-    <rect x="${LP + 24}" y="20" width="20" height="3" fill="${YELLOW}" fill-opacity="0.4"/>
-    <rect x="${LP + 24}" y="20" width="3" height="20" fill="${YELLOW}" fill-opacity="0.4"/>
-    <rect x="${LP + 24}" y="607" width="20" height="3" fill="${YELLOW}" fill-opacity="0.4"/>
-    <rect x="${LP + 24}" y="587" width="3" height="20" fill="${YELLOW}" fill-opacity="0.4"/>
-
-    <!-- subdomain hero text -->
-    <text x="${RCX}" y="${subY}" font-family="Press Start 2P" font-size="${fs}" fill="${YELLOW}" text-anchor="middle">${escapeXml(subdomain)}</text>
-
-    <!-- yellow underline -->
-    <rect x="${LP + 60}" y="${underlineY}" width="${1200 - LP - 60 - 44}" height="3" fill="${YELLOW}" fill-opacity="0.25"/>
-
-    <!-- .is-pinoy.dev -->
-    <text x="${RCX}" y="${domainY}" font-family="Press Start 2P" font-size="20" fill="${MUTED}" text-anchor="middle">.is-pinoy.dev</text>
-
-    <!-- POWERED BY label -->
-    <text x="1148" y="${poweredByY}" font-family="Press Start 2P" font-size="7" fill="${MUTED}" text-anchor="end" letter-spacing="1" fill-opacity="0.6">POWERED BY IS-PINOY.DEV</text>
-
-    <!-- GitHub icon -->
-    <g transform="translate(${ghIconX}, ${ghIconTopY}) scale(${(ghIconSize / 98).toFixed(4)}, ${(ghIconSize / 96).toFixed(4)})">
-      <path d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z" fill="${OWNER_COLOR}"/>
-    </g>
-
-    <!-- @owner -->
-    <text x="${ghOwnerX}" y="${ghOwnerY}" font-family="Press Start 2P" font-size="11" fill="${OWNER_COLOR}">@${escapeXml(owner)}</text>
-  </svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+    <defs>
+      <clipPath id="github-avatar">
+        <circle cx="94" cy="116" r="24"/>
+      </clipPath>
+    </defs>
+    <image href="${backgroundDataUri}" x="0" y="0" width="1200" height="630" preserveAspectRatio="xMidYMid slice"/>
+    ${avatar}
+    <circle cx="94" cy="116" r="24" fill="none" stroke="#175CD3" stroke-width="2"/>
+    <text
+      x="132"
+      y="126"
+      font-family="Geist"
+      font-size="27"
+      font-weight="600"
+      letter-spacing="-0.5"
+      fill="#0B1F44"
+    >@${escapeXml(owner)}</text>
+    <text
+      x="70"
+      y="276"
+      font-family="Geist"
+      font-size="${fontSize}"
+      font-weight="600"
+      letter-spacing="-2"
+      fill="#175CD3"
+    >${escapeXml(subdomain)}</text>
+  </svg>`
 }
