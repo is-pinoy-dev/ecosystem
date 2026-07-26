@@ -38,10 +38,20 @@ const THEMES: PortfolioTheme[] = [
   "sunset",
 ]
 
-// Cached by primitive keys so generateMetadata and the page share one fetch
-// per request even though React `cache` keys on argument identity.
-const loadPortfolio = cache((login: string) => getPortfolioData(login))
+// Cached by primitive keys so generateMetadata and the page share one fetch per
+// request even though React `cache` keys on argument identity. `sections` is
+// therefore passed as a JSON string — JSON rather than a delimiter join so a
+// section name containing the delimiter can't be silently split in two.
+const loadPortfolio = cache((login: string, sectionsKey: string) =>
+  getPortfolioData(
+    login,
+    sectionsKey ? (JSON.parse(sectionsKey) as string[]) : undefined,
+  ),
+)
 const loadSubdomain = cache((subdomain: string) => resolveSubdomain(subdomain))
+
+const sectionsKeyOf = (sections?: string[]) =>
+  sections?.length ? JSON.stringify(sections) : ""
 
 /**
  * Parse dashboard "Preview" query params (`?preview=1&login=&template=&theme=`)
@@ -74,6 +84,8 @@ export function parsePreview(
 //
 // Preview: a validated PreviewParams (from the dashboard) renders any GitHub
 // login in a chosen template without a subdomain — public, sanitized, no auth.
+// Preview always renders the whole README; `portfolio.sections` is a property of
+// a claimed subdomain's config, which a preview by definition doesn't have yet.
 //
 // Production: proxy.ts sets `x-portfolio-subdomain` from the Host header. We
 // resolve it against the domains repo; a subdomain that exists but has no
@@ -85,9 +97,14 @@ export async function getRenderContext(
   preview?: PreviewParams | null,
 ): Promise<RenderContext | null> {
   if (preview) {
-    const data = await loadPortfolio(preview.login)
+    const data = await loadPortfolio(preview.login, "")
     if (!data) return null
-    return { login: preview.login, template: preview.template, theme: preview.theme, data }
+    return {
+      login: preview.login,
+      template: preview.template,
+      theme: preview.theme,
+      data,
+    }
   }
 
   const h = await headers()
@@ -99,7 +116,10 @@ export async function getRenderContext(
   if (subdomain) {
     const resolved = await loadSubdomain(subdomain)
     if (!resolved) return null
-    const data = await loadPortfolio(resolved.github)
+    const data = await loadPortfolio(
+      resolved.github,
+      sectionsKeyOf(resolved.portfolio.sections),
+    )
     if (!data) return null
     return {
       login: resolved.github,
@@ -112,7 +132,7 @@ export async function getRenderContext(
   // No subdomain at all — dev/apex fallback so the renderer is demoable.
   const login = process.env.PORTFOLIO_SPIKE_LOGIN
   if (!login) return null
-  const data = await loadPortfolio(login)
+  const data = await loadPortfolio(login, "")
   if (!data) return null
   return { login, template: "terminal", data }
 }

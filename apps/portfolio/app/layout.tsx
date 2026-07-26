@@ -11,10 +11,12 @@ export const viewport: Viewport = {
   colorScheme: "dark light",
 }
 
+// Indexing is decided per request, not here: a claimed portfolio is a real
+// public site and should be indexable, while `?preview=` renders an arbitrary
+// GitHub login on our host and must never be indexed. See app/page.tsx.
 export const metadata: Metadata = {
   title: "Portfolio — is-pinoy.dev",
   description: "A portfolio rendered from a GitHub profile, hosted on is-pinoy.dev.",
-  robots: { index: false },
 }
 
 export default function RootLayout({

@@ -61,9 +61,13 @@ async function fetchProfileReadme(login: string): Promise<string> {
 /**
  * Build the normalized PortfolioData for a GitHub login. Returns null if the
  * user doesn't exist (or GitHub is unreachable and returns no user).
+ *
+ * `sections` is the subdomain's optional `portfolio.sections` allow-list of
+ * README heading slugs; omitted renders the whole README.
  */
 export async function getPortfolioData(
   login: string,
+  sections?: string[],
 ): Promise<PortfolioData | null> {
   const [user, reposRaw, readmeMd] = await Promise.all([
     ghJson<GhUser>(`https://api.github.com/users/${login}`),
@@ -109,7 +113,7 @@ export async function getPortfolioData(
       location: user.location,
       links,
     },
-    readmeHtml: await renderReadme(readmeMd),
+    readmeHtml: await renderReadme(readmeMd, sections),
     repos,
     stats: {
       followers: user.followers,

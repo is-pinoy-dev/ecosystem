@@ -18,6 +18,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const preview = parsePreview(await searchParams)
   const ctx = await getRenderContext(preview)
+  // No robots directive here: this branch always ends in notFound(), and
+  // app/not-found.tsx supplies the noindex for it.
   if (!ctx) return { title: "Not found — is-pinoy.dev" }
 
   const { profile } = ctx.data
@@ -28,6 +30,12 @@ export async function generateMetadata({
   return {
     title: `${name} — is-pinoy.dev`,
     description,
+    // A claimed portfolio is the owner's public site — indexable. A preview
+    // renders any login on our host with no claim behind it, so it stays out of
+    // search results entirely.
+    robots: preview
+      ? { index: false, follow: false }
+      : { index: true, follow: true },
     openGraph: {
       title: name,
       description,
