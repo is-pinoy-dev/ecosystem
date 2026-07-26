@@ -89,6 +89,9 @@
   --input: #c9c3b5;
   --ring: #175cd3;
   --radius: 0rem;
+  /* Loading placeholders stay neutral grey so they read as absent content
+     rather than as brand-coloured UI. */
+  --skeleton: #e2e2e6;
 
   --chart-1: #f5c800;
   --chart-2: #168253;
@@ -147,6 +150,7 @@
   --border: #272b34;
   --input: #333844;
   --ring: #6ea8ff;
+  --skeleton: #2a2c33;
   --sidebar: #0e1015;
   --sidebar-foreground: #f2f1ec;
   --sidebar-primary: #f5c800;
@@ -193,6 +197,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-skeleton: var(--skeleton);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);

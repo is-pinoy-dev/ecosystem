@@ -21,7 +21,7 @@ export default async function ClaimPage() {
         title="Claim a portfolio subdomain"
         description="Pick a subdomain and a template — your portfolio is rendered from your GitHub profile README. Submitting opens a pull request to the domains repo on your behalf; once it's merged, your subdomain goes live."
       />
-      <div className="max-w-xl">
+      <div className="max-w-3xl">
         <ClaimForm login={session.user.login} />
       </div>
     </div>
