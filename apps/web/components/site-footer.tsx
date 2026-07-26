@@ -70,13 +70,17 @@ function FooterColumn({
   )
 }
 
-export function SiteFooter() {
-  const updated = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
+// NEXT_PUBLIC_LAST_UPDATED is the build's commit date, inlined in next.config.mjs.
+const lastUpdated = (() => {
+  const raw = process.env.NEXT_PUBLIC_LAST_UPDATED
+  const date = raw ? new Date(raw) : new Date()
+  return (Number.isNaN(date.getTime()) ? new Date() : date).toLocaleDateString(
+    "en-US",
+    { year: "numeric", month: "long", day: "numeric" }
+  )
+})()
 
+export function SiteFooter() {
   return (
     <footer className="bg-background">
       <Container className="grid gap-8 py-8 md:grid-cols-[1.6fr_0.75fr_0.85fr] lg:grid-cols-[1.6fr_0.75fr_0.85fr_0.75fr_0.8fr] lg:gap-10 lg:py-6 xl:py-8">
@@ -109,7 +113,7 @@ export function SiteFooter() {
             © 2026 is-pinoy.dev
           </p>
           <p className="m-0 mt-1 text-[11px] text-muted-foreground">
-            Updated {updated}
+            Updated {lastUpdated}
           </p>
         </div>
 
