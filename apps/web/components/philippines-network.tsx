@@ -1,12 +1,6 @@
 "use client"
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react"
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { ArrowUpRight } from "lucide-react"
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 import {
@@ -21,6 +15,8 @@ const MAP_CENTER = { x: 200, y: 250 }
 const CAMERA_FOCUS = { x: 150, y: 260 }
 const MAP_SKEW_DEGREES = -15
 const MAP_Y_SCALE = 0.86
+
+const AREA_COUNT = NETWORK_LOCATIONS.length
 
 const AREA_DETAILS = [
   {
@@ -40,6 +36,24 @@ const AREA_DETAILS = [
     cameraScale: 1.33,
   },
 ] as const
+
+function greatestCommonDivisor(a: number, b: number): number {
+  return b === 0 ? a : greatestCommonDivisor(b, a % b)
+}
+
+/**
+ * The camera sweep and the profile rotation each advance by one per step, so
+ * the pairing repeats only once both wrap together. Over a full cycle every
+ * profile is featured the same number of times — nobody is skipped and nobody
+ * hogs the card — while the camera keeps its steady area-by-area sweep.
+ */
+function countSequenceSteps(profileCount: number): number {
+  if (profileCount === 0) return AREA_COUNT
+  return (
+    (AREA_COUNT * profileCount) /
+    greatestCommonDivisor(AREA_COUNT, profileCount)
+  )
+}
 
 function DeveloperCard({
   profile,
@@ -133,39 +147,26 @@ export function PhilippinesNetwork({
   profiles: CommunityProfile[]
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
-  const [activeAreaIndex, setActiveAreaIndex] = useState(0)
-  const [activeProfileIndex, setActiveProfileIndex] = useState<number | null>(
-    profiles.length > 0 ? 0 : null
-  )
+  const [step, setStep] = useState(0)
   const [isVisible, setIsVisible] = useState(true)
   const [reduceMotion, setReduceMotion] = useState(false)
   const [hasEntered, setHasEntered] = useState(false)
   const [isInteracting, setIsInteracting] = useState(false)
 
+  const sequenceSteps = useMemo(
+    () => countSequenceSteps(profiles.length),
+    [profiles.length]
+  )
+
+  // The whole rotation is derived from `step`, so a given step always yields the
+  // same area and the same profile: the card walks the roster in order instead
+  // of stalling on a subset while the rest never get a turn.
+  const activeAreaIndex = step % AREA_COUNT
   const activeArea = AREA_DETAILS[activeAreaIndex]!
   const activeLocation = NETWORK_LOCATIONS[activeAreaIndex]!
   const activeProfile =
-    activeProfileIndex === null ? undefined : profiles[activeProfileIndex]
+    profiles.length === 0 ? undefined : profiles[step % profiles.length]
   const isPaused = isInteracting || !isVisible
-
-  const navigateToArea = useCallback(
-    (areaIndex: number) => {
-      const profileIndexes = profiles.reduce<number[]>((indexes, _, index) => {
-        if (index % NETWORK_LOCATIONS.length === areaIndex) indexes.push(index)
-        return indexes
-      }, [])
-
-      setActiveAreaIndex(areaIndex)
-      setActiveProfileIndex((currentIndex) => {
-        if (profileIndexes.length === 0) return null
-        const nextIndex = profileIndexes.find(
-          (profileIndex) => profileIndex > (currentIndex ?? -1)
-        )
-        return nextIndex ?? profileIndexes[0]!
-      })
-    },
-    [profiles]
-  )
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -197,10 +198,10 @@ export function PhilippinesNetwork({
   useEffect(() => {
     if (reduceMotion || isPaused) return
     const timer = window.setInterval(() => {
-      navigateToArea((activeAreaIndex + 1) % NETWORK_LOCATIONS.length)
+      setStep((current) => (current + 1) % sequenceSteps)
     }, SEQUENCE_INTERVAL)
     return () => window.clearInterval(timer)
-  }, [activeAreaIndex, isPaused, navigateToArea, reduceMotion])
+  }, [isPaused, reduceMotion, sequenceSteps])
 
   const locationX = activeLocation.coordinates.x + MAP_X_OFFSET
   const locationY = activeLocation.coordinates.y
