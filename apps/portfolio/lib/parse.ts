@@ -14,7 +14,9 @@ import type { Element, Node, Root, RootContent, Text } from "hast"
 // rehype-sanitize's default allow-list (already strips <script>, event
 // handlers, javascript: URLs) and tighten image sources to known-safe hosts so
 // a README can't beacon arbitrary origins or smuggle SVG-based script.
-const IMG_ALLOW_HOSTS = [
+// Exported so tests/csp.test.ts can assert this stays in step with the CSP
+// `img-src` and `images.remotePatterns` in next.config.mjs.
+export const IMG_ALLOW_HOSTS = [
   "avatars.githubusercontent.com",
   "raw.githubusercontent.com",
   "github.com",

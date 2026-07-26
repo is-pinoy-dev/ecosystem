@@ -67,27 +67,64 @@ domain shared with the dashboard — a sanitizer regression here is stored XSS
 against every other subdomain. Treat a failure there as a release blocker and
 add a case for any new vector before changing `lib/parse.ts`.
 
-## Deployment prerequisites
+## Security headers
 
-The app builds and runs today, but **is not deployed**. All four of these are
-account-level infrastructure, not code:
+`next.config.mjs` sets a deliberately narrow CSP as the second layer behind the
+sanitizer, for the same threat model: if a bypass ever lands, the payload is
+still denied its exits — `img-src` confined to the four allow-listed hosts,
+`object-src`/`form-action`/`frame-ancestors` at `'none'`, `base-uri 'self'`.
 
-1. **A deploy target for this app.** Nothing currently ships it — there is no
-   deploy workflow for `apps/portfolio` (the workflows in `.github/workflows`
-   cover the Cloudflare Workers tools only), and the other Next apps deploy
-   through Vercel's git integration rather than repo config.
-2. **A DNS record for `portfolio.is-pinoy.dev`**, pointing at that target. It
-   does not resolve today, which means the dashboard's Preview links are dead
-   and every claim PR writes a CNAME to a name that doesn't exist.
-3. **Wildcard host acceptance for `*.is-pinoy.dev` on that target.** This is the
-   easy one to miss. Cloudflare forwards the *original* Host
-   (`juan.is-pinoy.dev`) to the origin, and `proxy.ts` depends on that. If the
-   platform doesn't recognise the hostname it answers with its own 404 and this
-   app never runs — so the wildcard has to be attached to this project, and the
-   existing explicit assignments (`dashboard.is-pinoy.dev`, the apex) must still
-   win over it.
-4. **`GITHUB_TOKEN` in the deploy environment.** See `.env.example`; without it
-   the renderer 404s as soon as the anonymous rate limit is hit.
+It sets **no** `default-src`, `script-src`, or `style-src`. Next emits inline
+hydration scripts, so restricting those needs per-request nonces, and a
+half-configured CSP that blanks the page is worse than a narrow one that holds.
+`tests/csp.test.ts` pins that, and pins the image allow-list identical across the
+sanitizer, the CSP, and `images.remotePatterns` — three places that silently stop
+working (or silently stop protecting) if they drift.
 
-Universal SSL already covers `*.is-pinoy.dev` at one level, so no per-user
-certificate provisioning is needed.
+## Hosting
+
+**Vercel**, alongside `web` and `dashboard`. Not yet created — this is the one
+remaining piece, and it is account setup rather than code.
+
+Cloudflare Workers was considered and rejected *for now*. Workers routes match on
+the **request** hostname, not the CNAME target, so a route on
+`portfolio.is-pinoy.dev/*` would never fire for `juan.is-pinoy.dev` — it would
+have to be `*.is-pinoy.dev/*`, which matches all traffic entering the zone. That
+puts the Worker in front of every proxied subdomain in the registry, including
+everyone pointing at their own host, so a bug in its pass-through takes down the
+whole registry rather than just portfolios. Vercel's wildcard is passive by
+comparison: traffic arrives only if a CNAME sends it there.
+
+Workers becomes the better home if the resolver ever moves off per-request
+GitHub fetches and into KV — that would drop `raw.githubusercontent.com` out of
+the hot path and is a real improvement, but it is its own project.
+
+### Runbook
+
+1. **Create the Vercel project.** Root directory `apps/portfolio`; mirror the
+   existing `dashboard` project's install/build settings so workspace
+   dependencies resolve the same way.
+2. **Set `GITHUB_TOKEN`** in the project's environment variables (see
+   `.env.example` — no scopes required). Skipping this looks like a broken
+   deploy rather than a rate limit.
+3. **Verify on the `.vercel.app` URL before touching DNS.** Preview mode needs
+   no Host routing, so the deploy is fully testable first:
+   `https://<project>.vercel.app/?preview=1&login=<you>&template=terminal&theme=gold-dark`.
+   The bare `/` will 404 there, which is correct — a `*.vercel.app` host carries
+   no `is-pinoy.dev` label for `proxy.ts` to extract.
+4. **Add both domains to the project:** `portfolio.is-pinoy.dev` *and*
+   `*.is-pinoy.dev`. The wildcard is what makes claimed subdomains work at all:
+   Cloudflare forwards the original Host (`juan.is-pinoy.dev`), and if Vercel
+   doesn't recognise that hostname it answers with its own 404 and this app never
+   runs.
+5. **Re-check the neighbours.** Immediately after adding the wildcard, load
+   `dashboard.is-pinoy.dev` and the apex to confirm their explicit assignments
+   still beat it. This is the step most likely to bite.
+6. **Create the `portfolio.is-pinoy.dev` DNS record.** At this point the
+   dashboard's `/claim` Preview links go live.
+7. **Claim one subdomain end to end** and watch the whole chain: PR opens
+   against the domains repo → CI validates the `portfolio` block → merge → sync
+   writes the DNS record → the subdomain renders.
+
+Universal SSL already covers `*.is-pinoy.dev` at one level, so there is no
+per-user certificate provisioning.
