@@ -1,11 +1,12 @@
 import { timingSafeEqual } from "node:crypto"
-import { NextResponse } from "next/server"
+import { after, NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import { z } from "zod"
 
 import { getDb, hasDatabase } from "@/lib/db"
 import { reconcile } from "@/lib/db/reconcile"
 import { subdomains } from "@/lib/db/schema"
+import { enqueueScreenshotJobs } from "@/lib/screenshots/client"
 
 // Called by the domains-repo sync workflow after each Cloudflare sync run.
 // The payload is a full snapshot of the registry plus per-domain sync results;
@@ -54,7 +55,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
   if (!hasDatabase()) {
-    return NextResponse.json({ error: "database not configured" }, { status: 503 })
+    return NextResponse.json(
+      { error: "database not configured" },
+      { status: 503 }
+    )
   }
 
   let body: unknown
@@ -68,12 +72,14 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(
       { error: "invalid payload", issues: parsed.error.issues },
-      { status: 400 },
+      { status: 400 }
     )
   }
 
   const { domains } = parsed.data
-  const syncedAt = parsed.data.syncedAt ? new Date(parsed.data.syncedAt) : new Date()
+  const syncedAt = parsed.data.syncedAt
+    ? new Date(parsed.data.syncedAt)
+    : new Date()
 
   const db = getDb()
 
@@ -81,7 +87,11 @@ export async function POST(request: Request) {
   // rows, compute the diff in memory, and apply it as one atomic batch. The
   // payload is a full snapshot, so a partial failure heals on the next sync.
   const existing = await db.select().from(subdomains)
-  const { statements, counts } = reconcile(existing, domains, syncedAt)
+  const { statements, counts, screenshotCandidates } = reconcile(
+    existing,
+    domains,
+    syncedAt
+  )
 
   const ops = statements.map((stmt) => {
     switch (stmt.type) {
@@ -99,6 +109,27 @@ export async function POST(request: Request) {
 
   if (ops.length > 0) {
     await db.batch(ops as [(typeof ops)[number], ...(typeof ops)[number][]])
+  }
+
+  // Capture is never part of the registry transaction or response path.
+  // The Worker revalidates each row and the daily bounded sweep picks up any
+  // candidates beyond this first batch or a transient enqueue failure.
+  const boundedCandidates = screenshotCandidates.slice(0, 25)
+  if (boundedCandidates.length > 0) {
+    after(async () => {
+      try {
+        await enqueueScreenshotJobs(boundedCandidates)
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            event: "screenshot.job.queue_failed",
+            portfolioCount: boundedCandidates.length,
+            errorName:
+              error instanceof Error ? error.name : "UnknownQueueError",
+          })
+        )
+      }
+    })
   }
 
   return NextResponse.json({ ok: true, ...counts })

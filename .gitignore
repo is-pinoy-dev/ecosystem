@@ -39,5 +39,6 @@ tools/site-audit/.env
 .worktrees
 .dev.vars
 .wrangler
+.wrangler-dry-run
 .react-router
 .test

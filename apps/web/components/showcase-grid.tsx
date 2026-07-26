@@ -2,76 +2,55 @@ import { Card, CardContent } from "@is-pinoy-dev/ui/components/card"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Skeleton } from "@is-pinoy-dev/ui/components/skeleton"
 import { ShowcaseCardImage } from "@/components/showcase-card-image"
-import { getRegisteredSubdomains, type RegisteredSubdomain } from "@/lib/subdomains"
+import {
+  getRegisteredSubdomains,
+  type RegisteredSubdomain,
+} from "@/lib/subdomains"
+import {
+  getScreenshotManifest,
+  type ShowcaseScreenshotStatus,
+} from "@/lib/screenshot-manifest"
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 interface SubdomainEntry extends RegisteredSubdomain {
-  ogImage: string | null
-}
-
-async function fetchOgImage(subdomain: string): Promise<string | null> {
-  const controller = new AbortController()
-  const id = setTimeout(() => controller.abort(), 5000)
-  try {
-    const baseUrl = `https://${subdomain}.is-pinoy.dev`
-    const res = await fetch(baseUrl, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "is-pinoy.dev-showcase/1.0 (+https://is-pinoy.dev/showcase)",
-      },
-      next: { revalidate: 3600 },
-    })
-    if (!res.ok) return null
-    const html = await res.text()
-    const match =
-      html.match(
-        /<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i
-      ) ??
-      html.match(
-        /<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']/i
-      )
-    const raw = match?.[1]?.trim()
-    if (!raw) return null
-    try {
-      return new URL(raw, baseUrl).href
-    } catch {
-      return null
-    }
-  } catch {
-    return null
-  } finally {
-    clearTimeout(id)
-  }
+  screenshotStatus: ShowcaseScreenshotStatus
+  screenshotKey: string | null
+  screenshotUrl: string | null
+  screenshotCapturedAt: string | null
 }
 
 async function fetchAllSubdomains(limit?: number): Promise<SubdomainEntry[]> {
-  // Single source of truth for the registered list (already sorted newest-first
-  // by registration date). Slice before the OG-image fan-out so we only fetch
-  // images for the entries we render.
-  const registered = await getRegisteredSubdomains()
+  // The registry remains the source of truth for entries and ownership. The
+  // Worker manifest is read-only metadata and can never trigger a capture.
+  const [registered, screenshots] = await Promise.all([
+    getRegisteredSubdomains(),
+    getScreenshotManifest(),
+  ])
   const entries = limit ? registered.slice(0, limit) : registered
   if (entries.length === 0) return []
 
-  // TODO: at large scale (100+ subdomains) the per-subdomain OG-image fetch
-  // fan-out will make revalidation slow. Consider a pre-built JSON manifest
-  // (generated in CI) that stores ogImage URLs so this page only needs one
-  // fetch instead of N+1.
-  const withImages = await Promise.all(
-    entries.map(async (entry) => ({
+  return entries.map((entry) => {
+    const screenshot = screenshots.get(entry.subdomain)
+    return {
       ...entry,
-      ogImage: await fetchOgImage(entry.subdomain),
-    }))
-  )
-
-  // Preserve the utility's chronological (newest-first) ordering.
-  return withImages
+      screenshotStatus: screenshot?.screenshotStatus ?? "pending",
+      screenshotKey: screenshot?.screenshotKey ?? null,
+      screenshotUrl: screenshot?.screenshotUrl ?? null,
+      screenshotCapturedAt: screenshot?.screenshotCapturedAt ?? null,
+    }
+  })
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
-function ShowcaseCard({ entry }: { entry: SubdomainEntry }) {
+function ShowcaseCard({
+  entry,
+  loading,
+}: {
+  entry: SubdomainEntry
+  loading: "eager" | "lazy"
+}) {
   return (
     <a
       href={`https://${entry.subdomain}.is-pinoy.dev`}
@@ -81,11 +60,12 @@ function ShowcaseCard({ entry }: { entry: SubdomainEntry }) {
     >
       <Card className="h-full overflow-hidden bg-card py-0 transition-colors duration-150 group-hover:border-accent/50">
         {/* Preview */}
-        <div className="relative h-[180px] overflow-hidden border-b border-border bg-muted">
+        <div className="relative aspect-[16/10] overflow-hidden border-b border-border bg-muted">
           <ShowcaseCardImage
-            ogImage={entry.ogImage}
+            screenshotUrl={entry.screenshotUrl}
+            screenshotStatus={entry.screenshotStatus}
             subdomain={entry.subdomain}
-            owner={entry.owner.github}
+            loading={loading}
           />
           <div className="absolute inset-0 bg-primary/0 transition-colors group-hover:bg-primary/5" />
         </div>
@@ -130,7 +110,7 @@ function CardSkeleton() {
   return (
     <div className="overflow-hidden border border-border bg-card">
       {/* Image area — slightly lighter than bg-card so the pulse is visible */}
-      <Skeleton className="h-[180px] w-full border-b border-border bg-muted" />
+      <Skeleton className="aspect-[16/10] w-full border-b border-border bg-muted" />
       <div className="flex flex-col p-0">
         <div className="flex flex-col gap-2 px-4 pt-4 pb-3">
           <Skeleton className="h-2.5 w-20" />
@@ -171,8 +151,12 @@ export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
 
       {entries.length > 0 ? (
         <div className="grid grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
-          {entries.map((entry) => (
-            <ShowcaseCard key={entry.subdomain} entry={entry} />
+          {entries.map((entry, index) => (
+            <ShowcaseCard
+              key={entry.subdomain}
+              entry={entry}
+              loading={index < 3 ? "eager" : "lazy"}
+            />
           ))}
         </div>
       ) : (
@@ -209,11 +193,9 @@ function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
 function HighlightCard({
   entry,
   previewClassName,
-  featured,
 }: {
   entry: SubdomainEntry
   previewClassName: string
-  featured?: boolean
 }) {
   return (
     <a
@@ -226,10 +208,10 @@ function HighlightCard({
         className={`relative overflow-hidden border-b border-border bg-muted ${previewClassName}`}
       >
         <ShowcaseCardImage
-          ogImage={entry.ogImage}
+          screenshotUrl={entry.screenshotUrl}
+          screenshotStatus={entry.screenshotStatus}
           subdomain={entry.subdomain}
-          owner={entry.owner.github}
-          size={featured ? "lg" : "sm"}
+          loading="eager"
         />
       </div>
       <HighlightMeta entry={entry} />
@@ -244,7 +226,9 @@ function HighlightCardSkeleton({
 }) {
   return (
     <div className="border border-border">
-      <Skeleton className={`w-full border-b border-border bg-muted ${previewClassName}`} />
+      <Skeleton
+        className={`w-full border-b border-border bg-muted ${previewClassName}`}
+      />
       <div className="flex items-center justify-between gap-3 bg-card px-3.5 py-3">
         <div className="flex min-w-0 flex-col gap-2">
           <Skeleton className="h-2.5 w-24" />
@@ -297,11 +281,11 @@ export async function ShowcaseHighlights() {
     )
   }
 
-  // Prefer entries with a real OG image so the featured slot has the
+  // Prefer entries with a stored screenshot so the featured slot has the
   // strongest preview; secondary slots then favor a different owner so the
   // row doesn't visually repeat the featured site.
-  const withImage = entries.filter((e) => e.ogImage)
-  const withoutImage = entries.filter((e) => !e.ogImage)
+  const withImage = entries.filter((e) => e.screenshotUrl)
+  const withoutImage = entries.filter((e) => !e.screenshotUrl)
   const ordered = [...withImage, ...withoutImage]
   const featured = ordered[0]!
   const secondary = ordered
@@ -316,7 +300,6 @@ export async function ShowcaseHighlights() {
       <HighlightCard
         entry={featured}
         previewClassName="aspect-video lg:aspect-auto lg:h-[300px]"
-        featured
       />
       {secondaryEntries.length > 0 && (
         <div className="flex flex-col gap-4">

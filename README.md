@@ -18,22 +18,30 @@ A free subdomain service for Filipino developers.
 
 ## 📦 Packages
 
-| Package | Description |
-|---------|-------------|
-| `packages/cli` | `@is-pinoy-dev/cli` — CLI for validating and syncing DNS records to Cloudflare |
-| `packages/registry` | `@is-pinoy-dev/registry` — Core registry logic and Cloudflare provider |
-| `packages/schemas` | `@is-pinoy-dev/schemas` — Zod schemas for domain and DNS record validation |
-| `packages/ui` | `@is-pinoy-dev/ui` — Shared UI components |
-| `packages/eslint-config` | Shared ESLint config |
-| `packages/typescript-config` | Shared TypeScript config |
+| Package                      | Description                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------ |
+| `packages/cli`               | `@is-pinoy-dev/cli` — CLI for validating and syncing DNS records to Cloudflare |
+| `packages/registry`          | `@is-pinoy-dev/registry` — Core registry logic and Cloudflare provider         |
+| `packages/schemas`           | `@is-pinoy-dev/schemas` — Zod schemas for domain and DNS record validation     |
+| `packages/ui`                | `@is-pinoy-dev/ui` — Shared UI components                                      |
+| `packages/eslint-config`     | Shared ESLint config                                                           |
+| `packages/typescript-config` | Shared TypeScript config                                                       |
 
 ---
 
 ## 🖥️ Apps
 
-| App | Description |
-|-----|-------------|
-| `apps/web` | Public-facing website |
+| App              | Description                                              |
+| ---------------- | -------------------------------------------------------- |
+| `apps/web`       | Public-facing website                                    |
+| `apps/dashboard` | Authenticated owner dashboard and D1 registry read model |
+| `apps/portfolio` | Hosted GitHub-profile portfolio renderer                 |
+
+### Infrastructure tools
+
+| Tool                | Description                                                           |
+| ------------------- | --------------------------------------------------------------------- |
+| `tools/screenshots` | Cloudflare Queue + Browser Run worker for automated showcase previews |
 
 ---
 

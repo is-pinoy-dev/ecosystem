@@ -21,6 +21,15 @@ function existingRow(overrides: Partial<SubdomainRow> = {}): SubdomainRow {
     lastSyncedAt: new Date("2026-07-01T00:00:00.000Z"),
     createdAt: new Date("2025-11-02T08:15:00.000Z"),
     updatedAt: new Date("2026-03-19T14:02:00.000Z"),
+    screenshotStatus: "ready",
+    screenshotKey: "showcase/juan/preview-v1.jpeg",
+    screenshotUrl:
+      "https://screenshots.is-pinoy.dev/showcase/juan/preview-v1.jpeg",
+    screenshotCapturedAt: new Date("2026-07-01T00:00:00.000Z"),
+    screenshotRequestedAt: new Date("2026-07-01T00:00:00.000Z"),
+    screenshotFailureReason: null,
+    screenshotRetryCount: 0,
+    screenshotVersion: 1,
     ...overrides,
   }
 }
@@ -42,7 +51,7 @@ type OfType<T extends ReconcileStatement["type"]> = Extract<
 
 function assertType<T extends ReconcileStatement["type"]>(
   stmt: ReconcileStatement | undefined,
-  type: T,
+  type: T
 ): OfType<T> {
   if (!stmt || stmt.type !== type) {
     throw new Error(`expected ${type} statement, got ${stmt?.type ?? "none"}`)
@@ -52,7 +61,11 @@ function assertType<T extends ReconcileStatement["type"]>(
 
 describe("reconcile", () => {
   it("inserts a brand-new domain and applies sync fields", () => {
-    const { statements, counts } = reconcile([], [incoming()], SYNCED_AT)
+    const { statements, counts, screenshotCandidates } = reconcile(
+      [],
+      [incoming()],
+      SYNCED_AT
+    )
 
     expect(counts).toEqual({ inserted: 1, updated: 0, deleted: 0, total: 1 })
     expect(statements).toHaveLength(1)
@@ -68,6 +81,11 @@ describe("reconcile", () => {
     // No git dates supplied → leave createdAt/updatedAt to the column defaults.
     expect(stmt.values.createdAt).toBeUndefined()
     expect(stmt.values.updatedAt).toBeUndefined()
+    expect(stmt.values.screenshotStatus).toBe("pending")
+    expect(stmt.values.screenshotRequestedAt).toBe(SYNCED_AT)
+    expect(screenshotCandidates).toEqual([
+      { portfolioId: "juan", reason: "initial" },
+    ])
   })
 
   it("uses git-derived dates on insert when provided", () => {
@@ -79,7 +97,7 @@ describe("reconcile", () => {
           updatedAt: "2025-06-01T00:00:00.000Z",
         }),
       ],
-      SYNCED_AT,
+      SYNCED_AT
     )
     const stmt = assertType(statements[0], "insert")
     expect(stmt.values.createdAt).toEqual(new Date("2025-01-01T00:00:00.000Z"))
@@ -90,7 +108,7 @@ describe("reconcile", () => {
     const { statements } = reconcile(
       [],
       [incoming({ status: "failed", error: "boom" })],
-      SYNCED_AT,
+      SYNCED_AT
     )
     const stmt = assertType(statements[0], "insert")
     expect(stmt.values.syncStatus).toBe("failed")
@@ -101,7 +119,7 @@ describe("reconcile", () => {
     const { statements } = reconcile(
       [],
       [incoming({ status: "failed" })],
-      SYNCED_AT,
+      SYNCED_AT
     )
     const stmt = assertType(statements[0], "insert")
     expect(stmt.values.lastError).toBe("unknown error")
@@ -111,7 +129,7 @@ describe("reconcile", () => {
     const { statements, counts } = reconcile(
       [existingRow()],
       [incoming()],
-      SYNCED_AT,
+      SYNCED_AT
     )
 
     expect(counts).toEqual({ inserted: 0, updated: 0, deleted: 0, total: 1 })
@@ -124,23 +142,40 @@ describe("reconcile", () => {
   })
 
   it("bumps updatedAt and content when the record actually changes", () => {
-    const { statements, counts } = reconcile(
+    const { statements, counts, screenshotCandidates } = reconcile(
       [existingRow()],
       [incoming({ records: { CNAME: "new-target.github.io" } })],
-      SYNCED_AT,
+      SYNCED_AT
     )
 
     expect(counts).toEqual({ inserted: 0, updated: 1, deleted: 0, total: 1 })
     const stmt = assertType(statements[0], "update")
     expect(stmt.set.records).toEqual({ CNAME: "new-target.github.io" })
     expect(stmt.set.updatedAt).toBe(SYNCED_AT)
+    expect(stmt.set.screenshotStatus).toBe("pending")
+    expect(stmt.set.screenshotRequestedAt).toBe(SYNCED_AT)
+    expect(screenshotCandidates).toEqual([
+      { portfolioId: "juan", reason: "scheduled_refresh" },
+    ])
+  })
+
+  it("queues an initial screenshot when a domain becomes active", () => {
+    const { screenshotCandidates } = reconcile(
+      [existingRow({ syncStatus: "pending" })],
+      [incoming({ status: "synced" })],
+      SYNCED_AT
+    )
+
+    expect(screenshotCandidates).toEqual([
+      { portfolioId: "juan", reason: "initial" },
+    ])
   })
 
   it("corrects a drifted createdAt from git dates without counting as an update", () => {
     const { statements, counts } = reconcile(
       [existingRow({ createdAt: new Date("2026-07-18T00:00:00.000Z") })],
       [incoming({ createdAt: "2025-11-02T08:15:00.000Z" })],
-      SYNCED_AT,
+      SYNCED_AT
     )
 
     expect(counts.updated).toBe(0)
@@ -152,13 +187,13 @@ describe("reconcile", () => {
     const { statements, counts } = reconcile(
       [existingRow(), existingRow({ name: "maria" })],
       [incoming()],
-      SYNCED_AT,
+      SYNCED_AT
     )
 
     expect(counts).toEqual({ inserted: 0, updated: 0, deleted: 1, total: 1 })
     const del = assertType(
       statements.find((s) => s.type === "delete"),
-      "delete",
+      "delete"
     )
     expect(del.name).toBe("maria")
   })

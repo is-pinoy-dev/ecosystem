@@ -11,6 +11,7 @@ import { asc } from "drizzle-orm"
 
 import { getDb, hasDatabase } from "@/lib/db"
 import { subdomains, type SyncStatus } from "@/lib/db/schema"
+import type { ScreenshotStatus } from "@/lib/db/schema"
 
 const DOMAINS_REPO = "is-pinoy-dev/domains"
 const REVALIDATE_SECONDS = 300
@@ -19,7 +20,6 @@ export interface RegistrySubdomain {
   subdomain: string
   owner: { github: string; email?: string }
   records: Record<string, unknown>
-  /** Opt-in platform tools (`features.tools.*`). */
   features?: Record<string, unknown> | null
   /** Only available when reading from the database. */
   syncStatus?: SyncStatus
@@ -27,6 +27,14 @@ export interface RegistrySubdomain {
   lastSyncedAt?: Date | null
   createdAt?: Date | null
   updatedAt?: Date | null
+  screenshotStatus?: ScreenshotStatus
+  screenshotKey?: string | null
+  screenshotUrl?: string | null
+  screenshotCapturedAt?: Date | null
+  screenshotRequestedAt?: Date | null
+  screenshotFailureReason?: string | null
+  screenshotRetryCount?: number
+  screenshotVersion?: number
 }
 
 function githubHeaders(): Record<string, string> {
@@ -55,6 +63,14 @@ async function getSubdomainsFromDb(): Promise<RegistrySubdomain[]> {
     lastSyncedAt: row.lastSyncedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    screenshotStatus: row.screenshotStatus,
+    screenshotKey: row.screenshotKey,
+    screenshotUrl: row.screenshotUrl,
+    screenshotCapturedAt: row.screenshotCapturedAt,
+    screenshotRequestedAt: row.screenshotRequestedAt,
+    screenshotFailureReason: row.screenshotFailureReason,
+    screenshotRetryCount: row.screenshotRetryCount,
+    screenshotVersion: row.screenshotVersion,
   }))
 }
 
@@ -121,7 +137,7 @@ async function getSubdomainsFromGitHub(): Promise<RegistrySubdomain[]> {
       const data = (await res.json()) as {
         owner: { github: string; email?: string }
         records: Record<string, unknown>
-        features?: Record<string, unknown>
+        features?: Record<string, unknown> | null
         destroy?: boolean
       }
       if (data.destroy) return null
