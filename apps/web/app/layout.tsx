@@ -58,7 +58,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "is-pinoy.dev — Free subdomains for Filipino developers.",
+        alt: "is-pinoy.dev — The home of Filipino developers.",
       },
     ],
   },
