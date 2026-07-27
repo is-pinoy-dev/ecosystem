@@ -10,7 +10,11 @@ import {
   syncTone,
 } from "@/components/domain-list"
 import { PageHeader } from "@/components/page-header"
+import { ProxySwitch } from "@/components/proxy-switch"
 import { getSubdomainsForOwner, type RegistrySubdomain } from "@/lib/domains"
+import { getGitHubAccessToken } from "@/lib/github-token"
+import { getPendingProxyPRs, type PendingProxyPR } from "@/lib/proxy-pr"
+import { proxyLockReason, readProxyState } from "@/lib/proxy-record"
 
 export const metadata: Metadata = {
   title: "Domains",
@@ -33,7 +37,7 @@ function parseRecordValue(value: unknown): { value: string; meta: string[] } {
     return {
       value: String(dnsValue),
       meta: Object.entries(rest).map(([k, v]) =>
-        v === true ? k : `${k}=${String(v)}`,
+        v === true ? k : `${k}=${String(v)}`
       ),
     }
   }
@@ -50,7 +54,13 @@ function formatDate(date: Date | null | undefined): string | null {
 }
 
 /** One registry entry as a ruled section: header row, then a records table. */
-function DomainSection({ domain }: { domain: RegistrySubdomain }) {
+function DomainSection({
+  domain,
+  pendingPR,
+}: {
+  domain: RegistrySubdomain
+  pendingPR: PendingProxyPR | null
+}) {
   const entries = Object.entries(domain.records)
   const registered = formatDate(domain.createdAt)
   const synced = formatDate(domain.lastSyncedAt)
@@ -103,6 +113,12 @@ function DomainSection({ domain }: { domain: RegistrySubdomain }) {
       <ul className="m-0 mt-3 mb-2 list-none p-0">
         {entries.map(([type, value]) => {
           const record = parseRecordValue(value)
+          const proxy = readProxyState(domain.records, type)
+          // The switch owns the proxied flag for A/CNAME, so drop it from the
+          // quiet metadata rather than showing the same value twice.
+          const meta = proxy
+            ? record.meta.filter((item) => !item.startsWith("proxied"))
+            : record.meta
           return (
             <li
               key={type}
@@ -114,7 +130,7 @@ function DomainSection({ domain }: { domain: RegistrySubdomain }) {
               <code className="min-w-0 flex-1 font-mono text-xs break-all text-foreground">
                 {record.value}
               </code>
-              {record.meta.map((item) => (
+              {meta.map((item) => (
                 <span
                   key={item}
                   className="font-mono text-[11px] text-muted-foreground"
@@ -122,6 +138,16 @@ function DomainSection({ domain }: { domain: RegistrySubdomain }) {
                   {item}
                 </span>
               ))}
+              {proxy ? (
+                <ProxySwitch
+                  subdomain={domain.subdomain}
+                  type={proxy.type}
+                  proxied={proxy.proxied}
+                  mixed={proxy.mixed}
+                  lockedReason={proxyLockReason(domain.records, proxy.type)}
+                  pendingPR={pendingPR}
+                />
+              ) : null}
             </li>
           )
         })}
@@ -139,18 +165,30 @@ export default async function DomainsPage() {
   const { login } = session.user
   const { owned } = await getSubdomainsForOwner(login)
 
+  // One listing call covers every row, so the pending-change badge costs a
+  // single request no matter how many domains the user owns.
+  const token = await getGitHubAccessToken()
+  const pending =
+    owned.length > 0
+      ? await getPendingProxyPRs(login, token ?? undefined)
+      : new Map<string, PendingProxyPR>()
+
   return (
     <div className="flex max-w-3xl flex-col gap-8">
       <PageHeader
         eyebrow="Registry"
         title="Your domains"
-        description="DNS records registered to your GitHub account. To change a record, edit its JSON file in the domains repository."
+        description="DNS records registered to your GitHub account. Toggling the Cloudflare proxy opens a pull request against the domains repository — git stays the source of truth. To change anything else, edit the record's JSON file there."
       />
 
       {owned.length > 0 ? (
         <div className="flex flex-col gap-5">
           {owned.map((domain) => (
-            <DomainSection key={domain.subdomain} domain={domain} />
+            <DomainSection
+              key={domain.subdomain}
+              domain={domain}
+              pendingPR={pending.get(domain.subdomain) ?? null}
+            />
           ))}
         </div>
       ) : (
