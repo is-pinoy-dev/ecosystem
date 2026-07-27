@@ -34,11 +34,11 @@ export default function ClaimLoading() {
     <div className="flex flex-col gap-8" role="status" aria-label="Loading claim form">
       <PageHeaderSkeleton titleWidth="w-80" descriptionLines={3} />
 
-      <div className="flex max-w-3xl flex-col gap-8">
+      <div className="flex flex-col gap-8">
         {/* Subdomain field */}
         <div className="flex flex-col gap-3">
           <Skeleton className="h-3.5 w-24" />
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full max-w-xl" />
           <Skeleton className="h-3 w-72 max-w-full" />
         </div>
 
@@ -49,29 +49,28 @@ export default function ClaimLoading() {
           <Skeleton className="h-3 w-2/3 max-w-[380px]" />
         </div>
 
-        {/* Option A — layout + color */}
-        <div className="flex flex-col gap-4 border-l-2 border-border pl-4">
-          <ThumbSelectorSkeleton options={3} />
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-3.5 w-16" />
-            <div className="flex flex-wrap gap-2">
-              {Array.from({ length: 6 }, (_, index) => (
-                <Skeleton key={index} className="h-9 w-28" />
-              ))}
+        {/* Style tabs — the "Layout + color" tab is the one that opens first */}
+        <div className="flex flex-col gap-5">
+          <div className="flex border-b border-border">
+            <span className="flex min-h-11 items-center pr-4">
+              <Skeleton className="h-4 w-28" />
+            </span>
+            <span className="flex min-h-11 items-center px-4">
+              <Skeleton className="h-4 w-28" />
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <ThumbSelectorSkeleton options={3} />
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-3.5 w-16" />
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 6 }, (_, index) => (
+                  <Skeleton key={index} className="h-9 w-28" />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* "or" divider */}
-        <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-border" />
-          <Skeleton className="h-3 w-6" />
-          <span className="h-px flex-1 bg-border" />
-        </div>
-
-        {/* Option B — designer themes */}
-        <div className="border-l-2 border-border pl-4">
-          <ThumbSelectorSkeleton options={6} />
         </div>
 
         <Skeleton className="h-3 w-full max-w-[520px]" />
