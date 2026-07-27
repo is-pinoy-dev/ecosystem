@@ -215,7 +215,9 @@ describe("buildToggledFile", () => {
         "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/schemas/v1/subdomain.schema.json",
       ...file({ CNAME: { value: "juan.github.io", proxied: true } }),
     }
-    const result = buildToggledFile(source, [{ kind: "proxy", type: "CNAME", enabled: false }])
+    const result = buildToggledFile(source, [
+      { kind: "proxy", type: "CNAME", enabled: false },
+    ])
     const parsed = JSON.parse((result as { content: string }).content)
     expect(parsed.$schema).toBe(source.$schema)
     expect(parsed.records.CNAME.proxied).toBe(false)
@@ -226,14 +228,18 @@ describe("buildToggledFile", () => {
       ...file({ A: { value: "1.2.3.4" } }),
       features: { tools: { og: true } },
     }
-    const result = buildToggledFile(source, [{ kind: "proxy", type: "A", enabled: true }])
+    const result = buildToggledFile(source, [
+      { kind: "proxy", type: "A", enabled: true },
+    ])
     const parsed = JSON.parse((result as { content: string }).content)
     expect(parsed.features).toEqual({ tools: { og: true } })
   })
 
   it("rejects a file with no records block", () => {
     expect(
-      buildToggledFile({ subdomain: "juan" }, [{ kind: "proxy", type: "A", enabled: true }])
+      buildToggledFile({ subdomain: "juan" }, [
+        { kind: "proxy", type: "A", enabled: true },
+      ])
     ).toEqual({
       error: "The record file has no records block.",
     })
@@ -271,7 +277,7 @@ describe("buildToggledFile", () => {
   it("enables a tool, creating the features block when absent", () => {
     const result = buildToggledFile(
       file({ CNAME: { value: "juan.example.com", proxied: true } }),
-      [{ kind: "tool", tool: "site-audit", enabled: true }]
+      [{ kind: "feature", feature: "site-audit", enabled: true }]
     )
     const parsed = JSON.parse((result as { content: string }).content)
     expect(parsed.features).toEqual({ tools: { "site-audit": true } })
@@ -282,7 +288,7 @@ describe("buildToggledFile", () => {
       file({ CNAME: { value: "juan.example.com", proxied: false } }),
       [
         { kind: "proxy", type: "CNAME", enabled: true },
-        { kind: "tool", tool: "site-audit", enabled: true },
+        { kind: "feature", feature: "site-audit", enabled: true },
       ]
     )
     const parsed = JSON.parse((result as { content: string }).content)

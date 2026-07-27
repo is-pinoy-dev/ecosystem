@@ -41,3 +41,12 @@ Add a `features` block to your subdomain JSON:
 ```
 
 Each tool is a separate boolean flag. Omitting the field or setting it to `false` disables the tool.
+
+You can also switch tools on from the [dashboard](https://dashboard.is-pinoy.dev/domains), which opens the pull request for you.
+
+## Included without a flag
+
+Some platform features come with a proxied record and have no flag to set:
+
+- **OG Images** — a generated OpenGraph image is served at `/_tools/og/image` for every proxied subdomain. Reference it from your page's `og:image` meta tag to use it; ignore it if you have your own.
+- **Visit analytics** — aggregate visit counts, which you can [opt out of](/guides/reference/json-format) with `"analytics": false`.

@@ -335,7 +335,7 @@ export async function openProxyTogglePR(
     ...changes.map((c) =>
       c.kind === "proxy"
         ? `- \`records.${c.type}.proxied\` → \`${c.enabled}\``
-        : `- \`features.tools.${c.tool}\` → \`${c.enabled}\``
+        : `- \`features.${c.feature}\` → \`${c.enabled}\``
     ),
     "",
     "Opened from the is-pinoy.dev dashboard. Git stays the source of truth —",

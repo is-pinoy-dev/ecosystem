@@ -50,12 +50,12 @@ interface Props {
 function proxyKey(subdomain: string, type: string) {
   return `${subdomain}:proxy:${type}`
 }
-function toolKey(subdomain: string, tool: string) {
-  return `${subdomain}:tool:${tool}`
+function featureKey(subdomain: string, feature: string) {
+  return `${subdomain}:feature:${feature}`
 }
 
 export function syncTone(
-  status: DomainView["syncStatus"],
+  status: DomainView["syncStatus"]
 ): "success" | "warning" | "destructive" {
   if (status === "failed") return "destructive"
   if (status === "pending") return "warning"
@@ -107,14 +107,14 @@ export function DomainsManager({ domains, pending }: Props) {
         })
       }
 
-      for (const tool of platform.tools) {
-        const tKey = toolKey(domain.subdomain, tool.id)
-        const staged = edits[tKey]
-        if (staged === undefined || staged === tool.enabled) continue
+      for (const feature of platform.features) {
+        const fKey = featureKey(domain.subdomain, feature.id)
+        const staged = edits[fKey]
+        if (staged === undefined || staged === feature.enabled) continue
         list.push({
-          kind: "tool",
+          kind: "feature",
           subdomain: domain.subdomain,
-          tool: tool.id,
+          feature: feature.id,
           enabled: staged,
         })
       }
@@ -124,7 +124,7 @@ export function DomainsManager({ domains, pending }: Props) {
 
   const affected = useMemo(
     () => [...new Set(changes.map((c) => c.subdomain))],
-    [changes],
+    [changes]
   )
 
   function onSave() {
@@ -134,15 +134,15 @@ export function DomainsManager({ domains, pending }: Props) {
       setResults(result.results)
       // Clear the staged edits that landed; failures stay staged for retry.
       const succeeded = new Set(
-        result.results.filter((r) => r.ok).map((r) => r.subdomain),
+        result.results.filter((r) => r.ok).map((r) => r.subdomain)
       )
       if (succeeded.size > 0) {
         setEdits((current) =>
           Object.fromEntries(
             Object.entries(current).filter(
-              ([key]) => !succeeded.has(key.split(":")[0]!),
-            ),
-          ),
+              ([key]) => !succeeded.has(key.split(":")[0]!)
+            )
+          )
         )
       }
     })
@@ -204,11 +204,16 @@ export function DomainsManager({ domains, pending }: Props) {
 }
 
 /** Human label for one staged change, used in the confirmation list. */
-function changeLabel(change: SettingChangeInput, domains: DomainView[]): string {
+function changeLabel(
+  change: SettingChangeInput,
+  domains: DomainView[]
+): string {
   if (change.kind === "proxy") return "Platform"
   const domain = domains.find((d) => d.subdomain === change.subdomain)
-  const tool = domain?.platform?.tools.find((t) => t.id === change.tool)
-  return tool?.name ?? change.tool
+  const feature = domain?.platform?.features.find(
+    (f) => f.id === change.feature
+  )
+  return feature?.name ?? change.feature
 }
 
 /** What saving will actually do, spelled out before anything is created. */
@@ -238,9 +243,11 @@ function ConfirmView({
         <DialogDescription>
           Your settings live in git, so the dashboard does not change them
           directly. Saving opens{" "}
-          {prCount === 1 ? "a pull request" : `${prCount} pull requests`} against
-          the{" "}
-          <span className="font-mono text-foreground">is-pinoy-dev/domains</span>{" "}
+          {prCount === 1 ? "a pull request" : `${prCount} pull requests`}{" "}
+          against the{" "}
+          <span className="font-mono text-foreground">
+            is-pinoy-dev/domains
+          </span>{" "}
           repository — one per domain — on your behalf.
         </DialogDescription>
       </DialogHeader>
@@ -251,7 +258,7 @@ function ConfirmView({
           return (
             <li
               key={`${change.subdomain}:${change.kind}:${
-                change.kind === "proxy" ? change.type : change.tool
+                change.kind === "proxy" ? change.type : change.feature
               }`}
               className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-3 py-2 text-xs last:border-b-0"
             >
@@ -264,7 +271,7 @@ function ConfirmView({
               <span
                 className={cn(
                   "font-mono font-medium",
-                  change.enabled ? "text-success" : "text-warning",
+                  change.enabled ? "text-success" : "text-warning"
                 )}
               >
                 {change.enabled ? "on" : "off"}
@@ -280,9 +287,9 @@ function ConfirmView({
           aria-hidden="true"
         />
         <span>
-          Nothing takes effect until the pull request is merged and the next sync
-          applies it. Until then your domain keeps its current settings, and its
-          switches here are read-only.
+          Nothing takes effect until the pull request is merged and the next
+          sync applies it. Until then your domain keeps its current settings,
+          and its switches here are read-only.
         </span>
       </p>
 
@@ -596,7 +603,7 @@ function PlatformPanel({
       <div
         className={cn(
           "flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3",
-          proxyDirty && "bg-primary/5",
+          proxyDirty && "bg-primary/5"
         )}
       >
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -624,31 +631,34 @@ function PlatformPanel({
       </div>
 
       <ul className="m-0 list-none border-t border-border/70 p-0">
-        {platform.tools.map((tool) => {
-          const tKey = toolKey(subdomain, tool.id)
-          const staged = edits[tKey]
-          const on = staged ?? tool.enabled
-          const dirty = staged !== undefined && staged !== tool.enabled
-          // A tool is only meaningful once the platform switch ends up on.
-          const blocked = !proxyOn
+        {platform.features.map((feature) => {
+          const fKey = featureKey(subdomain, feature.id)
+          const staged = edits[fKey]
+          const on = staged ?? feature.enabled
+          const dirty = staged !== undefined && staged !== feature.enabled
+          // Opt-in tools are meaningless unproxied; an opt-out like analytics
+          // stays switchable so a preference can be set ahead of time, but
+          // nothing is happening either way while the platform is off.
+          const blocked = !proxyOn && !feature.optOut
+          const dormant = !proxyOn && feature.optOut
           return (
             <li
-              key={tool.id}
+              key={feature.id}
               className={cn(
-                "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/70 px-4 py-2.5 pl-8 last:border-b-0",
+                "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/70 py-2.5 pr-4 pl-8 last:border-b-0",
                 dirty && "bg-primary/5",
-                blocked && "opacity-60",
+                (blocked || dormant) && "opacity-60"
               )}
             >
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">
                   <a
-                    href={tool.docsUrl}
+                    href={feature.docsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-foreground no-underline hover:text-accent hover:underline"
                   >
-                    {tool.name}
+                    {feature.name}
                   </a>
                   {dirty ? (
                     <span className="text-[11px] font-medium text-primary">
@@ -659,18 +669,49 @@ function PlatformPanel({
                 <span className="text-[11px]/relaxed text-muted-foreground">
                   {blocked
                     ? "Needs platform features switched on."
-                    : tool.description}
+                    : dormant
+                      ? "Nothing is collected while the platform is off — this is your preference for when it is on."
+                      : feature.description}
                 </span>
               </span>
               <Switch
                 checked={on && !blocked}
-                onCheckedChange={(next) => onSetEdit(tKey, next)}
+                onCheckedChange={(next) => onSetEdit(fKey, next)}
                 disabled={blocked || readOnly}
-                aria-label={`${on ? "Disable" : "Enable"} ${tool.name} for ${subdomain}.is-pinoy.dev`}
+                aria-label={`${on ? "Disable" : "Enable"} ${feature.name} for ${subdomain}.is-pinoy.dev`}
               />
             </li>
           )
         })}
+
+        {platform.builtins.map((builtin) => (
+          <li
+            key={builtin.id}
+            className={cn(
+              "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/70 py-2.5 pr-4 pl-8 last:border-b-0",
+              !proxyOn && "opacity-60"
+            )}
+          >
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-[13px] font-medium text-foreground">
+                <a
+                  href={builtin.docsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground no-underline hover:text-accent hover:underline"
+                >
+                  {builtin.name}
+                </a>
+              </span>
+              <span className="text-[11px]/relaxed text-muted-foreground">
+                {builtin.description}
+              </span>
+            </span>
+            <span className="font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
+              {proxyOn ? "Included" : "Off"}
+            </span>
+          </li>
+        ))}
       </ul>
     </div>
   )

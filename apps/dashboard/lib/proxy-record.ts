@@ -12,7 +12,7 @@
 import { domainSchema } from "@is-pinoy-dev/schemas"
 import { validateDomain } from "@is-pinoy-dev/validate"
 
-import { setToolEnabled } from "@/lib/features"
+import { findFeature, setFeatureEnabled } from "@/lib/features"
 import { providerForRecords } from "@/lib/providers"
 
 /**
@@ -197,7 +197,7 @@ export function subdomainFromHeadLabel(
  */
 export type RecordChange =
   | { kind: "proxy"; type: ProxyableType; enabled: boolean }
-  | { kind: "tool"; tool: string; enabled: boolean }
+  | { kind: "feature"; feature: string; enabled: boolean }
 
 /**
  * Apply every pending edit to a parsed record file and validate the result
@@ -226,17 +226,22 @@ export function buildToggledFile(
       records as Record<string, unknown>
     )
 
-  const toolChanges = changes.filter((change) => change.kind === "tool")
+  const featureChanges = changes.filter((change) => change.kind === "feature")
 
   const updated = {
     ...file,
     records: nextRecords,
-    // Only introduce a features block when a tool was actually edited, so a
+    // Only introduce a features block when a feature was actually edited, so a
     // pure proxy change leaves the rest of the file byte-identical.
-    ...(toolChanges.length > 0
+    ...(featureChanges.length > 0
       ? {
-          features: toolChanges.reduce(
-            (acc, change) => setToolEnabled(acc, change.tool, change.enabled),
+          features: featureChanges.reduce(
+            (acc, change) => {
+              const feature = findFeature(change.feature)
+              return feature
+                ? setFeatureEnabled(acc, feature, change.enabled)
+                : acc
+            },
             (file.features ?? undefined) as Record<string, unknown> | undefined
           ),
         }
