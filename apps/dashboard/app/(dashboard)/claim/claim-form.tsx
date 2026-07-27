@@ -94,7 +94,7 @@ export function ClaimForm({ login }: { login: string }) {
         </label>
         <InputGroup
           className={cn(
-            "h-12 bg-card",
+            "h-12 max-w-xl bg-card",
             showInvalid && "border-destructive focus-within:border-destructive",
           )}
         >

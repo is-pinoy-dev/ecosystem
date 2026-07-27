@@ -34,11 +34,11 @@ export default function ClaimLoading() {
     <div className="flex flex-col gap-8" role="status" aria-label="Loading claim form">
       <PageHeaderSkeleton titleWidth="w-80" descriptionLines={3} />
 
-      <div className="flex max-w-3xl flex-col gap-8">
+      <div className="flex flex-col gap-8">
         {/* Subdomain field */}
         <div className="flex flex-col gap-3">
           <Skeleton className="h-3.5 w-24" />
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full max-w-xl" />
           <Skeleton className="h-3 w-72 max-w-full" />
         </div>
 

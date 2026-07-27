@@ -39,7 +39,11 @@ function DomainSectionSkeleton({ records }: { records: number }) {
 
 export default function DomainsLoading() {
   return (
-    <div className="flex flex-col gap-8" role="status" aria-label="Loading domains">
+    <div
+      className="flex max-w-3xl flex-col gap-8"
+      role="status"
+      aria-label="Loading domains"
+    >
       <PageHeaderSkeleton titleWidth="w-56" descriptionLines={2} />
 
       <div className="flex flex-col gap-5">

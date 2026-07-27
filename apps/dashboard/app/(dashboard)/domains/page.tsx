@@ -140,7 +140,7 @@ export default async function DomainsPage() {
   const { owned } = await getSubdomainsForOwner(login)
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex max-w-3xl flex-col gap-8">
       <PageHeader
         eyebrow="Registry"
         title="Your domains"
