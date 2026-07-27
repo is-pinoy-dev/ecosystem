@@ -255,9 +255,9 @@ function ConfirmView({
           aria-hidden="true"
         />
         <span>
-          Nothing changes on Cloudflare until a maintainer reviews and merges
-          the pull request, and the next sync run applies it. Until then your
-          domain keeps its current setting and the switch stays showing it.
+          Nothing takes effect until a maintainer reviews and merges the pull
+          request, and the next sync applies it. Until then your domain keeps
+          its current setting and the switch stays showing it.
         </span>
       </p>
 
