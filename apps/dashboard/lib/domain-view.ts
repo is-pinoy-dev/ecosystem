@@ -11,7 +11,11 @@ import {
   providerForTarget,
   type Provider,
 } from "@/lib/providers"
-import { AVAILABLE_TOOLS, isToolEnabled } from "@/lib/features"
+import {
+  BUILTIN_FEATURES,
+  isFeatureEnabled,
+  TOGGLEABLE_FEATURES,
+} from "@/lib/features"
 import {
   PROXYABLE_TYPES,
   proxyLockReason,
@@ -38,13 +42,27 @@ export interface RecordRowView {
   proxy: RecordProxyView | null
 }
 
-/** One platform tool as the settings panel renders it. */
-export interface ToolView {
+/** One switchable platform feature as the settings panel renders it. */
+export interface FeatureView {
   id: string
   name: string
   description: string
   docsUrl: string
   enabled: boolean
+  /**
+   * True when the feature is on by default and the switch turns it off. Those
+   * stay usable while the platform switch is off, because switching them off is
+   * still meaningful.
+   */
+  optOut: boolean
+}
+
+/** A feature that comes with the platform and has nothing to switch. */
+export interface BuiltinView {
+  id: string
+  name: string
+  description: string
+  docsUrl: string
 }
 
 /**
@@ -61,7 +79,8 @@ export interface PlatformView {
   lockedReason: string | null
   /** Set when the host requires a specific value the record does not have. */
   correctionNote: string | null
-  tools: ToolView[]
+  features: FeatureView[]
+  builtins: BuiltinView[]
 }
 
 export interface DomainView {
@@ -192,12 +211,19 @@ function toPlatformView(domain: RegistrySubdomain): PlatformView | null {
     // The host wants a value this record does not have — actionable, not locked.
     correctionNote:
       policy.pinnedTo !== null && lockedReason === null ? policy.note : null,
-    tools: AVAILABLE_TOOLS.map((tool) => ({
-      id: tool.id,
-      name: tool.name,
-      description: tool.description,
-      docsUrl: tool.docsUrl,
-      enabled: isToolEnabled(domain.features, tool.id),
+    features: TOGGLEABLE_FEATURES.map((feature) => ({
+      id: feature.id,
+      name: feature.name,
+      description: feature.description,
+      docsUrl: feature.docsUrl,
+      enabled: isFeatureEnabled(domain.features, feature),
+      optOut: feature.defaultEnabled,
+    })),
+    builtins: BUILTIN_FEATURES.map((feature) => ({
+      id: feature.id,
+      name: feature.name,
+      description: feature.description,
+      docsUrl: feature.docsUrl,
     })),
   }
 }

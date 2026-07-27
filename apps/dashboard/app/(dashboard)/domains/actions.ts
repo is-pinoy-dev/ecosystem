@@ -5,7 +5,11 @@ import { z } from "zod"
 
 import { auth } from "@/auth"
 import { getSubdomainsForOwner } from "@/lib/domains"
-import { AVAILABLE_TOOLS, isToolEnabled } from "@/lib/features"
+import {
+  findFeature,
+  isFeatureEnabled,
+  TOGGLEABLE_FEATURES,
+} from "@/lib/features"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { getPendingProxyPRs, openProxyTogglePR } from "@/lib/proxy-pr"
 import {
@@ -31,10 +35,13 @@ const changeInput = z.discriminatedUnion("kind", [
     enabled: z.boolean(),
   }),
   z.object({
-    kind: z.literal("tool"),
+    kind: z.literal("feature"),
     subdomain: subdomainField,
-    // Only tools the dashboard actually offers — a client cannot invent a flag.
-    tool: z.enum(AVAILABLE_TOOLS.map((t) => t.id) as [string, ...string[]]),
+    // Only features the dashboard offers a switch for — a client cannot invent
+    // a flag, nor write one for a built-in that has none.
+    feature: z.enum(
+      TOGGLEABLE_FEATURES.map((f) => f.id) as [string, ...string[]]
+    ),
     enabled: z.boolean(),
   }),
 ])
@@ -67,11 +74,12 @@ function failure(subdomain: string, error: string): SaveSettingsResult {
  * subdomain. Each subdomain succeeds or fails independently so one rejected
  * record does not lose the rest of the user's work.
  *
- * Ownership, the provider's proxy policy, the proxy prerequisite for tools, and
- * the no-op case are all re-checked here: the client controls none of them.
+ * Ownership, the provider's proxy policy, the proxy prerequisite for opt-in
+ * tools, and the no-op case are all re-checked here: the client controls none
+ * of them.
  */
 export async function saveSettings(
-  input: SettingChangeInput[],
+  input: SettingChangeInput[]
 ): Promise<SaveSettingsResult> {
   const session = await auth()
   if (!session?.user?.login) {
@@ -87,9 +95,11 @@ export async function saveSettings(
   for (const change of parsed.data) {
     const existing = bySubdomain.get(change.subdomain) ?? []
     // Last write wins if the same switch somehow appears twice.
-    const key = change.kind === "proxy" ? change.type : change.tool
+    const key = change.kind === "proxy" ? change.type : change.feature
     const deduped = existing.filter(
-      (c) => c.kind !== change.kind || (c.kind === "proxy" ? c.type : c.tool) !== key,
+      (c) =>
+        c.kind !== change.kind ||
+        (c.kind === "proxy" ? c.type : c.feature) !== key
     )
     deduped.push(change)
     bySubdomain.set(change.subdomain, deduped)
@@ -137,7 +147,7 @@ export async function saveSettings(
     // same batch turns it on.
     const proxyChange = changes.find((c) => c.kind === "proxy")
     const currentlyProxied = PROXYABLE_TYPES.some(
-      (type) => readProxyState(domain.records, type)?.proxied === true,
+      (type) => readProxyState(domain.records, type)?.proxied === true
     )
     const willBeProxied = proxyChange ? proxyChange.enabled : currentlyProxied
 
@@ -162,15 +172,21 @@ export async function saveSettings(
         continue
       }
 
-      if (change.enabled && !willBeProxied) {
+      const feature = findFeature(change.feature)
+      if (!feature) continue
+
+      // An opt-in tool is meaningless on an unproxied record; an opt-out like
+      // analytics is still worth recording, so it is exempt.
+      if (change.enabled && !feature.defaultEnabled && !willBeProxied) {
         rejection =
-          "Platform tools need the proxy switched on. Enable it in the same save."
+          "Platform tools need the platform switched on. Enable it in the same save."
         continue
       }
-      if (isToolEnabled(domain.features, change.tool) === change.enabled) continue
+      if (isFeatureEnabled(domain.features, feature) === change.enabled)
+        continue
       applicable.push({
-        kind: "tool",
-        tool: change.tool,
+        kind: "feature",
+        feature: change.feature,
         enabled: change.enabled,
       })
     }
@@ -192,7 +208,7 @@ export async function saveSettings(
     results.push(
       result.ok
         ? { subdomain, ok: true, prUrl: result.prUrl }
-        : { subdomain, ok: false, error: result.error },
+        : { subdomain, ok: false, error: result.error }
     )
   }
 

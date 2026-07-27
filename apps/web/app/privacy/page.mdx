@@ -60,6 +60,16 @@ We do **not** log paths, query strings, IP addresses, user-agent strings, referr
 
 **This logging only applies to proxied subdomains.** If your DNS record has `"proxied": false` (DNS-only mode), your subdomain's traffic goes directly to your origin and is never intercepted by our infrastructure — no visit data is collected for DNS-only subdomains.
 
+**You can opt out while staying proxied.** Set `"analytics": false` in your record's `features` block, or switch off *Visit analytics* for the subdomain in the [dashboard](https://dashboard.is-pinoy.dev/domains):
+
+```json
+"features": {
+  "analytics": false
+}
+```
+
+Cloudflare measures traffic to any proxied domain at its edge regardless of this setting, so the opt-out is applied where it can be honoured: our analytics job drops opted-out subdomains before any visit data is written to our database. Nothing for that subdomain is stored, and nothing is backfilled if you opt back in.
+
 Platform traffic requests to `/_tools/*` paths (such as Site Audit) are handled by separate tool workers and are not logged by the platform analytics system.
 
 Visit data is stored in **Cloudflare Analytics Engine** and is subject to [Cloudflare's privacy policy](https://www.cloudflare.com/privacypolicy/). Data is used solely for aggregate platform reporting and is not shared, sold, or used for advertising purposes. This processing is carried out in compliance with the **Philippine Data Privacy Act of 2012 (RA 10173)**.

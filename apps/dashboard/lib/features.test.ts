@@ -1,81 +1,127 @@
 import { describe, expect, it } from "vitest"
 
 import {
-  AVAILABLE_TOOLS,
-  findTool,
-  isToolEnabled,
-  setToolEnabled,
-  TOOLS,
+  BUILTIN_FEATURES,
+  FEATURES,
+  findFeature,
+  isFeatureEnabled,
+  setFeatureEnabled,
+  TOGGLEABLE_FEATURES,
+  type PlatformFeature,
 } from "./features"
 
-describe("tool registry", () => {
-  it("only offers tools whose worker honours the flag", () => {
-    expect(AVAILABLE_TOOLS.every((tool) => tool.enforced)).toBe(true)
+const siteAudit = findFeature("site-audit")!
+const analytics = findFeature("analytics")!
+const og = findFeature("og")!
+
+describe("feature registry", () => {
+  it("splits switchable features from built-ins", () => {
+    expect(TOGGLEABLE_FEATURES.every((f) => f.kind === "toggle")).toBe(true)
+    expect(BUILTIN_FEATURES.every((f) => f.kind === "builtin")).toBe(true)
   })
 
-  it("offers Site Audit, which gates on features.tools['site-audit']", () => {
-    expect(AVAILABLE_TOOLS.map((t) => t.id)).toContain("site-audit")
+  it("treats Site Audit as opt-in, matching its worker and the docs", () => {
+    expect(siteAudit.kind).toBe("toggle")
+    expect(siteAudit.defaultEnabled).toBe(false)
+    expect(siteAudit.flagPath).toEqual(["tools", "site-audit"])
   })
 
-  it("withholds OG until its worker reads the flag", () => {
-    expect(findTool("og")?.enforced).toBe(false)
-    expect(AVAILABLE_TOOLS.map((t) => t.id)).not.toContain("og")
+  it("treats analytics as opt-out, since proxied traffic is measured anyway", () => {
+    expect(analytics.kind).toBe("toggle")
+    expect(analytics.defaultEnabled).toBe(true)
+    expect(analytics.flagPath).toEqual(["analytics"])
   })
 
-  it("gives every tool docs to link to", () => {
-    expect(TOOLS.every((tool) => tool.docsUrl.startsWith("https://"))).toBe(
-      true
-    )
+  it("treats OG as built-in with no flag to write", () => {
+    expect(og.kind).toBe("builtin")
+    expect(og.flagPath).toEqual([])
+    expect(TOGGLEABLE_FEATURES.map((f) => f.id)).not.toContain("og")
+  })
+
+  it("gives every feature docs to link to", () => {
+    expect(FEATURES.every((f) => f.docsUrl.startsWith("https://"))).toBe(true)
   })
 })
 
-describe("isToolEnabled", () => {
-  it("reads a set flag", () => {
-    expect(isToolEnabled({ tools: { "site-audit": true } }, "site-audit")).toBe(
+describe("isFeatureEnabled", () => {
+  it("reads an explicit flag", () => {
+    expect(isFeatureEnabled({ tools: { "site-audit": true } }, siteAudit)).toBe(
       true
     )
   })
 
-  it("treats an absent flag, block, or features object as off", () => {
-    expect(isToolEnabled({ tools: {} }, "site-audit")).toBe(false)
-    expect(isToolEnabled({}, "site-audit")).toBe(false)
-    expect(isToolEnabled(null, "site-audit")).toBe(false)
-    expect(isToolEnabled(undefined, "site-audit")).toBe(false)
+  it("falls back to the default when the flag is absent", () => {
+    expect(isFeatureEnabled({}, siteAudit)).toBe(false)
+    expect(isFeatureEnabled({}, analytics)).toBe(true)
+    expect(isFeatureEnabled(null, analytics)).toBe(true)
+    expect(isFeatureEnabled(undefined, siteAudit)).toBe(false)
   })
 
-  it("requires exactly true — not a truthy value", () => {
+  it("honours an explicit opt-out", () => {
+    expect(isFeatureEnabled({ analytics: false }, analytics)).toBe(false)
+  })
+
+  it("falls back to the default for a non-boolean value", () => {
+    expect(isFeatureEnabled({ analytics: "no" }, analytics)).toBe(true)
     expect(
-      isToolEnabled({ tools: { "site-audit": "yes" } }, "site-audit")
+      isFeatureEnabled({ tools: { "site-audit": "yes" } }, siteAudit)
     ).toBe(false)
   })
+
+  it("always reports a built-in as on", () => {
+    expect(isFeatureEnabled(null, og)).toBe(true)
+    expect(isFeatureEnabled({ tools: { og: false } }, og)).toBe(true)
+  })
 })
 
-describe("setToolEnabled", () => {
-  it("builds the nested shape when the record has no features block", () => {
-    expect(setToolEnabled(null, "site-audit", true)).toEqual({
+describe("setFeatureEnabled", () => {
+  it("writes a top-level flag", () => {
+    expect(setFeatureEnabled(null, analytics, false)).toEqual({
+      analytics: false,
+    })
+  })
+
+  it("builds missing nesting for a nested flag", () => {
+    expect(setFeatureEnabled(null, siteAudit, true)).toEqual({
       tools: { "site-audit": true },
     })
   })
 
-  it("sets the flag without mutating the input", () => {
+  it("does not mutate the input", () => {
     const features = { tools: { "site-audit": false } }
-    const updated = setToolEnabled(features, "site-audit", true)
+    const updated = setFeatureEnabled(features, siteAudit, true)
 
     expect(updated).toEqual({ tools: { "site-audit": true } })
     expect(features.tools["site-audit"]).toBe(false)
   })
 
-  it("leaves other tools and sibling keys untouched", () => {
-    const features = { tools: { og: true }, somethingElse: 1 }
-    expect(setToolEnabled(features, "site-audit", true)).toEqual({
+  it("leaves siblings at both levels untouched", () => {
+    const features = { analytics: false, tools: { og: true } }
+    expect(setFeatureEnabled(features, siteAudit, true)).toEqual({
+      analytics: false,
       tools: { og: true, "site-audit": true },
-      somethingElse: 1,
     })
   })
 
   it("writes an explicit false rather than dropping the key", () => {
     expect(
-      setToolEnabled({ tools: { "site-audit": true } }, "site-audit", false)
+      setFeatureEnabled({ tools: { "site-audit": true } }, siteAudit, false)
     ).toEqual({ tools: { "site-audit": false } })
+  })
+
+  it("is a no-op for a built-in, which has no flag", () => {
+    const features = { analytics: true }
+    expect(setFeatureEnabled(features, og, false)).toEqual(features)
+  })
+
+  it("handles a deeper path than the registry currently uses", () => {
+    const deep: PlatformFeature = {
+      ...siteAudit,
+      flagPath: ["a", "b", "c"],
+    }
+    expect(setFeatureEnabled({ keep: 1 }, deep, true)).toEqual({
+      keep: 1,
+      a: { b: { c: true } },
+    })
   })
 })
