@@ -50,7 +50,7 @@ export const FEATURES: PlatformFeature[] = [
     id: "og",
     name: "OG Images",
     description:
-      "A generated OpenGraph image at /_tools/og/image, ready to reference from your page's meta tags.",
+      "A generated 1200x630 share card for your subdomain. Reference it from your page's meta tags to use it.",
     docsUrl: "https://docs.is-pinoy.dev/tools",
     // tools/og/worker only routes /_tools/og*, and serves any registered
     // subdomain without consulting a flag. It is available the moment the

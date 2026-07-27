@@ -39,10 +39,38 @@ export async function generateMetadata({
     openGraph: {
       title: name,
       description,
-      images: [{ url: profile.avatar, width: 460, height: 460, alt: name }],
+      images: [ogImage(ctx.subdomain, profile.avatar, name)],
     },
-    twitter: { card: "summary", title: name, description },
+    twitter: {
+      // The generated card is a 1200x630 banner; the avatar fallback is square.
+      card: ctx.subdomain ? "summary_large_image" : "summary",
+      title: name,
+      description,
+    },
   }
+}
+
+/**
+ * The share image for a portfolio.
+ *
+ * A claimed subdomain is proxied by definition, so the platform's generated OG
+ * card is reachable at its own `/_tools/og/image` — 1200x630 and branded, which
+ * previews far better than the square GitHub avatar. Owners of subdomains that
+ * point at their own host have to reference that endpoint themselves; here we
+ * render the page, so we can just use it.
+ *
+ * A preview renders on portfolio.is-pinoy.dev, where that path would resolve to
+ * a different record entirely, so it keeps the avatar.
+ */
+function ogImage(subdomain: string | null, avatar: string, name: string) {
+  return subdomain
+    ? {
+        url: `https://${subdomain}.is-pinoy.dev/_tools/og/image`,
+        width: 1200,
+        height: 630,
+        alt: name,
+      }
+    : { url: avatar, width: 460, height: 460, alt: name }
 }
 
 export default async function PortfolioPage({
