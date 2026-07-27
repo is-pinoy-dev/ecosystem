@@ -15,6 +15,7 @@ function existingRow(overrides: Partial<SubdomainRow> = {}): SubdomainRow {
     ownerGithub: "juandelacruz",
     ownerEmail: null,
     records: { CNAME: "juandelacruz.github.io" },
+    features: null,
     syncStatus: "synced",
     lastError: null,
     lastSyncedAt: new Date("2026-07-01T00:00:00.000Z"),

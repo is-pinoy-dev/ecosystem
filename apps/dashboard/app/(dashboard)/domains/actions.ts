@@ -5,30 +5,43 @@ import { z } from "zod"
 
 import { auth } from "@/auth"
 import { getSubdomainsForOwner } from "@/lib/domains"
+import { AVAILABLE_TOOLS, isToolEnabled } from "@/lib/features"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { getPendingProxyPRs, openProxyTogglePR } from "@/lib/proxy-pr"
 import {
   PROXYABLE_TYPES,
-  proxyLockReason,
+  proxyPolicy,
   readProxyState,
-  type ProxyChange,
+  type RecordChange,
 } from "@/lib/proxy-record"
 
-const changeInput = z.object({
-  subdomain: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(3)
-    .max(63)
-    .regex(/^[a-z0-9-]+$/),
-  type: z.enum(PROXYABLE_TYPES),
-  proxied: z.boolean(),
-})
+const subdomainField = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3)
+  .max(63)
+  .regex(/^[a-z0-9-]+$/)
+
+const changeInput = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("proxy"),
+    subdomain: subdomainField,
+    type: z.enum(PROXYABLE_TYPES),
+    enabled: z.boolean(),
+  }),
+  z.object({
+    kind: z.literal("tool"),
+    subdomain: subdomainField,
+    // Only tools the dashboard actually offers — a client cannot invent a flag.
+    tool: z.enum(AVAILABLE_TOOLS.map((t) => t.id) as [string, ...string[]]),
+    enabled: z.boolean(),
+  }),
+])
 
 const saveInput = z.array(changeInput).min(1).max(50)
 
-export type ProxyChangeInput = z.infer<typeof changeInput>
+export type SettingChangeInput = z.infer<typeof changeInput>
 
 /** What happened to one subdomain's worth of changes. */
 export interface SubdomainSaveResult {
@@ -40,50 +53,45 @@ export interface SubdomainSaveResult {
   error?: string
 }
 
-export interface SaveProxyChangesResult {
+export interface SaveSettingsResult {
   results: SubdomainSaveResult[]
 }
 
+function failure(subdomain: string, error: string): SaveSettingsResult {
+  return { results: [{ subdomain, ok: false, error }] }
+}
+
 /**
- * Open pull requests for a batch of pending proxy edits — one per subdomain,
+ * Open pull requests for a batch of pending settings edits — one per subdomain,
  * since the branch name and the "one change in flight" rule are both keyed by
  * subdomain. Each subdomain succeeds or fails independently so one rejected
  * record does not lose the rest of the user's work.
  *
- * Ownership, the pinned-portfolio lock, and the no-op case are all re-checked
- * here: the client controls none of them.
+ * Ownership, the provider's proxy policy, the proxy prerequisite for tools, and
+ * the no-op case are all re-checked here: the client controls none of them.
  */
-export async function saveProxyChanges(
-  input: ProxyChangeInput[]
-): Promise<SaveProxyChangesResult> {
+export async function saveSettings(
+  input: SettingChangeInput[],
+): Promise<SaveSettingsResult> {
   const session = await auth()
   if (!session?.user?.login) {
-    return {
-      results: [
-        {
-          subdomain: "",
-          ok: false,
-          error: "You must be signed in to change a record.",
-        },
-      ],
-    }
+    return failure("", "You must be signed in to change a record.")
   }
   const login = session.user.login
 
   const parsed = saveInput.safeParse(input)
-  if (!parsed.success) {
-    return {
-      results: [{ subdomain: "", ok: false, error: "Invalid request." }],
-    }
-  }
+  if (!parsed.success) return failure("", "Invalid request.")
 
   // Group by subdomain — one pull request per record file.
-  const bySubdomain = new Map<string, ProxyChange[]>()
+  const bySubdomain = new Map<string, SettingChangeInput[]>()
   for (const change of parsed.data) {
     const existing = bySubdomain.get(change.subdomain) ?? []
-    // Last write wins if the same type somehow appears twice.
-    const deduped = existing.filter((c) => c.type !== change.type)
-    deduped.push({ type: change.type, proxied: change.proxied })
+    // Last write wins if the same switch somehow appears twice.
+    const key = change.kind === "proxy" ? change.type : change.tool
+    const deduped = existing.filter(
+      (c) => c.kind !== change.kind || (c.kind === "proxy" ? c.type : c.tool) !== key,
+    )
+    deduped.push(change)
     bySubdomain.set(change.subdomain, deduped)
   }
 
@@ -119,25 +127,59 @@ export async function saveProxyChanges(
       results.push({
         subdomain,
         ok: false,
-        error: `A proxy change is already open as pull request #${open.number}. Merge or close it first.`,
+        error: `A change is already open as pull request #${open.number}. Merge or close it first.`,
       })
       continue
     }
 
-    // Drop anything locked or already at the requested value, then only open a
-    // pull request if something real is left.
-    const applicable = changes.filter((change) => {
-      if (proxyLockReason(domain.records, change.type)) return false
-      const state = readProxyState(domain.records, change.type)
-      if (!state) return false
-      return state.mixed || state.proxied !== change.proxied
-    })
+    // The proxy value this save leaves the record at — a tool flag is only
+    // meaningful if the record ends up proxied, whether it already was or this
+    // same batch turns it on.
+    const proxyChange = changes.find((c) => c.kind === "proxy")
+    const currentlyProxied = PROXYABLE_TYPES.some(
+      (type) => readProxyState(domain.records, type)?.proxied === true,
+    )
+    const willBeProxied = proxyChange ? proxyChange.enabled : currentlyProxied
+
+    const applicable: RecordChange[] = []
+    let rejection: string | null = null
+
+    for (const change of changes) {
+      if (change.kind === "proxy") {
+        const policy = proxyPolicy(domain.records, change.type)
+        if (policy.pinnedTo !== null && change.enabled !== policy.pinnedTo) {
+          rejection = policy.note ?? "This record's proxy setting is fixed."
+          continue
+        }
+        const state = readProxyState(domain.records, change.type)
+        if (!state) continue
+        if (!state.mixed && state.proxied === change.enabled) continue
+        applicable.push({
+          kind: "proxy",
+          type: change.type,
+          enabled: change.enabled,
+        })
+        continue
+      }
+
+      if (change.enabled && !willBeProxied) {
+        rejection =
+          "Platform tools need the proxy switched on. Enable it in the same save."
+        continue
+      }
+      if (isToolEnabled(domain.features, change.tool) === change.enabled) continue
+      applicable.push({
+        kind: "tool",
+        tool: change.tool,
+        enabled: change.enabled,
+      })
+    }
 
     if (applicable.length === 0) {
       results.push({
         subdomain,
         ok: false,
-        error: "Nothing left to change on this record.",
+        error: rejection ?? "Nothing left to change on this record.",
       })
       continue
     }
@@ -150,7 +192,7 @@ export async function saveProxyChanges(
     results.push(
       result.ok
         ? { subdomain, ok: true, prUrl: result.prUrl }
-        : { subdomain, ok: false, error: result.error }
+        : { subdomain, ok: false, error: result.error },
     )
   }
 

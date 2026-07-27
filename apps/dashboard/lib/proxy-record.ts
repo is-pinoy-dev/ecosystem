@@ -12,6 +12,9 @@
 import { domainSchema } from "@is-pinoy-dev/schemas"
 import { validateDomain } from "@is-pinoy-dev/validate"
 
+import { setToolEnabled } from "@/lib/features"
+import { providerForRecords } from "@/lib/providers"
+
 /**
  * Cloudflare can only proxy the record types that carry an orange cloud, and
  * the schema mirrors that: `proxied` exists on A and CNAME records only. TXT
@@ -115,48 +118,57 @@ export function setProxied(
   }
 }
 
-/** The DNS value of an entry, whatever shape it is written in. */
-function entryValue(entry: unknown): string | null {
-  if (typeof entry === "string") return entry
-  if (entry && typeof entry === "object" && "value" in entry) {
-    const value = (entry as { value?: unknown }).value
-    if (typeof value === "string") return value
-  }
-  return null
+/**
+ * What the host at the other end of this record allows.
+ *
+ * Some providers cannot be proxied at all (GitHub Pages needs DNS-only to issue
+ * its certificate; a pages.dev target across two Cloudflare accounts is rejected
+ * with Error 1014), and our own portfolio renderer only works proxied. In those
+ * cases the correct value is decided by the target, not the owner.
+ *
+ * `pinnedTo` is the value the provider requires, or null when it is the owner's
+ * choice. A record already sitting at its pinned value has nothing to decide, so
+ * the switch locks; a record sitting at the wrong value stays actionable so the
+ * owner can correct it.
+ */
+export interface ProxyPolicy {
+  pinnedTo: boolean | null
+  note: string | null
 }
 
-/** CNAME target of a hosted portfolio, matched to detect the pinned case. */
-export const PORTFOLIO_CNAME_TARGET = "portfolio.is-pinoy.dev"
+export function proxyPolicy(
+  records: Record<string, unknown>,
+  type: ProxyableType
+): ProxyPolicy {
+  // Only a CNAME identifies a host; an A record points at a bare IP.
+  if (type !== "CNAME") return { pinnedTo: null, note: null }
+
+  const provider = providerForRecords(records)
+  if (!provider) return { pinnedTo: null, note: null }
+
+  if (provider.proxySupport === "forbidden") {
+    return { pinnedTo: false, note: provider.note ?? null }
+  }
+  if (provider.proxySupport === "required") {
+    return { pinnedTo: true, note: provider.note ?? null }
+  }
+  return { pinnedTo: null, note: null }
+}
 
 /**
- * Why this record's proxy setting cannot be changed from the dashboard, or null
- * when it is free to toggle.
- *
- * Hosted portfolios are pinned: their CNAME points at portfolio.is-pinoy.dev and
- * the renderer is only reachable over Cloudflare's proxy, so un-proxying one
- * takes the site down. Detected from the CNAME target rather than the record's
- * `portfolio` block, because the database read model stores only `records` —
- * this way the lock holds in both the database and GitHub-fallback paths.
- * Those owners can still edit the JSON by hand.
+ * Why this record's proxy setting cannot be changed, or null when it is free.
+ * Locked only while the record already sits at the value its host requires.
  */
 export function proxyLockReason(
   records: Record<string, unknown>,
   type: ProxyableType
 ): string | null {
-  if (type !== "CNAME") return null
+  const policy = proxyPolicy(records, type)
+  if (policy.pinnedTo === null) return null
 
-  const targets = toList(records.CNAME)
-    .map(entryValue)
-    .filter((value): value is string => value !== null)
-
-  const pinned = targets.some(
-    (target) =>
-      target.replace(/\.$/, "").toLowerCase() === PORTFOLIO_CNAME_TARGET
-  )
-
-  return pinned
-    ? "Hosted portfolios stay proxied — the renderer is served through Cloudflare."
-    : null
+  const state = readProxyState(records, type)
+  const current = state?.proxied ?? false
+  return current === policy.pinnedTo ? policy.note : null
 }
 
 /** Branch name for a subdomain's proxy change — one per subdomain, reused. */
@@ -178,23 +190,26 @@ export function subdomainFromHeadLabel(
   return subdomain.length > 0 ? subdomain : null
 }
 
-/** One pending proxy edit: a record type and the value it should end up at. */
-export interface ProxyChange {
-  type: ProxyableType
-  proxied: boolean
-}
+/**
+ * One pending edit. Either the master proxy switch on a record type, or one
+ * platform tool's flag — both live in the same record file, so a batch of them
+ * belongs in a single commit.
+ */
+export type RecordChange =
+  | { kind: "proxy"; type: ProxyableType; enabled: boolean }
+  | { kind: "tool"; tool: string; enabled: boolean }
 
 /**
- * Apply every pending proxy flip to a parsed record file and validate the result
+ * Apply every pending edit to a parsed record file and validate the result
  * against the same schema and rules the repo's CI check enforces, so the
  * dashboard never opens a pull request that would fail validation.
  *
- * Takes the changes as a batch because one subdomain can have both an A and a
- * CNAME record edited before saving, and those belong in a single commit.
+ * Takes the changes as a batch because one subdomain can have its proxy switch
+ * and several tool flags edited before saving, and those belong in one commit.
  */
 export function buildToggledFile(
   file: Record<string, unknown>,
-  changes: ProxyChange[]
+  changes: RecordChange[]
 ): { content: string } | { error: string } {
   const records = file.records
   if (!records || typeof records !== "object") {
@@ -204,12 +219,28 @@ export function buildToggledFile(
     return { error: "No changes to apply." }
   }
 
+  const nextRecords = changes
+    .filter((change) => change.kind === "proxy")
+    .reduce(
+      (acc, change) => setProxied(acc, change.type, change.enabled),
+      records as Record<string, unknown>
+    )
+
+  const toolChanges = changes.filter((change) => change.kind === "tool")
+
   const updated = {
     ...file,
-    records: changes.reduce(
-      (acc, change) => setProxied(acc, change.type, change.proxied),
-      records as Record<string, unknown>
-    ),
+    records: nextRecords,
+    // Only introduce a features block when a tool was actually edited, so a
+    // pure proxy change leaves the rest of the file byte-identical.
+    ...(toolChanges.length > 0
+      ? {
+          features: toolChanges.reduce(
+            (acc, change) => setToolEnabled(acc, change.tool, change.enabled),
+            (file.features ?? undefined) as Record<string, unknown> | undefined
+          ),
+        }
+      : {}),
   }
 
   const parsed = domainSchema.safeParse(updated)

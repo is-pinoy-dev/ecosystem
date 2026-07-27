@@ -4,7 +4,7 @@ import {
   buildToggledFile,
   proxyBranch,
   subdomainFromHeadLabel,
-  type ProxyChange,
+  type RecordChange,
 } from "@/lib/proxy-record"
 
 // Opens a "flip the Cloudflare proxy" pull request against the public domains
@@ -28,7 +28,7 @@ export interface ProxyToggleParams {
   login: string
   subdomain: string
   /** Every record type edited on this subdomain, applied as one commit. */
-  changes: ProxyChange[]
+  changes: RecordChange[]
 }
 
 export type ProxyToggleResult =
@@ -298,13 +298,16 @@ export async function openProxyTogglePR(
   const built = buildToggledFile(file.content, changes)
   if ("error" in built) return { ok: false, error: built.error }
 
-  // One record type edited reads better as "enable"/"disable"; a mix of both
-  // only honestly summarises as "update".
-  const allOn = changes.every((c) => c.proxied)
-  const allOff = changes.every((c) => !c.proxied)
+  // All-on or all-off reads better as "enable"/"disable"; a mix of both only
+  // honestly summarises as "update".
+  const allOn = changes.every((c) => c.enabled)
+  const allOff = changes.every((c) => !c.enabled)
   const action = allOn ? "Enable" : allOff ? "Disable" : "Update"
-  const types = changes.map((c) => c.type).join(", ")
-  const message = `chore: ${action.toLowerCase()} Cloudflare proxy for ${subdomain}`
+  const subject =
+    changes.length === 1 && changes[0]!.kind === "proxy"
+      ? "Cloudflare proxy"
+      : "platform settings"
+  const message = `chore: ${action.toLowerCase()} ${subject} for ${subdomain}`
 
   const putFile = await fetch(
     `${API}/repos/${login}/${UPSTREAM_REPO}/contents/subdomains/${subdomain}.json`,
@@ -327,14 +330,16 @@ export async function openProxyTogglePR(
   }
 
   const prBody = [
-    `${action}s the Cloudflare proxy on the \`${types}\` record${
-      changes.length > 1 ? "s" : ""
-    } for \`${subdomain}.is-pinoy.dev\`.`,
+    `${action}s ${subject} for \`${subdomain}.is-pinoy.dev\`.`,
     "",
-    ...changes.map((c) => `- \`records.${c.type}.proxied\` → \`${c.proxied}\``),
+    ...changes.map((c) =>
+      c.kind === "proxy"
+        ? `- \`records.${c.type}.proxied\` → \`${c.enabled}\``
+        : `- \`features.tools.${c.tool}\` → \`${c.enabled}\``
+    ),
     "",
     "Opened from the is-pinoy.dev dashboard. Git stays the source of truth —",
-    "merging this applies the change to Cloudflare on the next sync run.",
+    "merging this applies the change on the next sync run.",
   ].join("\n")
 
   const prRes = await fetch(
@@ -343,7 +348,7 @@ export async function openProxyTogglePR(
       method: "POST",
       headers: headers(token),
       body: JSON.stringify({
-        title: `${action} Cloudflare proxy: ${subdomain}`,
+        title: `${action} ${subject}: ${subdomain}`,
         head: `${login}:${branch}`,
         base: upstreamBase,
         body: prBody,

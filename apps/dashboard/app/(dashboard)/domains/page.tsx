@@ -44,7 +44,7 @@ export default async function DomainsPage() {
       <PageHeader
         eyebrow="Registry"
         title="Your domains"
-        description="DNS records registered to your GitHub account. Toggle the Cloudflare proxy and save to open a pull request — git stays the source of truth. To change anything else, edit the record file in the domains repository."
+        description="DNS records registered to your GitHub account, and the platform features switched on for each. Your settings live in git, so saving opens a pull request. To change a DNS record itself, edit its file in the domains repository."
       />
 
       {owned.length > 0 ? (

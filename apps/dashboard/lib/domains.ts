@@ -19,6 +19,8 @@ export interface RegistrySubdomain {
   subdomain: string
   owner: { github: string; email?: string }
   records: Record<string, unknown>
+  /** Opt-in platform tools (`features.tools.*`). */
+  features?: Record<string, unknown> | null
   /** Only available when reading from the database. */
   syncStatus?: SyncStatus
   lastError?: string | null
@@ -47,6 +49,7 @@ async function getSubdomainsFromDb(): Promise<RegistrySubdomain[]> {
     subdomain: row.name,
     owner: { github: row.ownerGithub, email: row.ownerEmail ?? undefined },
     records: row.records,
+    features: row.features,
     syncStatus: row.syncStatus,
     lastError: row.lastError,
     lastSyncedAt: row.lastSyncedAt,
@@ -68,7 +71,7 @@ export async function getRegistrySubdomains(): Promise<RegistrySubdomain[]> {
       {
         headers: githubHeaders(),
         next: { revalidate: REVALIDATE_SECONDS },
-      },
+      }
     )
     if (res.ok) {
       const files = (await res.json()) as { name: string }[]
@@ -86,23 +89,29 @@ export async function getRegistrySubdomains(): Promise<RegistrySubdomain[]> {
     names.map(async (subdomain): Promise<RegistrySubdomain | null> => {
       const res = await fetch(
         `https://raw.githubusercontent.com/${DOMAINS_REPO}/main/subdomains/${subdomain}.json`,
-        { next: { revalidate: REVALIDATE_SECONDS } },
+        { next: { revalidate: REVALIDATE_SECONDS } }
       )
       if (!res.ok) return null
       const data = (await res.json()) as {
         owner: { github: string; email?: string }
         records: Record<string, unknown>
+        features?: Record<string, unknown>
         destroy?: boolean
       }
       if (data.destroy) return null
-      return { subdomain, owner: data.owner, records: data.records }
-    }),
+      return {
+        subdomain,
+        owner: data.owner,
+        records: data.records,
+        features: data.features ?? null,
+      }
+    })
   )
 
   return results
     .filter(
       (r): r is PromiseFulfilledResult<RegistrySubdomain> =>
-        r.status === "fulfilled" && r.value !== null,
+        r.status === "fulfilled" && r.value !== null
     )
     .map((r) => r.value)
     .sort((a, b) => a.subdomain.localeCompare(b.subdomain))

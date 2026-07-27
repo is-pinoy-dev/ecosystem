@@ -9,6 +9,7 @@ export interface IncomingDomain {
   subdomain: string
   owner: { github: string; email?: string }
   records: Record<string, unknown>
+  features?: Record<string, unknown> | null
   status: SyncStatus
   error?: string | null
   createdAt?: string
@@ -60,6 +61,7 @@ export function reconcile(
           ownerGithub: domain.owner.github,
           ownerEmail: domain.owner.email ?? null,
           records: domain.records,
+          features: domain.features ?? null,
           ...syncFields,
           // Prefer git-derived dates so a backfill of an old registry keeps
           // real registration dates instead of the insert time.
@@ -76,7 +78,9 @@ export function reconcile(
     const contentChanged =
       current.ownerGithub !== domain.owner.github ||
       (current.ownerEmail ?? undefined) !== domain.owner.email ||
-      JSON.stringify(current.records) !== JSON.stringify(domain.records)
+      JSON.stringify(current.records) !== JSON.stringify(domain.records) ||
+      JSON.stringify(current.features ?? null) !==
+        JSON.stringify(domain.features ?? null)
 
     // Payload dates correct rows that were first inserted without git dates
     // (their timestamps are the backfill time, not registration or the last
@@ -101,6 +105,7 @@ export function reconcile(
           ownerGithub: domain.owner.github,
           ownerEmail: domain.owner.email ?? null,
           records: domain.records,
+          features: domain.features ?? null,
           updatedAt: contentUpdatedAt ?? syncedAt,
         }),
       },
