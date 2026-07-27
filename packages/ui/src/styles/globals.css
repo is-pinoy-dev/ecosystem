@@ -261,3 +261,33 @@
     color: var(--primary-foreground);
   }
 }
+
+/* Collapsible height animation. Not expressible as a Tailwind utility: the
+   keyframes have to reference the primitive's measured-height variable. */
+@keyframes collapsible-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="collapsible-content"][data-state="open"] {
+    animation: collapsible-down 160ms ease-out;
+  }
+
+  [data-slot="collapsible-content"][data-state="closed"] {
+    animation: collapsible-up 160ms ease-out;
+  }
+}

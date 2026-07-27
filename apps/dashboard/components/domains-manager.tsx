@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   Check,
+  ChevronRight,
   CheckCircle2,
   Copy,
   GitPullRequest,
@@ -13,6 +14,11 @@ import {
 } from "lucide-react"
 import { Badge } from "@is-pinoy-dev/ui/components/badge"
 import { Button } from "@is-pinoy-dev/ui/components/button"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@is-pinoy-dev/ui/components/collapsible"
 import {
   Dialog,
   DialogContent,
@@ -600,29 +606,81 @@ function PlatformPanel({
     (stagedProxy !== platform.enabled || platform.mixed)
   const proxyLocked = Boolean(platform.lockedReason) || readOnly
 
+  const dirtyCount =
+    (proxyDirty ? 1 : 0) +
+    platform.features.filter((feature) => {
+      const staged = edits[featureKey(subdomain, feature.id)]
+      return staged !== undefined && staged !== feature.enabled
+    }).length
+
+  // Null until the owner decides for themselves; until then the section opens
+  // itself whenever there is unsaved work in it, so staged edits are never
+  // hidden behind a collapsed header.
+  const [userOpen, setUserOpen] = useState<boolean | null>(null)
+  const open = userOpen ?? dirtyCount > 0
+
+  // Summarise from the staged values, so a collapsed section still describes
+  // what saving would produce rather than what git currently says.
+  const activeNames = proxyOn
+    ? [
+        ...platform.features
+          .filter(
+            (feature) =>
+              edits[featureKey(subdomain, feature.id)] ?? feature.enabled
+          )
+          .map((feature) => feature.name),
+        ...platform.builtins.map((builtin) => builtin.name),
+      ]
+    : []
+
   return (
-    <div className="flex flex-col gap-0 border-t border-border bg-muted/20">
+    <Collapsible
+      open={open}
+      onOpenChange={setUserOpen}
+      className="flex flex-col gap-0 border-t border-border bg-muted/20"
+    >
       <div
         className={cn(
-          "flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3",
+          "flex flex-wrap items-center gap-x-4 gap-y-2 pr-4",
           proxyDirty && "bg-primary/5"
         )}
       >
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-            Platform features
-            {proxyDirty ? (
-              <span className="text-[11px] font-medium text-primary">
-                Unsaved
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="flex min-w-0 flex-1 items-center gap-2.5 border-0 bg-transparent py-3 pl-4 text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring focus-visible:outline-solid"
+            aria-label={`${open ? "Collapse" : "Expand"} platform features for ${subdomain}.is-pinoy.dev`}
+          >
+            <ChevronRight
+              className={cn(
+                "size-3.5 shrink-0 text-muted-foreground transition-transform",
+                open && "rotate-90"
+              )}
+              aria-hidden="true"
+            />
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+                Platform features
+                {dirtyCount > 0 ? (
+                  <span className="text-[11px] font-medium text-primary">
+                    {dirtyCount} unsaved
+                  </span>
+                ) : null}
               </span>
-            ) : null}
-          </span>
-          <span className="text-[11px]/relaxed text-muted-foreground">
-            {platform.lockedReason ??
-              platform.correctionNote ??
-              "Routes your domain through our edge so built-in tools can run at /_tools/. Visits to proxied domains are logged for platform metrics."}
-          </span>
-        </span>
+              <span className="truncate text-[11px]/relaxed text-muted-foreground">
+                {open
+                  ? (platform.lockedReason ??
+                    platform.correctionNote ??
+                    "Routes your domain through our edge so built-in tools can run at /_tools/. Visits to proxied domains are logged for platform metrics.")
+                  : !proxyOn
+                    ? "Off"
+                    : activeNames.length > 0
+                      ? activeNames.join(" · ")
+                      : "On — no tools enabled"}
+              </span>
+            </span>
+          </button>
+        </CollapsibleTrigger>
         <Switch
           checked={proxyOn}
           onCheckedChange={(next) => onSetEdit(pKey, next)}
@@ -632,102 +690,104 @@ function PlatformPanel({
         />
       </div>
 
-      <ul className="m-0 list-none border-t border-border/70 p-0">
-        {platform.features.map((feature) => {
-          const fKey = featureKey(subdomain, feature.id)
-          const staged = edits[fKey]
-          const on = staged ?? feature.enabled
-          const dirty = staged !== undefined && staged !== feature.enabled
-          // Opt-in tools are meaningless unproxied; an opt-out like analytics
-          // stays switchable so a preference can be set ahead of time, but
-          // nothing is happening either way while the platform is off.
-          const blocked = !proxyOn && !feature.optOut
-          const dormant = !proxyOn && feature.optOut
-          return (
+      <CollapsibleContent>
+        <ul className="m-0 list-none border-t border-border/70 p-0">
+          {platform.features.map((feature) => {
+            const fKey = featureKey(subdomain, feature.id)
+            const staged = edits[fKey]
+            const on = staged ?? feature.enabled
+            const dirty = staged !== undefined && staged !== feature.enabled
+            // Opt-in tools are meaningless unproxied; an opt-out like analytics
+            // stays switchable so a preference can be set ahead of time, but
+            // nothing is happening either way while the platform is off.
+            const blocked = !proxyOn && !feature.optOut
+            const dormant = !proxyOn && feature.optOut
+            return (
+              <li
+                key={feature.id}
+                className={cn(
+                  "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/70 py-2.5 pr-4 pl-8 last:border-b-0",
+                  dirty && "bg-primary/5",
+                  (blocked || dormant) && "opacity-60"
+                )}
+              >
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+                    <a
+                      href={feature.docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-foreground no-underline hover:text-accent hover:underline"
+                    >
+                      {feature.name}
+                    </a>
+                    {dirty ? (
+                      <span className="text-[11px] font-medium text-primary">
+                        Unsaved
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="text-[11px]/relaxed text-muted-foreground">
+                    {blocked
+                      ? "Needs platform features switched on."
+                      : dormant
+                        ? "Nothing is collected while the platform is off — this is your preference for when it is on."
+                        : feature.description}
+                  </span>
+                </span>
+                <Switch
+                  checked={on && !blocked}
+                  onCheckedChange={(next) => onSetEdit(fKey, next)}
+                  disabled={blocked || readOnly}
+                  aria-label={`${on ? "Disable" : "Enable"} ${feature.name} for ${subdomain}.is-pinoy.dev`}
+                />
+              </li>
+            )
+          })}
+
+          {platform.builtins.map((builtin) => (
             <li
-              key={feature.id}
+              key={builtin.id}
               className={cn(
-                "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/70 py-2.5 pr-4 pl-8 last:border-b-0",
-                dirty && "bg-primary/5",
-                (blocked || dormant) && "opacity-60"
+                "flex flex-col gap-2 border-b border-border/70 py-2.5 pr-4 pl-8 last:border-b-0",
+                !proxyOn && "opacity-60"
               )}
             >
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-                  <a
-                    href={feature.docsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-foreground no-underline hover:text-accent hover:underline"
-                  >
-                    {feature.name}
-                  </a>
-                  {dirty ? (
-                    <span className="text-[11px] font-medium text-primary">
-                      Unsaved
-                    </span>
-                  ) : null}
+              <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[13px] font-medium text-foreground">
+                    <a
+                      href={builtin.docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-foreground no-underline hover:text-accent hover:underline"
+                    >
+                      {builtin.name}
+                    </a>
+                  </span>
+                  <span className="text-[11px]/relaxed text-muted-foreground">
+                    {!proxyOn
+                      ? "Available once platform features are switched on."
+                      : (builtin.automaticNote ?? builtin.description)}
+                  </span>
                 </span>
-                <span className="text-[11px]/relaxed text-muted-foreground">
-                  {blocked
-                    ? "Needs platform features switched on."
-                    : dormant
-                      ? "Nothing is collected while the platform is off — this is your preference for when it is on."
-                      : feature.description}
+                <span className="font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
+                  {proxyOn
+                    ? builtin.automaticNote
+                      ? "Applied"
+                      : "Included"
+                    : "Off"}
                 </span>
               </span>
-              <Switch
-                checked={on && !blocked}
-                onCheckedChange={(next) => onSetEdit(fKey, next)}
-                disabled={blocked || readOnly}
-                aria-label={`${on ? "Disable" : "Enable"} ${feature.name} for ${subdomain}.is-pinoy.dev`}
-              />
+
+              {proxyOn && builtin.snippet ? (
+                <CopyableSnippet snippet={builtin.snippet} url={builtin.url} />
+              ) : null}
             </li>
-          )
-        })}
-
-        {platform.builtins.map((builtin) => (
-          <li
-            key={builtin.id}
-            className={cn(
-              "flex flex-col gap-2 border-b border-border/70 py-2.5 pr-4 pl-8 last:border-b-0",
-              !proxyOn && "opacity-60"
-            )}
-          >
-            <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-[13px] font-medium text-foreground">
-                  <a
-                    href={builtin.docsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-foreground no-underline hover:text-accent hover:underline"
-                  >
-                    {builtin.name}
-                  </a>
-                </span>
-                <span className="text-[11px]/relaxed text-muted-foreground">
-                  {!proxyOn
-                    ? "Available once platform features are switched on."
-                    : (builtin.automaticNote ?? builtin.description)}
-                </span>
-              </span>
-              <span className="font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
-                {proxyOn
-                  ? builtin.automaticNote
-                    ? "Applied"
-                    : "Included"
-                  : "Off"}
-              </span>
-            </span>
-
-            {proxyOn && builtin.snippet ? (
-              <CopyableSnippet snippet={builtin.snippet} url={builtin.url} />
-            ) : null}
-          </li>
-        ))}
-      </ul>
-    </div>
+          ))}
+        </ul>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 
