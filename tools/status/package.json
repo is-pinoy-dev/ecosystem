@@ -24,8 +24,6 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260527.1",
-    "@fontsource/ibm-plex-mono": "^5.2.7",
-    "@fontsource/press-start-2p": "^5.2.7",
     "@react-router/cloudflare": "7.18.1",
     "@react-router/dev": "7.18.1",
     "@tailwindcss/vite": "^4.3.0",

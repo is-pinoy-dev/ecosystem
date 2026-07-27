@@ -139,7 +139,6 @@ async function fetchGithubAvatar(username: string): Promise<ImageAsset | null> {
 
 async function generateOgPng(
   ogData: OgData,
-  pressStartFont: ArrayBuffer,
   geistFont: ArrayBuffer,
   backgroundImage: ArrayBuffer,
   avatarImage: ImageAsset | null
@@ -152,7 +151,7 @@ async function generateOgPng(
   const resvg = new Resvg(svg, {
     fitTo: { mode: "width", value: 1200 },
     font: {
-      fontBuffers: [new Uint8Array(pressStartFont), new Uint8Array(geistFont)],
+      fontBuffers: [new Uint8Array(geistFont)],
     },
   })
   return resvg.render().asPng()
@@ -173,20 +172,17 @@ async function handleImageRequest(
   }
 
   await ensureWasm()
-  const [ogData, pressStartFont, geistFont, backgroundImage] =
-    await Promise.all([
-      fetchSubdomainData(subdomain, ctx),
-      loadAsset(env, url.origin, "PressStart2P-Regular.ttf"),
-      loadAsset(env, url.origin, "Geist-SemiBold.ttf"),
-      loadAsset(env, url.origin, "subdomain-og-background.jpg"),
-    ])
+  const [ogData, geistFont, backgroundImage] = await Promise.all([
+    fetchSubdomainData(subdomain, ctx),
+    loadAsset(env, url.origin, "Geist-SemiBold.ttf"),
+    loadAsset(env, url.origin, "subdomain-og-background.jpg"),
+  ])
   const avatarImage = ogData.found
     ? await fetchGithubAvatar(ogData.owner)
     : null
 
   const png = await generateOgPng(
     ogData,
-    pressStartFont,
     geistFont,
     backgroundImage,
     avatarImage

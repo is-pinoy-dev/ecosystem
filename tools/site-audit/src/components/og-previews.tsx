@@ -23,7 +23,7 @@ function hostname(url: string | null): string | null {
 
 function PlatformLabel({ name }: { name: string }) {
   return (
-    <p className="mb-1 font-pixel text-[9px] tracking-wider text-muted-foreground uppercase">
+    <p className="m-0 mb-2 font-mono text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
       {name}
     </p>
   )
@@ -31,10 +31,8 @@ function PlatformLabel({ name }: { name: string }) {
 
 function NoPreview() {
   return (
-    <div className="border-2 border-dashed border-border px-3 py-4 text-center">
-      <p className="font-pixel text-[9px] text-muted-foreground">
-        NO OG IMAGE SET
-      </p>
+    <div className="border border-dashed border-border px-3 py-6 text-center">
+      <p className="m-0 text-sm text-muted-foreground">No og:image set</p>
     </div>
   )
 }
@@ -55,11 +53,11 @@ export function FacebookCard({
   if (!image) return <NoPreview />
   const site = siteName ?? hostname(url)
   return (
-    <div className="border-2 border-border bg-[#f0f2f5] shadow-[3px_3px_0_var(--color-foreground)]">
+    <div className="border border-border bg-[#f0f2f5]">
       <img
         src={image}
         alt="og preview"
-        className="aspect-[1.91/1] w-full border-b-2 border-border object-cover"
+        className="aspect-[1.91/1] w-full border-b border-border object-cover"
       />
       <div className="space-y-0.5 bg-[#f0f2f5] px-3 py-2">
         {site && (
@@ -95,11 +93,11 @@ export function TwitterLargeCard({
 }) {
   if (!image) return <NoPreview />
   return (
-    <div className="border-2 border-[#2f3336] bg-black shadow-[3px_3px_0_var(--color-foreground)]">
+    <div className="border border-[#2f3336] bg-black">
       <img
         src={image}
         alt="twitter preview"
-        className="aspect-[1.91/1] w-full border-b-2 border-[#2f3336] object-cover"
+        className="aspect-[1.91/1] w-full border-b border-[#2f3336] object-cover"
       />
       <div className="space-y-0.5 px-3 py-2">
         {title && (
@@ -130,12 +128,12 @@ export function TwitterSummaryCard({
   site: string | null
 }) {
   return (
-    <div className="flex gap-3 border-2 border-[#2f3336] bg-black p-3 shadow-[3px_3px_0_var(--color-foreground)]">
+    <div className="flex gap-3 border border-[#2f3336] bg-black p-3">
       {image && (
         <img
           src={image}
           alt="twitter summary preview"
-          className="h-16 w-16 shrink-0 border-2 border-[#2f3336] object-cover"
+          className="h-16 w-16 shrink-0 border border-[#2f3336] object-cover"
         />
       )}
       <div className="min-w-0 space-y-0.5">
@@ -169,11 +167,11 @@ export function LinkedInCard({
   if (!image) return <NoPreview />
   const site = siteName ?? hostname(url)
   return (
-    <div className="border-2 border-[#d0ccc8] bg-white shadow-[3px_3px_0_var(--color-foreground)]">
+    <div className="border border-[#d0ccc8] bg-white">
       <img
         src={image}
         alt="linkedin preview"
-        className="aspect-[1.91/1] w-full border-b-2 border-[#d0ccc8] object-cover"
+        className="aspect-[1.91/1] w-full border-b border-[#d0ccc8] object-cover"
       />
       <div className="space-y-0.5 bg-[#edf3f8] px-3 py-2">
         {title && (
@@ -207,7 +205,7 @@ function DiscordCard({
   const site = siteName ?? hostname(url)
   return (
     <div
-      className="border-2 border-[#1e1f22] bg-[#2b2d31] shadow-[3px_3px_0_var(--color-foreground)]"
+      className="border border-[#1e1f22] bg-[#2b2d31]"
       style={{ borderLeft: "4px solid #5865f2" }}
     >
       <div className="space-y-1 px-3 py-2">
@@ -228,7 +226,7 @@ function DiscordCard({
           <img
             src={image}
             alt="discord preview"
-            className="mt-2 aspect-[1.91/1] w-full border-2 border-[#1e1f22] object-cover"
+            className="mt-2 aspect-[1.91/1] w-full border border-[#1e1f22] object-cover"
           />
         )}
       </div>
@@ -254,8 +252,10 @@ export function OgPreviews({
   const isLargeCard = !twitterCard || twitterCard === "summary_large_image"
 
   return (
-    <div className="mt-20 space-y-4">
-      <p className="font-pixel text-[11px] text-primary">// SOCIAL PREVIEWS</p>
+    <div className="mt-12 space-y-5">
+      <p className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+        Social previews
+      </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div>

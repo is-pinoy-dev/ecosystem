@@ -4,6 +4,8 @@ import type { AuditResult } from "@is-pinoy-dev/schemas"
 import { parseAudit } from "../lib/parse-audit"
 import { NavBar } from "../components/nav-bar"
 import { Button } from "@is-pinoy-dev/ui/components/button"
+import { Container } from "@is-pinoy-dev/ui/components/container"
+import { InputGroup } from "@is-pinoy-dev/ui/components/input-group"
 
 export type AuditState =
   | { status: "loading" }
@@ -57,8 +59,14 @@ export default function Layout() {
         signal ? { signal } : undefined
       )
       if (!res.ok) throw new Error(`Proxy error: ${res.status}`)
-      const json = await res.json() as { html: string; xRobotsTag: string | null }
-      setState({ status: "result", data: parseAudit(json.html, target, json.xRobotsTag) })
+      const json = (await res.json()) as {
+        html: string
+        xRobotsTag: string | null
+      }
+      setState({
+        status: "result",
+        data: parseAudit(json.html, target, json.xRobotsTag),
+      })
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return
       setState({
@@ -95,40 +103,38 @@ export default function Layout() {
         auditedAt={auditedAt}
         loading={state.status === "loading"}
       />
-      <div className="sticky top-16 z-40 mt-16 border-b border-border bg-background/85 px-6 py-3 backdrop-blur">
-        <form
-          onSubmit={handleScan}
-          className="mx-auto flex max-w-4xl items-center gap-2"
-        >
-          <span className="hidden shrink-0 font-pixel text-[9px] text-muted-foreground sm:block">
-            AUDITING
-          </span>
-          <div className="flex min-w-0 flex-1 items-center border-2 border-border bg-background shadow-[2px_2px_0_var(--color-muted)]">
-            <span className="max-w-[180px] shrink-0 truncate border-r-2 border-border px-3 py-2 font-pixel text-[9px] text-muted-foreground sm:max-w-xs">
-              {host}
-            </span>
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="/"
-              disabled={state.status === "loading"}
-              className="min-w-0 flex-1 bg-transparent px-3 py-2 font-pixel text-[9px] text-foreground outline-none placeholder:text-muted-foreground/50 disabled:opacity-40"
-            />
-          </div>
-          <Button
-            type="submit"
-            disabled={state.status === "loading"}
-            variant="outline-shadow"
-            size="sm"
-          >
-            SCAN
-          </Button>
-        </form>
+      <div className="sticky top-16 z-40 border-b border-border bg-background/98 py-3">
+        <Container className="max-w-[960px]">
+          <form onSubmit={handleScan} className="flex items-center gap-3">
+            <label
+              htmlFor="audit-path"
+              className="hidden shrink-0 font-mono text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase sm:block"
+            >
+              Auditing
+            </label>
+            <InputGroup className="min-h-10 min-w-0 flex-1">
+              <span className="flex max-w-[180px] shrink-0 items-center truncate border-r border-border px-3 font-mono text-[13px] text-muted-foreground sm:max-w-xs">
+                {host}
+              </span>
+              <input
+                id="audit-path"
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="/"
+                disabled={state.status === "loading"}
+                className="min-w-0 flex-1 bg-transparent px-3 font-mono text-[13px] text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-50"
+              />
+            </InputGroup>
+            <Button type="submit" disabled={state.status === "loading"}>
+              Scan
+            </Button>
+          </form>
+        </Container>
       </div>
-      <main className="mx-auto max-w-4xl px-6 pt-6 pb-8">
+      <Container className="max-w-[960px] py-8">
         <Outlet context={{ state, runAudit } satisfies AuditContext} />
-      </main>
+      </Container>
     </div>
   )
 }

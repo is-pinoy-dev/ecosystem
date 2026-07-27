@@ -1,18 +1,23 @@
-/** biome-ignore-all lint/suspicious/noCommentText: <explanation> */
 import { useState } from "react"
 import { useOutletContext } from "react-router"
-import { Button } from "@is-pinoy-dev/ui/components/button"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@is-pinoy-dev/ui/components/accordion"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@is-pinoy-dev/ui/components/tabs"
 import type { AuditResult } from "@is-pinoy-dev/schemas"
 import type { AuditContext } from "./layout"
 import { AuditTable } from "../components/audit-table"
 import { StatusBadge } from "../components/status-badge"
 import { IssueList } from "../components/issue-list"
+import { ErrorState, ScanningState } from "../components/audit-states"
 import {
   FacebookCard,
   TwitterLargeCard,
@@ -20,55 +25,37 @@ import {
   LinkedInCard,
 } from "../components/og-previews"
 
-type SeoTab = "overview" | "issues" | "headings" | "links" | "images" | "schema" | "social"
+type SeoTab =
+  | "overview"
+  | "issues"
+  | "headings"
+  | "links"
+  | "images"
+  | "schema"
+  | "social"
 type SocialTab = "og" | "twitter" | "linkedin" | "facebook"
 type LinkFilter = "all" | "internal" | "external"
 
 const SEO_TABS: { id: SeoTab; label: string }[] = [
-  { id: "overview", label: "OVERVIEW" },
-  { id: "issues", label: "ISSUES" },
-  { id: "headings", label: "HEADINGS" },
-  { id: "links", label: "LINKS" },
-  { id: "images", label: "IMAGES" },
-  { id: "schema", label: "SCHEMA" },
-  { id: "social", label: "SOCIAL" },
+  { id: "overview", label: "Overview" },
+  { id: "issues", label: "Issues" },
+  { id: "headings", label: "Headings" },
+  { id: "links", label: "Links" },
+  { id: "images", label: "Images" },
+  { id: "schema", label: "Schema" },
+  { id: "social", label: "Social" },
 ]
 
-function SubTabBar({
-  tabs,
-  active,
-  onSelect,
-  small,
-}: {
-  tabs: { id: string; label: string }[]
-  active: string
-  onSelect: (id: string) => void
-  small?: boolean
-}) {
+function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="-mx-6 overflow-x-auto px-6">
-      <div className="flex w-fit border-2 border-border shadow-[3px_3px_0_var(--color-muted)]">
-        {tabs.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => onSelect(id)}
-            className={[
-              "border-r-2 border-border last:border-r-0",
-              small
-                ? "px-2 py-1 font-pixel text-[7px]"
-                : "px-3 py-1.5 font-pixel text-[8px] md:px-4 md:py-2 md:text-[9px]",
-              active === id
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            ].join(" ")}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-    </div>
+    <p className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+      {children}
+    </p>
   )
+}
+
+function EmptyNote({ children }: { children: React.ReactNode }) {
+  return <p className="m-0 text-sm text-muted-foreground">{children}</p>
 }
 
 function StatBox({
@@ -81,17 +68,34 @@ function StatBox({
   valueClass?: string
 }) {
   return (
-    <div className="border-2 border-border bg-card p-3 text-center">
-      <p className="font-pixel text-[9px] text-muted-foreground">{label}</p>
+    <div className="flex flex-col gap-1 border border-border bg-card p-4 text-center">
+      <p className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+        {label}
+      </p>
       <p
-        className={[
-          "font-pixel text-[18px]",
-          valueClass ?? "text-primary",
-        ].join(" ")}
+        className={`m-0 text-2xl font-semibold tracking-[-0.02em] ${
+          valueClass ?? "text-foreground"
+        }`}
       >
         {value}
       </p>
     </div>
+  )
+}
+
+/** Header row for the dense data tables below. */
+function TableHead({ columns }: { columns: string[] }) {
+  return (
+    <>
+      {columns.map((column) => (
+        <p
+          key={column}
+          className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase"
+        >
+          {column}
+        </p>
+      ))}
+    </>
   )
 }
 
@@ -108,27 +112,36 @@ const CORE_LABELS = [
   "HTML lang",
 ]
 
-const HEADING_LABELS = ["H1 Count", "H2 Count", "H3 Count", "H4 Count", "H5 Count", "H6 Count"]
+const HEADING_LABELS = [
+  "H1 Count",
+  "H2 Count",
+  "H3 Count",
+  "H4 Count",
+  "H5 Count",
+  "H6 Count",
+]
 
 const H_TAGS = ["h1", "h2", "h3", "h4", "h5", "h6"] as const
 
 function OverviewTab({ data }: { data: AuditResult }) {
-  const coreFields = data.seo.fields.filter((f) => CORE_LABELS.includes(f.label))
+  const coreFields = data.seo.fields.filter((f) =>
+    CORE_LABELS.includes(f.label)
+  )
   const technicalFields = data.seo.fields.filter(
     (f) => !CORE_LABELS.includes(f.label) && !HEADING_LABELS.includes(f.label)
   )
   const counts = data.details.headingCounts
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <p className="font-pixel text-[11px] text-primary">// CORE</p>
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-3">
+        <Eyebrow>Core</Eyebrow>
         <AuditTable fields={coreFields} />
       </div>
 
-      <div className="space-y-2">
-        <p className="font-pixel text-[11px] text-primary">// HEADING STRUCTURE</p>
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+      <div className="flex flex-col gap-3">
+        <Eyebrow>Heading structure</Eyebrow>
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
           {H_TAGS.map((tag) => {
             const count = counts[tag] ?? 0
             const isBad = tag === "h1" && (count === 0 || count > 1)
@@ -137,23 +150,23 @@ function OverviewTab({ data }: { data: AuditResult }) {
                 key={tag}
                 label={tag.toUpperCase()}
                 value={count}
-                valueClass={isBad ? "text-destructive" : "text-primary"}
+                valueClass={isBad ? "text-destructive" : "text-foreground"}
               />
             )
           })}
         </div>
       </div>
 
-      <div className="space-y-2">
-        <p className="font-pixel text-[11px] text-primary">// SUMMARY</p>
-        <div className="grid grid-cols-2 gap-2">
-          <StatBox label="IMAGES" value={data.details.images.total} />
-          <StatBox label="LINKS" value={data.details.links.total} />
+      <div className="flex flex-col gap-3">
+        <Eyebrow>Summary</Eyebrow>
+        <div className="grid grid-cols-2 gap-3">
+          <StatBox label="Images" value={data.details.images.total} />
+          <StatBox label="Links" value={data.details.links.total} />
         </div>
       </div>
 
-      <div className="space-y-2">
-        <p className="font-pixel text-[11px] text-primary">// TECHNICAL</p>
+      <div className="flex flex-col gap-3">
+        <Eyebrow>Technical</Eyebrow>
         <AuditTable fields={technicalFields} />
       </div>
     </div>
@@ -164,34 +177,30 @@ function HeadingsTab({ data }: { data: AuditResult }) {
   const headings = data.details.headings
 
   return (
-    <div className="space-y-4">
-      <p className="font-pixel text-[11px] text-primary">
-        // HEADINGS — {headings.length} TOTAL
-      </p>
+    <div className="flex flex-col gap-4">
+      <Eyebrow>Headings — {headings.length} total</Eyebrow>
       {headings.length === 0 ? (
-        <p className="font-pixel text-[10px] text-muted-foreground">
-          NO HEADINGS FOUND
-        </p>
+        <EmptyNote>No headings found.</EmptyNote>
       ) : (
-        <div className="border-2 border-border bg-card">
-          <div className="grid grid-cols-[auto_1fr] gap-4 border-b-2 border-border px-4 py-2">
-            <p className="font-pixel text-[11px] text-muted-foreground">TAG</p>
-            <p className="font-pixel text-[11px] text-muted-foreground">TEXT</p>
-          </div>
-          {headings.map((h, i) => (
-            <div
-              key={`${h.tag}-${i}`}
-              className={[
-                "grid grid-cols-[auto_1fr] gap-4 border-b border-border/50 px-4 py-2 last:border-b-0",
-                i % 2 === 1 ? "bg-muted/20" : "",
-              ].join(" ")}
-            >
-              <p className="font-pixel text-[10px] text-primary">
-                {h.tag.toUpperCase()}
-              </p>
-              <p className="font-mono text-[11px] text-foreground">{h.text}</p>
+        <div className="overflow-x-auto border border-border bg-card">
+          <div className="min-w-[520px]">
+            <div className="grid grid-cols-[auto_1fr] gap-4 border-b border-border px-4 py-2.5">
+              <TableHead columns={["Tag", "Text"]} />
             </div>
-          ))}
+            <div className="divide-y divide-border">
+              {headings.map((h, i) => (
+                <div
+                  key={`${h.tag}-${i}`}
+                  className="grid grid-cols-[auto_1fr] gap-4 px-4 py-2.5"
+                >
+                  <p className="m-0 w-8 font-mono text-[13px] font-medium text-accent">
+                    {h.tag.toUpperCase()}
+                  </p>
+                  <p className="m-0 text-sm text-foreground">{h.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -199,9 +208,9 @@ function HeadingsTab({ data }: { data: AuditResult }) {
 }
 
 const LINK_FILTER_TABS: { id: LinkFilter; label: string }[] = [
-  { id: "all", label: "ALL" },
-  { id: "internal", label: "INTERNAL" },
-  { id: "external", label: "EXTERNAL" },
+  { id: "all", label: "All" },
+  { id: "internal", label: "Internal" },
+  { id: "external", label: "External" },
 ]
 
 function LinksTab({ data }: { data: AuditResult }) {
@@ -209,77 +218,70 @@ function LinksTab({ data }: { data: AuditResult }) {
   const { links } = data.details
 
   const allLinks = [
-    ...links.internalLinks.map((l) => ({ ...l, type: "INT" as const })),
-    ...links.externalLinks.map((l) => ({ ...l, type: "EXT" as const })),
+    ...links.internalLinks.map((l) => ({ ...l, type: "Internal" as const })),
+    ...links.externalLinks.map((l) => ({ ...l, type: "External" as const })),
   ]
   const filtered =
     filter === "internal"
-      ? allLinks.filter((l) => l.type === "INT")
+      ? allLinks.filter((l) => l.type === "Internal")
       : filter === "external"
-        ? allLinks.filter((l) => l.type === "EXT")
+        ? allLinks.filter((l) => l.type === "External")
         : allLinks
 
   const shown = filtered.slice(0, 100)
   const extra = filtered.length - shown.length
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <StatBox label="TOTAL" value={links.total} />
-        <StatBox label="UNIQUE" value={links.unique} />
-        <StatBox label="INTERNAL" value={links.internal} />
-        <StatBox label="EXTERNAL" value={links.external} />
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatBox label="Total" value={links.total} />
+        <StatBox label="Unique" value={links.unique} />
+        <StatBox label="Internal" value={links.internal} />
+        <StatBox label="External" value={links.external} />
       </div>
 
-      <SubTabBar
-        tabs={LINK_FILTER_TABS}
-        active={filter}
-        onSelect={(id) => setFilter(id as LinkFilter)}
-        small
-      />
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as LinkFilter)}>
+        <TabsList>
+          {LINK_FILTER_TABS.map(({ id, label }) => (
+            <TabsTrigger key={id} value={id}>
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {shown.length === 0 ? (
-        <p className="font-pixel text-[10px] text-muted-foreground">
-          NO LINKS FOUND
-        </p>
+        <EmptyNote>No links found.</EmptyNote>
       ) : (
-        <div className="border-2 border-border bg-card">
-          <div className="grid grid-cols-[2fr_1fr_auto] gap-3 border-b-2 border-border px-4 py-2">
-            <p className="font-pixel text-[11px] text-muted-foreground">URL</p>
-            <p className="font-pixel text-[11px] text-muted-foreground">TEXT</p>
-            <p className="font-pixel text-[11px] text-muted-foreground">TYPE</p>
-          </div>
-          {shown.map((link, i) => (
-            <div
-              key={`${link.href}-${i}`}
-              className={[
-                "grid grid-cols-[2fr_1fr_auto] items-center gap-3 border-b border-border/50 px-4 py-2 last:border-b-0",
-                i % 2 === 1 ? "bg-muted/20" : "",
-              ].join(" ")}
-            >
-              <p className="truncate font-mono text-[10px] text-foreground">
-                {link.href}
-              </p>
-              <p className="truncate font-mono text-[10px] text-muted-foreground">
-                {link.text || "—"}
-              </p>
-              <span
-                className={[
-                  "font-pixel text-[8px]",
-                  link.type === "INT"
-                    ? "text-primary"
-                    : "text-muted-foreground",
-                ].join(" ")}
-              >
-                {link.type}
-              </span>
+        <div className="overflow-x-auto border border-border bg-card">
+          <div className="min-w-[640px]">
+            <div className="grid grid-cols-[2fr_1fr_auto] gap-4 border-b border-border px-4 py-2.5">
+              <TableHead columns={["URL", "Text", "Type"]} />
             </div>
-          ))}
-          {extra > 0 && (
-            <p className="border-t border-border/50 px-4 py-2 font-pixel text-[9px] text-muted-foreground">
-              +{extra} MORE
-            </p>
-          )}
+            <div className="divide-y divide-border">
+              {shown.map((link, i) => (
+                <div
+                  key={`${link.href}-${i}`}
+                  className="grid grid-cols-[2fr_1fr_auto] items-center gap-4 px-4 py-2.5"
+                >
+                  <p className="m-0 truncate font-mono text-[13px] text-foreground">
+                    {link.href}
+                  </p>
+                  <p className="m-0 truncate text-sm text-muted-foreground">
+                    {link.text || "—"}
+                  </p>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {link.type}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {extra > 0 && (
+              <p className="m-0 border-t border-border px-4 py-2.5 text-sm text-muted-foreground">
+                +{extra} more
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -292,69 +294,61 @@ function ImagesTab({ data }: { data: AuditResult }) {
   const extra = images.list.length - shown.length
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-2">
-        <StatBox label="TOTAL" value={images.total} />
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-3 gap-3">
+        <StatBox label="Total" value={images.total} />
         <StatBox
-          label="NO ALT"
+          label="No alt"
           value={images.withoutAlt}
           valueClass={
-            images.withoutAlt > 0 ? "text-destructive" : "text-primary"
+            images.withoutAlt > 0 ? "text-destructive" : "text-foreground"
           }
         />
         <StatBox
-          label="NO TITLE"
+          label="No title"
           value={images.withoutTitle}
           valueClass={
-            images.withoutTitle > 0 ? "text-yellow-400" : "text-primary"
+            images.withoutTitle > 0 ? "text-warning" : "text-foreground"
           }
         />
       </div>
 
       {shown.length === 0 ? (
-        <p className="font-pixel text-[10px] text-muted-foreground">
-          NO IMAGES FOUND
-        </p>
+        <EmptyNote>No images found.</EmptyNote>
       ) : (
-        <div className="border-2 border-border bg-card">
-          <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-3 border-b-2 border-border px-4 py-2">
-            <p className="font-pixel text-[11px] text-muted-foreground">SRC</p>
-            <p className="font-pixel text-[11px] text-muted-foreground">ALT</p>
-            <p className="font-pixel text-[11px] text-muted-foreground">
-              TITLE
-            </p>
-            <p className="font-pixel text-[11px] text-muted-foreground">
-              STATUS
-            </p>
+        <div className="overflow-x-auto border border-border bg-card">
+          <div className="min-w-[680px]">
+            <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 border-b border-border px-4 py-2.5">
+              <TableHead columns={["Source", "Alt", "Title", "Status"]} />
+            </div>
+            <div className="divide-y divide-border">
+              {shown.map((img, i) => {
+                const status = !img.alt ? "fail" : !img.title ? "warn" : "pass"
+                return (
+                  <div
+                    key={`${img.src}-${i}`}
+                    className="grid grid-cols-[2fr_1fr_1fr_auto] items-center gap-4 px-4 py-2.5"
+                  >
+                    <p className="m-0 truncate font-mono text-[13px] text-foreground">
+                      {img.src}
+                    </p>
+                    <p className="m-0 truncate text-sm text-muted-foreground">
+                      {img.alt ?? <span className="text-destructive">—</span>}
+                    </p>
+                    <p className="m-0 truncate text-sm text-muted-foreground">
+                      {img.title ?? "—"}
+                    </p>
+                    <StatusBadge status={status} />
+                  </div>
+                )
+              })}
+            </div>
+            {extra > 0 && (
+              <p className="m-0 border-t border-border px-4 py-2.5 text-sm text-muted-foreground">
+                +{extra} more
+              </p>
+            )}
           </div>
-          {shown.map((img, i) => {
-            const status = !img.alt ? "fail" : !img.title ? "warn" : "pass"
-            return (
-              <div
-                key={`${img.src}-${i}`}
-                className={[
-                  "grid grid-cols-[2fr_1fr_1fr_auto] items-center gap-3 border-b border-border/50 px-4 py-2 last:border-b-0",
-                  i % 2 === 1 ? "bg-muted/20" : "",
-                ].join(" ")}
-              >
-                <p className="truncate font-mono text-[10px] text-foreground">
-                  {img.src}
-                </p>
-                <p className="truncate font-mono text-[10px] text-muted-foreground">
-                  {img.alt ?? <span className="text-destructive">—</span>}
-                </p>
-                <p className="truncate font-mono text-[10px] text-muted-foreground">
-                  {img.title ?? "—"}
-                </p>
-                <StatusBadge status={status} />
-              </div>
-            )
-          })}
-          {extra > 0 && (
-            <p className="border-t border-border/50 px-4 py-2 font-pixel text-[9px] text-muted-foreground">
-              +{extra} MORE
-            </p>
-          )}
         </div>
       )}
     </div>
@@ -365,35 +359,27 @@ function SchemaTab({ data }: { data: AuditResult }) {
   const { jsonLdSchemas, hreflangLinks } = data.details
   const hasData = jsonLdSchemas.length > 0 || hreflangLinks.length > 0
 
-  if (!hasData) {
-    return (
-      <p className="font-pixel text-[10px] text-muted-foreground">
-        NO STRUCTURED DATA FOUND
-      </p>
-    )
-  }
+  if (!hasData) return <EmptyNote>No structured data found.</EmptyNote>
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-8">
       {jsonLdSchemas.length > 0 && (
-        <div className="space-y-2">
-          <p className="font-pixel text-[11px] text-primary">
-            // JSON-LD SCHEMAS
-          </p>
-          <div className="border-2 border-border bg-card shadow-[4px_4px_0_var(--color-muted)]">
+        <div className="flex flex-col gap-3">
+          <Eyebrow>JSON-LD schemas</Eyebrow>
+          <div className="border border-border bg-card">
             <Accordion type="multiple" className="divide-y divide-border">
               {jsonLdSchemas.map((schema, i) => (
                 <AccordionItem key={i} value={String(i)} className="border-b-0">
-                  <AccordionTrigger className="px-4 py-3 hover:bg-muted/30 hover:no-underline [&>svg]:!ml-4 [&>svg]:shrink-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-muted/40 hover:no-underline [&>svg]:!ml-4 [&>svg]:shrink-0">
                     <div className="flex items-center gap-3">
-                      <span className="font-pixel text-[10px] text-foreground">
+                      <span className="text-sm text-foreground">
                         {schema.type ?? "Unknown"}
                       </span>
                       <StatusBadge status={schema.isValid ? "pass" : "fail"} />
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-3">
-                    <pre className="mt-2 overflow-x-auto border border-border/50 bg-background p-3 font-mono text-[10px] break-all whitespace-pre-wrap text-foreground">
+                  <AccordionContent className="px-4 pb-4">
+                    <pre className="m-0 overflow-x-auto border border-border bg-code-bg p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap text-[#e6e9ef]">
                       {(() => {
                         try {
                           return JSON.stringify(JSON.parse(schema.raw), null, 2)
@@ -411,33 +397,29 @@ function SchemaTab({ data }: { data: AuditResult }) {
       )}
 
       {hreflangLinks.length > 0 && (
-        <div className="space-y-2">
-          <p className="font-pixel text-[11px] text-primary">// HREFLANG</p>
-          <div className="border-2 border-border bg-card">
-            <div className="grid grid-cols-[auto_1fr] gap-4 border-b-2 border-border px-4 py-2">
-              <p className="font-pixel text-[11px] text-muted-foreground">
-                LANG
-              </p>
-              <p className="font-pixel text-[11px] text-muted-foreground">
-                HREF
-              </p>
-            </div>
-            {hreflangLinks.map((link, i) => (
-              <div
-                key={`${link.lang}-${i}`}
-                className={[
-                  "grid grid-cols-[auto_1fr] gap-4 border-b border-border/50 px-4 py-2 last:border-b-0",
-                  i % 2 === 1 ? "bg-muted/20" : "",
-                ].join(" ")}
-              >
-                <p className="font-pixel text-[10px] text-primary">
-                  {link.lang}
-                </p>
-                <p className="font-mono text-[11px] break-all text-foreground">
-                  {link.href}
-                </p>
+        <div className="flex flex-col gap-3">
+          <Eyebrow>Hreflang</Eyebrow>
+          <div className="overflow-x-auto border border-border bg-card">
+            <div className="min-w-[480px]">
+              <div className="grid grid-cols-[auto_1fr] gap-4 border-b border-border px-4 py-2.5">
+                <TableHead columns={["Lang", "Href"]} />
               </div>
-            ))}
+              <div className="divide-y divide-border">
+                {hreflangLinks.map((link, i) => (
+                  <div
+                    key={`${link.lang}-${i}`}
+                    className="grid grid-cols-[auto_1fr] gap-4 px-4 py-2.5"
+                  >
+                    <p className="m-0 w-12 font-mono text-[13px] font-medium text-accent">
+                      {link.lang}
+                    </p>
+                    <p className="m-0 font-mono text-[13px] break-all text-foreground">
+                      {link.href}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -446,11 +428,19 @@ function SchemaTab({ data }: { data: AuditResult }) {
 }
 
 const SOCIAL_TABS: { id: SocialTab; label: string }[] = [
-  { id: "og", label: "OPEN GRAPH" },
-  { id: "twitter", label: "X / TWITTER" },
-  { id: "linkedin", label: "LINKEDIN" },
-  { id: "facebook", label: "FACEBOOK" },
+  { id: "og", label: "Open Graph" },
+  { id: "twitter", label: "X / Twitter" },
+  { id: "linkedin", label: "LinkedIn" },
+  { id: "facebook", label: "Facebook" },
 ]
+
+function PreviewLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="m-0 mb-2 font-mono text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+      {children}
+    </p>
+  )
+}
 
 function SocialTab({ data }: { data: AuditResult }) {
   const [tab, setTab] = useState<SocialTab>("og")
@@ -479,102 +469,91 @@ function SocialTab({ data }: { data: AuditResult }) {
   const isLargeCard = !twitterCard || twitterCard === "summary_large_image"
 
   return (
-    <div className="space-y-4">
-      <SubTabBar
-        tabs={SOCIAL_TABS}
-        active={tab}
-        onSelect={(id) => setTab(id as SocialTab)}
-        small
-      />
+    <Tabs value={tab} onValueChange={(v) => setTab(v as SocialTab)}>
+      <TabsList>
+        {SOCIAL_TABS.map(({ id, label }) => (
+          <TabsTrigger key={id} value={id}>
+            {label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
-      {tab === "og" && (
-        <div className="space-y-4">
-          <AuditTable fields={ogFields} />
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div>
-              <p className="mb-1 font-pixel text-[9px] tracking-wider text-muted-foreground uppercase">
-                Facebook
-              </p>
-              <FacebookCard
-                image={ogImage}
-                title={ogTitle}
-                description={ogDescription}
-                siteName={ogSiteName}
-                url={ogUrl}
-              />
-            </div>
-            <div>
-              <p className="mb-1 font-pixel text-[9px] tracking-wider text-muted-foreground uppercase">
-                LinkedIn
-              </p>
-              <LinkedInCard
-                image={ogImage}
-                title={ogTitle}
-                siteName={ogSiteName}
-                url={ogUrl}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {tab === "twitter" && (
-        <div className="space-y-4">
-          <AuditTable fields={twitterFields} />
+      <TabsContent value="og" className="flex flex-col gap-5">
+        <AuditTable fields={ogFields} />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <div>
-            <p className="mb-1 font-pixel text-[9px] tracking-wider text-muted-foreground uppercase">
-              {`Twitter / X — ${isLargeCard ? "large card" : "summary"}`}
-            </p>
-            {isLargeCard ? (
-              <TwitterLargeCard
-                image={twImage}
-                title={twTitle}
-                description={twDescription}
-                site={twitterSite}
-              />
-            ) : (
-              <TwitterSummaryCard
-                image={twImage}
-                title={twTitle}
-                description={twDescription}
-                site={twitterSite}
-              />
-            )}
+            <PreviewLabel>Facebook</PreviewLabel>
+            <FacebookCard
+              image={ogImage}
+              title={ogTitle}
+              description={ogDescription}
+              siteName={ogSiteName}
+              url={ogUrl}
+            />
+          </div>
+          <div>
+            <PreviewLabel>LinkedIn</PreviewLabel>
+            <LinkedInCard
+              image={ogImage}
+              title={ogTitle}
+              siteName={ogSiteName}
+              url={ogUrl}
+            />
           </div>
         </div>
-      )}
+      </TabsContent>
 
-      {tab === "linkedin" && (
-        <div className="space-y-4">
-          <p className="font-pixel text-[9px] text-muted-foreground">
-            LinkedIn uses OpenGraph tags. Edit og: fields to update this
-            preview.
-          </p>
-          <LinkedInCard
-            image={ogImage}
-            title={ogTitle}
-            siteName={ogSiteName}
-            url={ogUrl}
-          />
+      <TabsContent value="twitter" className="flex flex-col gap-5">
+        <AuditTable fields={twitterFields} />
+        <div>
+          <PreviewLabel>
+            {`X / Twitter — ${isLargeCard ? "large card" : "summary"}`}
+          </PreviewLabel>
+          {isLargeCard ? (
+            <TwitterLargeCard
+              image={twImage}
+              title={twTitle}
+              description={twDescription}
+              site={twitterSite}
+            />
+          ) : (
+            <TwitterSummaryCard
+              image={twImage}
+              title={twTitle}
+              description={twDescription}
+              site={twitterSite}
+            />
+          )}
         </div>
-      )}
+      </TabsContent>
 
-      {tab === "facebook" && (
-        <div className="space-y-4">
-          <p className="font-pixel text-[9px] text-muted-foreground">
-            Facebook uses OpenGraph tags. Edit og: fields to update this
-            preview.
-          </p>
-          <FacebookCard
-            image={ogImage}
-            title={ogTitle}
-            description={ogDescription}
-            siteName={ogSiteName}
-            url={ogUrl}
-          />
-        </div>
-      )}
-    </div>
+      <TabsContent value="linkedin" className="flex flex-col gap-4">
+        <EmptyNote>
+          LinkedIn uses Open Graph tags. Edit the og: fields to update this
+          preview.
+        </EmptyNote>
+        <LinkedInCard
+          image={ogImage}
+          title={ogTitle}
+          siteName={ogSiteName}
+          url={ogUrl}
+        />
+      </TabsContent>
+
+      <TabsContent value="facebook" className="flex flex-col gap-4">
+        <EmptyNote>
+          Facebook uses Open Graph tags. Edit the og: fields to update this
+          preview.
+        </EmptyNote>
+        <FacebookCard
+          image={ogImage}
+          title={ogTitle}
+          description={ogDescription}
+          siteName={ogSiteName}
+          url={ogUrl}
+        />
+      </TabsContent>
+    </Tabs>
   )
 }
 
@@ -589,49 +568,55 @@ export default function Seo() {
   const { state, runAudit } = useOutletContext<AuditContext>()
   const [activeTab, setActiveTab] = useState<SeoTab>("overview")
 
-  if (state.status === "loading") {
-    return (
-      <p className="animate-pulse font-pixel text-xs text-primary">
-        SCANNING...
-      </p>
-    )
-  }
+  if (state.status === "loading") return <ScanningState />
 
   if (state.status === "error") {
-    return (
-      <div className="space-y-4">
-        <p className="font-pixel text-xs text-destructive">
-          ERROR: {state.message}
-        </p>
-        <Button onClick={() => runAudit()} variant="outline-shadow">
-          RETRY
-        </Button>
-      </div>
-    )
+    return <ErrorState message={state.message} onRetry={() => runAudit()} />
   }
 
   const { seo } = state.data
   const passed = seo.fields.filter((f) => f.status === "pass").length
 
   return (
-    <div className="space-y-4">
-      <p className="font-pixel text-[11px] text-primary">
-        // SEO — {passed}/{seo.fields.length} PASSED
-      </p>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <Eyebrow>SEO</Eyebrow>
+        <h1 className="m-0 text-2xl font-semibold tracking-[-0.02em] text-foreground">
+          {passed}/{seo.fields.length} checks passed
+        </h1>
+      </div>
 
-      <SubTabBar
-        tabs={SEO_TABS}
-        active={activeTab}
-        onSelect={(id) => setActiveTab(id as SeoTab)}
-      />
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SeoTab)}>
+        <TabsList>
+          {SEO_TABS.map(({ id, label }) => (
+            <TabsTrigger key={id} value={id}>
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {activeTab === "overview" && <OverviewTab data={state.data} />}
-      {activeTab === "issues" && <IssueList seo={state.data.seo} og={state.data.og} />}
-      {activeTab === "headings" && <HeadingsTab data={state.data} />}
-      {activeTab === "links" && <LinksTab data={state.data} />}
-      {activeTab === "images" && <ImagesTab data={state.data} />}
-      {activeTab === "schema" && <SchemaTab data={state.data} />}
-      {activeTab === "social" && <SocialTab data={state.data} />}
+        <TabsContent value="overview">
+          <OverviewTab data={state.data} />
+        </TabsContent>
+        <TabsContent value="issues">
+          <IssueList seo={state.data.seo} og={state.data.og} />
+        </TabsContent>
+        <TabsContent value="headings">
+          <HeadingsTab data={state.data} />
+        </TabsContent>
+        <TabsContent value="links">
+          <LinksTab data={state.data} />
+        </TabsContent>
+        <TabsContent value="images">
+          <ImagesTab data={state.data} />
+        </TabsContent>
+        <TabsContent value="schema">
+          <SchemaTab data={state.data} />
+        </TabsContent>
+        <TabsContent value="social">
+          <SocialTab data={state.data} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

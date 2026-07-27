@@ -11,10 +11,9 @@
     "deploy": "react-router build && wrangler deploy -c worker/wrangler.toml"
   },
   "dependencies": {
-    "@fontsource/ibm-plex-mono": "^5.2.7",
-    "@fontsource/press-start-2p": "^5.2.7",
     "@is-pinoy-dev/schemas": "workspace:*",
     "@is-pinoy-dev/ui": "workspace:*",
+    "lucide-react": "catalog:",
     "@react-router/node": "7.18.1",
     "@react-router/serve": "7.18.1",
     "isbot": "^5.1.36",
