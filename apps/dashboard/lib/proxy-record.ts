@@ -178,24 +178,38 @@ export function subdomainFromHeadLabel(
   return subdomain.length > 0 ? subdomain : null
 }
 
+/** One pending proxy edit: a record type and the value it should end up at. */
+export interface ProxyChange {
+  type: ProxyableType
+  proxied: boolean
+}
+
 /**
- * Apply the proxy flip to a parsed record file and validate the result against
- * the same schema and rules the repo's CI check enforces, so the dashboard never
- * opens a pull request that would fail validation.
+ * Apply every pending proxy flip to a parsed record file and validate the result
+ * against the same schema and rules the repo's CI check enforces, so the
+ * dashboard never opens a pull request that would fail validation.
+ *
+ * Takes the changes as a batch because one subdomain can have both an A and a
+ * CNAME record edited before saving, and those belong in a single commit.
  */
 export function buildToggledFile(
   file: Record<string, unknown>,
-  type: ProxyableType,
-  proxied: boolean
+  changes: ProxyChange[]
 ): { content: string } | { error: string } {
   const records = file.records
   if (!records || typeof records !== "object") {
     return { error: "The record file has no records block." }
   }
+  if (changes.length === 0) {
+    return { error: "No changes to apply." }
+  }
 
   const updated = {
     ...file,
-    records: setProxied(records as Record<string, unknown>, type, proxied),
+    records: changes.reduce(
+      (acc, change) => setProxied(acc, change.type, change.proxied),
+      records as Record<string, unknown>
+    ),
   }
 
   const parsed = domainSchema.safeParse(updated)

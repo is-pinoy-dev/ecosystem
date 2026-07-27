@@ -6,18 +6,15 @@ import { z } from "zod"
 import { auth } from "@/auth"
 import { getSubdomainsForOwner } from "@/lib/domains"
 import { getGitHubAccessToken } from "@/lib/github-token"
-import {
-  getPendingProxyPRs,
-  openProxyTogglePR,
-  type ProxyToggleResult,
-} from "@/lib/proxy-pr"
+import { getPendingProxyPRs, openProxyTogglePR } from "@/lib/proxy-pr"
 import {
   PROXYABLE_TYPES,
   proxyLockReason,
   readProxyState,
+  type ProxyChange,
 } from "@/lib/proxy-record"
 
-const toggleInput = z.object({
+const changeInput = z.object({
   subdomain: z
     .string()
     .trim()
@@ -29,81 +26,134 @@ const toggleInput = z.object({
   proxied: z.boolean(),
 })
 
-export type ProxyToggleInput = z.infer<typeof toggleInput>
+const saveInput = z.array(changeInput).min(1).max(50)
+
+export type ProxyChangeInput = z.infer<typeof changeInput>
+
+/** What happened to one subdomain's worth of changes. */
+export interface SubdomainSaveResult {
+  subdomain: string
+  ok: boolean
+  /** Present when ok — the pull request now carrying the change. */
+  prUrl?: string
+  /** Present when not ok — why this subdomain was skipped. */
+  error?: string
+}
+
+export interface SaveProxyChangesResult {
+  results: SubdomainSaveResult[]
+}
 
 /**
- * Open a pull request that flips `proxied` on one record type of one of the
- * caller's subdomains. Ownership, the pinned-portfolio lock, and the no-op case
- * are all re-checked server-side — the client controls none of them.
+ * Open pull requests for a batch of pending proxy edits — one per subdomain,
+ * since the branch name and the "one change in flight" rule are both keyed by
+ * subdomain. Each subdomain succeeds or fails independently so one rejected
+ * record does not lose the rest of the user's work.
+ *
+ * Ownership, the pinned-portfolio lock, and the no-op case are all re-checked
+ * here: the client controls none of them.
  */
-export async function toggleProxy(
-  input: ProxyToggleInput
-): Promise<ProxyToggleResult> {
+export async function saveProxyChanges(
+  input: ProxyChangeInput[]
+): Promise<SaveProxyChangesResult> {
   const session = await auth()
   if (!session?.user?.login) {
-    return { ok: false, error: "You must be signed in to change a record." }
+    return {
+      results: [
+        {
+          subdomain: "",
+          ok: false,
+          error: "You must be signed in to change a record.",
+        },
+      ],
+    }
   }
   const login = session.user.login
 
-  const parsed = toggleInput.safeParse(input)
+  const parsed = saveInput.safeParse(input)
   if (!parsed.success) {
-    return { ok: false, error: "Invalid request." }
+    return {
+      results: [{ subdomain: "", ok: false, error: "Invalid request." }],
+    }
   }
-  const { subdomain, type, proxied } = parsed.data
 
-  // Authorization: the registry is the authority on who owns what, so re-read
-  // it rather than trusting anything the client sent.
+  // Group by subdomain — one pull request per record file.
+  const bySubdomain = new Map<string, ProxyChange[]>()
+  for (const change of parsed.data) {
+    const existing = bySubdomain.get(change.subdomain) ?? []
+    // Last write wins if the same type somehow appears twice.
+    const deduped = existing.filter((c) => c.type !== change.type)
+    deduped.push({ type: change.type, proxied: change.proxied })
+    bySubdomain.set(change.subdomain, deduped)
+  }
+
   const { owned } = await getSubdomainsForOwner(login)
-  const domain = owned.find((d) => d.subdomain === subdomain)
-  if (!domain) {
-    return { ok: false, error: `You do not own ${subdomain}.is-pinoy.dev.` }
-  }
-
-  const locked = proxyLockReason(domain.records, type)
-  if (locked) return { ok: false, error: locked }
-
-  const state = readProxyState(domain.records, type)
-  if (!state) {
-    return {
-      ok: false,
-      error: `${subdomain}.is-pinoy.dev has no ${type} record to proxy.`,
-    }
-  }
-  // A mixed-state record is never a no-op — flipping it aligns every entry.
-  if (!state.mixed && state.proxied === proxied) {
-    return {
-      ok: false,
-      error: `The ${type} record is already ${proxied ? "proxied" : "unproxied"}.`,
-    }
-  }
-
   const token = await getGitHubAccessToken()
   if (!token) {
     return {
-      ok: false,
-      error:
-        "Your GitHub authorization is missing the required access. Sign out and sign in again to grant it.",
+      results: [...bySubdomain.keys()].map((subdomain) => ({
+        subdomain,
+        ok: false,
+        error:
+          "Your GitHub authorization is missing the required access. Sign out and sign in again to grant it.",
+      })),
     }
   }
 
-  // One change in flight per subdomain: a second PR against the same branch
-  // would either collide or quietly supersede the first. Surface the open one.
   const pending = await getPendingProxyPRs(login, token)
-  const open = pending.get(subdomain)
-  if (open) {
-    return {
-      ok: false,
-      error: `A proxy change for ${subdomain}.is-pinoy.dev is already open as pull request #${open.number}. Merge or close it first.`,
+  const results: SubdomainSaveResult[] = []
+
+  for (const [subdomain, changes] of bySubdomain) {
+    const domain = owned.find((d) => d.subdomain === subdomain)
+    if (!domain) {
+      results.push({
+        subdomain,
+        ok: false,
+        error: `You do not own ${subdomain}.is-pinoy.dev.`,
+      })
+      continue
     }
+
+    const open = pending.get(subdomain)
+    if (open) {
+      results.push({
+        subdomain,
+        ok: false,
+        error: `A proxy change is already open as pull request #${open.number}. Merge or close it first.`,
+      })
+      continue
+    }
+
+    // Drop anything locked or already at the requested value, then only open a
+    // pull request if something real is left.
+    const applicable = changes.filter((change) => {
+      if (proxyLockReason(domain.records, change.type)) return false
+      const state = readProxyState(domain.records, change.type)
+      if (!state) return false
+      return state.mixed || state.proxied !== change.proxied
+    })
+
+    if (applicable.length === 0) {
+      results.push({
+        subdomain,
+        ok: false,
+        error: "Nothing left to change on this record.",
+      })
+      continue
+    }
+
+    const result = await openProxyTogglePR(token, {
+      login,
+      subdomain,
+      changes: applicable,
+    })
+    results.push(
+      result.ok
+        ? { subdomain, ok: true, prUrl: result.prUrl }
+        : { subdomain, ok: false, error: result.error }
+    )
   }
 
-  const result = await openProxyTogglePR(token, {
-    login,
-    subdomain,
-    type,
-    proxied,
-  })
-
-  if (result.ok) revalidatePath("/domains")
-  return result
+  if (results.some((r) => r.ok)) revalidatePath("/domains")
+  return { results }
 }

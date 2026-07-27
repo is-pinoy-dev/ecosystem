@@ -4,7 +4,7 @@ import {
   buildToggledFile,
   proxyBranch,
   subdomainFromHeadLabel,
-  type ProxyableType,
+  type ProxyChange,
 } from "@/lib/proxy-record"
 
 // Opens a "flip the Cloudflare proxy" pull request against the public domains
@@ -27,8 +27,8 @@ export interface ProxyToggleParams {
   /** Signed-in user's GitHub login (fork owner + record owner). */
   login: string
   subdomain: string
-  type: ProxyableType
-  proxied: boolean
+  /** Every record type edited on this subdomain, applied as one commit. */
+  changes: ProxyChange[]
 }
 
 export type ProxyToggleResult =
@@ -259,7 +259,7 @@ export async function openProxyTogglePR(
   token: string,
   params: ProxyToggleParams
 ): Promise<ProxyToggleResult> {
-  const { login, subdomain, type, proxied } = params
+  const { login, subdomain, changes } = params
 
   const fork = await ensureFork(token, login)
   if (!fork.ok) return fork
@@ -295,10 +295,15 @@ export async function openProxyTogglePR(
   const file = await readRecordFile(token, login, subdomain, branch)
   if ("error" in file) return { ok: false, error: file.error }
 
-  const built = buildToggledFile(file.content, type, proxied)
+  const built = buildToggledFile(file.content, changes)
   if ("error" in built) return { ok: false, error: built.error }
 
-  const action = proxied ? "Enable" : "Disable"
+  // One record type edited reads better as "enable"/"disable"; a mix of both
+  // only honestly summarises as "update".
+  const allOn = changes.every((c) => c.proxied)
+  const allOff = changes.every((c) => !c.proxied)
+  const action = allOn ? "Enable" : allOff ? "Disable" : "Update"
+  const types = changes.map((c) => c.type).join(", ")
   const message = `chore: ${action.toLowerCase()} Cloudflare proxy for ${subdomain}`
 
   const putFile = await fetch(
@@ -322,9 +327,11 @@ export async function openProxyTogglePR(
   }
 
   const prBody = [
-    `${action}s the Cloudflare proxy on the \`${type}\` record for \`${subdomain}.is-pinoy.dev\`.`,
+    `${action}s the Cloudflare proxy on the \`${types}\` record${
+      changes.length > 1 ? "s" : ""
+    } for \`${subdomain}.is-pinoy.dev\`.`,
     "",
-    `- \`records.${type}.proxied\` → \`${proxied}\``,
+    ...changes.map((c) => `- \`records.${c.type}.proxied\` → \`${c.proxied}\``),
     "",
     "Opened from the is-pinoy.dev dashboard. Git stays the source of truth —",
     "merging this applies the change to Cloudflare on the next sync run.",
