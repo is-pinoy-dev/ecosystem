@@ -12,6 +12,11 @@ import { getSubdomainsForOwner } from "@/lib/domains"
 
 export const metadata: Metadata = {
   title: "Overview",
+  description:
+    "A summary of the .is-pinoy.dev subdomains registered to your GitHub account.",
+  alternates: {
+    canonical: "/",
+  },
 }
 
 function Stat({ label, value }: { label: string; value: number }) {

@@ -11,6 +11,11 @@ import { signOutToLogin } from "@/lib/actions"
 
 export const metadata: Metadata = {
   title: "Account",
+  description:
+    "The GitHub account your .is-pinoy.dev subdomain ownership is verified against.",
+  alternates: {
+    canonical: "/account",
+  },
 }
 
 export default async function AccountPage() {

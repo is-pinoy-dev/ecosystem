@@ -15,6 +15,11 @@ import { getPendingProxyPRs } from "@/lib/proxy-pr"
 
 export const metadata: Metadata = {
   title: "Domains",
+  description:
+    "View and manage the DNS records and pending changes for every .is-pinoy.dev subdomain you own.",
+  alternates: {
+    canonical: "/domains",
+  },
 }
 
 export default async function DomainsPage() {
