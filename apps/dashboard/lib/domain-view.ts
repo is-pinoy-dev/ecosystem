@@ -63,6 +63,12 @@ export interface BuiltinView {
   name: string
   description: string
   docsUrl: string
+  /** Endpoint the owner can reference, when the feature exposes one. */
+  url?: string
+  /** A copyable line showing how to use it. */
+  snippet?: string
+  /** Set when we render the page and apply this for the owner already. */
+  automaticNote?: string
 }
 
 /**
@@ -219,11 +225,33 @@ function toPlatformView(domain: RegistrySubdomain): PlatformView | null {
       enabled: isFeatureEnabled(domain.features, feature),
       optOut: feature.defaultEnabled,
     })),
-    builtins: BUILTIN_FEATURES.map((feature) => ({
-      id: feature.id,
-      name: feature.name,
-      description: feature.description,
-      docsUrl: feature.docsUrl,
-    })),
+    builtins: BUILTIN_FEATURES.map((feature) => {
+      if (feature.id !== "og") {
+        return {
+          id: feature.id,
+          name: feature.name,
+          description: feature.description,
+          docsUrl: feature.docsUrl,
+        }
+      }
+      const fqdn = `${domain.subdomain}.is-pinoy.dev`
+      const url = `https://${fqdn}/_tools/og/image`
+      // A hosted portfolio is rendered by us, so its meta tag already points
+      // here — there is nothing for the owner to copy.
+      const hosted = providerForRecords(domain.records)?.id === "portfolio"
+      return {
+        id: feature.id,
+        name: feature.name,
+        description: feature.description,
+        docsUrl: feature.docsUrl,
+        url,
+        snippet: hosted
+          ? undefined
+          : `<meta property="og:image" content="${url}" />`,
+        automaticNote: hosted
+          ? "Already used as this portfolio's share image — nothing to add."
+          : undefined,
+      }
+    }),
   }
 }

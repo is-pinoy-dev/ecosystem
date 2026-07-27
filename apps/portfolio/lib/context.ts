@@ -10,6 +10,12 @@ export interface RenderContext {
   template: TemplateName
   theme?: PortfolioTheme
   data: PortfolioData
+  /**
+   * The subdomain this was served from, when there is one. Null for a preview
+   * or the dev/apex fallback — those render on a host whose `/_tools/og/image`
+   * would resolve to a different record than the one being displayed.
+   */
+  subdomain: string | null
 }
 
 export interface PreviewParams {
@@ -45,8 +51,8 @@ const THEMES: PortfolioTheme[] = [
 const loadPortfolio = cache((login: string, sectionsKey: string) =>
   getPortfolioData(
     login,
-    sectionsKey ? (JSON.parse(sectionsKey) as string[]) : undefined,
-  ),
+    sectionsKey ? (JSON.parse(sectionsKey) as string[]) : undefined
+  )
 )
 const loadSubdomain = cache((subdomain: string) => resolveSubdomain(subdomain))
 
@@ -59,7 +65,7 @@ const sectionsKeyOf = (sections?: string[]) =>
  * and theme are constrained to the known enums; anything else is ignored.
  */
 export function parsePreview(
-  params: Record<string, string | string[] | undefined>,
+  params: Record<string, string | string[] | undefined>
 ): PreviewParams | null {
   if (!params.preview) return null
   const login = typeof params.login === "string" ? params.login.trim() : ""
@@ -94,7 +100,7 @@ export function parsePreview(
 // Local dev / apex (no subdomain header): fall back to PORTFOLIO_SPIKE_SUBDOMAIN
 // or PORTFOLIO_SPIKE_LOGIN so the pipeline is runnable without wildcard DNS.
 export async function getRenderContext(
-  preview?: PreviewParams | null,
+  preview?: PreviewParams | null
 ): Promise<RenderContext | null> {
   if (preview) {
     const data = await loadPortfolio(preview.login, "")
@@ -104,6 +110,7 @@ export async function getRenderContext(
       template: preview.template,
       theme: preview.theme,
       data,
+      subdomain: null,
     }
   }
 
@@ -118,7 +125,7 @@ export async function getRenderContext(
     if (!resolved) return null
     const data = await loadPortfolio(
       resolved.github,
-      sectionsKeyOf(resolved.portfolio.sections),
+      sectionsKeyOf(resolved.portfolio.sections)
     )
     if (!data) return null
     return {
@@ -126,6 +133,7 @@ export async function getRenderContext(
       template: resolved.portfolio.template,
       theme: resolved.portfolio.theme,
       data,
+      subdomain,
     }
   }
 
@@ -134,5 +142,5 @@ export async function getRenderContext(
   if (!login) return null
   const data = await loadPortfolio(login, "")
   if (!data) return null
-  return { login, template: "terminal", data }
+  return { login, template: "terminal", data, subdomain: null }
 }

@@ -4,7 +4,9 @@ import { useMemo, useState, useTransition } from "react"
 import {
   AlertTriangle,
   ArrowUpRight,
+  Check,
   CheckCircle2,
+  Copy,
   GitPullRequest,
   Loader2,
   XCircle,
@@ -688,31 +690,95 @@ function PlatformPanel({
           <li
             key={builtin.id}
             className={cn(
-              "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/70 py-2.5 pr-4 pl-8 last:border-b-0",
+              "flex flex-col gap-2 border-b border-border/70 py-2.5 pr-4 pl-8 last:border-b-0",
               !proxyOn && "opacity-60"
             )}
           >
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[13px] font-medium text-foreground">
-                <a
-                  href={builtin.docsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-foreground no-underline hover:text-accent hover:underline"
-                >
-                  {builtin.name}
-                </a>
+            <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-[13px] font-medium text-foreground">
+                  <a
+                    href={builtin.docsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-foreground no-underline hover:text-accent hover:underline"
+                  >
+                    {builtin.name}
+                  </a>
+                </span>
+                <span className="text-[11px]/relaxed text-muted-foreground">
+                  {!proxyOn
+                    ? "Available once platform features are switched on."
+                    : (builtin.automaticNote ?? builtin.description)}
+                </span>
               </span>
-              <span className="text-[11px]/relaxed text-muted-foreground">
-                {builtin.description}
+              <span className="font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
+                {proxyOn
+                  ? builtin.automaticNote
+                    ? "Applied"
+                    : "Included"
+                  : "Off"}
               </span>
             </span>
-            <span className="font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
-              {proxyOn ? "Included" : "Off"}
-            </span>
+
+            {proxyOn && builtin.snippet ? (
+              <CopyableSnippet snippet={builtin.snippet} url={builtin.url} />
+            ) : null}
           </li>
         ))}
       </ul>
     </div>
+  )
+}
+
+/**
+ * The meta tag an owner needs in order to use a built-in endpoint. Shown rather
+ * than applied, because on a subdomain pointing at someone else's host we never
+ * see the HTML — only the owner can add this.
+ */
+function CopyableSnippet({ snippet, url }: { snippet: string; url?: string }) {
+  const [copied, setCopied] = useState(false)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(snippet)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    } catch {
+      // Clipboard blocked (insecure context or denied permission) — the snippet
+      // is on screen and selectable, so there is nothing to recover from.
+    }
+  }
+
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      <code className="min-w-0 flex-1 overflow-x-auto border border-border bg-background px-2 py-1 font-mono text-[11px] whitespace-pre text-muted-foreground">
+        {snippet}
+      </code>
+      <Button variant="outline" size="xs" onClick={copy}>
+        {copied ? (
+          <>
+            <Check aria-hidden="true" />
+            Copied
+          </>
+        ) : (
+          <>
+            <Copy aria-hidden="true" />
+            Copy
+          </>
+        )}
+      </Button>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[11px] text-accent no-underline hover:underline"
+        >
+          Preview
+          <ArrowUpRight className="size-3" aria-hidden="true" />
+        </a>
+      ) : null}
+    </span>
   )
 }
