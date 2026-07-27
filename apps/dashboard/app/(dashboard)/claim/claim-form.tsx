@@ -1,17 +1,34 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Check, CheckCircle2, ExternalLink, Loader2, XCircle } from "lucide-react"
+import {
+  Check,
+  CheckCircle2,
+  ExternalLink,
+  LayoutTemplate,
+  Loader2,
+  Palette,
+  XCircle,
+} from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Input } from "@is-pinoy-dev/ui/components/input"
 import {
   InputGroup,
   InputGroupAddon,
 } from "@is-pinoy-dev/ui/components/input-group"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@is-pinoy-dev/ui/components/tabs"
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 import { claimPortfolio, type ClaimInput } from "./actions"
 
 type TemplateValue = ClaimInput["portfolio"]["template"]
+
+/** The two style families, one per tab. */
+type StyleTab = "layout" | "designer"
 
 interface StyleOption {
   value: TemplateValue
@@ -37,8 +54,6 @@ const DESIGNER: StyleOption[] = [
   { value: "grid", label: "Grid", mode: "Light" },
 ]
 
-const DESIGNER_SET = new Set<TemplateValue>(DESIGNER.map((d) => d.value))
-
 const THEMES: {
   value: NonNullable<ClaimInput["portfolio"]["theme"]>
   label: string
@@ -59,8 +74,11 @@ type Result = { ok: true; prUrl: string } | { ok: false; error: string } | null
 
 export function ClaimForm({ login }: { login: string }) {
   const [subdomain, setSubdomain] = useState("")
-  const [template, setTemplate] =
-    useState<ClaimInput["portfolio"]["template"]>("terminal")
+  // The active tab decides which family is being claimed; each tab remembers
+  // its own pick, so switching back and forth never loses a selection.
+  const [tab, setTab] = useState<StyleTab>("layout")
+  const [layout, setLayout] = useState<TemplateValue>("terminal")
+  const [designer, setDesigner] = useState<TemplateValue>("concrete")
   const [theme, setTheme] =
     useState<NonNullable<ClaimInput["portfolio"]["theme"]>>("gold-dark")
   const [result, setResult] = useState<Result>(null)
@@ -69,7 +87,8 @@ export function ClaimForm({ login }: { login: string }) {
   const normalized = subdomain.trim().toLowerCase()
   const valid = /^[a-z0-9-]{3,63}$/.test(normalized)
   const showInvalid = subdomain.length > 0 && !valid
-  const isDesigner = DESIGNER_SET.has(template)
+  const isDesigner = tab === "designer"
+  const template = isDesigner ? designer : layout
 
   const previewUrl =
     `${PORTFOLIO_URL}/?preview=1&login=${encodeURIComponent(login)}&template=${template}` +
@@ -135,43 +154,48 @@ export function ClaimForm({ login }: { login: string }) {
           <span className="font-medium text-foreground">layout</span> lets you also
           pick a color; a{" "}
           <span className="font-medium text-foreground">designer theme</span> is a
-          complete look with its own colors.
+          complete look with its own colors. You claim whichever tab is open.
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 border-l-2 border-border pl-4">
-        <ThumbSelector
-          legend="Option A — a layout + color"
-          hint="Previews shown in Gold Dark."
-          options={LAYOUTS}
-          value={template}
-          onChange={setTemplate}
-        />
-        {!isDesigner ? (
+      <Tabs value={tab} onValueChange={(value) => setTab(value as StyleTab)}>
+        <TabsList>
+          <TabsTrigger value="layout">
+            <LayoutTemplate aria-hidden="true" />
+            Layout + color
+          </TabsTrigger>
+          <TabsTrigger value="designer">
+            <Palette aria-hidden="true" />
+            Designer theme
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="layout" className="flex flex-col gap-4">
+          <ThumbSelector
+            legend="A layout, recolored by you"
+            hint="Previews shown in Gold Dark."
+            options={LAYOUTS}
+            value={layout}
+            onChange={setLayout}
+          />
           <Selector
             legend="Color"
             options={THEMES}
             value={theme}
             onChange={setTheme}
           />
-        ) : null}
-      </div>
+        </TabsContent>
 
-      <div className="flex items-center gap-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        <span className="h-px flex-1 bg-border" />
-        or
-        <span className="h-px flex-1 bg-border" />
-      </div>
-
-      <div className="border-l-2 border-border pl-4">
-        <ThumbSelector
-          legend="Option B — a designer theme"
-          hint="Each is a complete design with its own layout, type, and colors."
-          options={DESIGNER}
-          value={template}
-          onChange={setTemplate}
-        />
-      </div>
+        <TabsContent value="designer">
+          <ThumbSelector
+            legend="A complete designer theme"
+            hint="Each is a complete design with its own layout, type, and colors."
+            options={DESIGNER}
+            value={designer}
+            onChange={setDesigner}
+          />
+        </TabsContent>
+      </Tabs>
 
       <p className="m-0 text-xs text-muted-foreground">
         Not sure? Use{" "}

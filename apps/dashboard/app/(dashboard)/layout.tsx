@@ -1,9 +1,9 @@
 import Image from "next/image"
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { AnimatedThemeToggler } from "@is-pinoy-dev/ui/components/animated-theme-toggler"
 import { auth } from "@/auth"
 import { DashboardTabs } from "@/components/dashboard-nav"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { UserMenu } from "@/components/user-menu"
 
 export default async function DashboardLayout({
@@ -57,7 +57,7 @@ export default async function DashboardLayout({
             >
               Docs
             </a>
-            <ThemeToggle />
+            <AnimatedThemeToggler />
             <UserMenu name={name} login={login} email={email} image={image} />
           </div>
         </div>

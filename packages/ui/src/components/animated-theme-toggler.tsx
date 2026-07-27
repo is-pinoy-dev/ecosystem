@@ -7,9 +7,13 @@ import { useTheme } from "next-themes"
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 
 // Adapted from magicui.design/docs/components/animated-theme-toggler.
-// Wired to next-themes so it stays in sync with the rest of the app (e.g. the
-// "d" keyboard shortcut) and falls back to a plain toggle where the View
-// Transitions API is unavailable or reduced motion is requested.
+// Shared by the website and the dashboard. Wired to next-themes so it stays in
+// sync with the rest of the app (e.g. the website's "d" keyboard shortcut) and
+// falls back to a plain toggle where the View Transitions API is unavailable or
+// reduced motion is requested.
+//
+// The circular reveal needs the host app's globals.css to cancel the default
+// view-transition cross-fade on ::view-transition-old(root)/::view-transition-new(root).
 export function AnimatedThemeToggler({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
