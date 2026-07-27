@@ -23,6 +23,8 @@ const domainSchema = z.object({
     email: z.string().optional(),
   }),
   records: z.record(z.string(), z.unknown()),
+  // Opt-in platform tools. Optional so older sync workflows keep validating.
+  features: z.record(z.string(), z.unknown()).nullish(),
   status: z.enum(["synced", "failed", "pending"]).default("synced"),
   error: z.string().nullish(),
   // Git-derived dates: first commit that added the file and the last commit

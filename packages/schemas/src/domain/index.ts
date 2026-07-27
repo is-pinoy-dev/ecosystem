@@ -7,12 +7,25 @@ import {
   dnsRecordSchema,
 } from "./records.js"
 
-export const domainFeaturesSchema = z.object({
-  tools: z.object({
-    "site-audit": z.boolean(),
-    "og": z.boolean(),
-  }).partial().optional(),
-}).partial().optional()
+export const domainFeaturesSchema = z
+  .object({
+    // Opt-in tools served at /_tools/*. Absent or false means off.
+    tools: z
+      .object({
+        "site-audit": z.boolean(),
+        og: z.boolean(),
+      })
+      .partial()
+      .optional(),
+    // Opt-OUT of platform visit analytics, unlike everything else here. Traffic
+    // to a proxied subdomain is measured at Cloudflare's edge whether we ask for
+    // it or not, so the only honest control is at collection: set this to false
+    // and the analytics worker drops the subdomain before anything is stored.
+    // Absent means analytics are collected (see apps/web/app/privacy).
+    analytics: z.boolean().optional(),
+  })
+  .partial()
+  .optional()
 
 // Opt-in hosted portfolio. When present, the subdomain's CNAME points at our
 // own renderer (portfolio.is-pinoy.dev) and this block tells the renderer which

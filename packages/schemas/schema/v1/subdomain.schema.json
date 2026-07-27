@@ -190,6 +190,9 @@
             }
           },
           "additionalProperties": false
+        },
+        "analytics": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false
