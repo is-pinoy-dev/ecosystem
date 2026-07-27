@@ -11,8 +11,11 @@ import {
   providerForTarget,
   type Provider,
 } from "@/lib/providers"
+import { AVAILABLE_TOOLS, isToolEnabled } from "@/lib/features"
 import {
+  PROXYABLE_TYPES,
   proxyLockReason,
+  proxyPolicy,
   readProxyState,
   type ProxyableType,
 } from "@/lib/proxy-record"
@@ -35,6 +38,32 @@ export interface RecordRowView {
   proxy: RecordProxyView | null
 }
 
+/** One platform tool as the settings panel renders it. */
+export interface ToolView {
+  id: string
+  name: string
+  description: string
+  docsUrl: string
+  enabled: boolean
+}
+
+/**
+ * The platform panel: one master proxy switch plus the tools it gates. The
+ * master is the record's proxy flag — the tools cannot run unproxied, so the
+ * panel presents them as dependants rather than as peers.
+ */
+export interface PlatformView {
+  /** The record type carrying the master switch (CNAME preferred over A). */
+  type: ProxyableType
+  enabled: boolean
+  mixed: boolean
+  /** Non-null when the host decides this and the record already matches. */
+  lockedReason: string | null
+  /** Set when the host requires a specific value the record does not have. */
+  correctionNote: string | null
+  tools: ToolView[]
+}
+
 export interface DomainView {
   subdomain: string
   fqdn: string
@@ -46,6 +75,8 @@ export interface DomainView {
   synced: string | null
   provider: Provider | null
   records: RecordRowView[]
+  /** Null when the record has no proxyable record type at all. */
+  platform: PlatformView | null
 }
 
 const DOMAINS_REPO_URL = "https://github.com/is-pinoy-dev/domains"
@@ -120,6 +151,7 @@ export function toDomainView(domain: RegistrySubdomain): DomainView {
   return {
     subdomain: domain.subdomain,
     fqdn: `${domain.subdomain}.is-pinoy.dev`,
+    platform: toPlatformView(domain),
     recordUrl: recordFileUrl(domain.subdomain),
     syncStatus: domain.syncStatus,
     lastError: domain.lastError ?? null,
@@ -133,4 +165,39 @@ export function toDomainView(domain: RegistrySubdomain): DomainView {
 /** Provider for one record's own value — used for the per-row mark. */
 export function providerForRow(row: RecordRowView): Provider | null {
   return row.type === "CNAME" ? providerForTarget(row.value) : null
+}
+
+/**
+ * Build the platform panel. The master switch lives on the CNAME when there is
+ * one — that is the record whose target decides whether proxying is even
+ * allowed — and falls back to the A record otherwise.
+ */
+function toPlatformView(domain: RegistrySubdomain): PlatformView | null {
+  const type = PROXYABLE_TYPES.find(
+    (candidate) => readProxyState(domain.records, candidate) !== null
+  )
+  if (!type) return null
+
+  const state = readProxyState(domain.records, type)
+  if (!state) return null
+
+  const policy = proxyPolicy(domain.records, type)
+  const lockedReason = proxyLockReason(domain.records, type)
+
+  return {
+    type,
+    enabled: state.proxied,
+    mixed: state.mixed,
+    lockedReason,
+    // The host wants a value this record does not have — actionable, not locked.
+    correctionNote:
+      policy.pinnedTo !== null && lockedReason === null ? policy.note : null,
+    tools: AVAILABLE_TOOLS.map((tool) => ({
+      id: tool.id,
+      name: tool.name,
+      description: tool.description,
+      docsUrl: tool.docsUrl,
+      enabled: isToolEnabled(domain.features, tool.id),
+    })),
+  }
 }

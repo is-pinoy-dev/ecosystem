@@ -4,6 +4,7 @@ import {
   buildToggledFile,
   proxyBranch,
   proxyLockReason,
+  proxyPolicy,
   readProxyState,
   readProxyStates,
   setProxied,
@@ -145,12 +146,13 @@ describe("setProxied", () => {
   })
 })
 
-describe("proxyLockReason", () => {
-  it("pins a hosted portfolio's CNAME", () => {
+describe("proxyPolicy / proxyLockReason", () => {
+  it("pins a hosted portfolio's CNAME on", () => {
     const records = {
       CNAME: { value: "portfolio.is-pinoy.dev", proxied: true },
     }
-    expect(proxyLockReason(records, "CNAME")).toMatch(/Hosted portfolios/)
+    expect(proxyPolicy(records, "CNAME").pinnedTo).toBe(true)
+    expect(proxyLockReason(records, "CNAME")).toMatch(/portfolio/i)
   })
 
   it("matches the portfolio target case-insensitively and with a trailing dot", () => {
@@ -160,16 +162,37 @@ describe("proxyLockReason", () => {
     expect(proxyLockReason(records, "CNAME")).not.toBeNull()
   })
 
-  it("leaves an ordinary CNAME free to toggle", () => {
+  it("pins GitHub Pages off — it needs DNS-only for its certificate", () => {
+    const records = { CNAME: { value: "juan.github.io", proxied: false } }
+    expect(proxyPolicy(records, "CNAME").pinnedTo).toBe(false)
+    expect(proxyLockReason(records, "CNAME")).toMatch(/GitHub Pages/)
+  })
+
+  it("pins Cloudflare Pages off — proxying it hits Error 1014", () => {
+    const records = { CNAME: { value: "app.pages.dev", proxied: false } }
+    expect(proxyPolicy(records, "CNAME").pinnedTo).toBe(false)
+    expect(proxyLockReason(records, "CNAME")).toMatch(/1014/)
+  })
+
+  it("stays actionable when a record sits at the wrong value, so it can be fixed", () => {
+    // Hand-edited into a broken state: GitHub Pages must not be proxied.
     const records = { CNAME: { value: "juan.github.io", proxied: true } }
+    expect(proxyPolicy(records, "CNAME").pinnedTo).toBe(false)
     expect(proxyLockReason(records, "CNAME")).toBeNull()
   })
 
-  it("never locks an A record", () => {
+  it("leaves a host with no proxy constraint free to toggle", () => {
+    const records = { CNAME: { value: "juan.example.com", proxied: true } }
+    expect(proxyPolicy(records, "CNAME").pinnedTo).toBeNull()
+    expect(proxyLockReason(records, "CNAME")).toBeNull()
+  })
+
+  it("never constrains an A record — a bare IP identifies no host", () => {
     const records = {
       A: { value: "1.2.3.4" },
       CNAME: { value: "portfolio.is-pinoy.dev" },
     }
+    expect(proxyPolicy(records, "A").pinnedTo).toBeNull()
     expect(proxyLockReason(records, "A")).toBeNull()
   })
 })
@@ -178,7 +201,7 @@ describe("buildToggledFile", () => {
   it("emits schema-valid JSON with a trailing newline", () => {
     const result = buildToggledFile(
       file({ CNAME: { value: "juan.github.io", proxied: false } }),
-      [{ type: "CNAME", proxied: true }]
+      [{ kind: "proxy", type: "CNAME", enabled: true }]
     )
     expect(result).not.toHaveProperty("error")
     const content = (result as { content: string }).content
@@ -192,7 +215,7 @@ describe("buildToggledFile", () => {
         "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/schemas/v1/subdomain.schema.json",
       ...file({ CNAME: { value: "juan.github.io", proxied: true } }),
     }
-    const result = buildToggledFile(source, [{ type: "CNAME", proxied: false }])
+    const result = buildToggledFile(source, [{ kind: "proxy", type: "CNAME", enabled: false }])
     const parsed = JSON.parse((result as { content: string }).content)
     expect(parsed.$schema).toBe(source.$schema)
     expect(parsed.records.CNAME.proxied).toBe(false)
@@ -203,14 +226,14 @@ describe("buildToggledFile", () => {
       ...file({ A: { value: "1.2.3.4" } }),
       features: { tools: { og: true } },
     }
-    const result = buildToggledFile(source, [{ type: "A", proxied: true }])
+    const result = buildToggledFile(source, [{ kind: "proxy", type: "A", enabled: true }])
     const parsed = JSON.parse((result as { content: string }).content)
     expect(parsed.features).toEqual({ tools: { og: true } })
   })
 
   it("rejects a file with no records block", () => {
     expect(
-      buildToggledFile({ subdomain: "juan" }, [{ type: "A", proxied: true }])
+      buildToggledFile({ subdomain: "juan" }, [{ kind: "proxy", type: "A", enabled: true }])
     ).toEqual({
       error: "The record file has no records block.",
     })
@@ -218,7 +241,7 @@ describe("buildToggledFile", () => {
 
   it("rejects a record the schema would fail", () => {
     const result = buildToggledFile(file({ A: { value: "not-an-ip" } }), [
-      { type: "A", proxied: true },
+      { kind: "proxy", type: "A", enabled: true },
     ])
     expect(result).toHaveProperty("error")
   })
@@ -226,7 +249,7 @@ describe("buildToggledFile", () => {
   it("rejects a reserved subdomain the CI check would reject", () => {
     const result = buildToggledFile(
       { ...file({ CNAME: { value: "x.io" } }), subdomain: "www" },
-      [{ type: "CNAME", proxied: true }]
+      [{ kind: "proxy", type: "CNAME", enabled: true }]
     )
     expect(result).toHaveProperty("error")
   })
@@ -237,12 +260,43 @@ describe("buildToggledFile", () => {
       CNAME: { value: "juan.github.io", proxied: true },
     })
     const result = buildToggledFile(source, [
-      { type: "A", proxied: true },
-      { type: "CNAME", proxied: false },
+      { kind: "proxy", type: "A", enabled: true },
+      { kind: "proxy", type: "CNAME", enabled: false },
     ])
     const parsed = JSON.parse((result as { content: string }).content)
     expect(parsed.records.A.proxied).toBe(true)
     expect(parsed.records.CNAME.proxied).toBe(false)
+  })
+
+  it("enables a tool, creating the features block when absent", () => {
+    const result = buildToggledFile(
+      file({ CNAME: { value: "juan.example.com", proxied: true } }),
+      [{ kind: "tool", tool: "site-audit", enabled: true }]
+    )
+    const parsed = JSON.parse((result as { content: string }).content)
+    expect(parsed.features).toEqual({ tools: { "site-audit": true } })
+  })
+
+  it("applies a proxy flip and a tool flag in one commit", () => {
+    const result = buildToggledFile(
+      file({ CNAME: { value: "juan.example.com", proxied: false } }),
+      [
+        { kind: "proxy", type: "CNAME", enabled: true },
+        { kind: "tool", tool: "site-audit", enabled: true },
+      ]
+    )
+    const parsed = JSON.parse((result as { content: string }).content)
+    expect(parsed.records.CNAME.proxied).toBe(true)
+    expect(parsed.features.tools["site-audit"]).toBe(true)
+  })
+
+  it("leaves the file without a features block when only the proxy changed", () => {
+    const result = buildToggledFile(
+      file({ CNAME: { value: "juan.example.com", proxied: false } }),
+      [{ kind: "proxy", type: "CNAME", enabled: true }]
+    )
+    const parsed = JSON.parse((result as { content: string }).content)
+    expect("features" in parsed).toBe(false)
   })
 
   it("rejects an empty batch", () => {

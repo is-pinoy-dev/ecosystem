@@ -19,6 +19,12 @@ export const subdomains = sqliteTable(
     records: text("records", { mode: "json" })
       .notNull()
       .$type<Record<string, unknown>>(),
+    // Opt-in platform tools (`features.tools.*` in the record file). Stored
+    // alongside records because the dashboard renders both as one settings
+    // surface; still a read model — the repo remains the source of truth.
+    features: text("features", { mode: "json" }).$type<
+      Record<string, unknown>
+    >(),
     syncStatus: text("sync_status", { enum: SYNC_STATUSES })
       .notNull()
       .default("pending"),

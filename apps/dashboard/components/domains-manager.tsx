@@ -24,13 +24,16 @@ import { Switch } from "@is-pinoy-dev/ui/components/switch"
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 
 import {
-  saveProxyChanges,
-  type ProxyChangeInput,
+  saveSettings,
+  type SettingChangeInput,
   type SubdomainSaveResult,
 } from "@/app/(dashboard)/domains/actions"
 import { ProviderMark } from "@/components/provider-mark"
-import { providerForRow, type DomainView } from "@/lib/domain-view"
-import type { ProxyableType } from "@/lib/proxy-record"
+import {
+  providerForRow,
+  type DomainView,
+  type PlatformView,
+} from "@/lib/domain-view"
 
 export interface PendingPRView {
   url: string
@@ -39,17 +42,20 @@ export interface PendingPRView {
 
 interface Props {
   domains: DomainView[]
-  /** Open proxy pull requests keyed by subdomain. */
+  /** Open settings pull requests keyed by subdomain. */
   pending: Record<string, PendingPRView>
 }
 
-/** Identity of one editable switch. */
-function editKey(subdomain: string, type: ProxyableType) {
-  return `${subdomain}:${type}`
+/** Identity of one staged switch. */
+function proxyKey(subdomain: string, type: string) {
+  return `${subdomain}:proxy:${type}`
+}
+function toolKey(subdomain: string, tool: string) {
+  return `${subdomain}:tool:${tool}`
 }
 
 export function syncTone(
-  status: DomainView["syncStatus"]
+  status: DomainView["syncStatus"],
 ): "success" | "warning" | "destructive" {
   if (status === "failed") return "destructive"
   if (status === "pending") return "warning"
@@ -63,12 +69,12 @@ export function syncLabel(status: DomainView["syncStatus"]): string {
 }
 
 /**
- * The domains listing, with staged proxy edits.
+ * The domains listing with staged platform settings.
  *
- * Toggling a switch changes nothing but local state — no request is made until
- * "Save changes", which opens one pull request per edited subdomain after
- * confirmation. That keeps a mis-click free and makes the git-backed workflow
- * explicit rather than surprising.
+ * Toggling changes nothing but local state — no request is made until "Save
+ * changes", which opens one pull request per edited subdomain after
+ * confirmation. Git remains the source of truth, so while a pull request is open
+ * that domain's switches are read-only and show what the pull request will apply.
  */
 export function DomainsManager({ domains, pending }: Props) {
   const [edits, setEdits] = useState<Record<string, boolean>>({})
@@ -76,48 +82,67 @@ export function DomainsManager({ domains, pending }: Props) {
   const [results, setResults] = useState<SubdomainSaveResult[] | null>(null)
   const [saving, startSaving] = useTransition()
 
+  const setEdit = (key: string, value: boolean) =>
+    setEdits((current) => ({ ...current, [key]: value }))
+
   // An edit only counts while it differs from what git says.
-  const changes = useMemo<ProxyChangeInput[]>(() => {
-    const list: ProxyChangeInput[] = []
+  const changes = useMemo<SettingChangeInput[]>(() => {
+    const list: SettingChangeInput[] = []
     for (const domain of domains) {
-      for (const row of domain.records) {
-        if (!row.proxy || row.proxy.lockedReason) continue
-        const key = editKey(domain.subdomain, row.proxy.type)
-        const staged = edits[key]
-        if (staged === undefined) continue
-        if (staged === row.proxy.proxied && !row.proxy.mixed) continue
+      const platform = domain.platform
+      if (!platform || pending[domain.subdomain]) continue
+
+      const pKey = proxyKey(domain.subdomain, platform.type)
+      const stagedProxy = edits[pKey]
+      const proxyDirty =
+        stagedProxy !== undefined &&
+        !platform.lockedReason &&
+        (stagedProxy !== platform.enabled || platform.mixed)
+      if (proxyDirty) {
         list.push({
+          kind: "proxy",
           subdomain: domain.subdomain,
-          type: row.proxy.type,
-          proxied: staged,
+          type: platform.type,
+          enabled: stagedProxy,
+        })
+      }
+
+      for (const tool of platform.tools) {
+        const tKey = toolKey(domain.subdomain, tool.id)
+        const staged = edits[tKey]
+        if (staged === undefined || staged === tool.enabled) continue
+        list.push({
+          kind: "tool",
+          subdomain: domain.subdomain,
+          tool: tool.id,
+          enabled: staged,
         })
       }
     }
     return list
-  }, [domains, edits])
+  }, [domains, edits, pending])
 
   const affected = useMemo(
     () => [...new Set(changes.map((c) => c.subdomain))],
-    [changes]
+    [changes],
   )
 
   function onSave() {
     setResults(null)
     startSaving(async () => {
-      const result = await saveProxyChanges(changes)
+      const result = await saveSettings(changes)
       setResults(result.results)
-      // Clear the staged edits that landed; failures stay staged so the user
-      // can retry without re-toggling everything.
+      // Clear the staged edits that landed; failures stay staged for retry.
       const succeeded = new Set(
-        result.results.filter((r) => r.ok).map((r) => r.subdomain)
+        result.results.filter((r) => r.ok).map((r) => r.subdomain),
       )
       if (succeeded.size > 0) {
         setEdits((current) =>
           Object.fromEntries(
             Object.entries(current).filter(
-              ([key]) => !succeeded.has(key.split(":")[0]!)
-            )
-          )
+              ([key]) => !succeeded.has(key.split(":")[0]!),
+            ),
+          ),
         )
       }
     })
@@ -138,12 +163,7 @@ export function DomainsManager({ domains, pending }: Props) {
             domain={domain}
             pendingPR={pending[domain.subdomain] ?? null}
             edits={edits}
-            onToggle={(type, next) =>
-              setEdits((current) => ({
-                ...current,
-                [editKey(domain.subdomain, type)]: next,
-              }))
-            }
+            onSetEdit={setEdit}
           />
         ))}
       </div>
@@ -183,6 +203,14 @@ export function DomainsManager({ domains, pending }: Props) {
   )
 }
 
+/** Human label for one staged change, used in the confirmation list. */
+function changeLabel(change: SettingChangeInput, domains: DomainView[]): string {
+  if (change.kind === "proxy") return "Platform"
+  const domain = domains.find((d) => d.subdomain === change.subdomain)
+  const tool = domain?.platform?.tools.find((t) => t.id === change.tool)
+  return tool?.name ?? change.tool
+}
+
 /** What saving will actually do, spelled out before anything is created. */
 function ConfirmView({
   changes,
@@ -192,7 +220,7 @@ function ConfirmView({
   onCancel,
   onConfirm,
 }: {
-  changes: ProxyChangeInput[]
+  changes: SettingChangeInput[]
   domains: DomainView[]
   affected: string[]
   saving: boolean
@@ -208,13 +236,11 @@ function ConfirmView({
           Open {prCount} pull request{prCount === 1 ? "" : "s"}?
         </DialogTitle>
         <DialogDescription>
-          The registry is stored in git, so the dashboard does not change DNS
+          Your settings live in git, so the dashboard does not change them
           directly. Saving opens{" "}
-          {prCount === 1 ? "a pull request" : `${prCount} pull requests`}{" "}
-          against the{" "}
-          <span className="font-mono text-foreground">
-            is-pinoy-dev/domains
-          </span>{" "}
+          {prCount === 1 ? "a pull request" : `${prCount} pull requests`} against
+          the{" "}
+          <span className="font-mono text-foreground">is-pinoy-dev/domains</span>{" "}
           repository — one per domain — on your behalf.
         </DialogDescription>
       </DialogHeader>
@@ -224,25 +250,24 @@ function ConfirmView({
           const domain = domains.find((d) => d.subdomain === change.subdomain)
           return (
             <li
-              key={`${change.subdomain}:${change.type}`}
+              key={`${change.subdomain}:${change.kind}:${
+                change.kind === "proxy" ? change.type : change.tool
+              }`}
               className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-3 py-2 text-xs last:border-b-0"
             >
-              <Badge variant="secondary" className="w-14 justify-center">
-                {change.type}
+              <Badge variant="secondary" className="justify-center">
+                {changeLabel(change, domains)}
               </Badge>
               <span className="min-w-0 flex-1 truncate font-mono text-foreground">
                 {domain?.fqdn ?? change.subdomain}
               </span>
-              <span className="font-mono text-muted-foreground">
-                proxied →{" "}
-                <span
-                  className={cn(
-                    "font-medium",
-                    change.proxied ? "text-success" : "text-warning"
-                  )}
-                >
-                  {String(change.proxied)}
-                </span>
+              <span
+                className={cn(
+                  "font-mono font-medium",
+                  change.enabled ? "text-success" : "text-warning",
+                )}
+              >
+                {change.enabled ? "on" : "off"}
               </span>
             </li>
           )
@@ -255,9 +280,9 @@ function ConfirmView({
           aria-hidden="true"
         />
         <span>
-          Nothing takes effect until a maintainer reviews and merges the pull
-          request, and the next sync applies it. Until then your domain keeps
-          its current setting and the switch stays showing it.
+          Nothing takes effect until the pull request is merged and the next sync
+          applies it. Until then your domain keeps its current settings, and its
+          switches here are read-only.
         </span>
       </p>
 
@@ -406,12 +431,12 @@ function DomainCard({
   domain,
   pendingPR,
   edits,
-  onToggle,
+  onSetEdit,
 }: {
   domain: DomainView
   pendingPR: PendingPRView | null
   edits: Record<string, boolean>
-  onToggle: (type: ProxyableType, next: boolean) => void
+  onSetEdit: (key: string, value: boolean) => void
 }) {
   const meta = [
     domain.registered && `Registered ${domain.registered}`,
@@ -422,18 +447,16 @@ function DomainCard({
     <section className="flex flex-col border border-border bg-card">
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border px-4 py-3">
         <span className="flex min-w-0 items-center gap-3">
-          {domain.provider ? (
-            <span
-              className="flex size-8 shrink-0 items-center justify-center border border-border bg-background text-foreground"
-              title={domain.provider.name}
-            >
+          <span
+            className="flex size-8 shrink-0 items-center justify-center border border-border bg-background text-foreground"
+            title={domain.provider?.name}
+          >
+            {domain.provider ? (
               <ProviderMark provider={domain.provider} />
-            </span>
-          ) : (
-            <span className="flex size-8 shrink-0 items-center justify-center border border-border bg-background">
+            ) : (
               <StatusIndicator tone={syncTone(domain.syncStatus)} />
-            </span>
-          )}
+            )}
+          </span>
           <span className="flex min-w-0 flex-col">
             <a
               href={`https://${domain.fqdn}`}
@@ -473,9 +496,9 @@ function DomainCard({
       </header>
 
       {pendingPR ? (
-        <p className="m-0 flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2 text-[11px] text-muted-foreground">
-          <GitPullRequest className="size-3.5 shrink-0" aria-hidden="true" />A
-          proxy change is awaiting review in{" "}
+        <p className="m-0 flex flex-wrap items-center gap-x-1.5 gap-y-1 border-b border-border bg-muted/40 px-4 py-2 text-[11px] text-muted-foreground">
+          <GitPullRequest className="size-3.5 shrink-0" aria-hidden="true" />
+          Settings for this domain are waiting in{" "}
           <a
             href={pendingPR.url}
             target="_blank"
@@ -484,7 +507,7 @@ function DomainCard({
           >
             pull request #{pendingPR.number}
           </a>
-          . Switches are locked until it lands.
+          . They apply once it is merged — switches are read-only until then.
         </p>
       ) : null}
 
@@ -497,28 +520,14 @@ function DomainCard({
       <ul className="m-0 list-none p-0">
         {domain.records.map((row) => {
           const rowProvider = providerForRow(row)
-          const key = row.proxy
-            ? editKey(domain.subdomain, row.proxy.type)
-            : null
-          const staged = key !== null ? edits[key] : undefined
-          const checked = staged ?? row.proxy?.proxied ?? false
-          const dirty =
-            row.proxy !== null &&
-            staged !== undefined &&
-            (staged !== row.proxy.proxied || row.proxy.mixed)
-
           return (
             <li
               key={row.type}
-              className={cn(
-                "flex min-h-12 flex-wrap items-center gap-x-4 gap-y-2 border-b border-border/70 px-4 py-2.5 last:border-b-0",
-                dirty && "bg-primary/5"
-              )}
+              className="flex min-h-10 flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/70 px-4 py-2 last:border-b-0"
             >
               <Badge variant="secondary" className="w-16 justify-center">
                 {row.type}
               </Badge>
-
               <span className="flex min-w-0 flex-1 items-center gap-2">
                 {rowProvider ? (
                   <ProviderMark
@@ -530,7 +539,6 @@ function DomainCard({
                   {row.value}
                 </code>
               </span>
-
               {row.meta.map((item) => (
                 <span
                   key={item}
@@ -539,75 +547,131 @@ function DomainCard({
                   {item}
                 </span>
               ))}
-
-              {row.proxy ? (
-                <ProxyCell
-                  proxy={row.proxy}
-                  checked={checked}
-                  dirty={dirty}
-                  disabled={
-                    Boolean(row.proxy.lockedReason) || pendingPR !== null
-                  }
-                  fqdn={domain.fqdn}
-                  onToggle={(next) => onToggle(row.proxy!.type, next)}
-                />
-              ) : null}
             </li>
           )
         })}
       </ul>
+
+      {domain.platform ? (
+        <PlatformPanel
+          subdomain={domain.subdomain}
+          platform={domain.platform}
+          readOnly={pendingPR !== null}
+          edits={edits}
+          onSetEdit={onSetEdit}
+        />
+      ) : null}
     </section>
   )
 }
 
-function ProxyCell({
-  proxy,
-  checked,
-  dirty,
-  disabled,
-  fqdn,
-  onToggle,
+/**
+ * Master switch plus the tools it gates. Tools cannot run on an unproxied
+ * record, so they follow the master's staged value rather than its saved one —
+ * turning the platform on and a tool on in the same save is a valid batch.
+ */
+function PlatformPanel({
+  subdomain,
+  platform,
+  readOnly,
+  edits,
+  onSetEdit,
 }: {
-  proxy: NonNullable<DomainView["records"][number]["proxy"]>
-  checked: boolean
-  dirty: boolean
-  disabled: boolean
-  fqdn: string
-  onToggle: (next: boolean) => void
+  subdomain: string
+  platform: PlatformView
+  readOnly: boolean
+  edits: Record<string, boolean>
+  onSetEdit: (key: string, value: boolean) => void
 }) {
+  const pKey = proxyKey(subdomain, platform.type)
+  const stagedProxy = edits[pKey]
+  const proxyOn = stagedProxy ?? platform.enabled
+  const proxyDirty =
+    stagedProxy !== undefined &&
+    (stagedProxy !== platform.enabled || platform.mixed)
+  const proxyLocked = Boolean(platform.lockedReason) || readOnly
+
   return (
-    <span className="flex flex-col items-end gap-1">
-      <span className="flex items-center gap-2">
-        <span
-          className="font-mono text-[11px] text-muted-foreground"
-          aria-hidden="true"
-        >
-          proxied
+    <div className="flex flex-col gap-0 border-t border-border bg-muted/20">
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3",
+          proxyDirty && "bg-primary/5",
+        )}
+      >
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+            Platform features
+            {proxyDirty ? (
+              <span className="text-[11px] font-medium text-primary">
+                Unsaved
+              </span>
+            ) : null}
+          </span>
+          <span className="text-[11px]/relaxed text-muted-foreground">
+            {platform.lockedReason ??
+              platform.correctionNote ??
+              "Routes your domain through our edge so built-in tools can run at /_tools/. Visits to proxied domains are logged for platform metrics."}
+          </span>
         </span>
         <Switch
-          checked={checked}
-          onCheckedChange={onToggle}
-          disabled={disabled}
-          aria-label={`${checked ? "Disable" : "Enable"} Cloudflare proxy for the ${proxy.type} record on ${fqdn}`}
-          title={proxy.lockedReason ?? undefined}
+          checked={proxyOn}
+          onCheckedChange={(next) => onSetEdit(pKey, next)}
+          disabled={proxyLocked}
+          aria-label={`${proxyOn ? "Disable" : "Enable"} platform features for ${subdomain}.is-pinoy.dev`}
+          title={platform.lockedReason ?? undefined}
         />
-      </span>
+      </div>
 
-      {dirty ? (
-        <span className="text-[11px] font-medium text-primary">Unsaved</span>
-      ) : null}
-
-      {!dirty && proxy.mixed ? (
-        <span className="text-[11px] text-warning">
-          Entries disagree — toggling aligns all {proxy.type} records.
-        </span>
-      ) : null}
-
-      {proxy.lockedReason ? (
-        <span className="max-w-56 text-right text-[11px] text-muted-foreground">
-          {proxy.lockedReason}
-        </span>
-      ) : null}
-    </span>
+      <ul className="m-0 list-none border-t border-border/70 p-0">
+        {platform.tools.map((tool) => {
+          const tKey = toolKey(subdomain, tool.id)
+          const staged = edits[tKey]
+          const on = staged ?? tool.enabled
+          const dirty = staged !== undefined && staged !== tool.enabled
+          // A tool is only meaningful once the platform switch ends up on.
+          const blocked = !proxyOn
+          return (
+            <li
+              key={tool.id}
+              className={cn(
+                "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/70 px-4 py-2.5 pl-8 last:border-b-0",
+                dirty && "bg-primary/5",
+                blocked && "opacity-60",
+              )}
+            >
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+                  <a
+                    href={tool.docsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-foreground no-underline hover:text-accent hover:underline"
+                  >
+                    {tool.name}
+                  </a>
+                  {dirty ? (
+                    <span className="text-[11px] font-medium text-primary">
+                      Unsaved
+                    </span>
+                  ) : null}
+                </span>
+                <span className="text-[11px]/relaxed text-muted-foreground">
+                  {blocked
+                    ? "Needs platform features switched on."
+                    : tool.description}
+                </span>
+              </span>
+              <Switch
+                checked={on && !blocked}
+                onCheckedChange={(next) => onSetEdit(tKey, next)}
+                disabled={blocked || readOnly}
+                aria-label={`${on ? "Disable" : "Enable"} ${tool.name} for ${subdomain}.is-pinoy.dev`}
+              />
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
