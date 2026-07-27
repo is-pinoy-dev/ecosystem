@@ -178,8 +178,7 @@ describe("buildToggledFile", () => {
   it("emits schema-valid JSON with a trailing newline", () => {
     const result = buildToggledFile(
       file({ CNAME: { value: "juan.github.io", proxied: false } }),
-      "CNAME",
-      true
+      [{ type: "CNAME", proxied: true }]
     )
     expect(result).not.toHaveProperty("error")
     const content = (result as { content: string }).content
@@ -193,7 +192,7 @@ describe("buildToggledFile", () => {
         "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/schemas/v1/subdomain.schema.json",
       ...file({ CNAME: { value: "juan.github.io", proxied: true } }),
     }
-    const result = buildToggledFile(source, "CNAME", false)
+    const result = buildToggledFile(source, [{ type: "CNAME", proxied: false }])
     const parsed = JSON.parse((result as { content: string }).content)
     expect(parsed.$schema).toBe(source.$schema)
     expect(parsed.records.CNAME.proxied).toBe(false)
@@ -204,33 +203,51 @@ describe("buildToggledFile", () => {
       ...file({ A: { value: "1.2.3.4" } }),
       features: { tools: { og: true } },
     }
-    const result = buildToggledFile(source, "A", true)
+    const result = buildToggledFile(source, [{ type: "A", proxied: true }])
     const parsed = JSON.parse((result as { content: string }).content)
     expect(parsed.features).toEqual({ tools: { og: true } })
   })
 
   it("rejects a file with no records block", () => {
-    expect(buildToggledFile({ subdomain: "juan" }, "A", true)).toEqual({
+    expect(
+      buildToggledFile({ subdomain: "juan" }, [{ type: "A", proxied: true }])
+    ).toEqual({
       error: "The record file has no records block.",
     })
   })
 
   it("rejects a record the schema would fail", () => {
-    const result = buildToggledFile(
-      file({ A: { value: "not-an-ip" } }),
-      "A",
-      true
-    )
+    const result = buildToggledFile(file({ A: { value: "not-an-ip" } }), [
+      { type: "A", proxied: true },
+    ])
     expect(result).toHaveProperty("error")
   })
 
   it("rejects a reserved subdomain the CI check would reject", () => {
     const result = buildToggledFile(
       { ...file({ CNAME: { value: "x.io" } }), subdomain: "www" },
-      "CNAME",
-      true
+      [{ type: "CNAME", proxied: true }]
     )
     expect(result).toHaveProperty("error")
+  })
+
+  it("applies edits to several record types in one pass", () => {
+    const source = file({
+      A: { value: "1.2.3.4", proxied: false },
+      CNAME: { value: "juan.github.io", proxied: true },
+    })
+    const result = buildToggledFile(source, [
+      { type: "A", proxied: true },
+      { type: "CNAME", proxied: false },
+    ])
+    const parsed = JSON.parse((result as { content: string }).content)
+    expect(parsed.records.A.proxied).toBe(true)
+    expect(parsed.records.CNAME.proxied).toBe(false)
+  })
+
+  it("rejects an empty batch", () => {
+    const result = buildToggledFile(file({ A: { value: "1.2.3.4" } }), [])
+    expect(result).toEqual({ error: "No changes to apply." })
   })
 })
 

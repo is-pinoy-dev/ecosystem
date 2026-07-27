@@ -9,18 +9,17 @@ import {
   CardTitle,
 } from "@is-pinoy-dev/ui/components/card"
 import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
+import { ProviderMark } from "@/components/provider-mark"
+import { recordFileUrl } from "@/lib/domain-view"
 import { recordTypes, type RegistrySubdomain } from "@/lib/domains"
+import { providerForRecords } from "@/lib/providers"
 
-const DOMAINS_REPO_URL = "https://github.com/is-pinoy-dev/domains"
-
-export function domainFileUrl(subdomain: string) {
-  return `${DOMAINS_REPO_URL}/blob/main/subdomains/${subdomain}.json`
-}
+export const domainFileUrl = recordFileUrl
 
 // Registered domains without database-backed sync info read as operational —
 // they only reach the registry after a merged, synced PR.
 export function syncTone(
-  status: RegistrySubdomain["syncStatus"],
+  status: RegistrySubdomain["syncStatus"]
 ): "success" | "warning" | "destructive" {
   if (status === "failed") return "destructive"
   if (status === "pending") return "warning"
@@ -37,44 +36,53 @@ export function syncLabel(status: RegistrySubdomain["syncStatus"]): string {
 export function DomainRows({ domains }: { domains: RegistrySubdomain[] }) {
   return (
     <ul className="m-0 list-none border-t border-border p-0">
-      {domains.map((domain) => (
-        <li
-          key={domain.subdomain}
-          className="flex min-h-14 flex-wrap items-center gap-x-4 gap-y-2 border-b border-border py-3"
-        >
-          <span className="flex min-w-0 items-center gap-2.5">
-            <StatusIndicator tone={syncTone(domain.syncStatus)} />
-            <span className="sr-only">{syncLabel(domain.syncStatus)}</span>
-            <a
-              href={`https://${domain.subdomain}.is-pinoy.dev`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="truncate font-mono text-sm font-medium text-foreground no-underline hover:text-accent hover:underline"
-            >
-              {domain.subdomain}.is-pinoy.dev
-            </a>
-          </span>
-          <span className="flex flex-1 items-center justify-end gap-2">
-            {domain.syncStatus === "failed" && (
-              <Badge variant="destructive">SYNC FAILED</Badge>
-            )}
-            {recordTypes(domain.records).map((type) => (
-              <Badge key={type} variant="outline">
-                {type}
-              </Badge>
-            ))}
-            <a
-              href={domainFileUrl(domain.subdomain)}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`View ${domain.subdomain}.is-pinoy.dev record on GitHub`}
-              className="flex size-8 items-center justify-center text-muted-foreground transition-colors duration-[140ms] hover:text-accent"
-            >
-              <ArrowUpRight className="size-4" aria-hidden="true" />
-            </a>
-          </span>
-        </li>
-      ))}
+      {domains.map((domain) => {
+        const provider = providerForRecords(domain.records)
+        return (
+          <li
+            key={domain.subdomain}
+            className="flex min-h-14 flex-wrap items-center gap-x-4 gap-y-2 border-b border-border py-3"
+          >
+            <span className="flex min-w-0 items-center gap-2.5">
+              <StatusIndicator tone={syncTone(domain.syncStatus)} />
+              <span className="sr-only">{syncLabel(domain.syncStatus)}</span>
+              {provider ? (
+                <ProviderMark
+                  provider={provider}
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                />
+              ) : null}
+              <a
+                href={`https://${domain.subdomain}.is-pinoy.dev`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate font-mono text-sm font-medium text-foreground no-underline hover:text-accent hover:underline"
+              >
+                {domain.subdomain}.is-pinoy.dev
+              </a>
+            </span>
+            <span className="flex flex-1 items-center justify-end gap-2">
+              {domain.syncStatus === "failed" && (
+                <Badge variant="destructive">SYNC FAILED</Badge>
+              )}
+              {recordTypes(domain.records).map((type) => (
+                <Badge key={type} variant="outline">
+                  {type}
+                </Badge>
+              ))}
+              <a
+                href={domainFileUrl(domain.subdomain)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`View ${domain.subdomain}.is-pinoy.dev record on GitHub`}
+                className="flex size-8 items-center justify-center text-muted-foreground transition-colors duration-[140ms] hover:text-accent"
+              >
+                <ArrowUpRight className="size-4" aria-hidden="true" />
+              </a>
+            </span>
+          </li>
+        )
+      })}
     </ul>
   )
 }
