@@ -17,7 +17,11 @@ const DESCRIPTION =
   "Sign in with GitHub to manage your free .is-pinoy.dev subdomains. Subdomain ownership is tied to your GitHub account."
 
 export const metadata: Metadata = {
-  title: "Sign in",
+  // The only indexable page, so it skips the template for a title that carries
+  // both the action and "dashboard" — the term someone would actually search.
+  title: {
+    absolute: "Sign in to the is-pinoy.dev dashboard",
+  },
   description: DESCRIPTION,
   alternates: {
     canonical: "/login",

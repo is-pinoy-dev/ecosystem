@@ -22,9 +22,12 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   applicationName: "is-pinoy.dev dashboard",
+  // Page names already say what this is ("Domains", "Account"), and the host
+  // is dashboard.is-pinoy.dev — so the suffix is just the brand, matching the
+  // web app's `%s | is-pinoy.dev`.
   title: {
     default: "Dashboard | is-pinoy.dev",
-    template: "%s | is-pinoy.dev dashboard",
+    template: "%s | is-pinoy.dev",
   },
   description: DESCRIPTION,
   authors: [{ name: "is-pinoy-dev", url: "https://github.com/is-pinoy-dev" }],
