@@ -83,8 +83,16 @@ working (or silently stop protecting) if they drift.
 
 ## Hosting
 
-**Vercel**, alongside `web` and `dashboard`. Not yet created — this is the one
-remaining piece, and it is account setup rather than code.
+**Vercel**, alongside `web` and `dashboard`. The project exists and is live:
+`portfolio.is-pinoy.dev` is a DNS-only (grey-cloud) CNAME to the project's own
+`*.vercel-dns-*.com` target, which is why it answers with Vercel's addresses
+rather than Cloudflare's anycast pair the way the apex and `status` do.
+
+Preview mode works there today. Note what that does **not** prove: `?preview=1`
+short-circuits in `parsePreview()` before `getRenderContext()` ever reads
+`x-portfolio-subdomain`, so it renders on any host — including `*.vercel.app` —
+and exercises neither `proxy.ts` nor `lib/resolve.ts`. A working preview means
+the build and `GITHUB_TOKEN` are good, nothing more.
 
 Cloudflare Workers was considered and rejected *for now*. Workers routes match on
 the **request** hostname, not the CNAME target, so a route on
@@ -101,30 +109,41 @@ the hot path and is a real improvement, but it is its own project.
 
 ### Runbook
 
-1. **Create the Vercel project.** Root directory `apps/portfolio`; mirror the
-   existing `dashboard` project's install/build settings so workspace
-   dependencies resolve the same way.
-2. **Set `GITHUB_TOKEN`** in the project's environment variables (see
-   `.env.example` — no scopes required). Skipping this looks like a broken
-   deploy rather than a rate limit.
-3. **Verify on the `.vercel.app` URL before touching DNS.** Preview mode needs
-   no Host routing, so the deploy is fully testable first:
-   `https://<project>.vercel.app/?preview=1&github=<you>&template=terminal&theme=gold-dark`.
-   The bare `/` will 404 there, which is correct — a `*.vercel.app` host carries
-   no `is-pinoy.dev` label for `proxy.ts` to extract.
-4. **Add both domains to the project:** `portfolio.is-pinoy.dev` *and*
-   `*.is-pinoy.dev`. The wildcard is what makes claimed subdomains work at all:
-   Cloudflare forwards the original Host (`juan.is-pinoy.dev`), and if Vercel
-   doesn't recognise that hostname it answers with its own 404 and this app never
-   runs.
-5. **Re-check the neighbours.** Immediately after adding the wildcard, load
-   `dashboard.is-pinoy.dev` and the apex to confirm their explicit assignments
-   still beat it. This is the step most likely to bite.
-6. **Create the `portfolio.is-pinoy.dev` DNS record.** At this point the
-   dashboard's `/claim` Preview links go live.
-7. **Claim one subdomain end to end** and watch the whole chain: PR opens
+Done: the Vercel project (root directory `apps/portfolio`), its `GITHUB_TOKEN`,
+and the `portfolio.is-pinoy.dev` DNS record. What remains is the wildcard — a
+claimed subdomain does **not** render until step 1 lands.
+
+1. **Add `*.is-pinoy.dev` as a domain on the portfolio project.** This is the
+   step that makes claimed subdomains work at all. Cloudflare forwards the
+   original Host (`juan.is-pinoy.dev`); if no Vercel project claims that
+   hostname, Vercel answers with its own 404 and this app never runs. Expect
+   two DNS records from Vercel:
+   - a `_vercel` TXT for domain verification — note that name already holds
+     per-subdomain `vc-domain-verify=` tokens for users pointing at their own
+     Vercel projects, so **add** to the record set rather than replacing it;
+   - an `_acme-challenge.is-pinoy.dev` record for the wildcard certificate.
+     Wildcards can only be issued over DNS-01, so there is no way to skip this.
+
+   The absence of `_acme-challenge.is-pinoy.dev` in the zone is the quickest
+   way to tell from outside that this step hasn't been done yet.
+2. **Re-check the neighbours.** Immediately after adding the wildcard, load
+   `dashboard.is-pinoy.dev`, `www`, and the apex to confirm their explicit
+   project assignments still beat it. This is the step most likely to bite.
+   `docs` and `status` never reach Vercel at all — they resolve to Cloudflare —
+   so the blast radius is limited to the Vercel-hosted names.
+3. **Claim one subdomain end to end** and watch the whole chain: PR opens
    against the domains repo → CI validates the `portfolio` block → merge → sync
    writes the DNS record → the subdomain renders.
+
+On the orange cloud: `/claim` writes `proxied: true` for portfolio subdomains
+(`apps/dashboard/lib/claim-portfolio.ts`), while the renderer host itself stays
+grey. That combination is deliberate, not drift — Cloudflare follows the in-zone
+CNAME through to Vercel and preserves the original Host, and proxying is what
+lets the `*.is-pinoy.dev/_tools/*` Worker routes fire and edge analytics record
+the visit. `app/page.tsx` depends on it directly: a claimed portfolio's OG card
+is served from its own `/_tools/og/image`. Keep the zone on Full or Full
+(strict) SSL; under strict it is the Vercel wildcard certificate from step 1
+that makes the origin leg valid.
 
 Universal SSL already covers `*.is-pinoy.dev` at one level, so there is no
 per-user certificate provisioning.

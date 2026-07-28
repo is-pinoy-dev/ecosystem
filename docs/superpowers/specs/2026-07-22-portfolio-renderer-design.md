@@ -199,8 +199,10 @@ The dashboard already has GitHub auth, so we know the user's login:
   `GITHUB_TOKEN`/`GH_TOKEN` pattern and ISR-caches all fetches. (In sandbox,
   unauthenticated `api.github.com` returns 403; the renderer degrades to a clean
   404 — a token is required for live rendering.)
-- ⬜ **Deployment host behind `portfolio.is-pinoy.dev`.** Still to decide; the
-  portfolio subdomains' CNAME target depends on it.
+- ✅ **Deployment host behind `portfolio.is-pinoy.dev`.** Vercel, alongside
+  `web` and `dashboard`. The project is deployed and `portfolio.is-pinoy.dev`
+  resolves to it (DNS-only CNAME to the project's `*.vercel-dns-*.com` target).
+  Cloudflare Workers was considered and rejected — see `apps/portfolio/README.md`.
 
 ## Phase 5 decision (resolved) — auto-open PR
 
@@ -213,9 +215,10 @@ is decoded server-side per request.
 
 ## Remaining before production
 
-- **Deployment host behind `portfolio.is-pinoy.dev`** — still to decide; the
-  portfolio subdomains' CNAME target depends on it.
-- **`GITHUB_TOKEN` for the renderer** — required for live rendering (anonymous
-  `api.github.com` is rate-limited/403).
+- **`*.is-pinoy.dev` as a domain on the Vercel portfolio project** — the one
+  piece still outstanding. Until it lands, a claimed subdomain reaches Vercel
+  with a Host no project owns and gets Vercel's 404; `proxy.ts` never runs. The
+  renderer host and preview mode work today and do not exercise this path. Steps
+  and the DNS records it needs are in `apps/portfolio/README.md`.
 - **Live OAuth + PR creation** — exercisable only outside the sandbox (needs a
   real GitHub OAuth app and API access).
