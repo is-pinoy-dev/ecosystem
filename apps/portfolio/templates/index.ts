@@ -1,5 +1,9 @@
 import { createElement, type ComponentType, type ReactElement } from "react"
-import type { PortfolioConfig } from "@is-pinoy-dev/schemas"
+import {
+  DESIGNER_TEMPLATES as DESIGNER_TEMPLATE_NAMES,
+  type PortfolioTemplate,
+  type BuiltinTheme,
+} from "@is-pinoy-dev/schemas"
 import type { PortfolioData } from "@/lib/portfolio-data"
 import { TerminalTemplate } from "./terminal"
 import { PixelCardTemplate } from "./pixel-card"
@@ -11,12 +15,24 @@ import { DraftDesign } from "./designer/draft"
 import { BubblegumDesign } from "./designer/bubblegum"
 import { GridDesign } from "./designer/grid"
 
-export type TemplateName = NonNullable<PortfolioConfig>["template"]
-export type PortfolioTheme = NonNullable<NonNullable<PortfolioConfig>["theme"]>
+export type TemplateName = PortfolioTemplate
+
+/**
+ * The themes the shell can actually apply.
+ *
+ * `portfolio.theme` in the schema is a union — a built-in name, or a pinned
+ * community theme. Only the built-ins are a `[data-theme]` switch over tokens
+ * that already ship in the CSS; a community theme has to be fetched and
+ * compiled first (P1), so it is deliberately not part of this type. See
+ * `resolveTheme` in lib/context.ts for how the union narrows to it.
+ */
+export type PortfolioTheme = BuiltinTheme
 
 export interface TemplateProps {
   data: PortfolioData
 }
+
+type DesignerTemplateName = (typeof DESIGNER_TEMPLATE_NAMES)[number]
 
 // "Layout" templates are styled by the color `theme` via the shared shell.
 // "Designer" templates are complete, self-contained designs (own layout, type,
@@ -28,7 +44,13 @@ const LAYOUT_TEMPLATES: Record<string, ComponentType<TemplateProps>> = {
   minimal: MinimalTemplate,
 }
 
-const DESIGNER_TEMPLATES: Record<string, ComponentType<TemplateProps>> = {
+// Typed by the schema's designer list rather than `string`, so adding a name
+// there without adding a component here (or vice versa) is a compile error
+// instead of a silent fall-through to the terminal template.
+const DESIGNER_TEMPLATES: Record<
+  DesignerTemplateName,
+  ComponentType<TemplateProps>
+> = {
   concrete: ConcreteDesign,
   broadsheet: BroadsheetDesign,
   phosphor: PhosphorDesign,

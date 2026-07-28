@@ -1,5 +1,12 @@
 import { cache } from "react"
 import { headers } from "next/headers"
+import {
+  BUILTIN_THEMES,
+  LAYOUT_TEMPLATES,
+  DESIGNER_TEMPLATES,
+  isCommunityTheme,
+  type PortfolioThemeRef,
+} from "@is-pinoy-dev/schemas"
 import { getPortfolioData } from "./github"
 import { resolveSubdomain } from "./resolve"
 import type { PortfolioData } from "./portfolio-data"
@@ -25,25 +32,32 @@ export interface PreviewParams {
   theme?: PortfolioTheme
 }
 
-const TEMPLATES: TemplateName[] = [
-  "terminal",
-  "pixel-card",
-  "minimal",
-  "concrete",
-  "broadsheet",
-  "phosphor",
-  "draft",
-  "bubblegum",
-  "grid",
+// Sourced from the schema rather than re-listed here — these were previously
+// duplicated across the schema, this file, templates/index.ts, and the
+// dashboard's claim form, with nothing keeping the four in step.
+const TEMPLATES: readonly string[] = [
+  ...LAYOUT_TEMPLATES,
+  ...DESIGNER_TEMPLATES,
 ]
-const THEMES: PortfolioTheme[] = [
-  "gold-dark",
-  "mono",
-  "matrix",
-  "midnight",
-  "crimson",
-  "sunset",
-]
+const THEMES: readonly string[] = BUILTIN_THEMES
+
+/**
+ * Narrow a subdomain's `portfolio.theme` to something the shell can apply.
+ *
+ * The schema accepts a pinned community theme, but rendering one needs the
+ * fetch-verify-compile pipeline that does not exist yet (P1). Until it does, a
+ * community theme falls back to the default built-in: the page renders in
+ * platform colors rather than emitting `data-theme="[object Object]"` and
+ * losing its styling entirely.
+ *
+ * This is a deliberate placeholder, not the P1 behaviour. When the compiler
+ * lands, a pinned theme that fails to resolve must be distinguishable from one
+ * that was never requested.
+ */
+export function resolveTheme(theme: PortfolioThemeRef | undefined) {
+  if (isCommunityTheme(theme)) return undefined
+  return theme
+}
 
 // Cached by primitive keys so generateMetadata and the page share one fetch per
 // request even though React `cache` keys on argument identity. `sections` is
@@ -132,7 +146,7 @@ export async function getRenderContext(
     return {
       login: resolved.github,
       template: resolved.portfolio.template,
-      theme: resolved.portfolio.theme,
+      theme: resolveTheme(resolved.portfolio.theme),
       data,
       subdomain,
     }

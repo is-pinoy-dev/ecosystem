@@ -576,6 +576,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@26.1.1)(jiti@2.6.1)(lightningcss@1.33.0)(msw@2.14.6(@types/node@26.1.1)(typescript@6.0.3))(tsx@4.21.0)
 
   packages/status:
     devDependencies:
