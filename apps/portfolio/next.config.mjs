@@ -19,11 +19,31 @@ export const IMAGE_HOSTS = [
 // dashboard. If a sanitizer bypass ever lands, these directives still deny the
 // payload its exits — beacon images, framing, form posts, and <base> hijacking.
 //
-// Deliberately no `default-src`, `script-src`, or `style-src`: Next injects
-// inline hydration scripts, so restricting those needs per-request nonces and a
-// broken CSP is worse than a narrow one. Directives left unset are unrestricted.
+// Still deliberately no `default-src` or `script-src`: Next injects inline
+// hydration scripts, so restricting those needs per-request nonces and a broken
+// CSP is worse than a narrow one. Directives left unset are unrestricted.
+//
+// `style-src` and `font-src` ARE set, as groundwork for community themes (see
+// docs/superpowers/specs/2026-07-28-community-themes-design.md). Both are
+// stylesheet *fetch* directives, which is the point:
+//
+//   - `style-src` keeps `'unsafe-inline'`, because Next emits inline styles and
+//     the designer templates use React `style={{}}` attributes (`style-src-attr`
+//     falls back to `style-src`, so dropping it would break them). It still
+//     denies remote stylesheets — a `<link>` or an `@import url(https://…)`
+//     resolves against the source list, not against `'unsafe-inline'`. That is
+//     the hole that matters here: `@import` would otherwise let a reviewed theme
+//     swap its own contents after approval.
+//   - `font-src 'self'` closes `@font-face { src: url(https://…) }`, which is
+//     the one exfiltration path CSS has left once `img-src` is pinned. Fonts are
+//     self-hosted woff2 bundled through the CSS pipeline, so 'self' covers them.
+//
+// Neither is sufficient on its own — the ingest-time CSS allow-list is the
+// actual boundary. These are the layer behind it.
 const csp = [
   `img-src 'self' data: ${IMAGE_HOSTS.map((h) => `https://${h}`).join(" ")}`,
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'none'",

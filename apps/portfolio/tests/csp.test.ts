@@ -83,13 +83,56 @@ describe("security headers", () => {
     expect(csp).toContain("base-uri 'self'")
   })
 
-  it("does not restrict scripts or styles, which would break hydration", async () => {
+  it("does not restrict scripts, which would break hydration", async () => {
     // Intentional: Next emits inline hydration scripts, so a script-src without
     // per-request nonces would break the page. Asserted so nobody adds a
     // half-configured one and ships a blank portfolio.
     const csp = (await headerMap()).get("Content-Security-Policy")!
     expect(csp).not.toContain("default-src")
     expect(csp).not.toContain("script-src")
-    expect(csp).not.toContain("style-src")
+  })
+
+  it("keeps 'unsafe-inline' in style-src so the page still renders", async () => {
+    // Same failure mode as script-src, one layer over: Next emits inline styles
+    // and the designer templates use React `style={{}}` attributes, which
+    // `style-src-attr` governs — and that falls back to `style-src`. Tightening
+    // this without per-request nonces strips the styling off every portfolio,
+    // so the directive is deliberately permissive about *inline* CSS.
+    const csp = (await headerMap()).get("Content-Security-Policy")!
+    const styleSrc = directive(csp, "style-src")
+    expect(styleSrc).toBeDefined()
+    expect(styleSrc).toContain("'unsafe-inline'")
+  })
+
+  it("still denies remote stylesheets and fonts", async () => {
+    // What style-src/font-src are actually here for. `'unsafe-inline'` permits
+    // an inline <style>, but a stylesheet *fetched* by `@import url(https://…)`
+    // resolves against the source list — so this is what stops a reviewed
+    // community theme from swapping its contents after approval, and what
+    // closes `@font-face { src: url(https://…) }` as an exfiltration beacon.
+    const csp = (await headerMap()).get("Content-Security-Policy")!
+
+    for (const name of ["style-src", "font-src"]) {
+      const sources = directive(csp, name)!.split(/\s+/).slice(1)
+      expect(sources, `${name} must allow 'self'`).toContain("'self'")
+      for (const escape of ["*", "https:", "http:", "data:"]) {
+        expect(sources, `${name} must not readmit every host`).not.toContain(
+          escape,
+        )
+      }
+      // No explicit remote origins either.
+      expect(
+        sources.filter((s) => s.includes("//")),
+        `${name} must not allow remote origins`,
+      ).toEqual([])
+    }
   })
 })
+
+/** Pull one directive out of a CSP header value, or undefined if unset. */
+function directive(csp: string, name: string): string | undefined {
+  return csp
+    .split(";")
+    .map((d) => d.trim())
+    .find((d) => d === name || d.startsWith(`${name} `))
+}
