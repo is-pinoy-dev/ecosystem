@@ -22,6 +22,20 @@ export const config = [
     },
   },
   {
+    rules: {
+      // The codebase marks deliberately-unused bindings with a leading
+      // underscore (e.g. `_loadContext`, `_ctx`). Honour that convention.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+  {
     plugins: {
       onlyWarn,
     },

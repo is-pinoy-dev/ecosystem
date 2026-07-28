@@ -154,7 +154,7 @@ export default function Index() {
         </section>
       )}
 
-      <section className="mt-auto flex flex-col gap-4">
+      <section className="flex flex-col gap-4">
         <h2 className="m-0 text-2xl font-semibold tracking-[-0.02em] text-foreground">
           How it works
         </h2>

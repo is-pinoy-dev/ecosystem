@@ -1,4 +1,5 @@
-import { useLoaderData } from "react-router"
+import { Link, useLoaderData } from "react-router"
+import { ChevronRight } from "lucide-react"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { NavBar } from "~/components/nav-bar"
 import { StatusBadge } from "~/components/status-badge"
@@ -60,6 +61,26 @@ function Metric({
       </span>
       {sub && <span className="text-sm text-muted-foreground">{sub}</span>}
     </div>
+  )
+}
+
+/** Ruled row linking to a subdomain's detail page. */
+function SubdomainRow({ status }: { status: SubdomainStatus }) {
+  return (
+    <Link
+      to={`/${status.subdomain}`}
+      className="flex items-center gap-4 border-b border-border px-5 py-4 no-underline transition-colors duration-[140ms] last:border-b-0 hover:bg-muted focus-visible:bg-muted"
+    >
+      <span className="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
+        {status.subdomain}
+        <span className="text-muted-foreground">.is-pinoy.dev</span>
+      </span>
+      <StatusBadge status={status.overall} />
+      <ChevronRight
+        className="size-4 shrink-0 text-muted-foreground"
+        aria-hidden="true"
+      />
+    </Link>
   )
 }
 
@@ -169,6 +190,17 @@ export default function StatusPage() {
                 accent={sslExpired > 0 ? "destructive" : "neutral"}
               />
             </div>
+
+            <section className="flex flex-col gap-4">
+              <h2 className="m-0 text-2xl font-semibold tracking-[-0.02em] text-foreground">
+                Subdomains
+              </h2>
+              <div className="flex flex-col border border-border">
+                {statuses.map((status) => (
+                  <SubdomainRow key={status.subdomain} status={status} />
+                ))}
+              </div>
+            </section>
           </div>
         )}
       </Container>

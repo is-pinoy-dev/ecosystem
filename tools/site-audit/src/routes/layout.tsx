@@ -80,7 +80,7 @@ export default function Layout() {
     const controller = new AbortController()
     runAudit(controller.signal)
     return () => controller.abort()
-  }, [])
+  }, [runAudit])
 
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault()
@@ -93,7 +93,6 @@ export default function Layout() {
 
   const auditedAt = state.status === "result" ? state.data.auditedAt : undefined
 
-  const origin = getOrigin()
   const host = getHost()
 
   return (
