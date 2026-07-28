@@ -3,7 +3,7 @@ import { join } from "node:path"
 import { ImageResponse } from "next/og"
 
 export const runtime = "nodejs"
-export const alt = "is-pinoy.dev dashboard — manage your free subdomains."
+export const alt = "Manage your free .is-pinoy.dev subdomains."
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 

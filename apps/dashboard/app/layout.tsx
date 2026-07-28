@@ -21,7 +21,7 @@ const DESCRIPTION =
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  applicationName: "is-pinoy.dev dashboard",
+  applicationName: "Dashboard | is-pinoy.dev",
   // Page names already say what this is ("Domains", "Account"), and the host
   // is dashboard.is-pinoy.dev — so the suffix is just the brand, matching the
   // web app's `%s | is-pinoy.dev`.
@@ -48,13 +48,13 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_PH",
     url: SITE_URL,
-    siteName: "is-pinoy.dev dashboard",
-    title: "is-pinoy.dev dashboard",
+    siteName: "is-pinoy.dev",
+    title: "Dashboard | is-pinoy.dev",
     description: DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "is-pinoy.dev dashboard",
+    title: "Dashboard | is-pinoy.dev",
     description: DESCRIPTION,
     images: ["/opengraph-image"],
   },

@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "is-pinoy.dev dashboard",
+    name: "Dashboard | is-pinoy.dev",
     short_name: "is-pinoy.dev",
     description:
       "Manage your free .is-pinoy.dev subdomains, DNS records, and pending changes.",
