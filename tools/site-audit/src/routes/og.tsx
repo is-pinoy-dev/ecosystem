@@ -1,9 +1,8 @@
-/** biome-ignore-all lint/suspicious/noCommentText: <explanation> */
 import { useOutletContext } from "react-router"
-import { Button } from "@is-pinoy-dev/ui/components/button"
 import type { AuditContext } from "./layout"
 import { AuditTable } from "../components/audit-table"
 import { OgPreviews } from "../components/og-previews"
+import { ErrorState, ScanningState } from "../components/audit-states"
 
 export function meta() {
   return [
@@ -15,25 +14,10 @@ export function meta() {
 export default function Og() {
   const { state, runAudit } = useOutletContext<AuditContext>()
 
-  if (state.status === "loading") {
-    return (
-      <p className="animate-pulse font-pixel text-xs text-primary">
-        SCANNING...
-      </p>
-    )
-  }
+  if (state.status === "loading") return <ScanningState />
 
   if (state.status === "error") {
-    return (
-      <div className="space-y-4">
-        <p className="font-pixel text-xs text-destructive">
-          ERROR: {state.message}
-        </p>
-        <Button onClick={() => runAudit()} variant="outline-shadow">
-          RETRY
-        </Button>
-      </div>
-    )
+    return <ErrorState message={state.message} onRetry={() => runAudit()} />
   }
 
   const { og } = state.data
@@ -43,10 +27,15 @@ export default function Og() {
     og.fields.find((f) => f.label === label)?.value ?? null
 
   return (
-    <div className="space-y-4">
-      <p className="font-pixel text-[11px] text-primary">
-        // OPEN GRAPH — {passed}/{og.fields.length} PASSED
-      </p>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <p className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+          Open Graph
+        </p>
+        <h1 className="m-0 text-2xl font-semibold tracking-[-0.02em] text-foreground">
+          {passed}/{og.fields.length} checks passed
+        </h1>
+      </div>
 
       <AuditTable fields={og.fields} />
 

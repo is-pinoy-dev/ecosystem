@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-**is-pinoy.dev** — free subdomain service for Filipino developers. Packages expose a CLI + registry that manages DNS records via Cloudflare. The web app and docs site present the public interface with a retro pixel-art aesthetic.
+**is-pinoy.dev** — free subdomain service for Filipino developers. Packages expose a CLI + registry that manages DNS records via Cloudflare. The web app and docs site present the public interface using the Banig Grid v2 design system (see `DESIGN.md`).
 
 ## Common Commands
 
@@ -45,17 +45,29 @@ pnpm --filter @is-pinoy-dev/cli test:watch
 apps/
   web/          Next.js 16 public website (depends on @is-pinoy-dev/ui)
   docs/         Fumadocs MDX documentation site
+  dashboard/    Next.js dashboard app
+  portfolio/    Next.js portfolio app
 packages/
   cli/          @is-pinoy-dev/cli — Commander.js CLI (validate, diff, sync commands)
   registry/     @is-pinoy-dev/registry — Core DNS registry logic; Cloudflare provider
   schemas/      @is-pinoy-dev/schemas — Zod schemas; `generate:schema` script produces JSON Schema
   validate/     @is-pinoy-dev/validate — Domain validation logic (published package)
+  status/       @is-pinoy-dev/status — Shared subdomain status types
+  badge-kit/    @is-pinoy-dev/badge-kit — Badge rendering
   ui/           @is-pinoy-dev/ui — shadcn/ui + Radix UI component library
   eslint-config/ @workspace/eslint-config — shared ESLint rules
   typescript-config/ @workspace/typescript-config — shared tsconfig bases
-tools/
-  site-audit/   Standalone React Router 7 + Vite app for Lighthouse auditing (not published)
+tools/          Cloudflare Workers (React Router 7 + Vite), deployed separately — not published
+  site-audit/   SEO + Open Graph auditing, served at /_tools/site-audit
+  og/           Per-subdomain Open Graph image generator, served at /_tools/og
+  status/       Uptime/DNS/SSL status site backed by D1, served at status.is-pinoy.dev
+  analytics/    Analytics worker
 ```
+
+**Tools:** each is a React Router 7 SSR app running on a Cloudflare Worker. The
+whole `react-router` family (`react-router` plus `@react-router/{dev,node,serve,cloudflare}`)
+**must stay on the same version** — a lone `react-router` bump breaks
+`getLoadContext`/`AppLoadContext` and the dev server.
 
 **Dependency chain:** `cli` → `registry` → `schemas` + `validate` → `schemas`
 
@@ -79,12 +91,30 @@ tools/
 
 ## Design System
 
-The UI follows a strict **retro pixel-art** aesthetic (see `DESIGN.md`):
-- Primary color: gold `#F5C800` on dark backgrounds
-- Font: **Press Start 2P** for headings/UI; **zero border-radius everywhere** (no `rounded-*` classes)
-- Borders: hard pixel borders with pixel-offset box shadows — **no blur** (e.g., `4px 4px 0px #000`, never `shadow-md`)
-- Scanline overlay is a required global effect (defined in `globals.css`)
-- Component variants live in `packages/ui`; Tailwind v4 CSS variables drive tokens
+The UI follows the **Banig Grid v2** system — a calm, precise, light-first
+direction for Filipino developer infrastructure. `DESIGN.md` is the source of
+truth; the highlights:
+
+- **Light-first.** Warm canvas `#FDFCFA` with navy `#0B1F44` text. Dark mode is
+  an optional accessibility preference, not the default presentation — never
+  hardcode `class="dark"` on `<html>`.
+- **Color roles.** Yellow `#F5C800` is brand and primary action. Blue `#175CD3`
+  supports links, focus, and eyebrows — it never leads. Green, red, and orange
+  are semantic only (`success`, `destructive`, `warning`), never decorative.
+- **Type.** **IBM Plex Sans** for headings and body; **IBM Plex Mono** for
+  domains, code, metadata, and uppercase eyebrows (12px, `0.12em` tracking).
+  Body copy is 16px minimum. **Press Start 2P is retired from interface text.**
+- **Shape.** Border radius stays `0`, but borders are **1px** — no 2–3px
+  borders, and **no pixel-offset or blurred shadows**. Group with white
+  surfaces, subtle tints, and rules. Don't nest cards.
+- **Layout.** Prefer ruled rows, rules, and whitespace over card grids. Cards
+  are for standalone objects only. Container maxes at `1180px`.
+- **Motion.** The GIF banners (`banner.gif`, `docs-banner.gif`) are the brand
+  motion and must be preserved. No scanlines, flicker, glow-pulse, or
+  arcade-style movement. Transitions are 120–180ms on color/border/opacity.
+
+Tokens live in `packages/ui/src/styles/globals.css` and drive Tailwind v4 CSS
+variables; component variants live in `packages/ui`.
 
 ## Component Rules
 
@@ -99,6 +129,7 @@ The UI follows a strict **retro pixel-art** aesthetic (see `DESIGN.md`):
 **Within Tailwind, prefer shadcn CSS variable tokens** over arbitrary values or raw color literals. Use semantic utilities like `text-primary`, `bg-background`, `border-border`, `text-muted-foreground` rather than `text-[#F5C800]` or `bg-[var(--color-gold)]`. Only use arbitrary values when no token maps to the required value.
 
 Priority order:
+
 1. **shadcn/ui components from `@is-pinoy-dev/ui`** — default choice for all UI elements
 2. **Tailwind utility classes with shadcn CSS variable tokens** — e.g., `text-primary`, `bg-card`
 3. **Tailwind utility classes with static scale values** — e.g., `text-sm`, `p-4`

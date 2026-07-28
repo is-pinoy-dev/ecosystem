@@ -1,3 +1,4 @@
+import { CheckCircle2 } from "lucide-react"
 import type { AuditCategory } from "@is-pinoy-dev/schemas"
 import { StatusBadge } from "./status-badge"
 
@@ -11,17 +12,21 @@ const PRIORITY = { fail: 0, warn: 1, pass: 2 }
 
 export function IssueList({ seo, og, limit }: IssueListProps) {
   const issues = [
-    ...seo.fields.filter((f) => f.status !== "pass").map((f) => ({ ...f, category: "SEO" })),
-    ...og.fields.filter((f) => f.status !== "pass").map((f) => ({ ...f, category: "SOCIAL" })),
+    ...seo.fields
+      .filter((f) => f.status !== "pass")
+      .map((f) => ({ ...f, category: "SEO" })),
+    ...og.fields
+      .filter((f) => f.status !== "pass")
+      .map((f) => ({ ...f, category: "Social" })),
   ].sort((a, b) => PRIORITY[a.status] - PRIORITY[b.status])
 
   if (issues.length === 0) {
     return (
-      <div
-        className="border-2 border-primary bg-card p-6 text-center"
-        style={{ boxShadow: "4px 4px 0 var(--color-primary-dark)" }}
-      >
-        <p className="font-pixel text-xs text-primary">ALL CHECKS PASSED</p>
+      <div className="flex items-center justify-center gap-2.5 border border-border bg-card p-6">
+        <CheckCircle2 className="size-4 text-success" aria-hidden="true" />
+        <p className="m-0 text-sm font-medium text-foreground">
+          All checks passed
+        </p>
       </div>
     )
   }
@@ -30,13 +35,13 @@ export function IssueList({ seo, og, limit }: IssueListProps) {
   const extra = issues.length - shown.length
 
   return (
-    <div className="border-2 border-border bg-card shadow-[4px_4px_0_var(--color-muted)]">
-      <div className="border-b-2 border-border px-4 py-3">
-        <p className="font-pixel text-[11px] text-foreground">
-          ISSUES ({issues.length})
+    <div className="border border-border bg-card">
+      <div className="border-b border-border px-4 py-3">
+        <p className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+          Issues ({issues.length})
         </p>
       </div>
-      <ul className="divide-y divide-border">
+      <ul className="m-0 list-none divide-y divide-border p-0">
         {shown.map((issue) => (
           <li
             key={`${issue.category}-${issue.label}`}
@@ -44,12 +49,14 @@ export function IssueList({ seo, og, limit }: IssueListProps) {
           >
             <StatusBadge status={issue.status} />
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] text-foreground">
-                <span className="text-muted-foreground">[{issue.category}]</span>{" "}
+              <p className="m-0 text-sm text-foreground">
+                <span className="font-mono text-xs text-muted-foreground">
+                  {issue.category}
+                </span>{" "}
                 {issue.label}
               </p>
               {issue.message && (
-                <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                <p className="m-0 mt-1 text-sm leading-6 text-muted-foreground">
                   {issue.message}
                 </p>
               )}
@@ -58,9 +65,9 @@ export function IssueList({ seo, og, limit }: IssueListProps) {
         ))}
       </ul>
       {extra > 0 && (
-        <div className="border-t-2 border-border px-4 py-3">
-          <p className="font-pixel text-[9px] text-muted-foreground">
-            +{extra} MORE ISSUES — SEE SEO → ISSUES TAB
+        <div className="border-t border-border px-4 py-3">
+          <p className="m-0 text-sm text-muted-foreground">
+            +{extra} more issues — see the SEO → Issues tab.
           </p>
         </div>
       )}

@@ -1,8 +1,8 @@
 import { useOutletContext } from "react-router"
-import { Button } from "@is-pinoy-dev/ui/components/button"
 import type { AuditContext } from "./layout"
 import { ScoreCard } from "../components/score-card"
 import { IssueList } from "../components/issue-list"
+import { ErrorState, ScanningState } from "../components/audit-states"
 import type { AuditCategory } from "@is-pinoy-dev/schemas"
 
 export function meta() {
@@ -25,34 +25,19 @@ function buildOverallCategory(
 export default function Overview() {
   const { state, runAudit } = useOutletContext<AuditContext>()
 
-  if (state.status === "loading") {
-    return (
-      <p className="animate-pulse font-pixel text-xs text-primary">
-        SCANNING...
-      </p>
-    )
-  }
+  if (state.status === "loading") return <ScanningState />
 
   if (state.status === "error") {
-    return (
-      <div className="space-y-4">
-        <p className="font-pixel text-xs text-destructive">
-          ERROR: {state.message}
-        </p>
-        <Button onClick={() => runAudit()} variant="outline-shadow">
-          RETRY
-        </Button>
-      </div>
-    )
+    return <ErrorState message={state.message} onRetry={() => runAudit()} />
   }
 
   const { seo, og } = state.data
   const overall = buildOverallCategory(seo, og)
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <ScoreCard label="Overall Score" category={overall} size="large" />
+        <ScoreCard label="Overall score" category={overall} size="large" />
         <ScoreCard label="SEO" category={seo} />
         <ScoreCard label="Social" category={og} />
       </div>

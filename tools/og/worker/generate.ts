@@ -43,26 +43,29 @@ function starburst(
 }
 
 function buildNotFoundSvg(subdomain: string): string {
-  const background = "#0D0D0D"
-  const surface = "#1A1A1A"
-  const muted = "#444444"
+  const background = "#FDFCFA"
+  const surface = "#F2F0E9"
+  const border = "#DED9CD"
+  const foreground = "#0B1F44"
+  const mutedForeground = "#667085"
+  const accent = "#175CD3"
   const leftPanelWidth = 380
   const leftPanelCenter = leftPanelWidth / 2
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+    <rect x="0" y="0" width="1200" height="630" fill="${background}"/>
     <rect x="0" y="0" width="${leftPanelWidth}" height="630" fill="${surface}"/>
-    <rect x="${leftPanelWidth}" y="0" width="4" height="630" fill="${muted}"/>
-    <rect x="${leftPanelWidth + 4}" y="0" width="${1200 - leftPanelWidth - 4}" height="630" fill="${background}"/>
+    <rect x="${leftPanelWidth}" y="0" width="1" height="630" fill="${border}"/>
 
-    ${starburst(leftPanelCenter, 250, 110, muted)}
-    <text x="${leftPanelCenter}" y="340" font-family="Press Start 2P" font-size="10" fill="${muted}" text-anchor="middle" letter-spacing="2">IS-PINOY.DEV</text>
+    ${starburst(leftPanelCenter, 250, 110, accent)}
+    <text x="${leftPanelCenter}" y="344" font-family="Geist" font-size="15" font-weight="600" fill="${mutedForeground}" text-anchor="middle" letter-spacing="1.8">IS-PINOY.DEV</text>
 
-    <text x="796" y="268" font-family="Press Start 2P" font-size="11" fill="${muted}" text-anchor="middle" letter-spacing="3">404</text>
-    <text x="796" y="316" font-family="Press Start 2P" font-size="18" fill="#2A2A2A" text-anchor="middle">SUBDOMAIN NOT FOUND</text>
-    <rect x="${leftPanelWidth + 80}" y="328" width="${1200 - leftPanelWidth - 80 - 60}" height="2" fill="${muted}" fill-opacity="0.3"/>
-    <text x="796" y="378" font-family="Press Start 2P" font-size="12" fill="#252525" text-anchor="middle">${escapeXml(subdomain)}.is-pinoy.dev</text>
+    <text x="460" y="266" font-family="Geist" font-size="14" font-weight="600" fill="${accent}" letter-spacing="1.8">404 — NOT FOUND</text>
+    <text x="460" y="330" font-family="Geist" font-size="46" font-weight="600" fill="${foreground}" letter-spacing="-1">Subdomain not registered</text>
+    <rect x="460" y="360" width="${1200 - 460 - 70}" height="1" fill="${border}"/>
+    <text x="460" y="404" font-family="Geist" font-size="26" font-weight="600" fill="${mutedForeground}" letter-spacing="-0.5">${escapeXml(subdomain)}.is-pinoy.dev</text>
 
-    <text x="${leftPanelCenter}" y="590" font-family="Press Start 2P" font-size="8" fill="#3A3A3A" text-anchor="middle" letter-spacing="1">FREE FOR FILIPINOS</text>
+    <text x="${leftPanelCenter}" y="590" font-family="Geist" font-size="13" font-weight="600" fill="${mutedForeground}" text-anchor="middle" letter-spacing="0.8">FREE FOR FILIPINO DEVELOPERS</text>
   </svg>`
 }
 

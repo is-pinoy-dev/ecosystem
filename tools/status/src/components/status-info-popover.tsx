@@ -1,40 +1,41 @@
+import { HelpCircle } from "lucide-react"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@is-pinoy-dev/ui/components/popover";
+} from "@is-pinoy-dev/ui/components/popover"
+import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
 
 const STATUSES = [
   {
-    dot: "bg-green-500 animate-pulse",
-    label: "OPERATIONAL",
-    labelClass: "text-green-400",
+    tone: "success",
+    label: "Operational",
+    labelClass: "text-success",
     desc: "DNS is live and your site is reachable.",
   },
   {
-    dot: "bg-primary",
-    label: "PROPAGATING",
-    labelClass: "text-primary",
+    tone: "warning",
+    label: "Propagating",
+    labelClass: "text-warning",
     desc: "DNS record added but not yet visible globally. Usually resolves within minutes to 48 hours.",
-    blink: true,
   },
   {
-    dot: "bg-red-500",
-    label: "DEGRADED",
-    labelClass: "text-red-400",
+    tone: "destructive",
+    label: "Degraded",
+    labelClass: "text-destructive",
     desc: "DNS is live but the site behind it isn't responding.",
   },
-];
+] as const
 
 export function StatusInfoPopover() {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button
-          aria-label="Status explanation"
-          className="inline-flex items-center justify-center w-5 h-5 border border-border text-muted-foreground font-pixel text-[8px] hover:border-primary hover:text-primary transition-colors cursor-pointer"
+          aria-label="What do these statuses mean?"
+          className="inline-flex size-8 items-center justify-center text-muted-foreground transition-colors duration-[140ms] hover:text-accent focus-visible:text-accent"
         >
-          ?
+          <HelpCircle className="size-4" aria-hidden="true" />
         </button>
       </PopoverTrigger>
 
@@ -42,28 +43,23 @@ export function StatusInfoPopover() {
         side="bottom"
         align="start"
         sideOffset={8}
-        className="w-72 border-2 border-border bg-background shadow-[4px_4px_0px_#000] p-4 rounded-none ring-0"
+        className="w-80 border border-border bg-popover p-5"
       >
-        <p className="font-pixel text-[8px] text-muted-foreground mb-4 uppercase">
-          Status Explained
+        <p className="m-0 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+          Status explained
         </p>
 
-        <ul className="space-y-4">
-          {STATUSES.map(({ dot, label, labelClass, desc, blink }) => (
+        <ul className="mt-4 flex list-none flex-col gap-4 p-0">
+          {STATUSES.map(({ tone, label, labelClass, desc }) => (
             <li key={label} className="flex gap-3">
-              <span
-                className={`mt-0.5 inline-block w-2 h-2 flex-shrink-0 ${dot}`}
-                style={
-                  blink
-                    ? { animation: "pixel-blink 1s step-end infinite" }
-                    : undefined
-                }
-              />
+              <StatusIndicator tone={tone} className="mt-1.5" />
               <div>
-                <span className={`font-pixel text-[8px] ${labelClass}`}>
+                <span
+                  className={`font-mono text-[13px] font-medium ${labelClass}`}
+                >
                   {label}
                 </span>
-                <p className="font-mono text-xs text-muted-foreground mt-1 leading-relaxed">
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
                   {desc}
                 </p>
               </div>
@@ -71,17 +67,17 @@ export function StatusInfoPopover() {
           ))}
         </ul>
 
-        <div className="mt-4 pt-4 border-t border-border">
+        <div className="mt-5 border-t border-border pt-4">
           <a
             href="https://docs.is-pinoy.dev/guides/workflow/after-merge"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-pixel text-[7px] text-primary hover:underline"
+            className="text-sm font-medium text-accent underline-offset-4 hover:underline"
           >
-            LEARN MORE →
+            Learn more
           </a>
         </div>
       </PopoverContent>
     </Popover>
-  );
+  )
 }
