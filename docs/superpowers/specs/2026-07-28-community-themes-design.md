@@ -404,10 +404,21 @@ score = ln(1 + installs) * 1.0 + ln(1 + stars) * 0.5 + recency_decay(updated_at)
 Ordered so each phase ships something usable and the risky parts come after the
 cheap parts have proven the model.
 
-**P0 — foundations.** Theme-contract class hooks in the renderer (a refactor of
-existing templates, no new feature). `style-src` + `font-src` in the CSP with
-`tests/csp.test.ts` extended. Theme schema in `@is-pinoy-dev/schemas`, union'd
-with the existing enums.
+**P0 — foundations. ✅ Done** (branch
+`claude/community-themes-p0-foundations`).
+
+- Theme schema union'd with the existing enums, ranges rejected, community
+  theme on a designer template rejected. Template/theme lists exported and the
+  four duplicate copies collapsed onto them.
+- `style-src` + `font-src` set, `tests/csp.test.ts` extended. Verified in
+  Chromium against the running server: inline style attributes and inline
+  `<style>` still apply, remote stylesheets and remote fonts are blocked.
+
+**Theme-contract class hooks moved to P3.** They were listed here, but they
+exist to give T2 layout themes something to style — T1 tokens cascade through
+the shadcn utilities the layout templates already use, and need no contract.
+Building it now would mean designing an API with no consumer to validate it
+against, which is what this document's own open questions warn about.
 
 **P1 — T1 token themes, end to end, no new infrastructure.** The themes repo
 with CI validation, PR previews via the existing `?preview=` mode, and an index
@@ -431,9 +442,14 @@ made elsewhere in this document:
 - [ ] Its test suite treated the way `tests/parse.test.ts` is — a release
       blocker with a documented vector list, not an optional suite. Add a case
       before changing the compiler, same rule as the sanitizer.
-- [ ] `style-src` (hashed) and `font-src` in the CSP, `tests/csp.test.ts`
-      extended to pin them.
-- [ ] Version pinning in the schema + content-addressed compiled artifacts.
+- [x] `style-src` and `font-src` in the CSP, `tests/csp.test.ts` extended to
+      pin them. **Not** hashed as originally written — `'unsafe-inline'` has to
+      stay for the templates' `style="…"` attributes, so these deny remote
+      stylesheets and fonts rather than inline CSS. That is the half that
+      matters against `@import` and font beacons; it is not a substitute for
+      the compiler.
+- [x] Version pinning in the schema. Content-addressed compiled artifacts still
+      to do, with the compiler.
 - [ ] Ingest-time fetch with integrity verification. No runtime fetch of
       author-hosted CSS, ever.
 - [ ] An unpublish path that reverts affected subdomains to a built-in theme.
