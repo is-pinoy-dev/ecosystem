@@ -94,7 +94,7 @@ takes a GitHub login and renders a real profile, so a theme author develops
 against real content from the first minute:
 
 ```
-https://portfolio.is-pinoy.dev/?preview=1&login=maria-santos&theme=@maria-santos/brutal-grid@1.2.0
+https://portfolio.is-pinoy.dev/?preview=1&github=maria-santos&theme=@maria-santos/brutal-grid@1.2.0
 ```
 
 Locally, a small `@is-pinoy-dev/theme-kit` CLI (proposed — sibling to the

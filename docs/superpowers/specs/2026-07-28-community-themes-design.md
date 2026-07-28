@@ -272,7 +272,7 @@ adopting a new format.
 
 CI on a theme PR: validate against a new schema in `@is-pinoy-dev/schemas`,
 compile the CSS through the allow-list, and **post a live preview link**. That
-last part is free — `apps/portfolio` already has `?preview=1&login=…&template=…`,
+last part is free — `apps/portfolio` already has `?preview=1&github=…&template=…`,
 built for the dashboard's claim flow. Extending it with `&theme=<id>@<version>`
 gives every theme PR a real, rendered preview against a real profile with no new
 infrastructure.

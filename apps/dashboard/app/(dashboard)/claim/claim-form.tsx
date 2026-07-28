@@ -91,7 +91,7 @@ export function ClaimForm({ login }: { login: string }) {
   const template = isDesigner ? designer : layout
 
   const previewUrl =
-    `${PORTFOLIO_URL}/?preview=1&login=${encodeURIComponent(login)}&template=${template}` +
+    `${PORTFOLIO_URL}/?preview=1&github=${encodeURIComponent(login)}&template=${template}` +
     (isDesigner ? "" : `&theme=${theme}`)
 
   function onSubmit() {
