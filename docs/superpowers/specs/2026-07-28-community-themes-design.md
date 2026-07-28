@@ -38,10 +38,29 @@ for two reasons:
    it — simultaneously, with no PR against those subdomains.
 
 `is-pinoy.dev` is also not on the Public Suffix List, so every portfolio is
-same-site with `dashboard.is-pinoy.dev`. Script running on a portfolio can set
-cookies on the parent domain, shadow the dashboard's session cookie, and defeat
-SameSite protections — quite apart from what "phishing page on the platform's own
-brand domain" does to the project.
+same-site with `dashboard.is-pinoy.dev`, which holds a `public_repo`-scoped
+GitHub OAuth token for every signed-in user (`apps/dashboard/auth.ts`) and has
+server actions that spend it to open PRs against the domains repo.
+
+Two things are worth stating precisely, because the loose version ("XSS on a
+portfolio steals dashboard sessions") is wrong in a way that misdirects the
+mitigations:
+
+- Auth.js cookies are **host-only**, so a sibling subdomain cannot *read* the
+  dashboard session. The real cookie attack is **shadowing**: script on a
+  portfolio sets `Domain=.is-pinoy.dev` with the session cookie's name, the
+  dashboard receives two cookies of that name, and the victim ends up operating
+  in an attacker-chosen session. Auth.js's CSRF cookie carries the `__Host-`
+  prefix and is immune; the session cookie is `__Secure-`, which does not
+  forbid a `Domain` attribute, and is not.
+- Next's server actions perform an Origin/Host check, so straightforward CSRF
+  into `claimPortfolio` from `evil.is-pinoy.dev` is **already blocked** — it
+  does not depend on `SameSite`, which a sibling subdomain would otherwise
+  defeat outright.
+
+Independently of themes, moving the session cookie to a `__Host-` prefix closes
+the shadowing path for free and should happen regardless of whether this design
+ships.
 
 So the design splits into two questions that are usually conflated:
 
@@ -127,6 +146,16 @@ gate (no `fetch`, no `eval`, no `dangerouslySetInnerHTML` beyond the one
 sanitized README slot, no runtime dependencies), a human approves, and the
 deploy makes it live.
 
+T3's real risk is not the rendered page — it is **CI**. `turbo.json` declares
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ZONE_ID` as build environment. Any theme
+that executes during install or build — a dependency, a `postinstall` — reads
+the zone token and can rewrite DNS for every subdomain in the registry. That is
+a whole-registry compromise reached through a theme submission, and it is a
+strictly larger blast radius than anything the rendering tiers can produce.
+Hence: the vendoring bot copies source only, runs no install scripts, the theme
+gets no dependencies of its own, and theme validation runs in a job that has no
+Cloudflare credentials in its environment.
+
 Note what "runtime available" then means, and that it is the requirement that
 actually matters: **the theme becomes available to every subdomain the moment it
 merges, and no subdomain owner has to build or deploy anything to use it.** That
@@ -149,14 +178,28 @@ hash, and served from our origin.**
 T1 and T2 accept author CSS, so the CSS pipeline is a security boundary and
 needs the same posture `lib/parse.ts` has:
 
-- `url()` in any property — an exfiltration beacon that reports every visitor's
-  IP and UA to the theme author on every render. Banned.
-- `@import` — makes the sheet remotely mutable after review. Banned.
+- `@font-face src` — an exfiltration beacon that reports every visitor's IP, UA
+  and timing to the theme author on every render, for every subdomain using the
+  theme. **This one is live today**: the CSP sets no `font-src` and no
+  `default-src`, so font fetches are unrestricted. Allow a curated self-hosted
+  set only.
+- `@import` — makes the sheet remotely mutable after review, which is the same
+  hole as runtime-fetched CSS (§2). Also unrestricted today, since `style-src`
+  is unset. Banned.
+- `url()` in image properties — the same beacon, but note this path is *already*
+  closed: CSP `img-src` covers CSS `background-image`, and the existing
+  four-host allow-list applies. Ban `url()` anyway, so the rule doesn't depend
+  on a CSP directive staying narrow.
 - Attribute/`:has()` selectors combined with `url()` — classic CSS value
   exfiltration. Falls out of the `url()` ban.
-- `position: fixed` full-viewport overlays — phishing surface on the brand
-  domain. `frame-ancestors 'none'` doesn't help here. Banned.
-- `@font-face src` — same beacon problem. Allow a curated self-hosted set only.
+- `position: fixed` full-viewport overlays — the highest-yield attack in the
+  whole model. A pure-CSS overlay plus `::before { content }` renders a
+  full-page sign-in prompt on a genuine `*.is-pinoy.dev` origin under a genuine
+  Universal SSL cert. `frame-ancestors 'none'` and `form-action 'none'` do not
+  help — the payload is a *link*, not a form, and the obvious destination is a
+  real GitHub OAuth consent screen for the attacker's own app requesting `repo`.
+  Needs no JavaScript, so it survives every tier. Banned, and worth a positive
+  layout-containment rule rather than a single property ban.
 
 Implementation: parse with PostCSS at ingest, **allow-list** at-rules,
 properties, and functions (never blocklist), rewrite every selector to be scoped
