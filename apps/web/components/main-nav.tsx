@@ -1,20 +1,23 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Menu, X } from "lucide-react"
+import { ArrowRight, ArrowUpRight, Menu, X } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { AnimatedThemeToggler } from "@is-pinoy-dev/ui/components/animated-theme-toggler"
 import { Container } from "@is-pinoy-dev/ui/components/container"
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@is-pinoy-dev/ui/components/navigation-menu"
 import { GitHubStars } from "@/components/github-stars"
-import { GitHubIcon } from "@/components/icons"
-
-const NAV_LINKS = [
-  { href: "/#how-it-works", label: "How it works" },
-  { href: "/showcase", label: "Showcase" },
-  { href: "https://docs.is-pinoy.dev", label: "Docs", external: true },
-]
+import { MobileNav } from "@/components/mobile-nav"
+import { NAV_LINKS, NAV_SECTIONS, type NavItem } from "@/lib/navigation"
 
 function BrandLink() {
   return (
@@ -43,69 +46,163 @@ function BrandLink() {
   )
 }
 
+function MegaMenuItem({ item }: { item: NavItem }) {
+  const Icon = item.icon
+  const className =
+    "group/item flex flex-row items-start gap-3 border border-transparent p-3 no-underline transition-colors duration-[140ms] hover:border-border hover:bg-secondary focus-visible:border-ring"
+  const content = (
+    <>
+      <span
+        className="mt-px flex size-8 shrink-0 items-center justify-center border border-border bg-background text-accent transition-colors duration-[140ms] group-hover/item:border-accent/50"
+        aria-hidden="true"
+      >
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className="text-[13px] font-semibold text-foreground transition-colors duration-[140ms] group-hover/item:text-accent">
+            {item.label}
+          </span>
+          {item.tag ? (
+            <span className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground">
+              {item.tag}
+            </span>
+          ) : null}
+          {item.external ? (
+            <ArrowUpRight
+              className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity duration-[140ms] group-hover/item:opacity-100"
+              aria-hidden="true"
+            />
+          ) : null}
+        </span>
+        <span className="mt-1 block text-xs leading-[1.55] text-muted-foreground">
+          {item.description}
+        </span>
+      </span>
+    </>
+  )
+
+  return (
+    <NavigationMenuLink asChild>
+      {item.external ? (
+        <a
+          href={item.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={className}
+        >
+          {content}
+        </a>
+      ) : (
+        <Link href={item.href} className={className}>
+          {content}
+        </Link>
+      )}
+    </NavigationMenuLink>
+  )
+}
+
+function DesktopNav() {
+  return (
+    // Panels are fixed to the header's bottom edge and span the full width
+    // rather than hanging off their own trigger — a 700px popover anchored to a
+    // mid-header trigger runs off the right edge at 1024px. `top-16` matches
+    // the header's `lg:h-16`, and the header is sticky at top 0, so the two
+    // stay flush at any scroll position. A Container keeps the panel's contents
+    // on the same 1180px grid as the rest of the page.
+    <NavigationMenu
+      className="hidden lg:flex"
+      delayDuration={80}
+      skipDelayDuration={240}
+    >
+      <NavigationMenuList className="gap-1 xl:gap-2">
+        {NAV_SECTIONS.map((section) => (
+          <NavigationMenuItem key={section.id} value={section.id}>
+            <NavigationMenuTrigger>{section.label}</NavigationMenuTrigger>
+            <NavigationMenuContent className="fixed inset-x-0 top-16 border-x-0 border-t-0">
+              <Container className="grid grid-cols-[minmax(0,1fr)_300px] items-stretch gap-0 py-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+                <div className="pr-8">
+                  <p className="m-0 mb-2 px-3 font-mono text-[10px] font-semibold tracking-[0.12em] text-accent uppercase">
+                    {section.eyebrow}
+                  </p>
+                  <ul className="m-0 grid list-none grid-cols-2 gap-x-4 p-0">
+                    {section.items.map((item) => (
+                      <li key={item.href}>
+                        <MegaMenuItem item={item} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {section.feature ? (
+                  <div className="flex flex-col justify-between gap-4 border-l border-border pt-1 pl-8">
+                    <div>
+                      <p className="m-0 mb-2 font-mono text-[10px] font-semibold tracking-[0.12em] text-accent uppercase">
+                        {section.feature.eyebrow}
+                      </p>
+                      <p className="m-0 text-sm leading-[1.4] font-semibold text-foreground">
+                        {section.feature.title}
+                      </p>
+                      <p className="m-0 mt-2 text-xs leading-[1.6] text-muted-foreground">
+                        {section.feature.description}
+                      </p>
+                    </div>
+                    <NavigationMenuLink asChild>
+                      {section.feature.external ? (
+                        <a
+                          href={section.feature.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex flex-row items-center gap-1.5 self-start text-xs font-semibold text-accent no-underline hover:underline"
+                        >
+                          {section.feature.cta}
+                          <ArrowRight className="size-3.5" aria-hidden="true" />
+                        </a>
+                      ) : (
+                        <Link
+                          href={section.feature.href}
+                          className="inline-flex flex-row items-center gap-1.5 self-start text-xs font-semibold text-accent no-underline hover:underline"
+                        >
+                          {section.feature.cta}
+                          <ArrowRight className="size-3.5" aria-hidden="true" />
+                        </Link>
+                      )}
+                    </NavigationMenuLink>
+                  </div>
+                ) : null}
+              </Container>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+        ))}
+
+        {NAV_LINKS.map((link) => (
+          <NavigationMenuItem key={link.href}>
+            <NavigationMenuLink asChild>
+              <Link
+                href={link.href}
+                className="inline-flex h-9 flex-row items-center px-2 text-[13px] font-medium text-foreground/85 no-underline transition-colors duration-[140ms] hover:text-accent focus-visible:text-accent"
+              >
+                {link.label}
+              </Link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+        ))}
+      </NavigationMenuList>
+    </NavigationMenu>
+  )
+}
+
 export function MainNav() {
   const [open, setOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false)
-        triggerRef.current?.focus()
-      }
-    }
-
-    function handlePointerDown(event: MouseEvent) {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        !triggerRef.current?.contains(event.target as Node)
-      ) {
-        setOpen(false)
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown)
-    document.addEventListener("mousedown", handlePointerDown)
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown)
-      document.removeEventListener("mousedown", handlePointerDown)
-    }
-  }, [open])
-
-  const closeMenu = () => setOpen(false)
+  const closeMenu = useCallback(() => setOpen(false), [])
 
   return (
     <nav className="sticky top-0 z-50 h-[60px] border-b border-border bg-background/98 lg:h-16">
       <Container className="flex h-full items-center justify-between gap-6">
         <BrandLink />
 
-        <div className="hidden items-center gap-9 lg:flex xl:gap-11">
-          {NAV_LINKS.map((link) =>
-            link.external ? (
-              <a
-                key={link.href}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[13px] font-medium text-foreground/85 no-underline transition-colors duration-[140ms] hover:text-accent focus-visible:text-accent"
-              >
-                {link.label}
-              </a>
-            ) : (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-[13px] font-medium text-foreground/85 no-underline transition-colors duration-[140ms] hover:text-accent focus-visible:text-accent"
-              >
-                {link.label}
-              </Link>
-            )
-          )}
-        </div>
+        <DesktopNav />
 
         <div className="flex items-center gap-1 lg:gap-2">
           <AnimatedThemeToggler />
@@ -140,57 +237,7 @@ export function MainNav() {
         </div>
       </Container>
 
-      {open && (
-        <div
-          ref={menuRef}
-          id="mobile-menu"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Site menu"
-          className="absolute inset-x-0 top-full border-x border-b border-border bg-background lg:hidden"
-        >
-          {NAV_LINKS.map((link) =>
-            link.external ? (
-              <a
-                key={link.href}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={closeMenu}
-                className="flex min-h-12 items-center border-b border-border px-5 text-sm font-medium text-foreground no-underline transition-colors duration-[140ms] hover:text-accent"
-              >
-                {link.label}
-              </a>
-            ) : (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={closeMenu}
-                className="flex min-h-12 items-center border-b border-border px-5 text-sm font-medium text-foreground no-underline transition-colors duration-[140ms] hover:text-accent"
-              >
-                {link.label}
-              </Link>
-            )
-          )}
-          <a
-            href="https://github.com/is-pinoy-dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={closeMenu}
-            className="flex min-h-12 items-center gap-2 border-b border-border px-5 text-sm font-medium text-foreground no-underline transition-colors duration-[140ms] hover:text-accent"
-          >
-            <GitHubIcon size={16} />
-            GitHub
-          </a>
-          <Link
-            href="/#claim"
-            onClick={closeMenu}
-            className="flex min-h-12 items-center justify-center bg-primary px-5 text-[13px] font-semibold text-primary-foreground no-underline transition-colors duration-[140ms] hover:bg-primary-light"
-          >
-            Claim a domain
-          </Link>
-        </div>
-      )}
+      <MobileNav open={open} onClose={closeMenu} returnFocusRef={triggerRef} />
     </nav>
   )
 }
