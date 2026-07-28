@@ -39,7 +39,7 @@ Locally there is no wildcard DNS, so there is no subdomain in the `Host` header.
 Two ways to render something:
 
 - **Preview mode** — no env needed:
-  `http://localhost:3002/?preview=1&login=<github-login>&template=terminal&theme=gold-dark`.
+  `http://localhost:3002/?preview=1&github=<github-username>&template=terminal&theme=gold-dark`.
   This is the same URL shape the dashboard's `/claim` Preview link uses.
 - **Spike fallback** — set `PORTFOLIO_SPIKE_SUBDOMAIN` (resolves against the
   domains repo exactly as production does) or `PORTFOLIO_SPIKE_LOGIN` (skips
@@ -109,7 +109,7 @@ the hot path and is a real improvement, but it is its own project.
    deploy rather than a rate limit.
 3. **Verify on the `.vercel.app` URL before touching DNS.** Preview mode needs
    no Host routing, so the deploy is fully testable first:
-   `https://<project>.vercel.app/?preview=1&login=<you>&template=terminal&theme=gold-dark`.
+   `https://<project>.vercel.app/?preview=1&github=<you>&template=terminal&theme=gold-dark`.
    The bare `/` will 404 there, which is correct — a `*.vercel.app` host carries
    no `is-pinoy.dev` label for `proxy.ts` to extract.
 4. **Add both domains to the project:** `portfolio.is-pinoy.dev` *and*

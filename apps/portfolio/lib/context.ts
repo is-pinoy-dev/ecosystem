@@ -19,7 +19,8 @@ export interface RenderContext {
 }
 
 export interface PreviewParams {
-  login: string
+  /** GitHub username to render. Named for the `?github=` query param. */
+  github: string
   template: TemplateName
   theme?: PortfolioTheme
 }
@@ -60,7 +61,7 @@ const sectionsKeyOf = (sections?: string[]) =>
   sections?.length ? JSON.stringify(sections) : ""
 
 /**
- * Parse dashboard "Preview" query params (`?preview=1&login=&template=&theme=`)
+ * Parse dashboard "Preview" query params (`?preview=1&github=&template=&theme=`)
  * into a validated PreviewParams, or null when not a preview request. Template
  * and theme are constrained to the known enums; anything else is ignored.
  */
@@ -68,8 +69,8 @@ export function parsePreview(
   params: Record<string, string | string[] | undefined>
 ): PreviewParams | null {
   if (!params.preview) return null
-  const login = typeof params.login === "string" ? params.login.trim() : ""
-  if (!/^[a-zA-Z0-9-]{1,39}$/.test(login)) return null
+  const github = typeof params.github === "string" ? params.github.trim() : ""
+  if (!/^[a-zA-Z0-9-]{1,39}$/.test(github)) return null
 
   const t = params.template
   const template =
@@ -83,7 +84,7 @@ export function parsePreview(
       ? (th as PortfolioTheme)
       : undefined
 
-  return { login, template, theme }
+  return { github, template, theme }
 }
 
 // Resolve the incoming request to a fully-loaded portfolio, or null.
@@ -103,10 +104,10 @@ export async function getRenderContext(
   preview?: PreviewParams | null
 ): Promise<RenderContext | null> {
   if (preview) {
-    const data = await loadPortfolio(preview.login, "")
+    const data = await loadPortfolio(preview.github, "")
     if (!data) return null
     return {
-      login: preview.login,
+      login: preview.github,
       template: preview.template,
       theme: preview.theme,
       data,
