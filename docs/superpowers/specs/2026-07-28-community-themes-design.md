@@ -2,6 +2,13 @@
 
 **Date:** 2026-07-28
 **Status:** Draft (design) — not approved, not implemented
+
+> **Nothing in this document is built.** No schema change, no CSS compiler, no
+> themes repo, no gallery, no renderer change. `apps/portfolio` still ships the
+> same nine hardcoded templates. The only code committed alongside this spec is
+> an unrelated rename of the preview query param (`?login=` → `?github=`).
+> The worked example in `examples/theme-brutal-grid/` is illustrative and wired
+> to nothing.
 **Scope:** A theme authoring/distribution/listing model that lets community
 developers ship portfolio themes, and lets any claimed subdomain use one without
 redeploying anything. Touches `packages/schemas`, `apps/portfolio`,
@@ -41,6 +48,14 @@ for two reasons:
 same-site with `dashboard.is-pinoy.dev`, which holds a `public_repo`-scoped
 GitHub OAuth token for every signed-in user (`apps/dashboard/auth.ts`) and has
 server actions that spend it to open PRs against the domains repo.
+
+**This condition predates community themes and is not caused by them.** The
+core product issues subdomains whose records point at *the user's own host* —
+so anyone with a merged subdomain PR already serves arbitrary JavaScript from a
+`*.is-pinoy.dev` origin. That is the service working as designed, and every
+subdomain host (`github.io`, `vercel.app`) lives with the same posture. What
+follows from it is that the dashboard must already treat sibling subdomains as
+hostile, independently of anything in this document.
 
 Two things are worth stating precisely, because the loose version ("XSS on a
 portfolio steals dashboard sessions") is wrong in a way that misdirects the
@@ -116,8 +131,26 @@ and nothing else. It recolors the existing layout templates. This is exactly wha
 `app/themes.css` already does: because the tokens cascade as custom properties,
 every shadcn utility (`text-primary`, `bg-background`, `border-border`) picks up
 the override with no renderer change at all. shadcn `cssVars` is a direct
-mapping. A T1 theme is pure data, so it can be fetched and applied at request
-time with no code-execution question to answer.
+mapping.
+
+**T1 is not "pure data", and the difference is the whole tier's safety.** A CSS
+custom property's value is arbitrary CSS *text*, not a color. A token file that
+looks like a JSON object full of hex codes can carry a declaration-block escape:
+
+```json
+{ "background": "red; } #pf-root::before { content: ''; position: fixed; inset: 0 } .x {" }
+```
+
+which lands the attacker back in §3's phishing overlay having written nothing
+but a "color". So T1 values go through the same parser and allow-list as T2
+stylesheets — parse each declaration, reject anything whose value doesn't match
+the expected grammar for that token, and re-serialize rather than
+string-concatenate.
+
+**There is no tier of this feature that is safe without the CSS compiler**,
+including the one that looks like data. An implementation that ships T1 by
+interpolating token values into a `<style>` block is the most likely way this
+design gets built wrong, because at that point it looks finished and works.
 
 **T2 — layout themes (declarative manifest + scoped CSS).** The theme declares
 which blocks render, in what order, with which variant from a fixed set, plus a
@@ -384,11 +417,37 @@ version of the whole idea that actually works**, and it needs no worker, no D1,
 and no gallery. Ship it first and see whether people author themes at all before
 building the rest.
 
+**The CSS compiler is P1 work, not P3 work.** Token values are CSS text (§1), so
+the allow-list parser gates the very first community theme. Most of P1's real
+effort is here; the repo and index plumbing are the easy parts.
+
+### Preconditions for shipping P1
+
+Ship gates, not nice-to-haves. Every one of these is load-bearing for a claim
+made elsewhere in this document:
+
+- [ ] CSS compiler: parse, allow-list, re-serialize (never string-concatenate),
+      scope-rewrite every selector. Applies to T1 token values too.
+- [ ] Its test suite treated the way `tests/parse.test.ts` is — a release
+      blocker with a documented vector list, not an optional suite. Add a case
+      before changing the compiler, same rule as the sanitizer.
+- [ ] `style-src` (hashed) and `font-src` in the CSP, `tests/csp.test.ts`
+      extended to pin them.
+- [ ] Version pinning in the schema + content-addressed compiled artifacts.
+- [ ] Ingest-time fetch with integrity verification. No runtime fetch of
+      author-hosted CSS, ever.
+- [ ] An unpublish path that reverts affected subdomains to a built-in theme.
+      Needed before the *first* community theme ships, not before P2.
+- [ ] A security review of the built diff by someone other than this document's
+      author. The threat model here was derived by reading code, not by testing
+      anything, and has had no independent review.
+
 **P2 — `tools/themes` worker + D1 + gallery.** Installs, stars, ranked listing.
 The index moves off raw.githubusercontent onto the API.
 
-**P3 — T2 layout themes.** The block DSL and the CSS compiler. Port the six
-existing designer templates to manifests as the proof and the seed content.
+**P3 — T2 layout themes.** The block DSL, plus extending the P1 compiler from
+token values to full stylesheets. Port the six existing designer templates to
+manifests as the proof and the seed content.
 
 **P4 — T3 code themes.** The vendoring bot, the lint gate, the human review
 path. Last, because P1–P3 will show whether it is needed at all — if the DSL
