@@ -13,8 +13,52 @@ import { auth } from "@/auth"
 import { GitHubIcon } from "@/components/icons"
 import { signInWithGitHub } from "@/lib/actions"
 
+const DESCRIPTION =
+  "Sign in with GitHub to manage your free .is-pinoy.dev subdomains. Subdomain ownership is tied to your GitHub account."
+
 export const metadata: Metadata = {
   title: "Sign in",
+  description: DESCRIPTION,
+  alternates: {
+    canonical: "/login",
+  },
+  // The only public page in the app — it holds no user data, so it opts out of
+  // the root layout's blanket noindex.
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  // Declaring `openGraph` replaces the root layout's object outright rather
+  // than merging into it, so site name, locale, and the opengraph-image the
+  // file convention would otherwise contribute all have to be restated here.
+  openGraph: {
+    type: "website",
+    locale: "en_PH",
+    url: "/login",
+    siteName: "is-pinoy.dev",
+    title: "Sign in | is-pinoy.dev",
+    description: DESCRIPTION,
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Manage your free .is-pinoy.dev subdomains.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sign in | is-pinoy.dev",
+    description: DESCRIPTION,
+    images: ["/opengraph-image"],
+  },
 }
 
 export default async function LoginPage({

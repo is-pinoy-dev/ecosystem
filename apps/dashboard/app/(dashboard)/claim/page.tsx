@@ -6,6 +6,11 @@ import { ClaimForm } from "./claim-form"
 
 export const metadata: Metadata = {
   title: "Claim a portfolio",
+  description:
+    "Claim a free .is-pinoy.dev portfolio subdomain rendered from your GitHub profile README.",
+  alternates: {
+    canonical: "/claim",
+  },
 }
 
 export default async function ClaimPage() {
