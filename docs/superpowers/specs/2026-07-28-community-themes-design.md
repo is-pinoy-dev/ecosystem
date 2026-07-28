@@ -239,11 +239,36 @@ surface "an update is available"; it cannot apply one.
 Mirrors the `domains` repo model, which is the house pattern and already has
 CI tooling shaped like what we need (`.github/actions/registry-validate`).
 
+The theme source is **not** copied here. The author keeps their own repo and
+publishes a shadcn registry; this repo holds one **pointer file** per theme:
+
+```jsonc
+// themes/maria-santos/brutal-grid.json
+{
+  "id": "@maria-santos/brutal-grid",
+  "author": { "github": "maria-santos" },
+  "license": "MIT",
+  "source": {
+    "registry": "https://themes.mariasantos.dev/r/brutal-grid.json",
+    "version": "1.2.0",
+    "integrity": "sha256-…"
+  }
+}
 ```
-themes/<author>/<name>/theme.json        # manifest (T1/T2) or registry item ref (T3)
-themes/<author>/<name>/theme.css         # T2 only
-themes/<author>/<name>/preview.webp
-```
+
+Authors keep ownership and their own release cadence; a new version is a
+one-line bump, which is also the review point, since the integrity hash moves
+with it. Ingest fetches the URL, verifies the hash, compiles, and
+content-addresses the result — so the reviewed artifact and the served artifact
+are the same bytes even though the source lives on someone else's host.
+
+The is-pinoy-specific manifest (tier, contract version, block list) rides in the
+registry item's `meta` field, which the shadcn format leaves open. One document
+therefore serves both consumers: the shadcn CLI reads `files`/`cssVars` for
+people vendoring the theme into their own project, our compiler reads `meta`.
+That is what makes the shadcn choice load-bearing rather than decorative, and it
+means an author with an existing registry adds a `meta` block rather than
+adopting a new format.
 
 CI on a theme PR: validate against a new schema in `@is-pinoy-dev/schemas`,
 compile the CSS through the allow-list, and **post a live preview link**. That
@@ -251,6 +276,15 @@ last part is free — `apps/portfolio` already has `?preview=1&login=…&templat
 built for the dashboard's claim flow. Extending it with `&theme=<id>@<version>`
 gives every theme PR a real, rendered preview against a real profile with no new
 infrastructure.
+
+A worked example of the author-side repo — four files, no build step — is in
+[`examples/theme-brutal-grid/`](./examples/theme-brutal-grid/).
+
+**`@is-pinoy-dev/theme-kit`** (proposed, sibling to `badge-kit`): a small CLI
+giving authors `dev` and `check` locally. The CSS allow-list is the one
+genuinely surprising part of authoring here, and meeting it in CI review rather
+than at edit time is the difference between a pleasant format and an annoying
+one.
 
 ### 6. Listing service: `tools/themes` worker + D1
 
