@@ -43,15 +43,28 @@ The renderer answers on a public hostname, so `x-portfolio-subdomain` alone
 would let anyone render any subdomain's portfolio anywhere. Every forwarded
 request also carries `x-portfolio-proxy-secret`; `apps/portfolio/proxy.ts`
 honours the label only on a constant-time match and strips both headers
-otherwise. Set the same value on both sides:
+otherwise.
 
-```bash
-wrangler secret put PORTFOLIO_PROXY_SECRET -c worker/wrangler.toml
-# and PORTFOLIO_PROXY_SECRET in the renderer's Vercel environment
-```
+The same value has to exist in two places:
+
+| Side | Where | How |
+| --- | --- | --- |
+| Worker | Cloudflare secret | `PORTFOLIO_PROXY_SECRET` **repository secret** in `is-pinoy-dev/ecosystem` — the deploy workflow pushes it |
+| Renderer | Vercel env var | `PORTFOLIO_PROXY_SECRET` on the portfolio project, **then redeploy** |
+
+Adding it to GitHub means rotating is a secret edit plus a re-run of
+`deploy-portfolio-proxy.yml`; no local wrangler needed. The workflow step is
+skipped when the secret is absent, so the Worker deploys fine without it — it
+just can't authenticate anything yet.
+
+The Vercel side stays manual, and it needs a **redeploy**: Next inlines
+`process.env` into the proxy bundle at build time, so setting the variable
+without rebuilding changes nothing.
 
 A mismatch is quiet in the worst way: previews keep working (they never touch
-this path) while every claimed portfolio 404s.
+this path) while every claimed portfolio 404s. A trailing newline is the usual
+culprit — the workflow uses `printf` rather than `echo` for exactly that reason,
+so check the Vercel value if the two ever disagree.
 
 ## `/_tools/*`
 

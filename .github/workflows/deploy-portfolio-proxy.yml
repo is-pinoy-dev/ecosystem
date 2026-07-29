@@ -41,3 +41,26 @@ jobs:
         run: pnpm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
+
+      # The renderer honours the Worker's subdomain header only on a match
+      # against this value, so it is the difference between every portfolio
+      # rendering and every portfolio 404ing. Kept here rather than in a manual
+      # `wrangler secret put` so rotating it is a GitHub secret edit plus a
+      # re-run of this workflow.
+      #
+      # Runs after the deploy: `secret put` needs the script to already exist,
+      # which matters on a first deploy into a fresh account. Secrets outlive
+      # deploys, so re-running with the value unchanged is a no-op.
+      #
+      # `printf` rather than `echo` on purpose — a trailing newline would make
+      # the constant-time comparison in apps/portfolio/proxy.ts fail on a value
+      # that looks correct in both dashboards.
+      - name: Sync PORTFOLIO_PROXY_SECRET
+        if: ${{ secrets.PORTFOLIO_PROXY_SECRET != '' }}
+        working-directory: tools/portfolio-proxy
+        run: |
+          printf '%s' "$PORTFOLIO_PROXY_SECRET" \
+            | pnpm exec wrangler secret put PORTFOLIO_PROXY_SECRET -c worker/wrangler.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
+          PORTFOLIO_PROXY_SECRET: ${{ secrets.PORTFOLIO_PROXY_SECRET }}

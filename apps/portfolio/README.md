@@ -132,8 +132,11 @@ and the `portfolio.is-pinoy.dev` DNS record. What remains:
    `.github/workflows/deploy-portfolio-proxy.yml` do it on merge. `tools-og` and
    `tools-site-audit` must already be deployed; the service bindings resolve by
    script name.
-2. **Set `PORTFOLIO_PROXY_SECRET` on both sides** — `wrangler secret put` for
-   the Worker, project environment variable for the renderer. A mismatch is
+2. **Set `PORTFOLIO_PROXY_SECRET` on both sides.** Add it as a repository secret
+   in `is-pinoy-dev/ecosystem` and re-run `deploy-portfolio-proxy.yml` — the
+   workflow pushes it to the Worker, so no local wrangler is needed. Then set
+   the same value on the Vercel portfolio project **and redeploy**, since Next
+   inlines `process.env` into the proxy bundle at build time. A mismatch is
    quiet: previews keep working while every claimed portfolio 404s.
 3. **Set `PORTFOLIO_WORKER=tools-portfolio-proxy` in the domains repo's sync
    workflow**, and give `CLOUDFLARE_API_TOKEN` the *Workers Routes: Edit* scope.
