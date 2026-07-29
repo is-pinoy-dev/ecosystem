@@ -2,6 +2,15 @@ name = "tools-portfolio-proxy"
 main = "index.ts"
 compatibility_date = "2026-05-27"
 
+# This Worker only ever forwards; it has no content of its own to serve, so the
+# workers.dev hostname is pure downside. A request arriving there carries a host
+# that isn't under ROOT_DOMAIN, so it falls to the `fetch(request)` pass-through
+# and the subrequest resolves straight back to this same Worker. Cloudflare's
+# loop detection catches it, but the endpoint is public and does nothing useful
+# — same reason tools-analytics turns both of these off.
+workers_dev = false
+preview_urls = false
+
 # Deliberately no [[routes]]. Routes are created one per claimed portfolio by
 # `is-pinoy registry sync` (packages/registry/src/core/routes.ts) and must match
 # the `PORTFOLIO_WORKER` script name above. Declaring them here would make
