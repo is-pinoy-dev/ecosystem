@@ -110,6 +110,37 @@ async function ensureFork(
   return { ok: false, error: "Fork did not become ready in time. Please try again." }
 }
 
+/**
+ * Fast-forward the fork's default branch to upstream — the API behind GitHub's
+ * "Sync fork" button.
+ *
+ * Deliberately best-effort, and deliberately not what makes a claim correct.
+ * The claim branch is cut from upstream's head regardless (see below), so a
+ * stale fork can't corrupt the PR either way. This just stops the fork itself
+ * drifting further behind every time its owner claims something, which keeps
+ * the "Sync fork" banner off their repo and makes future manual PRs saner.
+ *
+ * Every failure is swallowed on purpose. A fork whose default branch has its
+ * own commits answers 409 and can't be fast-forwarded, and a claim must not
+ * fail over housekeeping that its correctness doesn't depend on.
+ */
+async function syncForkDefaultBranch(
+  token: string,
+  login: string,
+): Promise<void> {
+  try {
+    const branch = await getDefaultBranch(token, login, UPSTREAM_REPO)
+    if (!branch) return
+    await fetch(`${API}/repos/${login}/${UPSTREAM_REPO}/merge-upstream`, {
+      method: "POST",
+      headers: headers(token),
+      body: JSON.stringify({ branch }),
+    })
+  } catch {
+    // Network failure here is no reason to abandon the claim.
+  }
+}
+
 export async function openPortfolioPR(
   token: string,
   params: ClaimParams,
@@ -122,18 +153,27 @@ export async function openPortfolioPR(
   const fork = await ensureFork(token, login)
   if (!fork.ok) return fork
 
+  await syncForkDefaultBranch(token, login)
+
   const upstreamBase =
     (await getDefaultBranch(token, UPSTREAM_OWNER, UPSTREAM_REPO)) ?? "main"
-  const forkBranch =
-    (await getDefaultBranch(token, login, UPSTREAM_REPO)) ?? upstreamBase
 
-  // Head SHA of the fork's default branch — the base for the new branch.
+  // Base the claim branch on UPSTREAM's head, not the fork's.
+  //
+  // The PR targets upstream, so anything upstream has merged since the user
+  // last synced their fork shows up in the diff as a revert. A claim opened
+  // from a stale fork arrives proposing to undo other people's merged changes
+  // — and CI fails it on files the claimant never touched. A fork forked once
+  // and never updated again is the normal case, not the exception.
+  //
+  // Creating a ref in the fork at an upstream SHA is fine: a fork shares its
+  // object store with the upstream network, so the commit is already there.
   const refRes = await fetch(
-    `${API}/repos/${login}/${UPSTREAM_REPO}/git/ref/heads/${forkBranch}`,
+    `${API}/repos/${UPSTREAM_OWNER}/${UPSTREAM_REPO}/git/ref/heads/${upstreamBase}`,
     { headers: headers(token), cache: "no-store" },
   )
   if (!refRes.ok) {
-    return { ok: false, error: `Could not read your fork's ${forkBranch} branch.` }
+    return { ok: false, error: `Could not read the domains repo's ${upstreamBase} branch.` }
   }
   const refData = (await refRes.json()) as { object?: { sha?: string } }
   const baseSha = refData.object?.sha
@@ -148,13 +188,50 @@ export async function openPortfolioPR(
       body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }),
     },
   )
-  // 422 = branch already exists (a re-submit); reuse it.
-  if (!createRef.ok && createRef.status !== 422) {
-    return { ok: false, error: `Could not create a branch (${createRef.status}).` }
+
+  if (!createRef.ok) {
+    if (createRef.status !== 422) {
+      return { ok: false, error: `Could not create a branch (${createRef.status}).` }
+    }
+    // 422 = the branch already exists from an earlier submit of this same
+    // claim. Reusing it as-is would inherit whatever base it was cut from,
+    // which is the stale-fork problem again one resubmit later. Reset it onto
+    // the current upstream head instead — the branch is named for this claim
+    // and holds nothing else worth keeping.
+    const resetRef = await fetch(
+      `${API}/repos/${login}/${UPSTREAM_REPO}/git/refs/heads/${branch}`,
+      {
+        method: "PATCH",
+        headers: headers(token),
+        body: JSON.stringify({ sha: baseSha, force: true }),
+      },
+    )
+    if (!resetRef.ok) {
+      return {
+        ok: false,
+        error: `Could not reset your existing ${branch} branch (${resetRef.status}).`,
+      }
+    }
   }
 
+  const filePath = `contents/subdomains/${subdomain}.json`
+
+  // The contents API refuses to overwrite a file without its blob sha, so a
+  // resubmit of the same claim — picking a different template, or retrying
+  // after a failure further down — would 422 on a file the previous attempt
+  // committed. Look it up first and pass the sha when it's there, making the
+  // write an upsert: the branch ends up holding the claim as submitted, not
+  // whichever version happened to land first.
+  const existing = await fetch(
+    `${API}/repos/${login}/${UPSTREAM_REPO}/${filePath}?ref=${branch}`,
+    { headers: headers(token), cache: "no-store" },
+  )
+  const existingSha = existing.ok
+    ? ((await existing.json()) as { sha?: string }).sha
+    : undefined
+
   const putFile = await fetch(
-    `${API}/repos/${login}/${UPSTREAM_REPO}/contents/subdomains/${subdomain}.json`,
+    `${API}/repos/${login}/${UPSTREAM_REPO}/${filePath}`,
     {
       method: "PUT",
       headers: headers(token),
@@ -162,13 +239,14 @@ export async function openPortfolioPR(
         message: `feat: add portfolio subdomain ${subdomain}`,
         content: Buffer.from(built.content).toString("base64"),
         branch,
+        ...(existingSha ? { sha: existingSha } : {}),
       }),
     },
   )
   if (!putFile.ok) {
     return {
       ok: false,
-      error: `Could not add the subdomain file (${putFile.status}). It may already exist on this branch.`,
+      error: `Could not write the subdomain file (${putFile.status}). Please try again.`,
     }
   }
 
