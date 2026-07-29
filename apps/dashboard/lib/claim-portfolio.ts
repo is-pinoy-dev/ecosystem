@@ -214,8 +214,24 @@ export async function openPortfolioPR(
     }
   }
 
+  const filePath = `contents/subdomains/${subdomain}.json`
+
+  // The contents API refuses to overwrite a file without its blob sha, so a
+  // resubmit of the same claim — picking a different template, or retrying
+  // after a failure further down — would 422 on a file the previous attempt
+  // committed. Look it up first and pass the sha when it's there, making the
+  // write an upsert: the branch ends up holding the claim as submitted, not
+  // whichever version happened to land first.
+  const existing = await fetch(
+    `${API}/repos/${login}/${UPSTREAM_REPO}/${filePath}?ref=${branch}`,
+    { headers: headers(token), cache: "no-store" },
+  )
+  const existingSha = existing.ok
+    ? ((await existing.json()) as { sha?: string }).sha
+    : undefined
+
   const putFile = await fetch(
-    `${API}/repos/${login}/${UPSTREAM_REPO}/contents/subdomains/${subdomain}.json`,
+    `${API}/repos/${login}/${UPSTREAM_REPO}/${filePath}`,
     {
       method: "PUT",
       headers: headers(token),
@@ -223,13 +239,14 @@ export async function openPortfolioPR(
         message: `feat: add portfolio subdomain ${subdomain}`,
         content: Buffer.from(built.content).toString("base64"),
         branch,
+        ...(existingSha ? { sha: existingSha } : {}),
       }),
     },
   )
   if (!putFile.ok) {
     return {
       ok: false,
-      error: `Could not add the subdomain file (${putFile.status}). It may already exist on this branch.`,
+      error: `Could not write the subdomain file (${putFile.status}). Please try again.`,
     }
   }
 

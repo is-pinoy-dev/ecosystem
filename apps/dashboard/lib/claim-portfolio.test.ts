@@ -25,7 +25,11 @@ let calls: Call[]
  * Minimal GitHub API stand-in. `branchExists` drives the 422 that a re-submit
  * of the same claim produces.
  */
-function stubGitHub({ branchExists = false, syncFails = false } = {}) {
+function stubGitHub({
+  branchExists = false,
+  syncFails = false,
+  fileOnBranch = false,
+} = {}) {
   calls = []
   const fetchMock = vi.fn(async (input: string, init?: RequestInit) => {
     const url = String(input)
@@ -68,6 +72,14 @@ function stubGitHub({ branchExists = false, syncFails = false } = {}) {
       return new Response("{}", { status: 200 })
     }
     if (url.includes("/contents/subdomains/")) {
+      if (method === "GET") {
+        return fileOnBranch
+          ? new Response(JSON.stringify({ sha: "existing-blob-sha" }), { status: 200 })
+          : new Response("{}", { status: 404 })
+      }
+      // Mirrors the contents API: overwriting without the blob sha is a 422.
+      const body = init?.body ? JSON.parse(String(init.body)) : {}
+      if (fileOnBranch && !body.sha) return new Response("{}", { status: 422 })
       return new Response("{}", { status: 201 })
     }
     if (url.endsWith("/pulls") && method === "POST") {
@@ -154,11 +166,42 @@ describe("openPortfolioPR — claim branch base", () => {
     expect(create?.body).toMatchObject({ sha: UPSTREAM_SHA })
   })
 
+  it("overwrites a file a previous submit already committed", async () => {
+    // Without the blob sha the contents API 422s, which surfaced to users as
+    // "Could not add the subdomain file (422)" whenever they resubmitted a
+    // claim — changing template, or retrying after any later step failed.
+    stubGitHub({ branchExists: true, fileOnBranch: true })
+
+    const result = await openPortfolioPR("token", params)
+    expect(result).toMatchObject({ ok: true })
+
+    const write = find(
+      (c) => c.url.includes("/contents/subdomains/") && c.method === "PUT"
+    )
+    expect(write?.body).toMatchObject({ sha: "existing-blob-sha" })
+  })
+
+  it("sends no sha when the file is new", async () => {
+    await openPortfolioPR("token", params)
+
+    const write = find(
+      (c) => c.url.includes("/contents/subdomains/") && c.method === "PUT"
+    )
+    expect(write?.body).not.toHaveProperty("sha")
+  })
+
   it("only ever writes the claimed subdomain's own file", async () => {
     await openPortfolioPR("token", params)
 
-    const writes = calls.filter((c) => c.url.includes("/contents/"))
+    const writes = calls.filter(
+      (c) => c.url.includes("/contents/") && c.method !== "GET"
+    )
     expect(writes).toHaveLength(1)
     expect(writes[0]!.url).toContain("/contents/subdomains/cool.json")
+
+    // Nor may it so much as read another subdomain's file.
+    for (const c of calls.filter((c) => c.url.includes("/contents/"))) {
+      expect(c.url).toContain("/contents/subdomains/cool.json")
+    }
   })
 })
