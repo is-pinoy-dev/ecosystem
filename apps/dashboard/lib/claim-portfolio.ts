@@ -66,6 +66,21 @@ export function buildDomainFile(params: ClaimParams): {
   return { content: JSON.stringify(file, null, 2) + "\n" }
 }
 
+/** Head commit of `owner`'s copy of the domains repo on `branch`, or null. */
+async function headSha(
+  token: string,
+  owner: string,
+  branch: string,
+): Promise<string | null> {
+  const res = await fetch(
+    `${API}/repos/${owner}/${UPSTREAM_REPO}/git/ref/heads/${branch}`,
+    { headers: headers(token), cache: "no-store" },
+  )
+  if (!res.ok) return null
+  const data = (await res.json()) as { object?: { sha?: string } }
+  return data.object?.sha ?? null
+}
+
 async function getDefaultBranch(
   token: string,
   owner: string,
@@ -166,28 +181,39 @@ export async function openPortfolioPR(
   // — and CI fails it on files the claimant never touched. A fork forked once
   // and never updated again is the normal case, not the exception.
   //
-  // Creating a ref in the fork at an upstream SHA is fine: a fork shares its
-  // object store with the upstream network, so the commit is already there.
-  const refRes = await fetch(
-    `${API}/repos/${UPSTREAM_OWNER}/${UPSTREAM_REPO}/git/ref/heads/${upstreamBase}`,
-    { headers: headers(token), cache: "no-store" },
-  )
-  if (!refRes.ok) {
+  const upstreamSha = await headSha(token, UPSTREAM_OWNER, upstreamBase)
+  if (!upstreamSha) {
     return { ok: false, error: `Could not read the domains repo's ${upstreamBase} branch.` }
   }
-  const refData = (await refRes.json()) as { object?: { sha?: string } }
-  const baseSha = refData.object?.sha
-  if (!baseSha) return { ok: false, error: "Could not determine the base commit." }
 
   const branch = `claim/portfolio-${subdomain}`
-  const createRef = await fetch(
-    `${API}/repos/${login}/${UPSTREAM_REPO}/git/refs`,
-    {
+  const createBranch = (sha: string) =>
+    fetch(`${API}/repos/${login}/${UPSTREAM_REPO}/git/refs`, {
       method: "POST",
       headers: headers(token),
-      body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }),
-    },
-  )
+      body: JSON.stringify({ ref: `refs/heads/${branch}`, sha }),
+    })
+
+  let baseSha = upstreamSha
+  let createRef = await createBranch(baseSha)
+
+  // A fork only carries the upstream commits its network has actually fetched.
+  // A recently-created fork, or one whose network hasn't caught up, rejects a
+  // ref created at an upstream SHA it doesn't hold — so fall back to the fork's
+  // own head rather than dead-ending the claim.
+  //
+  // This is usually no worse: syncForkDefaultBranch has just fast-forwarded the
+  // fork, so its head is upstream's head and the diff stays a single file. It
+  // is only a stale base when the fork had diverged and couldn't be
+  // fast-forwarded, and a claim with a noisy diff still beats no claim at all.
+  if (!createRef.ok && createRef.status !== 422) {
+    const forkBranch = await getDefaultBranch(token, login, UPSTREAM_REPO)
+    const forkSha = forkBranch ? await headSha(token, login, forkBranch) : null
+    if (forkSha && forkSha !== baseSha) {
+      baseSha = forkSha
+      createRef = await createBranch(baseSha)
+    }
+  }
 
   if (!createRef.ok) {
     if (createRef.status !== 422) {
