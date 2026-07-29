@@ -83,48 +83,68 @@ working (or silently stop protecting) if they drift.
 
 ## Hosting
 
-**Vercel**, alongside `web` and `dashboard`. Not yet created — this is the one
-remaining piece, and it is account setup rather than code.
+**Vercel**, alongside `web` and `dashboard`. The project exists and is live:
+`portfolio.is-pinoy.dev` is a DNS-only (grey-cloud) CNAME to the project's own
+`*.vercel-dns-*.com` target, which is why it answers with Vercel's addresses
+rather than Cloudflare's anycast pair the way the apex and `status` do.
 
-Cloudflare Workers was considered and rejected *for now*. Workers routes match on
-the **request** hostname, not the CNAME target, so a route on
-`portfolio.is-pinoy.dev/*` would never fire for `juan.is-pinoy.dev` — it would
-have to be `*.is-pinoy.dev/*`, which matches all traffic entering the zone. That
-puts the Worker in front of every proxied subdomain in the registry, including
-everyone pointing at their own host, so a bug in its pass-through takes down the
-whole registry rather than just portfolios. Vercel's wildcard is passive by
-comparison: traffic arrives only if a CNAME sends it there.
+Preview mode works there today. Note what that does **not** prove: `?preview=1`
+short-circuits in `parsePreview()` before `getRenderContext()` ever reads
+`x-portfolio-subdomain`, so it renders on any host — including `*.vercel.app` —
+and exercises neither `proxy.ts` nor `lib/resolve.ts`. A working preview means
+the build and `GITHUB_TOKEN` are good, nothing more.
 
-Workers becomes the better home if the resolver ever moves off per-request
-GitHub fetches and into KV — that would drop `raw.githubusercontent.com` out of
-the hot path and is a real improvement, but it is its own project.
+### How a claimed subdomain reaches this app
+
+Vercel routes purely on `Host` and 404s any hostname not registered on the
+project, and **neither way of registering claimed subdomains is available**: a
+wildcard domain needs Vercel's nameservers (the zone stays on Cloudflare), and
+per-hostname registration is capped at 50 domains per project on the free plan
+— a permanent ceiling on how many portfolios can exist.
+
+So the dynamic part lives on Cloudflare instead. `tools/portfolio-proxy` is a
+Worker with **one route per claimed portfolio**, created by
+`is-pinoy registry sync` alongside the DNS record. It rewrites the request onto
+`portfolio.is-pinoy.dev` — a hostname Vercel does own — and carries the label in
+`x-portfolio-subdomain`, authenticated with a shared secret that `proxy.ts`
+checks before honouring it.
+
+```
+juan.is-pinoy.dev
+  → Cloudflare edge (Universal SSL covers *.is-pinoy.dev at one level)
+  → tools-portfolio-proxy   route juan.is-pinoy.dev/*
+                            Host → portfolio.is-pinoy.dev
+                            + x-portfolio-subdomain: juan (+ shared secret)
+  → Vercel → this app
+```
+
+Nothing per-portfolio is registered with Vercel and no per-portfolio
+certificate is provisioned. Read `tools/portfolio-proxy/README.md` before
+changing any of it — particularly why the route is per-subdomain and not
+`*.is-pinoy.dev/*`, and why `/_tools/*` goes over service bindings.
 
 ### Runbook
 
-1. **Create the Vercel project.** Root directory `apps/portfolio`; mirror the
-   existing `dashboard` project's install/build settings so workspace
-   dependencies resolve the same way.
-2. **Set `GITHUB_TOKEN`** in the project's environment variables (see
-   `.env.example` — no scopes required). Skipping this looks like a broken
-   deploy rather than a rate limit.
-3. **Verify on the `.vercel.app` URL before touching DNS.** Preview mode needs
-   no Host routing, so the deploy is fully testable first:
-   `https://<project>.vercel.app/?preview=1&github=<you>&template=terminal&theme=gold-dark`.
-   The bare `/` will 404 there, which is correct — a `*.vercel.app` host carries
-   no `is-pinoy.dev` label for `proxy.ts` to extract.
-4. **Add both domains to the project:** `portfolio.is-pinoy.dev` *and*
-   `*.is-pinoy.dev`. The wildcard is what makes claimed subdomains work at all:
-   Cloudflare forwards the original Host (`juan.is-pinoy.dev`), and if Vercel
-   doesn't recognise that hostname it answers with its own 404 and this app never
-   runs.
-5. **Re-check the neighbours.** Immediately after adding the wildcard, load
-   `dashboard.is-pinoy.dev` and the apex to confirm their explicit assignments
-   still beat it. This is the step most likely to bite.
-6. **Create the `portfolio.is-pinoy.dev` DNS record.** At this point the
-   dashboard's `/claim` Preview links go live.
-7. **Claim one subdomain end to end** and watch the whole chain: PR opens
-   against the domains repo → CI validates the `portfolio` block → merge → sync
-   writes the DNS record → the subdomain renders.
+Done: the Vercel project (root directory `apps/portfolio`), its `GITHUB_TOKEN`,
+and the `portfolio.is-pinoy.dev` DNS record. What remains:
 
-Universal SSL already covers `*.is-pinoy.dev` at one level, so there is no
-per-user certificate provisioning.
+1. **Deploy the Worker** — `pnpm --filter portfolio-proxy deploy`, or let
+   `.github/workflows/deploy-portfolio-proxy.yml` do it on merge. `tools-og` and
+   `tools-site-audit` must already be deployed; the service bindings resolve by
+   script name.
+2. **Set `PORTFOLIO_PROXY_SECRET` on both sides** — `wrangler secret put` for
+   the Worker, project environment variable for the renderer. A mismatch is
+   quiet: previews keep working while every claimed portfolio 404s.
+3. **Set `PORTFOLIO_WORKER=tools-portfolio-proxy` in the domains repo's sync
+   workflow**, and give `CLOUDFLARE_API_TOKEN` the *Workers Routes: Edit* scope.
+   Until it's set, route reconciliation is skipped entirely — deliberately, so a
+   sync from an older environment is a no-op rather than a teardown.
+4. **Claim one subdomain end to end**: PR opens against the domains repo → CI
+   validates the `portfolio` block → merge → sync writes the DNS record *and*
+   the Worker route → the subdomain renders.
+
+`/claim` writes `proxied: true` for portfolio subdomains
+(`apps/dashboard/lib/claim-portfolio.ts`), which is required, not incidental:
+a Workers route only fires on proxied traffic. It is also what lets the
+`_tools` routes and edge analytics work — `app/page.tsx` builds a claimed
+portfolio's OG card from its own `/_tools/og/image`.

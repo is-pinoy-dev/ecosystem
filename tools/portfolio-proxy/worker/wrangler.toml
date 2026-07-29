@@ -1,0 +1,35 @@
+name = "tools-portfolio-proxy"
+main = "index.ts"
+compatibility_date = "2026-05-27"
+
+# Deliberately no [[routes]]. Routes are created one per claimed portfolio by
+# `is-pinoy registry sync` (packages/registry/src/core/routes.ts) and must match
+# the `PORTFOLIO_WORKER` script name above. Declaring them here would make
+# `wrangler deploy` reconcile the route list against this file and tear down
+# every portfolio's route on the next deploy.
+
+[vars]
+ROOT_DOMAIN = "is-pinoy.dev"
+RENDERER_HOST = "portfolio.is-pinoy.dev"
+
+# PORTFOLIO_PROXY_SECRET is a secret, not a var:
+#   wrangler secret put PORTFOLIO_PROXY_SECRET -c worker/wrangler.toml
+# The same value goes in the renderer's Vercel environment.
+
+[[services]]
+binding = "OG"
+service = "tools-og"
+
+[[services]]
+binding = "SITE_AUDIT"
+service = "tools-site-audit"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true

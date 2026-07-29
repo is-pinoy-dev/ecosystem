@@ -27,3 +27,26 @@ export const dnsActionSchema = z.discriminatedUnion("type", [
 ])
 
 export type DNSAction = z.infer<typeof dnsActionSchema>
+
+// Worker-route actions are kept in their own union rather than folded into
+// DNSAction: they reconcile a different Cloudflare resource against a
+// different "actual" list, and the DNS diff has invariants (claiming, orphan
+// detection) that don't apply to routes.
+export const createRouteActionSchema = z.object({
+  type: z.literal("CREATE_ROUTE"),
+  pattern: z.string(),
+  script: z.string(),
+})
+
+export const deleteRouteActionSchema = z.object({
+  type: z.literal("DELETE_ROUTE"),
+  id: z.string(),
+  pattern: z.string(),
+})
+
+export const routeActionSchema = z.discriminatedUnion("type", [
+  createRouteActionSchema,
+  deleteRouteActionSchema,
+])
+
+export type RouteAction = z.infer<typeof routeActionSchema>

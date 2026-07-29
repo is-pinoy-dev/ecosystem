@@ -199,8 +199,10 @@ The dashboard already has GitHub auth, so we know the user's login:
   `GITHUB_TOKEN`/`GH_TOKEN` pattern and ISR-caches all fetches. (In sandbox,
   unauthenticated `api.github.com` returns 403; the renderer degrades to a clean
   404 — a token is required for live rendering.)
-- ⬜ **Deployment host behind `portfolio.is-pinoy.dev`.** Still to decide; the
-  portfolio subdomains' CNAME target depends on it.
+- ✅ **Deployment host behind `portfolio.is-pinoy.dev`.** Vercel, alongside
+  `web` and `dashboard`. The project is deployed and `portfolio.is-pinoy.dev`
+  resolves to it (DNS-only CNAME to the project's `*.vercel-dns-*.com` target).
+  Cloudflare Workers was considered and rejected — see `apps/portfolio/README.md`.
 
 ## Phase 5 decision (resolved) — auto-open PR
 
@@ -211,11 +213,32 @@ manual flow — only the mechanics are automated. Security posture: the access
 token lives solely in the encrypted session JWT (never the client session) and
 is decoded server-side per request.
 
+## Amendment (2026-07-29) — how claimed subdomains reach the renderer
+
+The design assumed a claimed subdomain's CNAME was enough to get the request to
+the renderer. It isn't: Vercel routes on `Host` and 404s any hostname not
+registered on the project. Both ways of registering them are closed on the
+current plans — a wildcard domain requires Vercel's nameservers (the zone must
+stay on Cloudflare, which the registry, four Workers, and edge analytics all
+depend on), and per-hostname registration is capped at 50 domains per project
+on the free plan, which would cap the number of portfolios.
+
+**Resolution: a Cloudflare Worker (`tools/portfolio-proxy`) with one route per
+claimed portfolio**, created by `is-pinoy registry sync` alongside the DNS
+record. It rewrites onto `portfolio.is-pinoy.dev` and carries the label in a
+secret-authenticated header. Universal SSL already covers `*.is-pinoy.dev` at
+one level, so no per-portfolio certificate is provisioned and nothing is
+registered with Vercel.
+
+This does **not** reverse the "why not a wildcard" decision above — it extends
+it. The route is per-subdomain for the same reason the DNS record is: a
+`*.is-pinoy.dev/*` route would sit in front of every subdomain in the registry,
+including those pointing at their owners' own hosts. Hosting stays on Vercel;
+only the routing hop moved to Cloudflare.
+
 ## Remaining before production
 
-- **Deployment host behind `portfolio.is-pinoy.dev`** — still to decide; the
-  portfolio subdomains' CNAME target depends on it.
-- **`GITHUB_TOKEN` for the renderer** — required for live rendering (anonymous
-  `api.github.com` is rate-limited/403).
+- **Deploy the Worker and set the shared secret + `PORTFOLIO_WORKER`** — steps
+  in `apps/portfolio/README.md`. Until then a claimed subdomain still 404s.
 - **Live OAuth + PR creation** — exercisable only outside the sandbox (needs a
   real GitHub OAuth app and API access).

@@ -1,6 +1,10 @@
 import "dotenv/config";
 
-import { type CloudflareRecord, type DNSRecord } from "@is-pinoy-dev/schemas";
+import {
+  type CloudflareRecord,
+  type CloudflareWorkerRoute,
+  type DNSRecord,
+} from "@is-pinoy-dev/schemas";
 import { env } from "../../core/env.js";
 import { normalizeRecordContent } from "../../core/normalize.js";
 
@@ -69,4 +73,19 @@ export async function deleteRecord(id: string) {
 
 export async function listRecords() {
   return cfRequest<CloudflareRecord[]>("dns_records?per_page=5000", "GET");
+}
+
+export async function listWorkerRoutes() {
+  return cfRequest<CloudflareWorkerRoute[]>("workers/routes", "GET");
+}
+
+export async function createWorkerRoute(pattern: string, script: string) {
+  return cfRequest<CloudflareWorkerRoute>("workers/routes", "POST", {
+    pattern,
+    script,
+  });
+}
+
+export async function deleteWorkerRoute(id: string) {
+  return cfRequest<CloudflareWorkerRoute>(`workers/routes/${id}`, "DELETE");
 }

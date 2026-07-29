@@ -1,0 +1,22 @@
+{
+  "name": "portfolio-proxy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deploy": "wrangler deploy -c worker/wrangler.toml"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260527.1",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "^4.95.0"
+  }
+}

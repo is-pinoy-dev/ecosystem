@@ -47,22 +47,40 @@ export async function handleSync(
 
   const actions = registry.diff(domains, recordsArray, { scoped });
 
-  if (actions.length === 0) {
+  // Hosted portfolios also need a Workers route each (see core/routes.ts).
+  // Skipped entirely when PORTFOLIO_WORKER is unset, which is why the route
+  // listing is only fetched when it's set.
+  let routeActions: Awaited<ReturnType<typeof loadRouteActions>> = [];
+  async function loadRouteActions() {
+    if (!process.env.PORTFOLIO_WORKER) return [];
+    const routes = await registry.listWorkerRoutes();
+    const routesArray = Array.isArray(routes) ? routes : [routes];
+    info(`Fetched ${routesArray.length} Worker route(s) from Cloudflare`);
+    return registry.diffWorkerRoutes(domains, routesArray, { scoped });
+  }
+  routeActions = await loadRouteActions();
+
+  if (actions.length === 0 && routeActions.length === 0) {
     success("No changes needed. All domains are in sync.");
     process.exit(0);
   }
 
-  warning(`${actions.length} change(s) to apply:`);
+  warning(`${actions.length + routeActions.length} change(s) to apply:`);
   divider();
-  printActionTable(
-    actions.map((a) => ({
+  printActionTable([
+    ...actions.map((a) => ({
       type: a.type,
       fqdn: a.fqdn,
       details: "record" in a
         ? `${a.record.type} ${a.record.value}${"proxied" in a.record && a.record.proxied ? " (proxied)" : ""}`
         : undefined,
     })),
-  );
+    ...routeActions.map((a) => ({
+      type: a.type,
+      fqdn: a.pattern,
+      details: a.type === "CREATE_ROUTE" ? `worker ${a.script}` : undefined,
+    })),
+  ]);
   divider();
 
   if (dryRun) {
@@ -71,7 +89,7 @@ export async function handleSync(
   }
 
   if (!autoConfirm) {
-    const ok = await confirmAction(actions.length);
+    const ok = await confirmAction(actions.length + routeActions.length);
     if (!ok) {
       info("Sync cancelled.");
       process.exit(0);
@@ -79,6 +97,9 @@ export async function handleSync(
   }
 
   await registry.sync(actions);
+  // After the DNS records, so a portfolio's route is never live before the
+  // name it routes resolves.
+  if (routeActions.length > 0) await registry.syncWorkerRoutes(routeActions);
   success("Sync complete.");
   process.exit(0);
 }

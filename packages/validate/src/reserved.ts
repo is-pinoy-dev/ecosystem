@@ -120,4 +120,11 @@ export const RESERVED_SUBDOMAINS = [
 
   // Platform tooling namespace — /_tools/* paths are intercepted by Cloudflare Workers
   "_tools",
+
+  // Platform hosts. These are hand-created Cloudflare records pointing at our
+  // own deployments, not entries in this repo. Reserving them stops a claim
+  // from generating an UPDATE against a record the platform depends on —
+  // `portfolio` in particular is the CNAME target every hosted portfolio
+  // points at, so a claim on it would take down every portfolio at once.
+  "portfolio",
 ];
