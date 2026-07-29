@@ -25,7 +25,7 @@ let calls: Call[]
  * Minimal GitHub API stand-in. `branchExists` drives the 422 that a re-submit
  * of the same claim produces.
  */
-function stubGitHub({ branchExists = false } = {}) {
+function stubGitHub({ branchExists = false, syncFails = false } = {}) {
   calls = []
   const fetchMock = vi.fn(async (input: string, init?: RequestInit) => {
     const url = String(input)
@@ -53,6 +53,11 @@ function stubGitHub({ branchExists = false } = {}) {
     }
     if (url === FORK_REF) {
       return new Response(JSON.stringify({ object: { sha: FORK_SHA } }), { status: 200 })
+    }
+    if (url.endsWith("/merge-upstream") && method === "POST") {
+      return syncFails
+        ? new Response("{}", { status: 409 })
+        : new Response("{}", { status: 200 })
     }
     if (url.endsWith("/git/refs") && method === "POST") {
       return branchExists
@@ -126,6 +131,27 @@ describe("openPortfolioPR — claim branch base", () => {
       "https://api.github.com/repos/juan/domains/git/refs/heads/claim/portfolio-cool"
     )
     expect(reset?.body).toEqual({ sha: UPSTREAM_SHA, force: true })
+  })
+
+  it("fast-forwards the fork's default branch to upstream", async () => {
+    await openPortfolioPR("token", params)
+
+    const sync = find((c) => c.url.endsWith("/merge-upstream"))
+    expect(sync?.url).toBe("https://api.github.com/repos/juan/domains/merge-upstream")
+    expect(sync?.body).toEqual({ branch: "main" })
+  })
+
+  it("still opens the claim when the fork can't be fast-forwarded", async () => {
+    // A fork with its own commits on its default branch answers 409. That's
+    // housekeeping the claim's correctness doesn't depend on — the branch is
+    // cut from upstream either way.
+    stubGitHub({ syncFails: true })
+
+    const result = await openPortfolioPR("token", params)
+    expect(result).toMatchObject({ ok: true })
+
+    const create = find((c) => c.url.endsWith("/git/refs") && c.method === "POST")
+    expect(create?.body).toMatchObject({ sha: UPSTREAM_SHA })
   })
 
   it("only ever writes the claimed subdomain's own file", async () => {

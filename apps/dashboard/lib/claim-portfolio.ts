@@ -110,6 +110,37 @@ async function ensureFork(
   return { ok: false, error: "Fork did not become ready in time. Please try again." }
 }
 
+/**
+ * Fast-forward the fork's default branch to upstream — the API behind GitHub's
+ * "Sync fork" button.
+ *
+ * Deliberately best-effort, and deliberately not what makes a claim correct.
+ * The claim branch is cut from upstream's head regardless (see below), so a
+ * stale fork can't corrupt the PR either way. This just stops the fork itself
+ * drifting further behind every time its owner claims something, which keeps
+ * the "Sync fork" banner off their repo and makes future manual PRs saner.
+ *
+ * Every failure is swallowed on purpose. A fork whose default branch has its
+ * own commits answers 409 and can't be fast-forwarded, and a claim must not
+ * fail over housekeeping that its correctness doesn't depend on.
+ */
+async function syncForkDefaultBranch(
+  token: string,
+  login: string,
+): Promise<void> {
+  try {
+    const branch = await getDefaultBranch(token, login, UPSTREAM_REPO)
+    if (!branch) return
+    await fetch(`${API}/repos/${login}/${UPSTREAM_REPO}/merge-upstream`, {
+      method: "POST",
+      headers: headers(token),
+      body: JSON.stringify({ branch }),
+    })
+  } catch {
+    // Network failure here is no reason to abandon the claim.
+  }
+}
+
 export async function openPortfolioPR(
   token: string,
   params: ClaimParams,
@@ -121,6 +152,8 @@ export async function openPortfolioPR(
 
   const fork = await ensureFork(token, login)
   if (!fork.ok) return fork
+
+  await syncForkDefaultBranch(token, login)
 
   const upstreamBase =
     (await getDefaultBranch(token, UPSTREAM_OWNER, UPSTREAM_REPO)) ?? "main"
