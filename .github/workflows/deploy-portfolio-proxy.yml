@@ -1,0 +1,43 @@
+name: Deploy portfolio-proxy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/portfolio-proxy/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare Workers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # No build step: the worker is a single TypeScript module that wrangler
+      # bundles itself. It declares no routes either — those are created per
+      # claimed portfolio by `is-pinoy registry sync`.
+      - name: Deploy
+        working-directory: tools/portfolio-proxy
+        run: pnpm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}

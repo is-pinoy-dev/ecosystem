@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, afterEach } from "vitest"
 import { NextRequest } from "next/server"
 import proxy from "../proxy"
 
@@ -78,5 +78,74 @@ describe("proxy — header spoofing", () => {
       "x-portfolio-subdomain": "maria",
     })
     expect(subdomainSeenByPage(res)).toBe("juan")
+  })
+})
+
+describe("proxy — the Worker's label", () => {
+  const SECRET = "shared-with-the-worker"
+
+  afterEach(() => {
+    delete process.env.PORTFOLIO_PROXY_SECRET
+  })
+
+  // A proxied request arrives on this host, so Host carries no label of its own
+  // and the Worker supplies it — see tools/portfolio-proxy.
+  function proxied(headers: Record<string, string>) {
+    return subdomainSeenByPage(run("portfolio.is-pinoy.dev", headers))
+  }
+
+  it("accepts the label when the secret matches", () => {
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET
+    expect(
+      proxied({
+        "x-portfolio-subdomain": "juan",
+        "x-portfolio-proxy-secret": SECRET,
+      })
+    ).toBe("juan")
+  })
+
+  it("rejects a wrong, absent, or truncated secret", () => {
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET
+    for (const secret of [undefined, "", "wrong", SECRET.slice(0, -1), SECRET + "x"]) {
+      expect(
+        proxied({
+          "x-portfolio-subdomain": "juan",
+          ...(secret === undefined ? {} : { "x-portfolio-proxy-secret": secret }),
+        })
+      ).toBeNull()
+    }
+  })
+
+  it("honours nothing when no secret is configured", () => {
+    // No Worker deployed — the header is just an anonymous request header.
+    expect(
+      proxied({
+        "x-portfolio-subdomain": "juan",
+        "x-portfolio-proxy-secret": SECRET,
+      })
+    ).toBeNull()
+  })
+
+  it("rejects a label that could escape the resolver's fetch path", () => {
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET
+    for (const label of ["../../etc/passwd", "juan/../maria", "JUAN", "ju_an", ""]) {
+      expect(
+        proxied({
+          "x-portfolio-subdomain": label,
+          "x-portfolio-proxy-secret": SECRET,
+        })
+      ).toBeNull()
+    }
+  })
+
+  it("never forwards the secret header to the page", () => {
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET
+    const res = run("portfolio.is-pinoy.dev", {
+      "x-portfolio-subdomain": "juan",
+      "x-portfolio-proxy-secret": SECRET,
+    })
+    expect(
+      res.headers.get("x-middleware-request-x-portfolio-proxy-secret")
+    ).toBeNull()
   })
 })

@@ -62,6 +62,8 @@ tools/          Cloudflare Workers (React Router 7 + Vite), deployed separately 
   og/           Per-subdomain Open Graph image generator, served at /_tools/og
   status/       Uptime/DNS/SSL status site backed by D1, served at status.is-pinoy.dev
   analytics/    Analytics worker
+  portfolio-proxy/ Fronts hosted portfolios; one route per claimed subdomain,
+                created by registry sync. Not a React Router app — a single module.
 ```
 
 **Tools:** each is a React Router 7 SSR app running on a Cloudflare Worker. The

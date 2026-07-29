@@ -94,56 +94,57 @@ short-circuits in `parsePreview()` before `getRenderContext()` ever reads
 and exercises neither `proxy.ts` nor `lib/resolve.ts`. A working preview means
 the build and `GITHUB_TOKEN` are good, nothing more.
 
-Cloudflare Workers was considered and rejected *for now*. Workers routes match on
-the **request** hostname, not the CNAME target, so a route on
-`portfolio.is-pinoy.dev/*` would never fire for `juan.is-pinoy.dev` — it would
-have to be `*.is-pinoy.dev/*`, which matches all traffic entering the zone. That
-puts the Worker in front of every proxied subdomain in the registry, including
-everyone pointing at their own host, so a bug in its pass-through takes down the
-whole registry rather than just portfolios. Vercel's wildcard is passive by
-comparison: traffic arrives only if a CNAME sends it there.
+### How a claimed subdomain reaches this app
 
-Workers becomes the better home if the resolver ever moves off per-request
-GitHub fetches and into KV — that would drop `raw.githubusercontent.com` out of
-the hot path and is a real improvement, but it is its own project.
+Vercel routes purely on `Host` and 404s any hostname not registered on the
+project, and **neither way of registering claimed subdomains is available**: a
+wildcard domain needs Vercel's nameservers (the zone stays on Cloudflare), and
+per-hostname registration is capped at 50 domains per project on the free plan
+— a permanent ceiling on how many portfolios can exist.
+
+So the dynamic part lives on Cloudflare instead. `tools/portfolio-proxy` is a
+Worker with **one route per claimed portfolio**, created by
+`is-pinoy registry sync` alongside the DNS record. It rewrites the request onto
+`portfolio.is-pinoy.dev` — a hostname Vercel does own — and carries the label in
+`x-portfolio-subdomain`, authenticated with a shared secret that `proxy.ts`
+checks before honouring it.
+
+```
+juan.is-pinoy.dev
+  → Cloudflare edge (Universal SSL covers *.is-pinoy.dev at one level)
+  → tools-portfolio-proxy   route juan.is-pinoy.dev/*
+                            Host → portfolio.is-pinoy.dev
+                            + x-portfolio-subdomain: juan (+ shared secret)
+  → Vercel → this app
+```
+
+Nothing per-portfolio is registered with Vercel and no per-portfolio
+certificate is provisioned. Read `tools/portfolio-proxy/README.md` before
+changing any of it — particularly why the route is per-subdomain and not
+`*.is-pinoy.dev/*`, and why `/_tools/*` goes over service bindings.
 
 ### Runbook
 
 Done: the Vercel project (root directory `apps/portfolio`), its `GITHUB_TOKEN`,
-and the `portfolio.is-pinoy.dev` DNS record. What remains is the wildcard — a
-claimed subdomain does **not** render until step 1 lands.
+and the `portfolio.is-pinoy.dev` DNS record. What remains:
 
-1. **Add `*.is-pinoy.dev` as a domain on the portfolio project.** This is the
-   step that makes claimed subdomains work at all. Cloudflare forwards the
-   original Host (`juan.is-pinoy.dev`); if no Vercel project claims that
-   hostname, Vercel answers with its own 404 and this app never runs. Expect
-   two DNS records from Vercel:
-   - a `_vercel` TXT for domain verification — note that name already holds
-     per-subdomain `vc-domain-verify=` tokens for users pointing at their own
-     Vercel projects, so **add** to the record set rather than replacing it;
-   - an `_acme-challenge.is-pinoy.dev` record for the wildcard certificate.
-     Wildcards can only be issued over DNS-01, so there is no way to skip this.
+1. **Deploy the Worker** — `pnpm --filter portfolio-proxy deploy`, or let
+   `.github/workflows/deploy-portfolio-proxy.yml` do it on merge. `tools-og` and
+   `tools-site-audit` must already be deployed; the service bindings resolve by
+   script name.
+2. **Set `PORTFOLIO_PROXY_SECRET` on both sides** — `wrangler secret put` for
+   the Worker, project environment variable for the renderer. A mismatch is
+   quiet: previews keep working while every claimed portfolio 404s.
+3. **Set `PORTFOLIO_WORKER=tools-portfolio-proxy` in the domains repo's sync
+   workflow**, and give `CLOUDFLARE_API_TOKEN` the *Workers Routes: Edit* scope.
+   Until it's set, route reconciliation is skipped entirely — deliberately, so a
+   sync from an older environment is a no-op rather than a teardown.
+4. **Claim one subdomain end to end**: PR opens against the domains repo → CI
+   validates the `portfolio` block → merge → sync writes the DNS record *and*
+   the Worker route → the subdomain renders.
 
-   The absence of `_acme-challenge.is-pinoy.dev` in the zone is the quickest
-   way to tell from outside that this step hasn't been done yet.
-2. **Re-check the neighbours.** Immediately after adding the wildcard, load
-   `dashboard.is-pinoy.dev`, `www`, and the apex to confirm their explicit
-   project assignments still beat it. This is the step most likely to bite.
-   `docs` and `status` never reach Vercel at all — they resolve to Cloudflare —
-   so the blast radius is limited to the Vercel-hosted names.
-3. **Claim one subdomain end to end** and watch the whole chain: PR opens
-   against the domains repo → CI validates the `portfolio` block → merge → sync
-   writes the DNS record → the subdomain renders.
-
-On the orange cloud: `/claim` writes `proxied: true` for portfolio subdomains
-(`apps/dashboard/lib/claim-portfolio.ts`), while the renderer host itself stays
-grey. That combination is deliberate, not drift — Cloudflare follows the in-zone
-CNAME through to Vercel and preserves the original Host, and proxying is what
-lets the `*.is-pinoy.dev/_tools/*` Worker routes fire and edge analytics record
-the visit. `app/page.tsx` depends on it directly: a claimed portfolio's OG card
-is served from its own `/_tools/og/image`. Keep the zone on Full or Full
-(strict) SSL; under strict it is the Vercel wildcard certificate from step 1
-that makes the origin leg valid.
-
-Universal SSL already covers `*.is-pinoy.dev` at one level, so there is no
-per-user certificate provisioning.
+`/claim` writes `proxied: true` for portfolio subdomains
+(`apps/dashboard/lib/claim-portfolio.ts`), which is required, not incidental:
+a Workers route only fires on proxied traffic. It is also what lets the
+`_tools` routes and edge analytics work — `app/page.tsx` builds a claimed
+portfolio's OG card from its own `/_tools/og/image`.
