@@ -55,10 +55,19 @@ jobs:
       # `printf` rather than `echo` on purpose — a trailing newline would make
       # the constant-time comparison in apps/portfolio/proxy.ts fail on a value
       # that looks correct in both dashboards.
+      #
+      # The "is it set?" guard lives in the script rather than a step-level
+      # `if:`. `secrets` is not an available context there, and referencing it
+      # is rejected when the workflow file is parsed — which fails the whole
+      # run before any job starts, rather than just skipping the step.
       - name: Sync PORTFOLIO_PROXY_SECRET
-        if: ${{ secrets.PORTFOLIO_PROXY_SECRET != '' }}
         working-directory: tools/portfolio-proxy
         run: |
+          if [ -z "$PORTFOLIO_PROXY_SECRET" ]; then
+            echo "PORTFOLIO_PROXY_SECRET is not set — skipping. The worker is"
+            echo "deployed but cannot authenticate to the renderer yet."
+            exit 0
+          fi
           printf '%s' "$PORTFOLIO_PROXY_SECRET" \
             | pnpm exec wrangler secret put PORTFOLIO_PROXY_SECRET -c worker/wrangler.toml
         env:
