@@ -47,7 +47,8 @@ pnpm test
 ## Adding a New Package
 
 1. Create a directory under `packages/<name>/`
-2. Add a `package.json` with `"name": "@is-pinoy/<name>"`
+2. Add a `package.json` with `"name": "@is-pinoy-dev/<name>"` — the published
+   scope is `@is-pinoy-dev`, matching every existing package
 3. Extend the shared TypeScript and ESLint configs
 4. Add it to `pnpm-workspace.yaml` if needed (it's auto-discovered via the `packages/*` glob)
 
