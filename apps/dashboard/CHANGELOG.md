@@ -1,5 +1,14 @@
 # dashboard
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [ca63d4c]
+- Updated dependencies [ca63d4c]
+  - @is-pinoy-dev/schemas@1.5.0
+  - @is-pinoy-dev/validate@1.1.0
+
 ## 0.0.1
 
 ### Patch Changes
