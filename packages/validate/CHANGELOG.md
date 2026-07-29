@@ -1,5 +1,25 @@
 # @is-pinoy-dev/validate
 
+## 1.1.0
+
+### Minor Changes
+
+- ca63d4c: Reserve `portfolio` and expose the reserved list on a `./reserved` subpath.
+
+  `portfolio.is-pinoy.dev` is the CNAME target every hosted portfolio points at,
+  but it was claimable: a `subdomains/portfolio.json` would have passed validation
+  and synced as an UPDATE against the platform's own record, breaking every
+  portfolio at once.
+
+  The new `@is-pinoy-dev/validate/reserved` export lets consumers read the list
+  without pulling in zod and the rest of the validator — `apps/portfolio`'s proxy
+  runs on the edge and now shares this list instead of keeping its own copy.
+
+### Patch Changes
+
+- Updated dependencies [ca63d4c]
+  - @is-pinoy-dev/schemas@1.5.0
+
 ## 1.0.4
 
 ### Patch Changes
