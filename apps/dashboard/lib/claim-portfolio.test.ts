@@ -29,6 +29,7 @@ function stubGitHub({
   branchExists = false,
   syncFails = false,
   fileOnBranch = false,
+  forkMissingUpstreamSha = false,
 } = {}) {
   calls = []
   const fetchMock = vi.fn(async (input: string, init?: RequestInit) => {
@@ -64,9 +65,14 @@ function stubGitHub({
         : new Response("{}", { status: 200 })
     }
     if (url.endsWith("/git/refs") && method === "POST") {
-      return branchExists
-        ? new Response("{}", { status: 422 })
-        : new Response("{}", { status: 201 })
+      if (branchExists) return new Response("{}", { status: 422 })
+      // Mirrors a fork whose network hasn't fetched the upstream commit: it
+      // rejects a ref at that SHA but accepts one at its own head.
+      const sha = init?.body ? JSON.parse(String(init.body)).sha : null
+      if (forkMissingUpstreamSha && sha === UPSTREAM_SHA) {
+        return new Response("{}", { status: 404 })
+      }
+      return new Response("{}", { status: 201 })
     }
     if (url.includes("/git/refs/heads/") && method === "PATCH") {
       return new Response("{}", { status: 200 })
@@ -143,6 +149,23 @@ describe("openPortfolioPR — claim branch base", () => {
       "https://api.github.com/repos/juan/domains/git/refs/heads/claim/portfolio-cool"
     )
     expect(reset?.body).toEqual({ sha: UPSTREAM_SHA, force: true })
+  })
+
+  it("falls back to the fork's head when it doesn't hold the upstream commit", async () => {
+    // A fork whose network hasn't fetched the upstream commit rejects a ref
+    // created at it. Dead-ending the claim there is worse than a base that
+    // syncForkDefaultBranch has usually just brought level with upstream.
+    stubGitHub({ forkMissingUpstreamSha: true })
+
+    const result = await openPortfolioPR("token", params)
+    expect(result).toMatchObject({ ok: true })
+
+    const creates = calls.filter(
+      (c) => c.url.endsWith("/git/refs") && c.method === "POST"
+    )
+    expect(creates).toHaveLength(2)
+    expect(creates[0]!.body).toMatchObject({ sha: UPSTREAM_SHA })
+    expect(creates[1]!.body).toMatchObject({ sha: FORK_SHA })
   })
 
   it("fast-forwards the fork's default branch to upstream", async () => {
