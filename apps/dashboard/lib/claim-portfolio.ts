@@ -124,16 +124,23 @@ export async function openPortfolioPR(
 
   const upstreamBase =
     (await getDefaultBranch(token, UPSTREAM_OWNER, UPSTREAM_REPO)) ?? "main"
-  const forkBranch =
-    (await getDefaultBranch(token, login, UPSTREAM_REPO)) ?? upstreamBase
 
-  // Head SHA of the fork's default branch — the base for the new branch.
+  // Base the claim branch on UPSTREAM's head, not the fork's.
+  //
+  // The PR targets upstream, so anything upstream has merged since the user
+  // last synced their fork shows up in the diff as a revert. A claim opened
+  // from a stale fork arrives proposing to undo other people's merged changes
+  // — and CI fails it on files the claimant never touched. A fork forked once
+  // and never updated again is the normal case, not the exception.
+  //
+  // Creating a ref in the fork at an upstream SHA is fine: a fork shares its
+  // object store with the upstream network, so the commit is already there.
   const refRes = await fetch(
-    `${API}/repos/${login}/${UPSTREAM_REPO}/git/ref/heads/${forkBranch}`,
+    `${API}/repos/${UPSTREAM_OWNER}/${UPSTREAM_REPO}/git/ref/heads/${upstreamBase}`,
     { headers: headers(token), cache: "no-store" },
   )
   if (!refRes.ok) {
-    return { ok: false, error: `Could not read your fork's ${forkBranch} branch.` }
+    return { ok: false, error: `Could not read the domains repo's ${upstreamBase} branch.` }
   }
   const refData = (await refRes.json()) as { object?: { sha?: string } }
   const baseSha = refData.object?.sha
@@ -148,9 +155,30 @@ export async function openPortfolioPR(
       body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }),
     },
   )
-  // 422 = branch already exists (a re-submit); reuse it.
-  if (!createRef.ok && createRef.status !== 422) {
-    return { ok: false, error: `Could not create a branch (${createRef.status}).` }
+
+  if (!createRef.ok) {
+    if (createRef.status !== 422) {
+      return { ok: false, error: `Could not create a branch (${createRef.status}).` }
+    }
+    // 422 = the branch already exists from an earlier submit of this same
+    // claim. Reusing it as-is would inherit whatever base it was cut from,
+    // which is the stale-fork problem again one resubmit later. Reset it onto
+    // the current upstream head instead — the branch is named for this claim
+    // and holds nothing else worth keeping.
+    const resetRef = await fetch(
+      `${API}/repos/${login}/${UPSTREAM_REPO}/git/refs/heads/${branch}`,
+      {
+        method: "PATCH",
+        headers: headers(token),
+        body: JSON.stringify({ sha: baseSha, force: true }),
+      },
+    )
+    if (!resetRef.ok) {
+      return {
+        ok: false,
+        error: `Could not reset your existing ${branch} branch (${resetRef.status}).`,
+      }
+    }
   }
 
   const putFile = await fetch(
