@@ -1,13 +1,33 @@
 import "server-only"
 import { domainSchema, type PortfolioConfig } from "@is-pinoy-dev/schemas"
 
-// Opens a portfolio-claim pull request against the public domains repo on the
-// signed-in user's behalf, using their OAuth token (public_repo scope):
-//   fork the domains repo (if needed) → create a branch → add the subdomain
-//   JSON file → open a PR from the fork to upstream.
+// Opens a portfolio-claim pull request against the public domains repo.
+//
+// Two routes, chosen by whether DOMAINS_CLAIM_TOKEN is configured:
+//
+//   direct — push the claim branch straight to the domains repo with an
+//     org-owned token, then open the PR within that repo.
+//   fork   — the original path: fork the repo under the signed-in user, branch
+//     there, and open a cross-repo PR with their own OAuth token.
+//
+// Direct is preferred because the fork route depends on the state of a
+// repository we don't control. A fork that has *diverged* from upstream — its
+// default branch carrying commits whose content upstream has since changed —
+// produces a claim whose diff reverts other people's merged work, and CI fails
+// it on files the claimant never touched. GitHub offers no way to repair that
+// from the API: merge-upstream refuses on divergence, and every alternative
+// needs an upstream object the fork's network may not hold. Only the user can
+// fix it, from the web UI. Pushing to upstream sidesteps the fork entirely, so
+// a claim is a one-file PR no matter what any fork looks like.
+//
+// The cost is attribution: the PR is authored by the token's identity rather
+// than the claimant. Governance is unchanged — maintainers still review and
+// merge, and `owner.github` in the file records who the subdomain is for.
 //
 // The generated file is validated against the real domainSchema first, so a
-// claim never opens a PR that the repo's schema check would reject.
+// claim never opens a PR that the repo's schema check would reject. That
+// validation also gates every value interpolated into a path or ref below:
+// `subdomain` is constrained to /^[a-z0-9-]+$/ before it reaches them.
 
 const UPSTREAM_OWNER = "is-pinoy-dev"
 const UPSTREAM_REPO = "domains"
@@ -79,6 +99,20 @@ async function headSha(
   if (!res.ok) return null
   const data = (await res.json()) as { object?: { sha?: string } }
   return data.object?.sha ?? null
+}
+
+/** Whether `subdomains/<subdomain>.json` exists on `owner`'s copy at `ref`. */
+async function fileExists(
+  token: string,
+  owner: string,
+  subdomain: string,
+  ref: string,
+): Promise<boolean> {
+  const res = await fetch(
+    `${API}/repos/${owner}/${UPSTREAM_REPO}/contents/subdomains/${subdomain}.json?ref=${ref}`,
+    { headers: headers(token), cache: "no-store" },
+  )
+  return res.ok
 }
 
 async function getDefaultBranch(
@@ -165,22 +199,40 @@ export async function openPortfolioPR(
   const built = buildDomainFile(params)
   if (built.error) return { ok: false, error: `Invalid record: ${built.error}` }
 
-  const fork = await ensureFork(token, login)
-  if (!fork.ok) return fork
-
-  await syncForkDefaultBranch(token, login)
+  // An org-owned token pushes the branch to the domains repo itself; without
+  // one we fall back to the user's fork. See the note at the top of this file
+  // for why direct is preferred.
+  const claimToken = process.env.DOMAINS_CLAIM_TOKEN
+  const direct = Boolean(claimToken)
+  const writeToken = claimToken ?? token
+  const writeOwner = direct ? UPSTREAM_OWNER : login
 
   const upstreamBase =
     (await getDefaultBranch(token, UPSTREAM_OWNER, UPSTREAM_REPO)) ?? "main"
 
-  // Base the claim branch on UPSTREAM's head, not the fork's.
+  // Refuse a name that already has a record on the default branch. In the fork
+  // route a duplicate could only ever land in the user's own fork and stall in
+  // review; writing to upstream directly, and upserting the file, it would
+  // instead open a PR proposing to overwrite somebody else's subdomain.
+  if (await fileExists(token, UPSTREAM_OWNER, subdomain, upstreamBase)) {
+    return {
+      ok: false,
+      error: `${subdomain}.is-pinoy.dev is already registered. Please choose another name.`,
+    }
+  }
+
+  if (!direct) {
+    const fork = await ensureFork(token, login)
+    if (!fork.ok) return fork
+    await syncForkDefaultBranch(token, login)
+  }
+
+  // Base the claim branch on UPSTREAM's head.
   //
-  // The PR targets upstream, so anything upstream has merged since the user
-  // last synced their fork shows up in the diff as a revert. A claim opened
-  // from a stale fork arrives proposing to undo other people's merged changes
-  // — and CI fails it on files the claimant never touched. A fork forked once
-  // and never updated again is the normal case, not the exception.
-  //
+  // In the fork route the PR targets upstream, so anything upstream merged
+  // since the user last synced their fork shows up in the diff as a revert. A
+  // fork forked once and never updated again is the normal case, not the
+  // exception.
   const upstreamSha = await headSha(token, UPSTREAM_OWNER, upstreamBase)
   if (!upstreamSha) {
     return { ok: false, error: `Could not read the domains repo's ${upstreamBase} branch.` }
@@ -188,25 +240,22 @@ export async function openPortfolioPR(
 
   const branch = `claim/portfolio-${subdomain}`
   const createBranch = (sha: string) =>
-    fetch(`${API}/repos/${login}/${UPSTREAM_REPO}/git/refs`, {
+    fetch(`${API}/repos/${writeOwner}/${UPSTREAM_REPO}/git/refs`, {
       method: "POST",
-      headers: headers(token),
+      headers: headers(writeToken),
       body: JSON.stringify({ ref: `refs/heads/${branch}`, sha }),
     })
 
   let baseSha = upstreamSha
   let createRef = await createBranch(baseSha)
 
-  // A fork only carries the upstream commits its network has actually fetched.
-  // A recently-created fork, or one whose network hasn't caught up, rejects a
-  // ref created at an upstream SHA it doesn't hold — so fall back to the fork's
-  // own head rather than dead-ending the claim.
-  //
-  // This is usually no worse: syncForkDefaultBranch has just fast-forwarded the
-  // fork, so its head is upstream's head and the diff stays a single file. It
-  // is only a stale base when the fork had diverged and couldn't be
-  // fast-forwarded, and a claim with a noisy diff still beats no claim at all.
-  if (!createRef.ok && createRef.status !== 422) {
+  // Fork route only: a fork carries the upstream commits its network has
+  // actually fetched, and one that hasn't caught up rejects a ref created at
+  // an upstream SHA it doesn't hold. Fall back to its own head rather than
+  // dead-ending — usually the same commit, since syncForkDefaultBranch has
+  // just fast-forwarded it. Writing to upstream, the SHA is by definition
+  // present, so a failure there is real and shouldn't be papered over.
+  if (!direct && !createRef.ok && createRef.status !== 422) {
     const forkBranch = await getDefaultBranch(token, login, UPSTREAM_REPO)
     const forkSha = forkBranch ? await headSha(token, login, forkBranch) : null
     if (forkSha && forkSha !== baseSha) {
@@ -225,10 +274,10 @@ export async function openPortfolioPR(
     // the current upstream head instead — the branch is named for this claim
     // and holds nothing else worth keeping.
     const resetRef = await fetch(
-      `${API}/repos/${login}/${UPSTREAM_REPO}/git/refs/heads/${branch}`,
+      `${API}/repos/${writeOwner}/${UPSTREAM_REPO}/git/refs/heads/${branch}`,
       {
         method: "PATCH",
-        headers: headers(token),
+        headers: headers(writeToken),
         body: JSON.stringify({ sha: baseSha, force: true }),
       },
     )
@@ -249,18 +298,18 @@ export async function openPortfolioPR(
   // write an upsert: the branch ends up holding the claim as submitted, not
   // whichever version happened to land first.
   const existing = await fetch(
-    `${API}/repos/${login}/${UPSTREAM_REPO}/${filePath}?ref=${branch}`,
-    { headers: headers(token), cache: "no-store" },
+    `${API}/repos/${writeOwner}/${UPSTREAM_REPO}/${filePath}?ref=${branch}`,
+    { headers: headers(writeToken), cache: "no-store" },
   )
   const existingSha = existing.ok
     ? ((await existing.json()) as { sha?: string }).sha
     : undefined
 
   const putFile = await fetch(
-    `${API}/repos/${login}/${UPSTREAM_REPO}/${filePath}`,
+    `${API}/repos/${writeOwner}/${UPSTREAM_REPO}/${filePath}`,
     {
       method: "PUT",
-      headers: headers(token),
+      headers: headers(writeToken),
       body: JSON.stringify({
         message: `feat: add portfolio subdomain ${subdomain}`,
         content: Buffer.from(built.content).toString("base64"),
@@ -292,10 +341,10 @@ export async function openPortfolioPR(
     `${API}/repos/${UPSTREAM_OWNER}/${UPSTREAM_REPO}/pulls`,
     {
       method: "POST",
-      headers: headers(token),
+      headers: headers(writeToken),
       body: JSON.stringify({
         title: prTitle,
-        head: `${login}:${branch}`,
+        head: direct ? branch : `${login}:${branch}`,
         base: upstreamBase,
         body: prBody,
         maintainer_can_modify: true,
@@ -312,7 +361,7 @@ export async function openPortfolioPR(
   // A PR for this head may already exist — surface it instead of erroring.
   if (prRes.status === 422) {
     const list = await fetch(
-      `${API}/repos/${UPSTREAM_OWNER}/${UPSTREAM_REPO}/pulls?head=${login}:${branch}&state=open`,
+      `${API}/repos/${UPSTREAM_OWNER}/${UPSTREAM_REPO}/pulls?head=${direct ? UPSTREAM_OWNER : login}:${branch}&state=open`,
       { headers: headers(token), cache: "no-store" },
     )
     if (list.ok) {

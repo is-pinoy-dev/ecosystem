@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
 
 import { openPortfolioPR } from "./claim-portfolio"
 
+const UPSTREAM = "is-pinoy-dev"
 const UPSTREAM_REF = "https://api.github.com/repos/is-pinoy-dev/domains/git/ref/heads/main"
 const FORK_REF = "https://api.github.com/repos/juan/domains/git/ref/heads/main"
 const UPSTREAM_SHA = "upstream-head-sha"
@@ -30,6 +31,7 @@ function stubGitHub({
   syncFails = false,
   fileOnBranch = false,
   forkMissingUpstreamSha = false,
+  nameTaken = false,
 } = {}) {
   calls = []
   const fetchMock = vi.fn(async (input: string, init?: RequestInit) => {
@@ -77,6 +79,18 @@ function stubGitHub({
     if (url.includes("/git/refs/heads/") && method === "PATCH") {
       return new Response("{}", { status: 200 })
     }
+    // The "is this name taken?" probe is the only read of the *default*
+    // branch. On the direct route the claim-branch lookup and the write target
+    // the same repo, so the ref is what tells them apart.
+    if (
+      method === "GET" &&
+      url.includes(`/repos/${UPSTREAM}/domains/contents/subdomains/`) &&
+      url.endsWith("?ref=main")
+    ) {
+      return nameTaken
+        ? new Response(JSON.stringify({ sha: "taken" }), { status: 200 })
+        : new Response("{}", { status: 404 })
+    }
     if (url.includes("/contents/subdomains/")) {
       if (method === "GET") {
         return fileOnBranch
@@ -101,8 +115,69 @@ function stubGitHub({
 
 const find = (pred: (c: Call) => boolean) => calls.find(pred)
 
-beforeEach(() => stubGitHub())
-afterEach(() => vi.unstubAllGlobals())
+beforeEach(() => {
+  delete process.env.DOMAINS_CLAIM_TOKEN
+  stubGitHub()
+})
+afterEach(() => {
+  vi.unstubAllGlobals()
+  delete process.env.DOMAINS_CLAIM_TOKEN
+})
+
+describe("openPortfolioPR — direct route", () => {
+  // With an org-owned token the fork is out of the picture entirely, which is
+  // the point: a fork that has diverged from upstream cannot be repaired
+  // through the API, and its claims can never produce a one-file diff.
+  beforeEach(() => {
+    process.env.DOMAINS_CLAIM_TOKEN = "bot-token"
+  })
+
+  it("pushes the branch to the domains repo and opens a same-repo PR", async () => {
+    const result = await openPortfolioPR("user-token", params)
+    expect(result).toMatchObject({ ok: true })
+
+    const create = find((c) => c.url.endsWith("/git/refs") && c.method === "POST")
+    expect(create?.url).toBe(
+      "https://api.github.com/repos/is-pinoy-dev/domains/git/refs"
+    )
+    expect(create?.body).toMatchObject({ sha: UPSTREAM_SHA })
+
+    // Same-repo PRs take a bare branch name; the `owner:branch` form is for
+    // cross-repo ones and GitHub rejects it here.
+    const pr = find((c) => c.url.endsWith("/pulls") && c.method === "POST")
+    expect(pr?.body).toMatchObject({ head: "claim/portfolio-cool", base: "main" })
+  })
+
+  it("never touches the user's fork", async () => {
+    await openPortfolioPR("user-token", params)
+
+    expect(find((c) => c.url.includes("/forks"))).toBeUndefined()
+    expect(find((c) => c.url.endsWith("/merge-upstream"))).toBeUndefined()
+    expect(find((c) => c.url.includes("/repos/juan/"))).toBeUndefined()
+  })
+
+  it("writes with the org token, not the user's", async () => {
+    await openPortfolioPR("user-token", params)
+    // Asserted through the stub's recorded calls: every mutation must go to
+    // the upstream repo, which the user's token has no write access to.
+    for (const c of calls.filter((c) => c.method !== "GET")) {
+      expect(c.url).toContain("/repos/is-pinoy-dev/domains/")
+    }
+  })
+
+  it("refuses a name that is already registered", async () => {
+    // Only reachable on this route: writing to upstream with an upsert, a
+    // duplicate would propose overwriting somebody else's record.
+    stubGitHub({ nameTaken: true })
+
+    const result = await openPortfolioPR("user-token", params)
+    expect(result).toEqual({
+      ok: false,
+      error: "cool.is-pinoy.dev is already registered. Please choose another name.",
+    })
+    expect(find((c) => c.method !== "GET")).toBeUndefined()
+  })
+})
 
 describe("openPortfolioPR — claim branch base", () => {
   // The PR targets upstream, so basing the branch on a fork that was forked
