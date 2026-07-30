@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { PageHeader } from "@/components/page-header"
-import { claimEnabled } from "@/lib/flags-server"
+import { claimsEnabled } from "@/lib/flags-server"
 import { ClaimForm } from "./claim-form"
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export default async function ClaimPage() {
 
   // Behave as though the route does not exist while the flag is off, so typing
   // the URL gets you no further than the hidden tab does.
-  if (!(await claimEnabled())) {
+  if (!(await claimsEnabled())) {
     notFound()
   }
 

@@ -19,7 +19,7 @@ const NAV_ITEMS: {
 }[] = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/domains", label: "Domains", icon: Globe },
-  { href: "/claim", label: "Claim", icon: Sparkles, flag: "claim" },
+  { href: "/claim", label: "Claim", icon: Sparkles, flag: "claims" },
   { href: "/account", label: "Account", icon: UserRound },
 ]
 

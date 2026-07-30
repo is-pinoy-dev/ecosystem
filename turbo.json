@@ -30,8 +30,6 @@
         "NEXT_PUBLIC_PORTFOLIO_URL",
         "FLAGS",
         "FLAGS_SECRET",
-        "DASHBOARD_FLAGS",
-        "DASHBOARD_FLAG_TESTERS",
         "VERCEL_ENV"
       ]
     },
