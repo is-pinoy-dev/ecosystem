@@ -4,6 +4,7 @@ import { z } from "zod"
 import { portfolioSchema } from "@is-pinoy-dev/schemas"
 import { validateDomain } from "@is-pinoy-dev/validate"
 import { auth } from "@/auth"
+import { isFlagEnabled, readFlagContext } from "@/lib/flags"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import {
   buildDomainRecord,
@@ -55,6 +56,12 @@ export async function claimPortfolio(input: ClaimInput): Promise<ClaimResult> {
     return { ok: false, error: "You must be signed in to claim a subdomain." }
   }
   const login = session.user.login
+
+  // A server action stays reachable by its own ID once deployed, whatever the
+  // page does — so the flag has to be checked here too, not only on /claim.
+  if (!isFlagEnabled("claim", readFlagContext(process.env, login))) {
+    return { ok: false, error: "Portfolio claims are not available right now." }
+  }
 
   const parsed = claimInput.safeParse(input)
   if (!parsed.success) {
