@@ -20,7 +20,9 @@
     "@is-pinoy-dev/schemas": "workspace:*",
     "@is-pinoy-dev/ui": "workspace:*",
     "@is-pinoy-dev/validate": "workspace:*",
+    "@vercel/edge-config": "^1.5.0",
     "drizzle-orm": "^0.45.2",
+    "flags": "^4.2.4",
     "lucide-react": "catalog:",
     "next": "16.2.11",
     "next-auth": "5.0.0-beta.32",
@@ -30,13 +32,13 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.6",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@workspace/eslint-config": "workspace:^",
     "@workspace/typescript-config": "workspace:*",
+    "drizzle-kit": "^0.31.6",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

@@ -4,27 +4,26 @@
 // Not to be confused with lib/features.ts. That is the *platform* feature
 // registry — per-subdomain flags a developer owns, stored in the domains repo
 // and edited from the dashboard. These are *release* flags: they gate whether
-// a slice of the dashboard exists at all, and are configured by operators
-// through the environment.
+// a slice of the dashboard exists at all, and are configured by operators.
+//
+// This module is the pure core — the registry and the resolution rules. Where
+// the remote state comes from (Vercel Edge Config, or environment variables as
+// a fallback) lives in lib/flags-server.ts, which is what app code calls.
 //
 // A flag resolves from three inputs, highest precedence first:
 //
-//   DASHBOARD_FLAGS         "claim=on,other=off" — an explicit operator
-//                           override. Wins over everything, so `=off` is a
-//                           kill switch that no allowlist can reopen, and
-//                           `=on` is a launch that needs no deploy.
-//   DASHBOARD_FLAG_TESTERS  "octocat,hubot" — GitHub logins that get every
-//                           not-yet-launched flag, in every environment. This
-//                           is what makes a flag testable in production
-//                           without exposing it to anyone else.
-//   enabledIn               The environments where a flag is on for everyone.
-//                           A flag's normal life is to start at
-//                           ["development", "preview"] and gain "production"
-//                           when it launches.
+//   overrides   An explicit per-flag on/off. Wins over everything, so `off` is
+//               a kill switch no allowlist can reopen, and `on` is a launch.
+//   testers     GitHub logins that get every not-yet-launched flag, in every
+//               environment. This is what makes a flag testable in production
+//               without exposing it to anyone else.
+//   enabledIn   The environments where a flag is on for everyone. A flag's
+//               normal life is to start at ["development", "preview"] and gain
+//               "production" when it launches.
 //
-// Resolution happens on the server, in a server component, and the resolved
-// booleans are passed to client components as props — so neither the override
-// string nor the tester allowlist is ever serialised to the browser.
+// Resolution happens on the server, and the resolved booleans are passed to
+// client components as props — so neither the overrides nor the tester
+// allowlist is ever serialised to the browser.
 //
 // Kept free of server-only imports so it can be unit tested.
 
@@ -48,6 +47,29 @@ export const FLAGS = {
 
 export type FlagId = keyof typeof FLAGS
 
+export type FlagSet = Record<FlagId, boolean>
+
+export const FLAG_IDS = Object.keys(FLAGS) as FlagId[]
+
+/**
+ * The remotely-configured half of a decision: which flags are explicitly
+ * pinned, and who is allowed to see unlaunched ones. Read from Edge Config in
+ * production, or from environment variables when Edge Config is not wired up.
+ */
+export interface FlagSource {
+  /** Explicit per-flag overrides. */
+  overrides: Partial<Record<FlagId, boolean>>
+  /** Lowercased GitHub logins allowed to see unlaunched flags. */
+  testers: readonly string[]
+}
+
+/** Everything a decision depends on: the remote source plus who is asking. */
+export interface FlagContext extends FlagSource {
+  env: DeployEnv
+  /** GitHub login of the signed-in developer, lowercased; null when signed out. */
+  login: string | null
+}
+
 /**
  * The slice of the environment flags read. Narrower than `NodeJS.ProcessEnv`,
  * which `process.env` satisfies — so callers pass `process.env` directly while
@@ -60,22 +82,9 @@ export interface FlagEnv {
   DASHBOARD_FLAG_TESTERS?: string | undefined
 }
 
-export type FlagSet = Record<FlagId, boolean>
-
-export const FLAG_IDS = Object.keys(FLAGS) as FlagId[]
-
-/**
- * Everything flag resolution depends on, gathered so the resolver itself stays
- * pure and testable.
- */
-export interface FlagContext {
-  env: DeployEnv
-  /** Explicit per-flag overrides parsed from `DASHBOARD_FLAGS`. */
-  overrides: Partial<Record<FlagId, boolean>>
-  /** Lowercased GitHub logins allowed to see unlaunched flags. */
-  testers: readonly string[]
-  /** GitHub login of the signed-in developer, lowercased; null when signed out. */
-  login: string | null
+/** A source that configures nothing, leaving every flag on its declared default. */
+export function emptyFlagSource(): FlagSource {
+  return { overrides: {}, testers: [] }
 }
 
 function isFlagId(value: string): value is FlagId {
@@ -139,17 +148,81 @@ export function parseTesters(value: string | undefined | null): string[] {
     .filter((login) => login.length > 0)
 }
 
-/** Gather a resolution context from the process environment and the session. */
+/** The environment-variable source, used when Edge Config is not configured. */
+export function readEnvSource(env: FlagEnv): FlagSource {
+  return {
+    overrides: parseFlagOverrides(env.DASHBOARD_FLAGS),
+    testers: parseTesters(env.DASHBOARD_FLAG_TESTERS),
+  }
+}
+
+/**
+ * Parse the Edge Config value into a source. The JSON is hand-edited in a
+ * dashboard, so treat every field as untrusted: unknown flag names, non-boolean
+ * settings, and non-string logins are dropped rather than coerced, which keeps
+ * a malformed edit from turning a flag on by accident.
+ *
+ * Expected shape:
+ *   { "overrides": { "claim": true }, "testers": ["octocat"] }
+ */
+export function parseRemoteSource(raw: unknown): FlagSource {
+  const overrides: Partial<Record<FlagId, boolean>> = {}
+  const testers: string[] = []
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { overrides, testers }
+  }
+  const record = raw as Record<string, unknown>
+
+  const rawOverrides = record.overrides
+  if (rawOverrides && typeof rawOverrides === "object") {
+    for (const [name, value] of Object.entries(
+      rawOverrides as Record<string, unknown>
+    )) {
+      const id = name.trim().toLowerCase()
+      if (isFlagId(id) && typeof value === "boolean") overrides[id] = value
+    }
+  }
+
+  const rawTesters = record.testers
+  if (Array.isArray(rawTesters)) {
+    for (const entry of rawTesters) {
+      if (typeof entry !== "string") continue
+      const login = entry.trim().toLowerCase()
+      if (login) testers.push(login)
+    }
+  }
+
+  return { overrides, testers }
+}
+
+/** Combine a remote source with who is asking into a resolvable context. */
+export function buildFlagContext({
+  env,
+  source,
+  login,
+}: {
+  env: DeployEnv
+  source: FlagSource
+  login: string | null | undefined
+}): FlagContext {
+  return {
+    env,
+    overrides: source.overrides,
+    testers: source.testers,
+    login: login ? login.toLowerCase() : null,
+  }
+}
+
+/** Gather a context entirely from the environment — the no-Edge-Config path. */
 export function readFlagContext(
   env: FlagEnv,
   login: string | null | undefined
 ): FlagContext {
-  return {
+  return buildFlagContext({
     env: readDeployEnv(env),
-    overrides: parseFlagOverrides(env.DASHBOARD_FLAGS),
-    testers: parseTesters(env.DASHBOARD_FLAG_TESTERS),
-    login: login ? login.toLowerCase() : null,
-  }
+    source: readEnvSource(env),
+    login,
+  })
 }
 
 export function isFlagEnabled(id: FlagId, context: FlagContext): boolean {

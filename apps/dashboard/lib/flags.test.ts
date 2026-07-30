@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  buildFlagContext,
   FLAGS,
   FLAG_IDS,
   isFlagEnabled,
   parseFlagOverrides,
+  parseRemoteSource,
   parseTesters,
   readDeployEnv,
+  readEnvSource,
   readFlagContext,
   resolveFlags,
   type FlagContext,
@@ -200,6 +203,117 @@ describe("readFlagContext", () => {
   it("treats a missing login as signed out", () => {
     expect(readFlagContext({}, undefined).login).toBe(null)
     expect(readFlagContext({}, null).login).toBe(null)
+  })
+})
+
+describe("readEnvSource", () => {
+  it("gathers both environment variables into one source", () => {
+    expect(
+      readEnvSource({
+        DASHBOARD_FLAGS: "claim=off",
+        DASHBOARD_FLAG_TESTERS: "Octocat",
+      })
+    ).toEqual({ overrides: { claim: false }, testers: ["octocat"] })
+  })
+
+  it("is empty when neither variable is set", () => {
+    expect(readEnvSource({})).toEqual({ overrides: {}, testers: [] })
+  })
+})
+
+describe("parseRemoteSource", () => {
+  it("reads the Edge Config shape", () => {
+    expect(
+      parseRemoteSource({ overrides: { claim: true }, testers: ["Octocat"] })
+    ).toEqual({ overrides: { claim: true }, testers: ["octocat"] })
+  })
+
+  it("treats a missing or non-object value as no configuration", () => {
+    for (const raw of [undefined, null, "claim=on", 42, []]) {
+      expect(parseRemoteSource(raw)).toEqual({ overrides: {}, testers: [] })
+    }
+  })
+
+  it("ignores unknown flag names", () => {
+    expect(
+      parseRemoteSource({ overrides: { claim: true, mystery: true } })
+    ).toEqual({ overrides: { claim: true }, testers: [] })
+  })
+
+  it("drops a non-boolean override instead of coercing it", () => {
+    // "false" and 0 are both truthy/falsy traps a hand-edited JSON blob can
+    // easily contain; neither should decide a flag.
+    expect(parseRemoteSource({ overrides: { claim: "true" } })).toEqual({
+      overrides: {},
+      testers: [],
+    })
+    expect(parseRemoteSource({ overrides: { claim: 1 } })).toEqual({
+      overrides: {},
+      testers: [],
+    })
+  })
+
+  it("keeps an explicit false, which is the kill switch", () => {
+    expect(parseRemoteSource({ overrides: { claim: false } })).toEqual({
+      overrides: { claim: false },
+      testers: [],
+    })
+  })
+
+  it("drops non-string and blank testers", () => {
+    expect(
+      parseRemoteSource({ testers: ["Octocat", 7, null, "  ", "hubot"] })
+    ).toEqual({ overrides: {}, testers: ["octocat", "hubot"] })
+  })
+
+  it("ignores a testers value that is not an array", () => {
+    expect(parseRemoteSource({ testers: "octocat" })).toEqual({
+      overrides: {},
+      testers: [],
+    })
+  })
+
+  it("resolves through the same rules as the environment source", () => {
+    const source = parseRemoteSource({ testers: ["octocat"] })
+    const context = buildFlagContext({
+      env: "production",
+      source,
+      login: "OctoCat",
+    })
+    expect(isFlagEnabled("claim", context)).toBe(true)
+    expect(
+      isFlagEnabled(
+        "claim",
+        buildFlagContext({ env: "production", source, login: "hubot" })
+      )
+    ).toBe(false)
+  })
+})
+
+describe("buildFlagContext", () => {
+  it("lowercases the login so GitHub's casing never matters", () => {
+    expect(
+      buildFlagContext({
+        env: "production",
+        source: { overrides: {}, testers: ["octocat"] },
+        login: "OctoCat",
+      })
+    ).toEqual({
+      env: "production",
+      overrides: {},
+      testers: ["octocat"],
+      login: "octocat",
+    })
+  })
+
+  it("treats a missing login as signed out", () => {
+    const source = { overrides: {}, testers: [] }
+    expect(
+      buildFlagContext({ env: "production", source, login: undefined }).login
+    ).toBe(null)
+    expect(
+      buildFlagContext({ env: "production", source, login: "" }).login
+    ).toBe(null)
   })
 })
 

@@ -5,7 +5,7 @@ import { AnimatedThemeToggler } from "@is-pinoy-dev/ui/components/animated-theme
 import { auth } from "@/auth"
 import { DashboardTabs } from "@/components/dashboard-nav"
 import { UserMenu } from "@/components/user-menu"
-import { readFlagContext, resolveFlags } from "@/lib/flags"
+import { resolveFlagSet } from "@/lib/flags-server"
 
 export default async function DashboardLayout({
   children,
@@ -19,8 +19,8 @@ export default async function DashboardLayout({
 
   const { name, login, email, image } = session.user
   // Resolved here, on the server, so only the booleans cross into the client
-  // nav — never the override string or the tester allowlist.
-  const flags = resolveFlags(readFlagContext(process.env, login))
+  // nav — never the remote config or the tester allowlist.
+  const flags = await resolveFlagSet()
 
   return (
     <div className="flex min-h-svh flex-col">
