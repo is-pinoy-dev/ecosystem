@@ -25,9 +25,41 @@ const LABEL_PATTERN = /^[a-z0-9-]{1,63}$/
 // rest of the validator out of the proxy bundle.
 const RESERVED = new Set(RESERVED_SUBDOMAINS)
 
+/**
+ * How this request got its label, echoed on every response as
+ * `x-portfolio-route`. A claimed portfolio that 404s is otherwise
+ * indistinguishable from a name nobody ever claimed, and the difference is
+ * usually one of these verdicts — reachable with `curl -I`, no dashboards.
+ *
+ * `no-secret` and `secret-mismatch` are reported apart deliberately. Rendering
+ * versus 404ing is already a match/no-match oracle for anyone probing, so naming
+ * which one happened leaks no secret material; what it adds is the one fact this
+ * app cannot otherwise tell you — whether the running deployment has a secret at
+ * all. Vercel binds env vars to a deployment, so a value added to the project and
+ * never redeployed reads here as `no-secret`.
+ */
+export type RouteVerdict =
+  /** Label came from the Host header — direct, unproxied. */
+  | "host"
+  /** Label came from the Worker and its secret matched. */
+  | "worker"
+  /** Host carries no label and the Worker presented nothing. Apex or preview. */
+  | "unlabelled"
+  /** The Worker presented a label, but this deployment has no secret to check. */
+  | "no-secret"
+  /** A secret was presented and did not match. Check for a trailing newline. */
+  | "secret-mismatch"
+  /** Secret matched, but the label was malformed — the Worker should not emit this. */
+  | "bad-label"
+
+const ROUTE_HEADER = "x-portfolio-route"
+
 export default function proxy(req: NextRequest) {
   const host = req.headers.get("host")?.split(":")[0] ?? ""
-  const label = extractLabel(host) ?? proxiedLabel(req)
+  const fromHost = extractLabel(host)
+  const { label, verdict } = fromHost
+    ? { label: fromHost, verdict: "host" as const }
+    : proxiedLabel(req)
 
   const headers = new Headers(req.headers)
   // Both headers are ours to set, never the client's to send. Without these
@@ -39,7 +71,9 @@ export default function proxy(req: NextRequest) {
   headers.delete(SECRET_HEADER)
   if (label) headers.set(SUBDOMAIN_HEADER, label)
 
-  return NextResponse.next({ request: { headers } })
+  const res = NextResponse.next({ request: { headers } })
+  res.headers.set(ROUTE_HEADER, verdict)
+  return res
 }
 
 /**
@@ -49,17 +83,30 @@ export default function proxy(req: NextRequest) {
  * case for a proxied request: the Worker rewrites onto this host, so `Host` is
  * `portfolio.is-pinoy.dev` and the real subdomain is in the header.
  */
-function proxiedLabel(req: NextRequest): string | null {
-  const secret = process.env.PORTFOLIO_PROXY_SECRET
-  if (!secret) return null
+function proxiedLabel(req: NextRequest): {
+  label: string | null
+  verdict: RouteVerdict
+} {
   const presented = req.headers.get(SECRET_HEADER)
-  if (!presented || !secretMatches(presented, secret)) return null
+  const secret = process.env.PORTFOLIO_PROXY_SECRET
+  if (!secret) {
+    // Nothing presented either: an ordinary request to the apex or a preview,
+    // not a proxy that failed. Only a presented secret makes this a misconfig.
+    return { label: null, verdict: presented ? "no-secret" : "unlabelled" }
+  }
+  if (!presented) return { label: null, verdict: "unlabelled" }
+  if (!secretMatches(presented, secret)) {
+    return { label: null, verdict: "secret-mismatch" }
+  }
 
   const label = req.headers.get(SUBDOMAIN_HEADER)
   // The Worker already constrains this, but the shape is what keeps
   // lib/resolve.ts from interpolating a path escape into its fetch URL, and
   // this is the last place that can enforce it.
-  return label && LABEL_PATTERN.test(label) ? label : null
+  if (!label || !LABEL_PATTERN.test(label)) {
+    return { label: null, verdict: "bad-label" }
+  }
+  return { label, verdict: "worker" }
 }
 
 /** Constant-time over equal-length input; `timingSafeEqual` isn't available here. */

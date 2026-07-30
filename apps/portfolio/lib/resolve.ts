@@ -1,4 +1,5 @@
 import type { PortfolioConfig } from "@is-pinoy-dev/schemas"
+import { logMiss, logUpstream, type MissReason } from "./diagnostics"
 
 // Portfolio subdomains are ordinary `subdomains/<name>.json` files in the
 // is-pinoy-dev/domains repo whose CNAME points at portfolio.is-pinoy.dev and
@@ -19,22 +20,54 @@ export interface ResolvedPortfolio {
   portfolio: NonNullable<PortfolioConfig>
 }
 
-export async function resolveSubdomain(
-  subdomain: string,
-): Promise<ResolvedPortfolio | null> {
-  const res = await fetch(
-    `https://raw.githubusercontent.com/${DOMAINS_REPO}/main/subdomains/${subdomain}.json`,
-    { next: { revalidate: REVALIDATE_SECONDS } },
-  )
-  if (!res.ok) return null
+/**
+ * Resolution never returns a bare null: the four ways this fails are four
+ * different operator problems — nobody claimed the name, someone claimed it as
+ * a redirect to their own host rather than a portfolio, the file is malformed,
+ * or GitHub refused us — and collapsing them into `null` is what made the first
+ * production 404 undiagnosable.
+ */
+export type Resolution =
+  | { ok: true; value: ResolvedPortfolio }
+  | { ok: false; reason: MissReason }
+
+export async function resolveSubdomain(subdomain: string): Promise<Resolution> {
+  const url = `https://raw.githubusercontent.com/${DOMAINS_REPO}/main/subdomains/${subdomain}.json`
+  const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS } })
+  if (!res.ok) {
+    // 404 is the ordinary "no such subdomain" and needs no upstream line. Any
+    // other status means raw.githubusercontent.com refused the lookup, which is
+    // an outage on our side of the story rather than an unclaimed name.
+    if (res.status === 404) return { ok: false, reason: "unknown-subdomain" }
+    logUpstream("registry", url, res)
+    return { ok: false, reason: "registry-unreachable" }
+  }
 
   let file: DomainFile
   try {
     file = (await res.json()) as DomainFile
   } catch {
-    return null
+    return { ok: false, reason: "registry-unreadable" }
   }
 
-  if (!file.portfolio || !file.owner?.github) return null
-  return { github: file.owner.github, portfolio: file.portfolio }
+  if (!file.owner?.github) return { ok: false, reason: "registry-unreadable" }
+  if (!file.portfolio) return { ok: false, reason: "no-portfolio-block" }
+  return {
+    ok: true,
+    value: { github: file.owner.github, portfolio: file.portfolio },
+  }
+}
+
+/**
+ * Resolve, naming the dead end in the logs. Callers only need the happy value;
+ * logging here rather than at the call site keeps it to one line per request,
+ * since lib/context.ts memoizes this for the page and generateMetadata alike.
+ */
+export async function resolveOrLog(
+  subdomain: string,
+): Promise<ResolvedPortfolio | null> {
+  const result = await resolveSubdomain(subdomain)
+  if (result.ok) return result.value
+  logMiss(result.reason, { subdomain })
+  return null
 }

@@ -1,7 +1,8 @@
 import { cache } from "react"
 import { headers } from "next/headers"
 import { getPortfolioData } from "./github"
-import { resolveSubdomain } from "./resolve"
+import { resolveOrLog } from "./resolve"
+import { logMiss, type MissReason } from "./diagnostics"
 import type { PortfolioData } from "./portfolio-data"
 import type { TemplateName, PortfolioTheme } from "@/templates"
 
@@ -55,7 +56,16 @@ const loadPortfolio = cache((login: string, sectionsKey: string) =>
     sectionsKey ? (JSON.parse(sectionsKey) as string[]) : undefined
   )
 )
-const loadSubdomain = cache((subdomain: string) => resolveSubdomain(subdomain))
+const loadSubdomain = cache((subdomain: string) => resolveOrLog(subdomain))
+
+// Same reason, applied to the logs: generateMetadata and the page each resolve
+// the context, so an undeduped `logMiss` writes every dead end twice and a
+// reader counts two outages. Keyed on primitives like the loaders above —
+// `resolveOrLog` needs no such wrapper, being cached already.
+const logMissOnce = cache(
+  (reason: MissReason, subdomain: string | null, login: string | null) =>
+    logMiss(reason, { subdomain, login })
+)
 
 const sectionsKeyOf = (sections?: string[]) =>
   sections?.length ? JSON.stringify(sections) : ""
@@ -105,7 +115,10 @@ export async function getRenderContext(
 ): Promise<RenderContext | null> {
   if (preview) {
     const data = await loadPortfolio(preview.github, "")
-    if (!data) return null
+    if (!data) {
+      logMissOnce("github-unavailable", null, preview.github)
+      return null
+    }
     return {
       login: preview.github,
       template: preview.template,
@@ -122,13 +135,17 @@ export async function getRenderContext(
     ""
 
   if (subdomain) {
+    // `resolveOrLog` has already named its own dead end.
     const resolved = await loadSubdomain(subdomain)
     if (!resolved) return null
     const data = await loadPortfolio(
       resolved.github,
       sectionsKeyOf(resolved.portfolio.sections)
     )
-    if (!data) return null
+    if (!data) {
+      logMissOnce("github-unavailable", subdomain, resolved.github)
+      return null
+    }
     return {
       login: resolved.github,
       template: resolved.portfolio.template,
@@ -140,8 +157,18 @@ export async function getRenderContext(
 
   // No subdomain at all — dev/apex fallback so the renderer is demoable.
   const login = process.env.PORTFOLIO_SPIKE_LOGIN
-  if (!login) return null
+  if (!login) {
+    // In production this is the branch a proxy-secret mismatch lands on: the
+    // Worker sent a label, proxy.ts declined to honour it, and nothing here can
+    // see why. The `x-portfolio-route` header on this very response can — it
+    // carries the proxy's own verdict.
+    logMissOnce("no-subdomain", null, null)
+    return null
+  }
   const data = await loadPortfolio(login, "")
-  if (!data) return null
+  if (!data) {
+    logMissOnce("github-unavailable", null, login)
+    return null
+  }
   return { login, template: "terminal", data, subdomain: null }
 }

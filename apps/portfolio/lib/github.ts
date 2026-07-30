@@ -1,5 +1,6 @@
 import type { PortfolioData, Repo } from "./portfolio-data"
 import { renderReadme } from "./parse"
+import { logUpstream } from "./diagnostics"
 
 // One-hour ISR window — matches the house pattern in apps/web/lib/subdomains.ts.
 // Freshness is pure revalidation; no webhook.
@@ -20,7 +21,13 @@ async function ghJson<T>(url: string): Promise<T | null> {
     headers: githubHeaders(),
     next: { revalidate: REVALIDATE_SECONDS },
   })
-  if (!res.ok) return null
+  // A 404 here is a login that doesn't exist; a 403 or 429 is the rate limit,
+  // which on an unauthenticated deployment arrives after ~20 renders an hour and
+  // takes every portfolio down with it. Both used to surface as the same null.
+  if (!res.ok) {
+    logUpstream("github", url, res)
+    return null
+  }
   return (await res.json()) as T
 }
 
@@ -47,14 +54,17 @@ interface GhRepo {
 
 /** The profile README lives in the `<user>/<user>` repo. */
 async function fetchProfileReadme(login: string): Promise<string> {
-  const res = await fetch(
-    `https://api.github.com/repos/${login}/${login}/readme`,
-    {
-      headers: { ...githubHeaders(), Accept: "application/vnd.github.raw" },
-      next: { revalidate: REVALIDATE_SECONDS },
-    },
-  )
-  if (!res.ok) return ""
+  const url = `https://api.github.com/repos/${login}/${login}/readme`
+  const res = await fetch(url, {
+    headers: { ...githubHeaders(), Accept: "application/vnd.github.raw" },
+    next: { revalidate: REVALIDATE_SECONDS },
+  })
+  if (!res.ok) {
+    // 404 is ordinary — plenty of owners have no profile README, and the page
+    // renders fine without one. Anything else is worth a line.
+    if (res.status !== 404) logUpstream("github", url, res)
+    return ""
+  }
   return res.text()
 }
 

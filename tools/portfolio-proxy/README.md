@@ -64,7 +64,39 @@ without rebuilding changes nothing.
 A mismatch is quiet in the worst way: previews keep working (they never touch
 this path) while every claimed portfolio 404s. A trailing newline is the usual
 culprit — the workflow uses `printf` rather than `echo` for exactly that reason,
-so check the Vercel value if the two ever disagree.
+so check the Vercel value if the two ever disagree. Note the newline can only
+bite from the Vercel side: the Worker's copy travels as a header value, and HTTP
+normalization trims it before `proxy.ts` compares.
+
+## Diagnosing a 404
+
+Every failure in this chain renders the same 404 page. `proxy.ts` names its own
+verdict on every response, so one request tells you which:
+
+```bash
+curl -sI https://juan.is-pinoy.dev/ | grep -i x-portfolio-route
+```
+
+| `x-portfolio-route` | Meaning |
+| --- | --- |
+| `worker` | The proxy chain is healthy — a 404 came from further in; see the renderer's logs |
+| `host` | Reached the renderer without this Worker (direct hostname) |
+| `no-secret` | The Worker authenticated, the **renderer** has no secret compiled in — set it on Vercel **and redeploy** |
+| `secret-mismatch` | Both sides have one and they differ — check for a trailing newline on the Vercel value |
+| `bad-label` | Secret matched, label malformed. The Worker constrains it, so this means something else is forwarding |
+| `unlabelled` | No label and none presented — the apex, a preview, or this Worker not being in the path at all |
+
+A `worker` verdict on a 404 puts the fault past the proxy. The renderer names
+those in its runtime logs on one line each:
+
+```bash
+vercel logs --since 1h | grep '\[portfolio\] miss'
+# reason=unknown-subdomain     no subdomains/<name>.json on the domains repo
+# reason=no-portfolio-block    claimed, but it points at the owner's own host
+# reason=github-unavailable    GitHub gave us no user — check the adjacent
+#                              [portfolio] upstream line for status=403 and
+#                              rateLimitRemaining=0, i.e. no GITHUB_TOKEN
+```
 
 ## `/_tools/*`
 
