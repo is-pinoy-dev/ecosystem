@@ -17,10 +17,10 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@flags-sdk/vercel": "^1.4.6",
     "@is-pinoy-dev/schemas": "workspace:*",
     "@is-pinoy-dev/ui": "workspace:*",
     "@is-pinoy-dev/validate": "workspace:*",
-    "@vercel/edge-config": "^1.5.0",
     "drizzle-orm": "^0.45.2",
     "flags": "^4.2.4",
     "lucide-react": "catalog:",

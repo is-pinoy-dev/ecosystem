@@ -1,98 +1,106 @@
 import "server-only"
 
-import { get } from "@vercel/edge-config"
+import { vercelAdapter } from "@flags-sdk/vercel"
 import { dedupe, flag } from "flags/next"
 import { auth } from "@/auth"
 import {
   buildFlagContext,
-  emptyFlagSource,
   FLAG_IDS,
   FLAGS,
   isFlagEnabled,
   readDeployEnv,
   readEnvSource,
-  parseRemoteSource,
   type DeployEnv,
   type FlagId,
   type FlagSet,
-  type FlagSource,
 } from "./flags"
 
-// The Flags SDK half of lib/flags.ts: it supplies the two things the pure
-// resolver cannot work out for itself — who is asking, and what the remote
-// state currently is — then defers to `isFlagEnabled` for the actual decision.
+// The Flags SDK half of lib/flags.ts. Flags are managed in Vercel Flags: the
+// registry here declares them, and the targeting rules — who sees an unlaunched
+// feature, and any gradual rollout — are configured in the Vercel dashboard.
 //
-// Remote state lives in one Vercel Edge Config key so a flag can be flipped
-// without a deploy. Edge Config reads are sub-millisecond and propagate
-// globally in seconds, which is the whole reason for preferring it to
-// environment variables: on Vercel, env vars are injected at deploy time, so
-// changing one only takes effect on the next deploy.
+// `identify` supplies the entities those rules match against. It is wrapped in
+// `dedupe` so auth() runs once per request no matter how many flags consult it;
+// the dashboard already calls auth() in the layout, the page, and the claim
+// action.
+//
+// Off Vercel there is no flags service to ask, so the adapter is swapped for a
+// local `decide` backed by the environment variables and the same
+// `isFlagEnabled` rules. That keeps `pnpm dev`, CI, and `next start` working
+// with no Vercel connection and no flag-request quota being spent, and means a
+// developer can switch a flag on locally without touching production config.
 
-/** The single Edge Config key holding every flag's remote state. */
-export const EDGE_CONFIG_KEY = "dashboardFlags"
-
-/** What `decide` is told about the caller. */
+/**
+ * Entities handed to Vercel Flags for targeting. Attributes referenced by
+ * dashboard rules must appear here — `user.login` is what the tester
+ * allowlist matches on.
+ */
 export interface FlagEntities {
-  /** Lowercased GitHub login, or null when signed out. */
-  login: string | null
-  env: DeployEnv
+  user?: { id: string; login: string }
+  environment: DeployEnv
 }
 
-/**
- * Establish who is asking. Wrapped in `dedupe` so that `auth()` runs once per
- * request no matter how many flags consult it — the dashboard already calls
- * `auth()` in the layout, the page, and the claim action.
- */
+/** True when a Vercel Flags connection is configured (`FLAGS` is set on Vercel). */
+const hasFlagsService = Boolean(process.env.FLAGS)
+
 export const identify = dedupe(async (): Promise<FlagEntities> => {
   const session = await auth()
+  const login = session?.user?.login?.toLowerCase()
   return {
-    login: session?.user?.login?.toLowerCase() ?? null,
-    env: readDeployEnv(process.env),
+    user: login ? { id: login, login } : undefined,
+    environment: readDeployEnv(process.env),
   }
 })
 
 /**
- * Read the remote source, preferring Edge Config and falling back to the
- * environment variables when it is not configured — which keeps local
- * development, CI, and `next start` working with no Vercel connection.
- *
- * A failed read also falls back rather than throwing. With no Edge Config and
- * no env vars set the result is an empty source, so every flag lands on its
- * declared `enabledIn` default: an outage can never switch an unlaunched
- * feature on.
+ * The off-Vercel decision: the flag's declared `enabledIn`, overridden by
+ * DASHBOARD_FLAGS and DASHBOARD_FLAG_TESTERS. Mirrors what the dashboard rules
+ * are expected to express, so local behaviour is predictable rather than
+ * simply "off".
  */
-export const readFlagSource = dedupe(async (): Promise<FlagSource> => {
-  if (process.env.EDGE_CONFIG) {
-    try {
-      const raw = await get(EDGE_CONFIG_KEY)
-      return raw === undefined ? emptyFlagSource() : parseRemoteSource(raw)
-    } catch {
-      // Fall through to the environment below.
-    }
-  }
-  return readEnvSource(process.env)
-})
+function decideLocally(id: FlagId, entities?: FlagEntities): boolean {
+  return isFlagEnabled(
+    id,
+    buildFlagContext({
+      env: entities?.environment ?? readDeployEnv(process.env),
+      source: readEnvSource(process.env),
+      login: entities?.user?.login ?? null,
+    })
+  )
+}
 
 function createFlag(id: FlagId) {
-  return flag<boolean, FlagEntities>({
+  const declaration = {
     key: id,
     description: FLAGS[id].description,
-    // Last-resort value if `decide` throws. Failing closed is right for a
-    // not-yet-launched feature: a broken decision hides it rather than
-    // exposing it.
+    // Used when the service is unreachable or the flag is not configured yet.
+    // Failing closed is right for an unlaunched feature: a broken lookup hides
+    // it rather than exposing it.
     defaultValue: false,
     identify,
-    async decide({ entities }) {
-      const source = await readFlagSource()
-      return isFlagEnabled(
-        id,
-        buildFlagContext({
-          env: entities?.env ?? readDeployEnv(process.env),
-          source,
-          login: entities?.login ?? null,
-        })
+  }
+
+  if (hasFlagsService) {
+    try {
+      // vercelAdapter() builds its client eagerly, and throws right here on a
+      // malformed or missing connection string. This module is imported by the
+      // dashboard's shared layout, so an uncaught throw would 500 every page
+      // rather than just the flagged feature — catch it and degrade instead.
+      return flag<boolean, FlagEntities>({
+        ...declaration,
+        adapter: vercelAdapter(),
+      })
+    } catch (error) {
+      console.error(
+        `flags: Vercel Flags unavailable for "${id}", using local rules`,
+        error
       )
-    },
+    }
+  }
+
+  return flag<boolean, FlagEntities>({
+    ...declaration,
+    decide: async ({ entities }) => decideLocally(id, entities),
   })
 }
 
@@ -101,8 +109,37 @@ export const dashboardFlags = Object.fromEntries(
   FLAG_IDS.map((id) => [id, createFlag(id)])
 ) as Record<FlagId, ReturnType<typeof createFlag>>
 
+/**
+ * Resolve one flag, and never throw.
+ *
+ * A misconfigured or unreachable Vercel Flags connection makes the adapter
+ * throw (`Missing sdkKey`, network failures), and the SDK's `defaultValue` does
+ * not catch every one of those. Flags are read in the dashboard's shared
+ * layout, so an uncaught throw would take every page down rather than just the
+ * flagged feature. Falling back to the declared rules keeps the dashboard up,
+ * and keeps an unlaunched flag off in production, where DASHBOARD_FLAGS and
+ * DASHBOARD_FLAG_TESTERS are deliberately unset.
+ */
+export async function isFlagOn(id: FlagId): Promise<boolean> {
+  try {
+    return await dashboardFlags[id]()
+  } catch (error) {
+    console.error(
+      `flags: "${id}" could not be resolved, using local rules`,
+      error
+    )
+    let entities: FlagEntities | undefined
+    try {
+      entities = await identify()
+    } catch {
+      // Treat an unreadable session as signed out.
+    }
+    return decideLocally(id, entities)
+  }
+}
+
 /** The Claim tab and /claim route. */
-export const claimFlag = dashboardFlags.claim
+export const claimEnabled = () => isFlagOn("claim")
 
 /**
  * Resolve every flag for this request, for handing to client components as
@@ -110,7 +147,7 @@ export const claimFlag = dashboardFlags.claim
  */
 export async function resolveFlagSet(): Promise<FlagSet> {
   const entries = await Promise.all(
-    FLAG_IDS.map(async (id) => [id, await dashboardFlags[id]()] as const)
+    FLAG_IDS.map(async (id) => [id, await isFlagOn(id)] as const)
   )
   return Object.fromEntries(entries) as FlagSet
 }

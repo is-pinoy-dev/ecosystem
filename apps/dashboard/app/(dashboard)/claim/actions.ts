@@ -4,7 +4,7 @@ import { z } from "zod"
 import { portfolioSchema } from "@is-pinoy-dev/schemas"
 import { validateDomain } from "@is-pinoy-dev/validate"
 import { auth } from "@/auth"
-import { claimFlag } from "@/lib/flags-server"
+import { claimEnabled } from "@/lib/flags-server"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import {
   buildDomainRecord,
@@ -59,7 +59,7 @@ export async function claimPortfolio(input: ClaimInput): Promise<ClaimResult> {
 
   // A server action stays reachable by its own ID once deployed, whatever the
   // page does — so the flag has to be checked here too, not only on /claim.
-  if (!(await claimFlag())) {
+  if (!(await claimEnabled())) {
     return { ok: false, error: "Portfolio claims are not available right now." }
   }
 

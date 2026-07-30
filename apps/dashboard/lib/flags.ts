@@ -6,17 +6,17 @@
 // and edited from the dashboard. These are *release* flags: they gate whether
 // a slice of the dashboard exists at all, and are configured by operators.
 //
-// This module is the pure core — the registry and the resolution rules. Where
-// the remote state comes from (Vercel Edge Config, or environment variables as
-// a fallback) lives in lib/flags-server.ts, which is what app code calls.
+// This module is the registry and the *off-Vercel* resolution rules. On Vercel
+// the decision belongs to Vercel Flags, whose targeting rules are configured in
+// the dashboard; lib/flags-server.ts picks between the two and is what app code
+// calls.
 //
-// A flag resolves from three inputs, highest precedence first:
+// Locally a flag resolves from three inputs, highest precedence first:
 //
-//   overrides   An explicit per-flag on/off. Wins over everything, so `off` is
-//               a kill switch no allowlist can reopen, and `on` is a launch.
-//   testers     GitHub logins that get every not-yet-launched flag, in every
-//               environment. This is what makes a flag testable in production
-//               without exposing it to anyone else.
+//   overrides   An explicit per-flag on/off, from DASHBOARD_FLAGS. Wins over
+//               everything, so `off` is a kill switch no allowlist can reopen.
+//   testers     GitHub logins, from DASHBOARD_FLAG_TESTERS, that get every
+//               not-yet-launched flag.
 //   enabledIn   The environments where a flag is on for everyone. A flag's
 //               normal life is to start at ["development", "preview"] and gain
 //               "production" when it launches.
@@ -80,11 +80,6 @@ export interface FlagEnv {
   NODE_ENV?: string | undefined
   DASHBOARD_FLAGS?: string | undefined
   DASHBOARD_FLAG_TESTERS?: string | undefined
-}
-
-/** A source that configures nothing, leaving every flag on its declared default. */
-export function emptyFlagSource(): FlagSource {
-  return { overrides: {}, testers: [] }
 }
 
 function isFlagId(value: string): value is FlagId {
@@ -156,46 +151,7 @@ export function readEnvSource(env: FlagEnv): FlagSource {
   }
 }
 
-/**
- * Parse the Edge Config value into a source. The JSON is hand-edited in a
- * dashboard, so treat every field as untrusted: unknown flag names, non-boolean
- * settings, and non-string logins are dropped rather than coerced, which keeps
- * a malformed edit from turning a flag on by accident.
- *
- * Expected shape:
- *   { "overrides": { "claim": true }, "testers": ["octocat"] }
- */
-export function parseRemoteSource(raw: unknown): FlagSource {
-  const overrides: Partial<Record<FlagId, boolean>> = {}
-  const testers: string[] = []
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { overrides, testers }
-  }
-  const record = raw as Record<string, unknown>
-
-  const rawOverrides = record.overrides
-  if (rawOverrides && typeof rawOverrides === "object") {
-    for (const [name, value] of Object.entries(
-      rawOverrides as Record<string, unknown>
-    )) {
-      const id = name.trim().toLowerCase()
-      if (isFlagId(id) && typeof value === "boolean") overrides[id] = value
-    }
-  }
-
-  const rawTesters = record.testers
-  if (Array.isArray(rawTesters)) {
-    for (const entry of rawTesters) {
-      if (typeof entry !== "string") continue
-      const login = entry.trim().toLowerCase()
-      if (login) testers.push(login)
-    }
-  }
-
-  return { overrides, testers }
-}
-
-/** Combine a remote source with who is asking into a resolvable context. */
+/** Combine a source with who is asking into a resolvable context. */
 export function buildFlagContext({
   env,
   source,
