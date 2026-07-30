@@ -29,8 +29,7 @@
         "PORTFOLIO_SPIKE_LOGIN",
         "NEXT_PUBLIC_PORTFOLIO_URL",
         "FLAGS",
-        "FLAGS_SECRET",
-        "VERCEL_ENV"
+        "FLAGS_SECRET"
       ]
     },
     "lint": {
