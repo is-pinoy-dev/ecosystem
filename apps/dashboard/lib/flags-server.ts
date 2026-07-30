@@ -9,10 +9,12 @@ import { FLAG_IDS, FLAGS, type FlagId, type FlagSet } from "./flags"
 // targeting, rollout percentage, per-environment state — belongs to the rules
 // configured in the Vercel dashboard; nothing here second-guesses them.
 //
-// Requires the FLAGS connection string, which Vercel sets on the project once
-// it is connected to Vercel Flags. Locally, pull it with `vercel env pull` so
-// `pnpm dev` resolves against the same rules; without it every flag reads false
-// and the flagged features stay hidden.
+// On Vercel this needs no configuration: deployments carry VERCEL_OIDC_TOKEN
+// and the client authenticates with it. Elsewhere it reads the FLAGS SDK key —
+// note that an empty FLAGS is worse than an absent one, since the client only
+// validates the key when it is defined and throws otherwise (see .env.example).
+// With neither, every flag reads false and the features behind them stay
+// hidden; the app still runs.
 
 /**
  * Entities handed to Vercel Flags for targeting. Any attribute a dashboard rule
