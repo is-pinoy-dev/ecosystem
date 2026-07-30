@@ -27,7 +27,9 @@
         "PORTFOLIO_WORKER",
         "PORTFOLIO_SPIKE_SUBDOMAIN",
         "PORTFOLIO_SPIKE_LOGIN",
-        "NEXT_PUBLIC_PORTFOLIO_URL"
+        "NEXT_PUBLIC_PORTFOLIO_URL",
+        "FLAGS",
+        "FLAGS_SECRET"
       ]
     },
     "lint": {

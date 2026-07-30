@@ -5,6 +5,7 @@ import { AnimatedThemeToggler } from "@is-pinoy-dev/ui/components/animated-theme
 import { auth } from "@/auth"
 import { DashboardTabs } from "@/components/dashboard-nav"
 import { UserMenu } from "@/components/user-menu"
+import { resolveFlagSet } from "@/lib/flags-server"
 
 export default async function DashboardLayout({
   children,
@@ -17,6 +18,9 @@ export default async function DashboardLayout({
   }
 
   const { name, login, email, image } = session.user
+  // Resolved here, on the server, so only the booleans cross into the client
+  // nav — never the remote config or the tester allowlist.
+  const flags = await resolveFlagSet()
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -61,7 +65,7 @@ export default async function DashboardLayout({
             <UserMenu name={name} login={login} email={email} image={image} />
           </div>
         </div>
-        <DashboardTabs />
+        <DashboardTabs flags={flags} />
       </header>
 
       <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-10 sm:px-8 lg:py-12">
