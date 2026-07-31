@@ -11,6 +11,10 @@ function subdomainSeenByPage(res: Response): string | null {
   return res.headers.get("x-middleware-request-x-portfolio-subdomain")
 }
 
+function verdict(res: Response): string | null {
+  return res.headers.get("x-portfolio-route")
+}
+
 function run(host: string, headers: Record<string, string> = {}) {
   return proxy(
     new NextRequest("https://ignored.example/", { headers: { host, ...headers } })
@@ -147,5 +151,79 @@ describe("proxy — the Worker's label", () => {
     expect(
       res.headers.get("x-middleware-request-x-portfolio-proxy-secret")
     ).toBeNull()
+  })
+})
+
+// Every one of these ends in the same 404 page. The header is the only thing
+// that says which of them happened, so an operator holding a 404 can tell a
+// stale Vercel env var from a name nobody claimed without opening a dashboard.
+describe("proxy — the x-portfolio-route verdict", () => {
+  const SECRET = "shared-with-the-worker"
+
+  afterEach(() => {
+    delete process.env.PORTFOLIO_PROXY_SECRET
+  })
+
+  it("reports a Host-derived label", () => {
+    expect(verdict(run("juan.is-pinoy.dev"))).toBe("host")
+  })
+
+  it("reports an accepted Worker label", () => {
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET
+    const res = run("portfolio.is-pinoy.dev", {
+      "x-portfolio-subdomain": "juan",
+      "x-portfolio-proxy-secret": SECRET,
+    })
+    expect(verdict(res)).toBe("worker")
+  })
+
+  // The reported failure: the Worker forwards correctly, the renderer has no
+  // secret, and the portfolio 404s. Vercel binds env vars to a deployment, so
+  // this is what "set the var but never redeployed" looks like from outside.
+  it("distinguishes a deployment with no secret from a wrong one", () => {
+    const proxied = () =>
+      run("portfolio.is-pinoy.dev", {
+        "x-portfolio-subdomain": "juan",
+        "x-portfolio-proxy-secret": SECRET,
+      })
+
+    expect(verdict(proxied())).toBe("no-secret")
+
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET + "-rotated"
+    expect(verdict(proxied())).toBe("secret-mismatch")
+  })
+
+  // The usual cause of a mismatch, called out in tools/portfolio-proxy/README:
+  // a value pasted into Vercel with a trailing newline. It can only bite from
+  // this side — a newline in the *Worker's* copy rides in a header value, and
+  // HTTP normalization trims it back off before we ever compare.
+  it("reports a trailing newline in the stored secret as a mismatch", () => {
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET + "\n"
+    const res = run("portfolio.is-pinoy.dev", {
+      "x-portfolio-subdomain": "juan",
+      "x-portfolio-proxy-secret": SECRET,
+    })
+    expect(verdict(res)).toBe("secret-mismatch")
+    expect(subdomainSeenByPage(res)).toBeNull()
+  })
+
+  it("reports a malformed label separately from a bad secret", () => {
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET
+    const res = run("portfolio.is-pinoy.dev", {
+      "x-portfolio-subdomain": "../../etc/passwd",
+      "x-portfolio-proxy-secret": SECRET,
+    })
+    expect(verdict(res)).toBe("bad-label")
+    expect(subdomainSeenByPage(res)).toBeNull()
+  })
+
+  // An apex hit or a `?preview=1` render is not a misconfigured proxy, and
+  // shouldn't read like one when someone greps for these.
+  it("does not call an ordinary unproxied request a failure", () => {
+    for (const host of ["is-pinoy.dev", "portfolio.is-pinoy.dev", "localhost"]) {
+      expect(verdict(run(host))).toBe("unlabelled")
+    }
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET
+    expect(verdict(run("portfolio.is-pinoy.dev"))).toBe("unlabelled")
   })
 })
