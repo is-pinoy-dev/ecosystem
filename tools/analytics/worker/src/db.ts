@@ -1,5 +1,19 @@
 import type { AnalyticsRow } from "./types";
 
+/**
+ * Newest day already collected, or null when the table is empty.
+ *
+ * Read from `visits_daily` rather than a bookkeeping table so the answer can
+ * never disagree with the data itself — a run that wrote rows is a run that
+ * counts, however it terminated afterwards.
+ */
+export async function latestStoredDate(db: D1Database): Promise<string | null> {
+  const row = await db
+    .prepare("SELECT MAX(date) AS date FROM visits_daily")
+    .first<{ date: string | null }>();
+  return row?.date ?? null;
+}
+
 export async function persistSnapshots(
   db: D1Database,
   subdomains: string[],
