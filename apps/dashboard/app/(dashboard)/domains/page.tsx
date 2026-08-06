@@ -8,6 +8,7 @@ import {
   type PendingPRView,
 } from "@/components/domains-manager"
 import { PageHeader } from "@/components/page-header"
+import { getVisitsForSubdomains } from "@/lib/analytics"
 import { toDomainView } from "@/lib/domain-view"
 import { getSubdomainsForOwner } from "@/lib/domains"
 import { getGitHubAccessToken } from "@/lib/github-token"
@@ -39,6 +40,17 @@ export default async function DomainsPage() {
       ? await getPendingProxyPRs(login, token ?? undefined)
       : new Map()
 
+  // Scoped to the names resolved for this session above, so the query can only
+  // ever reach rows belonging to the signed-in owner. A failure here must not
+  // take the page down with it — the listing is the point of the page and the
+  // visit totals are an addition to it.
+  const visits = await getVisitsForSubdomains(
+    owned.map((domain) => domain.subdomain)
+  ).catch((error) => {
+    console.error("[domains] visit totals unavailable", error)
+    return null
+  })
+
   const pending: Record<string, PendingPRView> = {}
   for (const [subdomain, pr] of pendingMap) {
     pending[subdomain] = { url: pr.url, number: pr.number }
@@ -53,7 +65,11 @@ export default async function DomainsPage() {
       />
 
       {owned.length > 0 ? (
-        <DomainsManager domains={owned.map(toDomainView)} pending={pending} />
+        <DomainsManager
+          domains={owned.map(toDomainView)}
+          pending={pending}
+          visits={visits}
+        />
       ) : (
         <NoDomains login={login} />
       )}
