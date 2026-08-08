@@ -12,15 +12,15 @@ The obvious design is Workers Analytics Engine: call `writeDataPoint()` on each
 request and query it back with SQL. It does not work here, and the reason is
 worth keeping written down.
 
-`writeDataPoint` is a Worker binding, so a Worker has to *execute* for a request
+`writeDataPoint` is a Worker binding, so a Worker has to _execute_ for a request
 to be recorded. Our Workers hold these routes:
 
-| Worker | Route |
-| --- | --- |
-| `portfolio-proxy` | one per claimed portfolio |
-| `og` | `*.is-pinoy.dev/_tools/og*` |
-| `site-audit` | `*.is-pinoy.dev/_tools/site-audit*` |
-| `status` | `status.is-pinoy.dev/*` |
+| Worker            | Route                               |
+| ----------------- | ----------------------------------- |
+| `portfolio-proxy` | one per claimed portfolio           |
+| `og`              | `*.is-pinoy.dev/_tools/og*`         |
+| `site-audit`      | `*.is-pinoy.dev/_tools/site-audit*` |
+| `status`          | `status.is-pinoy.dev/*`             |
 
 A normal subdomain — CNAME'd to its owner's host with `proxied: true` — goes
 edge → origin and executes nothing of ours. Analytics Engine would see none of
@@ -33,7 +33,7 @@ traffic at its own edge whether we ask or not. That is the whole trade — we ge
 platform-wide coverage and a daily granularity ceiling, instead of per-event
 data for a minority of subdomains.
 
-A second reason not to switch: the opt-out below is enforced *before* anything
+A second reason not to switch: the opt-out below is enforced _before_ anything
 is written. Per-request collection would have to consult the opt-out per
 request, or store first and filter on read — and the second one silently breaks
 a promise made in `apps/web/app/privacy`.
@@ -42,9 +42,9 @@ a promise made in `apps/web/app/privacy`.
 
 Two tables in the `analytics-db` D1 database (`worker/migrations/0001_init.sql`):
 
-| Table | Key | Holds |
-| --- | --- | --- |
-| `visits_daily` | `(subdomain, date)` | that day's visit total |
+| Table                     | Key                          | Holds                           |
+| ------------------------- | ---------------------------- | ------------------------------- |
+| `visits_daily`            | `(subdomain, date)`          | that day's visit total          |
 | `visits_daily_by_country` | `(subdomain, date, country)` | the same total split by country |
 
 Both are written with `INSERT OR REPLACE`, so re-collecting a day is safe and a
@@ -90,10 +90,10 @@ Two GitHub **repository secrets** on `is-pinoy-dev/ecosystem`. The deploy
 workflow pushes both onto the Worker after deploying, so rotating either is a
 secret edit plus a workflow re-run — no local wrangler.
 
-| Repository secret | Becomes | Value |
-| --- | --- | --- |
+| Repository secret                   | Becomes        | Value                                                                                                 |
+| ----------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------- |
 | `CF_ECOSYSTEM_ANALYTICS_READ_TOKEN` | `CF_API_TOKEN` | Cloudflare API token, `Account Analytics: Read` + `Zone Analytics: Read`. No write scope of any kind. |
-| `CF_ZONE_ID` | `CF_ZONE_ID` | The is-pinoy.dev zone id. |
+| `CF_ZONE_ID`                        | `CF_ZONE_ID`   | The is-pinoy.dev zone id.                                                                             |
 
 `CF_WORKER_DEPLOY_TOKEN` is separate and only authenticates `wrangler deploy`.
 
@@ -110,11 +110,11 @@ pnpm dlx wrangler d1 execute analytics-db --remote \
   --command "SELECT MAX(date) AS through, COUNT(*) AS rows FROM visits_daily"
 ```
 
-| Result | Meaning |
-| --- | --- |
-| `through` = yesterday | Healthy. |
+| Result                      | Meaning                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `through` = yesterday       | Healthy.                                                                           |
 | `through` several days back | Runs are failing; the next success backfills up to 30 days. Check the Worker logs. |
-| `through` NULL, 0 rows | Nothing has ever been collected — almost always the two secrets above. |
+| `through` NULL, 0 rows      | Nothing has ever been collected — almost always the two secrets above.             |
 
 Observability is on (`wrangler.toml`), so failures appear in the Worker's logs
 with the message naming which dates failed and why.
