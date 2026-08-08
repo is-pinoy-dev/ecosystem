@@ -82,16 +82,29 @@ subdomains" as "delete nothing, write nothing" against a real outage.
 
 The cron does not ask for "yesterday". It reads `MAX(date)` from `visits_daily`
 and collects every day from there up to the last complete UTC day, bounded by
-`MAX_BACKFILL_DAYS` (30).
+`MAX_BACKFILL_DAYS`.
 
 That makes a missed run self-healing — the next successful invocation fills the
-hole — and means an empty database backfills a month on first run instead of
-launching with a single point. One day failing does not discard the days that
-succeeded, and the run still ends in a throw so the failure is recorded.
+hole. One day failing does not discard the days that succeeded, and the run
+still ends in a throw so the failure is recorded.
 
-How far back a first run actually reaches depends on the zone's analytics
-retention, which is plan-dependent. Beyond it the API returns nothing and those
-days stay empty.
+**The real ceiling is the zone's retention, not that constant.** It currently
+serves about **eight days** and refuses anything older:
+
+```
+zone "…" cannot request data older than 1w1d,
+but your query requests data from 4w2d2h25m10s ago
+```
+
+So the history you can ever hold starts on the day collection begins — there is
+no backfilling a month that predates it. `MAX_BACKFILL_DAYS` is set just above
+the observed window (10) so a run neither misses a recoverable day nor spends
+subrequests on days that are certainly gone.
+
+Retention is plan-dependent and can change, so the constant is deliberately not
+load-bearing: a day past the window is **skipped, not failed**. It is reported
+as `N beyond zone retention` rather than counted among the failures, so a long
+outage does not bury a real error in two dozen identical refusals.
 
 ## Secrets
 
@@ -124,22 +137,23 @@ pnpm dlx wrangler d1 execute analytics-db --remote \
   --command "SELECT MAX(date) AS through, COUNT(*) AS rows FROM visits_daily"
 ```
 
-| Result                      | Meaning                                                                            |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| `through` = yesterday       | Healthy.                                                                           |
-| `through` several days back | Runs are failing; the next success backfills up to 30 days. Check the Worker logs. |
-| `through` NULL, 0 rows      | Nothing has ever been collected — almost always the secrets above.                 |
+| Result                      | Meaning                                                                                                                                       |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `through` = yesterday       | Healthy.                                                                                                                                      |
+| `through` several days back | Runs are failing. The next success recovers whatever the zone still retains — days past that window are gone for good. Check the Worker logs. |
+| `through` NULL, 0 rows      | Nothing has ever been collected — almost always the secrets above.                                                                            |
 
 Observability is on (`wrangler.toml`), so failures appear in the Worker's logs
 with the message naming which dates failed and why. Ones worth recognising:
 
-| Message                                                          | Cause                                                                                                                                                                                                |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `does not have permission ... zone.analytics.read for zone <id>` | `CF_API_TOKEN` lacks `Zone` → `Analytics` → `Read`, or does not list that zone under Zone Resources. The zone id in the message is the one it must cover.                                            |
-| `GITHUB_TOKEN is not set`                                        | `CF_ECOSYSTEM_REGISTRY_READ_TOKEN` never reached the Worker. Check the deploy run's "Sync runtime secrets" step.                                                                                     |
-| `GitHub GraphQL error: Bad credentials`                          | The registry token is invalid or expired.                                                                                                                                                            |
-| `Too many subrequests by single Worker invocation`               | The run exceeded the free plan's 50 external subrequests. One run spends 1 on the registry plus 1 per date, so this means `MAX_BACKFILL_DAYS` was raised too far — see the note on it in `index.ts`. |
-| `Could not read N/M subdomain records`                           | Some record blobs came back empty or unparseable. The run aborted on purpose rather than storing a day for only the records that were readable.                                                      |
+| Message                                                          | Cause                                                                                                                                                                                                                              |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `does not have permission ... zone.analytics.read for zone <id>` | `CF_API_TOKEN` lacks `Zone` → `Analytics` → `Read`, or does not list that zone under Zone Resources. The zone id in the message is the one it must cover.                                                                          |
+| `GITHUB_TOKEN is not set`                                        | `CF_ECOSYSTEM_REGISTRY_READ_TOKEN` never reached the Worker. Check the deploy run's "Sync runtime secrets" step.                                                                                                                   |
+| `GitHub GraphQL error: Bad credentials`                          | The registry token is invalid or expired.                                                                                                                                                                                          |
+| `Too many subrequests by single Worker invocation`               | The run exceeded the free plan's 50 external subrequests. One run spends 1 on the registry plus 1 per date, so this means `MAX_BACKFILL_DAYS` was raised too far — see the note on it in `index.ts`.                               |
+| `cannot request data older than 1w1d`                            | Not a failure. The zone no longer retains that day; it is skipped and reported as `N beyond zone retention`. Only alarming if the count keeps growing, which would mean collection has been down longer than the retention window. |
+| `Could not read N/M subdomain records`                           | Some record blobs came back empty or unparseable. The run aborted on purpose rather than storing a day for only the records that were readable.                                                                                    |
 
 Worth adding a Cloudflare notification on Worker errors: a cron that throws is
 otherwise completely silent.
