@@ -61,12 +61,15 @@ change here needs to keep saying so.
 record sets `features.analytics: false` **before** the write.
 
 A record that can't be read is never treated as consent, but it is not dropped
-silently either — the whole run aborts. Dropping them individually meant a
-rate-limited run stored the day for whichever handful of records happened to
-answer, and since writes are keyed on the date and the backfill only looks at
-the newest date present, that partial day then looked complete to every later
-run. Aborting costs nothing: the writes are idempotent and the next run
-re-collects the date.
+silently either — the whole run aborts. Dropping them individually meant any
+partial read stored the day for whichever records happened to answer, and since
+writes are keyed on the date and the backfill only looks at the newest date
+present, that partial day then looked complete to every later run. Aborting
+costs nothing: the writes are idempotent and the next run re-collects the date.
+
+The registry read is a single GraphQL request that returns the directory and
+every record body together. That matters for more than latency — see the
+subrequest budget note on `MAX_BACKFILL_DAYS` in `index.ts`.
 
 The list is fetched once per invocation and reused for every date being
 collected, so a backfill applies today's opt-outs to the days it fills rather
@@ -96,19 +99,17 @@ Three GitHub **repository secrets** on `is-pinoy-dev/ecosystem`. The deploy
 workflow pushes them onto the Worker after deploying, so rotating any is a
 secret edit plus a workflow re-run — no local wrangler.
 
-| Repository secret                   | Becomes        | Value                                                                                                 |
-| ----------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------- |
-| `CF_ECOSYSTEM_ANALYTICS_READ_TOKEN` | `CF_API_TOKEN` | Cloudflare API token, `Account Analytics: Read` + `Zone Analytics: Read`. No write scope of any kind. |
-| `CF_ZONE_ID`                        | `CF_ZONE_ID`   | The is-pinoy.dev zone id.                                                                             |
-| `CF_ECOSYSTEM_REGISTRY_READ_TOKEN`  | `GITHUB_TOKEN` | GitHub token with public read access, for the registry listing. Never writes.                         |
+| Repository secret                   | Becomes        | Value                                                                                                                                |
+| ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `CF_ECOSYSTEM_ANALYTICS_READ_TOKEN` | `CF_API_TOKEN` | Cloudflare API token with `Zone` → `Analytics` → `Read`, and the is-pinoy.dev zone under Zone Resources. No write scope of any kind. |
+| `CF_ZONE_ID`                        | `CF_ZONE_ID`   | The is-pinoy.dev zone id.                                                                                                            |
+| `CF_ECOSYSTEM_REGISTRY_READ_TOKEN`  | `GITHUB_TOKEN` | GitHub token with repository contents read on `is-pinoy-dev/domains`. Never writes.                                                  |
 
 `CF_WORKER_DEPLOY_TOKEN` is separate and only authenticates `wrangler deploy`.
 
-The third one is not optional in practice. GitHub rate limits unauthenticated
-REST calls to 60/hr **per IP**, and a Worker's egress address is shared across
-Cloudflare's pool — so the budget is usually already spent by someone else and
-the listing comes back `403`. With a token the limit is 5,000/hr against our own
-account, which one run a day nowhere near approaches.
+None of the three is optional. The registry read uses GitHub's GraphQL API,
+which rejects unauthenticated callers outright rather than rate limiting them,
+so the run aborts before collecting anything.
 
 The sync step skips whatever is absent, so the Worker deploys fine without any
 of them — it just collects nothing. **That is the failure mode to watch for:**
@@ -130,12 +131,15 @@ pnpm dlx wrangler d1 execute analytics-db --remote \
 | `through` NULL, 0 rows      | Nothing has ever been collected — almost always the secrets above.                 |
 
 Observability is on (`wrangler.toml`), so failures appear in the Worker's logs
-with the message naming which dates failed and why. Two worth recognising:
+with the message naming which dates failed and why. Ones worth recognising:
 
-| Message                                | Cause                                                                                                                                                                                   |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GitHub API error: 403`                | The registry listing is being rate limited. Set `CF_ECOSYSTEM_REGISTRY_READ_TOKEN` and re-run the deploy workflow.                                                                      |
-| `Could not read N/M subdomain records` | Some record files did not answer. The run aborted on purpose rather than storing a day for only the subdomains that did — usually the same rate limiting, and it clears with the token. |
+| Message                                                          | Cause                                                                                                                                                                                                |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `does not have permission ... zone.analytics.read for zone <id>` | `CF_API_TOKEN` lacks `Zone` → `Analytics` → `Read`, or does not list that zone under Zone Resources. The zone id in the message is the one it must cover.                                            |
+| `GITHUB_TOKEN is not set`                                        | `CF_ECOSYSTEM_REGISTRY_READ_TOKEN` never reached the Worker. Check the deploy run's "Sync runtime secrets" step.                                                                                     |
+| `GitHub GraphQL error: Bad credentials`                          | The registry token is invalid or expired.                                                                                                                                                            |
+| `Too many subrequests by single Worker invocation`               | The run exceeded the free plan's 50 external subrequests. One run spends 1 on the registry plus 1 per date, so this means `MAX_BACKFILL_DAYS` was raised too far — see the note on it in `index.ts`. |
+| `Could not read N/M subdomain records`                           | Some record blobs came back empty or unparseable. The run aborted on purpose rather than storing a day for only the records that were readable.                                                      |
 
 Worth adding a Cloudflare notification on Worker errors: a cron that throws is
 otherwise completely silent.

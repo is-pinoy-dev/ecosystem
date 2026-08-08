@@ -45,14 +45,17 @@ jobs:
       # are unrelated to CF_WORKER_DEPLOY_TOKEN above, which only authenticates
       # `wrangler deploy`.
       #
-      # CF_API_TOKEN needs `Account Analytics: Read` plus `Zone Analytics: Read`
-      # on the is-pinoy.dev zone — no write scope of any kind.
+      # CF_API_TOKEN needs exactly one permission: `Zone` → `Analytics` →
+      # `Read`, with the is-pinoy.dev zone listed under Zone Resources. The
+      # query is zone-scoped, so Account Analytics is not required. Getting the
+      # resource list wrong fails at query time rather than at deploy, with
+      # "does not have permission com.cloudflare.api.account.zone.analytics.read
+      # for zone <id>" — the zone in that message is what the token must cover.
       #
-      # GITHUB_TOKEN reads the public registry listing. GitHub rate limits
-      # unauthenticated REST calls to 60/hr per IP and a Worker's egress address
-      # is shared across Cloudflare's pool, so without it the listing 403s and
-      # nothing is collected. A fine-grained token with public read access is
-      # enough; it never writes.
+      # GITHUB_TOKEN reads the registry. The read goes through GitHub's GraphQL
+      # API, which rejects unauthenticated callers outright, so without it the
+      # run aborts before collecting anything. Repository contents read access
+      # is enough; it never writes.
       #
       # Kept here rather than in a manual `wrangler secret put` so rotating
       # either one is a GitHub secret edit plus a re-run of this workflow, the
