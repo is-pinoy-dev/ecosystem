@@ -19,9 +19,16 @@ export interface Env {
  * How far back a single invocation will reach.
  *
  * Sized for the initial backfill and for recovering from an outage of up to a
- * month. Each day costs one GraphQL request, and the zone's analytics retention
- * is finite and plan-dependent — beyond it the API returns nothing, so a larger
- * window would just spend requests to learn the same thing on every run.
+ * month. The zone's analytics retention is finite and plan-dependent — beyond
+ * it the API returns nothing, so a larger window would just spend requests to
+ * learn the same thing on every run.
+ *
+ * **Subrequest budget.** A Worker on the free plan gets 50 external subrequests
+ * per invocation (D1 has its own, far larger, internal allowance). One run
+ * spends 1 on the registry read plus 1 per date, so 30 days costs 31 and leaves
+ * headroom. Raising this past ~45 puts the run back into "Too many subrequests
+ * by single Worker invocation" — which is what a 30-day backfill did while the
+ * registry read still cost one request per record.
  */
 const MAX_BACKFILL_DAYS = 30;
 

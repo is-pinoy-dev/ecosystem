@@ -1,151 +1,142 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { fetchSubdomains } from "../github"
 
-/**
- * Mock the listing call plus the per-record fetches the opt-out check makes.
- * `records` maps a subdomain to its record body, or to null for a fetch that
- * fails.
- */
-function mockRegistry(
-  listing: unknown,
-  records: Record<string, unknown | null> = {}
-) {
-  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-    const url = String(input)
-    if (url.includes("api.github.com")) {
-      return new Response(JSON.stringify(listing), { status: 200 })
-    }
-    const name = url
-      .split("/")
-      .pop()!
-      .replace(/\.json$/, "")
-    const body = records[name]
-    if (body === null || body === undefined) {
-      return new Response("Not Found", { status: 404 })
-    }
-    return new Response(JSON.stringify(body), { status: 200 })
-  })
+const TOKEN = "tok"
+
+/** A tree entry as GraphQL returns it: the record body arrives as blob text. */
+function entry(name: string, body: unknown) {
+  return {
+    name,
+    object: body === null ? null : { text: JSON.stringify(body) },
+  }
 }
 
-const FILES = [
-  { name: "juan.json", type: "file" },
-  { name: "maria.json", type: "file" },
-  { name: "README.md", type: "file" },
-  { name: "subdir", type: "dir" },
-]
+function mockTree(entries: unknown[]) {
+  return vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    new Response(
+      JSON.stringify({ data: { repository: { object: { entries } } } }),
+      { status: 200 }
+    )
+  )
+}
+
+const RECORDS = [entry("juan.json", {}), entry("maria.json", {})]
 
 describe("fetchSubdomains", () => {
   beforeEach(() => vi.restoreAllMocks())
 
   it("returns subdomain names stripped from .json filenames", async () => {
-    mockRegistry(FILES, { juan: {}, maria: {} })
-    expect(await fetchSubdomains()).toEqual(["juan", "maria"])
+    mockTree(RECORDS)
+    expect(await fetchSubdomains(TOKEN)).toEqual(["juan", "maria"])
+  })
+
+  // The whole point of the GraphQL rewrite: the free plan allows 50 external
+  // subrequests per invocation, and one-per-record left no budget for dates.
+  it("reads the entire registry in a single subrequest", async () => {
+    const spy = mockTree(RECORDS)
+    await fetchSubdomains(TOKEN)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(String(spy.mock.calls[0][0])).toBe("https://api.github.com/graphql")
+  })
+
+  it("ignores entries that are not .json records", async () => {
+    mockTree([...RECORDS, entry("README.md", {}), { name: "subdir", object: {} }])
+    expect(await fetchSubdomains(TOKEN)).toEqual(["juan", "maria"])
   })
 
   it("collects for records that say nothing about analytics", async () => {
-    mockRegistry(FILES, { juan: { features: {} }, maria: {} })
-    expect(await fetchSubdomains()).toEqual(["juan", "maria"])
+    mockTree([entry("juan.json", { features: {} }), entry("maria.json", {})])
+    expect(await fetchSubdomains(TOKEN)).toEqual(["juan", "maria"])
   })
 
   it("collects when analytics is explicitly true", async () => {
-    mockRegistry(FILES, {
-      juan: { features: { analytics: true } },
-      maria: {},
-    })
-    expect(await fetchSubdomains()).toContain("juan")
+    mockTree([entry("juan.json", { features: { analytics: true } })])
+    expect(await fetchSubdomains(TOKEN)).toContain("juan")
   })
 
   it("drops a subdomain that opted out", async () => {
-    mockRegistry(FILES, {
-      juan: { features: { analytics: false } },
-      maria: {},
-    })
-    expect(await fetchSubdomains()).toEqual(["maria"])
+    mockTree([
+      entry("juan.json", { features: { analytics: false } }),
+      entry("maria.json", {}),
+    ])
+    expect(await fetchSubdomains(TOKEN)).toEqual(["maria"])
   })
 
-  // Never treated as consent — but not dropped silently either. A rate-limited
-  // run used to store the day for whichever records happened to answer, and
-  // that partial day then looked complete to every later run.
-  it("aborts when a record cannot be read, rather than storing a partial day", async () => {
-    mockRegistry(FILES, { juan: null, maria: {} })
-    await expect(fetchSubdomains()).rejects.toThrow(
+  it("does not treat a non-false value as an opt-out", async () => {
+    mockTree([entry("juan.json", { features: { analytics: "no" } })])
+    expect(await fetchSubdomains(TOKEN)).toContain("juan")
+  })
+
+  it("aborts when a blob has no text, rather than storing a partial day", async () => {
+    mockTree([{ name: "juan.json", object: { text: null } }, RECORDS[1]])
+    await expect(fetchSubdomains(TOKEN)).rejects.toThrow(
       "Could not read 1/2 subdomain records (juan) — aborting"
     )
   })
 
-  it("names only the first few unreadable records", async () => {
-    const many = Array.from({ length: 7 }, (_, i) => ({
-      name: `s${i}.json`,
-      type: "file",
-    }))
-    mockRegistry(many)
-    await expect(fetchSubdomains()).rejects.toThrow(/Could not read 7\/7 .*, …/)
+  it("treats malformed JSON as unreadable rather than as consent", async () => {
+    mockTree([{ name: "juan.json", object: { text: "{ not json" } }])
+    await expect(fetchSubdomains(TOKEN)).rejects.toThrow("Could not read 1/1")
   })
 
-  it("does not treat a non-false value as an opt-out", async () => {
-    mockRegistry(FILES, {
-      juan: { features: { analytics: "no" } },
-      maria: {},
-    })
-    expect(await fetchSubdomains()).toContain("juan")
+  it("names only the first few unreadable records", async () => {
+    mockTree(
+      Array.from({ length: 7 }, (_, i) => ({
+        name: `s${i}.json`,
+        object: { text: null },
+      }))
+    )
+    await expect(fetchSubdomains(TOKEN)).rejects.toThrow(/Could not read 7\/7 .*, …/)
+  })
+
+  it("authenticates the request", async () => {
+    const spy = mockTree(RECORDS)
+    await fetchSubdomains(TOKEN)
+    const init = spy.mock.calls[0][1] as RequestInit
+    const sent = init.headers as Record<string, string>
+    expect(sent.Authorization).toBe(`Bearer ${TOKEN}`)
+    expect(init.method).toBe("POST")
+  })
+
+  // GraphQL rejects anonymous callers outright, so failing before the request
+  // says what is wrong instead of surfacing a bare 401.
+  it("refuses to run without a token", async () => {
+    const spy = vi.spyOn(globalThis, "fetch")
+    await expect(fetchSubdomains()).rejects.toThrow("GITHUB_TOKEN is not set")
+    expect(spy).not.toHaveBeenCalled()
   })
 
   it("throws on non-ok HTTP response", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response("Not Found", { status: 404 })
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("nope", { status: 401 })
     )
-    await expect(fetchSubdomains()).rejects.toThrow("GitHub API error: 404")
+    await expect(fetchSubdomains(TOKEN)).rejects.toThrow("GitHub API error: 401")
   })
 
-  // The failure this actually hits in production, so the message has to say
-  // what to do about it rather than just the status code.
-  it("names the missing token on an unauthenticated 403", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response("rate limited", { status: 403 })
+  it("surfaces a GraphQL-level error", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ errors: [{ message: "Bad credentials" }] }), {
+        status: 200,
+      })
     )
-    await expect(fetchSubdomains()).rejects.toThrow(/403.*GITHUB_TOKEN/s)
+    await expect(fetchSubdomains(TOKEN)).rejects.toThrow(
+      "GitHub GraphQL error: Bad credentials"
+    )
   })
 
-  it("does not blame the token when one was supplied", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response("forbidden", { status: 403 })
+  // A repo or path that resolves to nothing must not read as "no subdomains",
+  // which the caller would otherwise treat as a registry that emptied itself.
+  it("throws when the tree is missing entirely", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { repository: { object: null } } }), {
+        status: 200,
+      })
     )
-    await expect(fetchSubdomains("tok")).rejects.toThrow(
-      "GitHub API error: 403"
-    )
-    await expect(fetchSubdomains("tok")).rejects.not.toThrow(/GITHUB_TOKEN/)
+    await expect(fetchSubdomains(TOKEN)).rejects.toThrow("No tree at")
   })
 
-  it("authenticates both the listing and the record reads", async () => {
-    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) =>
-      String(input).includes("api.github.com")
-        ? new Response(JSON.stringify([{ name: "juan.json", type: "file" }]), {
-            status: 200,
-          })
-        : new Response("{}", { status: 200 })
-    )
-    await fetchSubdomains("tok")
-    expect(spy).toHaveBeenCalledTimes(2)
-    for (const [, init] of spy.mock.calls) {
-      const sent = (init as RequestInit).headers as Record<string, string>
-      expect(sent.Authorization).toBe("Bearer tok")
-    }
-  })
-
-  it("sends no Authorization header when there is no token", async () => {
-    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(JSON.stringify([]), { status: 200 })
-    )
-    await fetchSubdomains()
-    const sent = (spy.mock.calls[0][1] as RequestInit).headers as Record<
-      string,
-      string
-    >
-    expect(sent.Authorization).toBeUndefined()
-  })
-
-  it("returns empty array when directory has no .json files", async () => {
-    mockRegistry([{ name: "README.md", type: "file" }])
-    expect(await fetchSubdomains()).toEqual([])
+  it("returns an empty list when the directory has no .json files", async () => {
+    mockTree([entry("README.md", {})])
+    expect(await fetchSubdomains(TOKEN)).toEqual([])
   })
 })
