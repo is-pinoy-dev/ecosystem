@@ -20,7 +20,7 @@ Each check returns a **pass**, **warning**, or **fail** status with a short expl
 - You have enabled the tool in your subdomain JSON
 
 <Callout type="warn">
-  Site Audit will not work if your DNS record is set to DNS-only (no proxy). Cloudflare must proxy your subdomain for the `/_tools/` path to be intercepted. See [Cloudflare proxy](/guides/reference/supported-records#cloudflare-proxy-proxy).
+  Site Audit will not work if your DNS record is set to DNS-only (no proxy). Cloudflare must proxy your subdomain for the `/_tools/` path to be intercepted. See [Cloudflare proxy](/guides/reference/supported-records#cloudflare-proxy-proxied).
 </Callout>
 
 ## Enabling Site Audit
@@ -36,7 +36,7 @@ Add `features.tools.site-audit: true` to your subdomain JSON and open a pull req
   },
   "records": {
     "CNAME": {
-      "value": "yoursite.vercel.app.",
+      "value": "your-origin.example.com.",
       "proxied": true
     }
   },
@@ -64,7 +64,7 @@ Vercel verifies custom domains by checking for a specific DNS record. When the C
 
 This warning is cosmetic for sites already deployed — your portfolio will continue to serve traffic normally. Vercel only needs to re-verify if you reassign the domain or rotate certificates.
 
-If Vercel's warning concerns you, you can disable the proxy (`"proxied": false`) and Site Audit will show a [not enabled page](/_tools/site-audit) instead.
+If Vercel's warning concerns you, you can disable the proxy (`"proxied": false`) — Site Audit will show a "not enabled" page instead.
 
 ## Disabling Site Audit
 

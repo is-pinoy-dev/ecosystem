@@ -3,21 +3,29 @@ title: Provider Guides
 description: Step-by-step guides for finding your DNS values on popular hosting platforms.
 ---
 
-Before you create your subdomain JSON file, you need two values from your hosting provider:
+Before you create your subdomain JSON file, you need your DNS values from your hosting provider:
 
 1. **CNAME value** — a hostname your provider gives you (e.g. `xxxxxxxxxxxxxxxx.vercel-dns-017.com.`)
-2. **TXT verification value** — a string some providers show for domain ownership verification (not always required)
+2. **TXT verification value** — a domain-ownership challenge. Required on Vercel; not used by GitHub Pages or Cloudflare Pages.
+
+## What each provider needs
+
+| Provider | CNAME | TXT verification | Cloudflare proxy |
+|----------|-------|------------------|------------------|
+| [Vercel](/guides/providers/vercel) | Project-specific `*.vercel-dns-*.com` target | **Always required** | Leave off |
+| [GitHub Pages](/guides/providers/github-pages) | `your-username.github.io.` | Not supported | Leave off |
+| [Cloudflare Pages](/guides/providers/cloudflare-pages) | `your-project.pages.dev.` | Not needed | Must stay off |
 
 Select your hosting platform below:
 
 <Cards>
-  <Card title="Vercel" href="/providers/vercel" description="Find your CNAME and TXT values from your Vercel project's Domains settings." />
-  <Card title="GitHub Pages" href="/providers/github-pages" description="Point a GitHub Pages site at your subdomain and set the right Cloudflare proxy option." />
-  <Card title="Cloudflare Pages" href="/providers/cloudflare-pages" description="Point a Cloudflare Pages project at your subdomain with a DNS-only CNAME." />
+  <Card title="Vercel" href="/guides/providers/vercel" description="Find your CNAME and the required TXT verification value from your Vercel project's Domains settings." />
+  <Card title="GitHub Pages" href="/guides/providers/github-pages" description="Point a GitHub Pages site at your subdomain and enable HTTPS." />
+  <Card title="Cloudflare Pages" href="/guides/providers/cloudflare-pages" description="Point a Cloudflare Pages project at your subdomain with a DNS-only CNAME." />
 </Cards>
 
 <Callout type="info">
-  More provider guides (Netlify and others) will be added in the future. If your platform isn't listed, look for a "Custom Domain" or "Domains" settings page in your provider's dashboard — it will show you a CNAME or A record to configure.
+  More provider guides (Netlify and others) will be added in the future. If your platform isn't listed, look for a "Custom Domain" or "Domains" settings page in your provider's dashboard — it will show you a CNAME or A record to configure. Note that only Vercel's DNS-based verification is supported today; if your platform requires a TXT challenge of its own, open an issue on the [domains repository](https://github.com/is-pinoy-dev/domains/issues).
 </Callout>
 
 Once you have your DNS values, continue to [Create Your JSON File](/guides/workflow/create-file).
