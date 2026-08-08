@@ -183,3 +183,37 @@ describe("latestStoredDate", () => {
     await expect(latestStoredDate(db)).resolves.toBeNull();
   });
 });
+
+describe("persistSnapshots return value", () => {
+  // "Collected N/M days" counted requests survived, not rows stored. The caller
+  // needs a number that means data actually landed.
+  it("returns the number of subdomain-days written", async () => {
+    const { db } = makeD1Mock();
+    const rows: AnalyticsRow[] = [
+      { host: "juan.is-pinoy.dev", country: "PH", requests: 30 },
+      { host: "juan.is-pinoy.dev", country: "US", requests: 12 },
+      { host: "maria.is-pinoy.dev", country: "PH", requests: 5 },
+    ];
+    await expect(
+      persistSnapshots(db, ["juan", "maria"], rows, "2026-05-28")
+    ).resolves.toBe(2);
+  });
+
+  it("returns 0 when the response held no collectable hostname", async () => {
+    const { db } = makeD1Mock();
+    const rows: AnalyticsRow[] = [
+      { host: "is-pinoy.dev", country: "PH", requests: 5 },
+      { host: "someone-else.is-pinoy.dev", country: "PH", requests: 5 },
+    ];
+    await expect(
+      persistSnapshots(db, ["juan"], rows, "2026-05-28")
+    ).resolves.toBe(0);
+  });
+
+  it("returns 0 for an empty response", async () => {
+    const { db } = makeD1Mock();
+    await expect(persistSnapshots(db, ["juan"], [], "2026-05-28")).resolves.toBe(
+      0
+    );
+  });
+});
