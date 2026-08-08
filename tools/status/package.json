@@ -36,7 +36,7 @@
     "eslint": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vite": "^8.1.1",
+    "vite": "^8.1.2",
     "vitest": "catalog:",
     "wrangler": "^4.95.0"
   }
