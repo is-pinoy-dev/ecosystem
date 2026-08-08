@@ -15,27 +15,44 @@ Replace `yourname` with your subdomain.
 
 ## What success looks like
 
-```text
-✔ Schema valid
-✔ Subdomain matches filename
-✔ owner.github present
-✔ Records valid
+After the banner, a passing file prints a single line:
 
-yourname.is-pinoy.dev is ready to submit.
+```text
+✔ ./subdomains/yourname.json is valid
 ```
 
-If you see output like this, your file is valid. Move on to [Open a PR](/guides/workflow/open-pr).
+The command exits with code `0`. Move on to [Open a PR](/guides/workflow/open-pr).
 
 ## What failure looks like
 
+A failing file prints a header followed by one line per problem, and exits with code `1`:
+
 ```text
-✖ CNAME value must end with a trailing dot (e.g. "yoursite.vercel.app.")
+✖ Validation failed for ./subdomains/yourname.json:
+  - subdomain: Subdomain must be at least 3 characters
+  - records.TXT: Invalid input
 ```
 
-The validator outputs one error per line with a description of what's wrong. Fix each error and re-run the validator until it passes.
+Each line is `<field path>: <what's wrong>`. Fix each one and re-run until it passes.
 
 <Callout type="info">
-  For a full list of validation errors and how to fix them, see [Common Errors](/guides/troubleshooting/common-errors).
+  For what each message means and how to fix it, see [Common Errors](/guides/troubleshooting/common-errors).
+</Callout>
+
+## What the validator does not check
+
+The validator checks your file against the schema and the reserved-name list. It does **not** check everything a maintainer will, so a passing file can still be sent back in review. It does not verify that:
+
+- your CNAME value ends with a trailing dot (both forms are accepted)
+- your subdomain avoids leading or trailing hyphens
+- you used only one of `A` or `CNAME`
+- your site is actually live, or that the DNS target is correct
+- `owner.github` matches the account opening the pull request
+
+These are still rules — see [Naming Rules](/guides/getting-started/naming-rules) and [Supported Records](/guides/reference/supported-records). They are just enforced by review and by DNS rather than by this command.
+
+<Callout type="info">
+  The `npx @is-pinoy-dev/validate` command checks **one file** and prints errors only. CI runs the fuller `is-pinoy registry validate` across the whole `subdomains/` directory, which additionally catches duplicate subdomains and filename mismatches, and prints warnings. See [CI Failures](/guides/troubleshooting/ci-failures).
 </Callout>
 
 ---

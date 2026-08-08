@@ -46,8 +46,9 @@ Copy and fill in this template:
 
 - [x] Filename and `subdomain` field in JSON both match your subdomain
 - [x] `owner.github` matches my GitHub username
-- [x] At least one valid record (`CNAME`, `A`, or `TXT`)
-- [x] CNAME value ends with a trailing dot (e.g. `yoursite.vercel.app.`)
+- [x] At least one valid record, using either `CNAME` or `A` — not both
+- [x] On Vercel: both the CNAME and the `vc-domain-verify` TXT record are present, with `"provider": "vercel"`
+- [x] The CNAME points at my provider's custom-domain target, not a `*.vercel.app` deployment alias
 - [x] The subdomain points to something real and active
 
 ### Terms

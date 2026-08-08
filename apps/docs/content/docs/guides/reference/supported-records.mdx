@@ -9,24 +9,31 @@ Your `records` object can contain one or more of the following DNS record types.
 
 | Type | Use case | Example value |
 |------|----------|---------------|
-| `CNAME` | Hosted platforms (Vercel, Netlify, GitHub Pages) | `yoursite.vercel.app.` |
+| `CNAME` | Hosted platforms (Vercel, GitHub Pages, Cloudflare Pages) | `xxxxxxxxxxxxxxxx.vercel-dns-017.com.` |
 | `A` | Custom server or VPS | `203.0.113.1` |
-| `TXT` | Domain verification (e.g. Google Search Console, Vercel) | `google-site-verification=...` |
+| `TXT` | Vercel domain verification | `vc-domain-verify=yourname.is-pinoy.dev,abc123` |
 
 ## CNAME
 
-Use this when your portfolio is hosted on a platform like Vercel, Netlify, or GitHub Pages. The platform gives you a hostname to point at.
+Use this when your portfolio is hosted on a platform like Vercel, GitHub Pages, or Cloudflare Pages. The platform gives you a hostname to point at.
 
 ```json
 "records": {
   "CNAME": {
-    "value": "yoursite.vercel.app."
+    "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
   }
 }
 ```
 
 <Callout type="warn">
-  The CNAME value **must end with a trailing dot** (`.`). This is standard DNS notation for a fully-qualified domain name. Your hosting provider will show the value with the dot — keep it.
+  On Vercel, point at the project-specific `*.vercel-dns-*.com` target shown in
+  your project's Domains settings — **not** at your `*.vercel.app` deployment
+  alias. A `*.vercel.app` target produces a validation warning and a subdomain
+  that 404s.
+</Callout>
+
+<Callout type="info">
+  Write the CNAME value **with a trailing dot** (`.`) — standard DNS notation for a fully-qualified name, and the form used in every example here. The registry strips the dot and lowercases the value before syncing, so a value without it also works; keeping it just makes files consistent and easy to diff.
 </Callout>
 
 ## A record
@@ -49,17 +56,7 @@ The value must be a valid IPv4 address.
 
 ## TXT
 
-Used for domain verification — most commonly when a platform (like Vercel or Google) needs to confirm you own the domain before it will serve traffic.
-
-```json
-"records": {
-  "TXT": {
-    "value": "google-site-verification=abc123"
-  }
-}
-```
-
-When a TXT record is a domain-verification record from your host, you must also include the `provider` field:
+Used for domain verification — when a platform needs to confirm you own the domain before it will serve traffic.
 
 ```json
 "records": {
@@ -70,19 +67,31 @@ When a TXT record is a domain-verification record from your host, you must also 
 }
 ```
 
-The `provider` field currently accepts only `vercel`. It determines the DNS record name — a verification TXT is created at `_<provider>.yourname.is-pinoy.dev`.
-
 <Callout type="warn">
-  The `provider` field is **required** whenever you add a verification TXT record. The validator will fail without it, or if the provider is not one of the supported values.
+  `provider` is **required on every TXT record** — it is part of the schema, not
+  a conditional extra. Omitting it fails validation with
+  `records.TXT: Invalid input`. The only accepted value today is `vercel`, so
+  arbitrary TXT records (Google Search Console verification, SPF, and so on)
+  cannot be registered.
 </Callout>
 
+The `provider` field determines the DNS record name. A verification TXT is created at `_<provider>.is-pinoy.dev` — **at the zone, not under your subdomain**:
+
+```text
+_vercel.is-pinoy.dev.  IN  TXT  "vc-domain-verify=yourname.is-pinoy.dev,abc123"
+```
+
+That is deliberate. Vercel resolves its ownership check at the registrable-domain boundary, which for `is-pinoy.dev` (not on the Public Suffix List) is the apex — a record at `_vercel.yourname.is-pinoy.dev` would simply never be queried. Every contributor's challenge coexists at that one name, which DNS permits, and each is matched back to its own subdomain by the target embedded in the value.
+
+You never create this record yourself, and you cannot choose its name: supply the value plus `"provider": "vercel"`, and the registry places it.
+
 <Callout type="info">
-  **Why only Vercel?** Vercel is the only supported host that verifies domain ownership through a DNS TXT challenge the registry can create for you. Other platforms either don't require DNS verification for subdomains (Netlify, Cloudflare Pages) or use a challenge record name tied to your account name that can't be derived from a provider value (GitHub Pages). See the [Provider Guides](/guides/providers) for platform-specific setup.
+  **Why only Vercel?** Vercel is the only supported host that verifies ownership through a DNS TXT challenge the registry can create. Others either need no DNS verification for subdomains (Netlify, Cloudflare Pages) or use a challenge name tied to your account that can't be derived from a provider value (GitHub Pages: `_github-pages-challenge-<username>`). See the [Provider Guides](/guides/providers).
 </Callout>
 
 ## Combining records
 
-You can include multiple record types in one file. The most common combination is CNAME + TXT for platforms that require domain verification alongside the primary DNS record.
+You can include multiple record types in one file. The standard combination is CNAME + TXT, which is what every Vercel-hosted subdomain needs.
 
 ```json
 "records": {
@@ -103,7 +112,7 @@ You can include multiple record types in one file. The most common combination i
 ```json
 "records": {
   "CNAME": {
-    "value": "yoursite.vercel.app.",
+    "value": "your-origin.example.com.",
     "proxied": true
   }
 }
@@ -114,18 +123,25 @@ You can include multiple record types in one file. The most common combination i
 | `true` | Traffic passes through Cloudflare. Your origin IP is hidden and Cloudflare features (DDoS protection, caching, Workers) are active. |
 | `false` (default) | DNS-only. Cloudflare returns the raw DNS record. Traffic goes directly to your origin. |
 
-<Callout type="info">
-  **When should I enable proxy?** Enable it if you want platform tools like [Site Audit](/tools/site-audit) to work on your subdomain, or if you want Cloudflare's DDoS protection and CDN caching in front of your site.
-</Callout>
+### Which setting does my provider need?
+
+| Provider | `proxied` | Why |
+|----------|-----------|-----|
+| Vercel | `false` | Vercel validates certificates by querying DNS directly; the proxy interferes and the dashboard reports "Invalid Configuration" |
+| GitHub Pages | `false` | GitHub must see the record directly to verify the domain and issue the TLS certificate |
+| Cloudflare Pages | `false` — **required** | A proxied record across two Cloudflare accounts is rejected with **Error 1014: CNAME Cross-User Banned** |
+| Your own server / VPS | either | Enable it for DDoS protection and CDN caching |
 
 <Callout type="warn">
-  Some platforms (e.g. Vercel) perform SSL certificate validation by querying DNS directly. Enabling the Cloudflare proxy can interfere with this process. If your hosting provider shows an "Invalid Configuration" or SSL error after you enable proxy, check their documentation for Cloudflare compatibility.
+  Platform tools like [Site Audit](/tools/site-audit) need `"proxied": true` to intercept `/_tools/*` requests. On all three hosted providers above, that conflicts with what the provider itself needs — so tools are practically limited to origins you control.
 </Callout>
 
 ## What you cannot combine
 
 You **cannot** use `A` and `CNAME` together on the same subdomain. These record types are mutually exclusive in DNS — a name can either be an alias (CNAME) or a direct address (A), not both.
 
-If you try to include both, the validator will reject your file.
+<Callout type="warn">
+  The validator does not currently catch this — a file with both records passes. It is still wrong, and a maintainer will send the PR back. Use one or the other.
+</Callout>
 
 ---

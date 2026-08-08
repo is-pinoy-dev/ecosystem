@@ -17,13 +17,11 @@ Each subdomain is described by a single JSON file at `subdomains/<your-subdomain
   },
   "records": {
     "CNAME": {
-      "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com.",
-      "proxied": true
-    }
-  },
-  "features": {
-    "tools": {
-      "site-audit": true
+      "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
+    },
+    "TXT": {
+      "value": "vc-domain-verify=yourname.is-pinoy.dev,abc123",
+      "provider": "vercel"
     }
   }
 }
@@ -50,7 +48,7 @@ Optional but recommended. Adding this field enables JSON schema validation in ed
 **Required.** The name you want before `.is-pinoy.dev`. Must:
 - Match the filename exactly (e.g. `yourname.json` → `"subdomain": "yourname"`)
 - Be lowercase alphanumeric with hyphens only
-- Be between 1 and 63 characters
+- Be between 3 and 63 characters
 
 See [Naming Rules](/guides/getting-started/naming-rules) for the full character rules.
 
@@ -90,12 +88,18 @@ See [Naming Rules](/guides/getting-started/naming-rules) for the full character 
 ```json
 "records": {
   "CNAME": {
-    "value": "yoursite.vercel.app."
+    "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
+  },
+  "TXT": {
+    "value": "vc-domain-verify=yourname.is-pinoy.dev,abc123",
+    "provider": "vercel"
   }
 }
 ```
 
 **Required.** Must contain at least one valid record. Supported keys: `CNAME`, `A`, `TXT`. See [Supported Records](/guides/reference/supported-records) for details on each type.
+
+Every `TXT` record must carry a `provider` field, and `vercel` is the only accepted value. On Vercel, the `vc-domain-verify` TXT record is always required alongside your CNAME.
 
 ### `features`
 
@@ -114,7 +118,7 @@ See [Naming Rules](/guides/getting-started/naming-rules) for the full character 
 | `features.tools.site-audit` | boolean | `false` | Enables the [Site Audit](/tools/site-audit) tool at `yourname.is-pinoy.dev/_tools/site-audit` |
 
 <Callout type="info">
-  Tools require `"proxied": true` on your DNS record. See [Cloudflare proxy](/guides/reference/supported-records#cloudflare-proxy-proxy) for details.
+  Tools require `"proxied": true` on your DNS record. See [Cloudflare proxy](/guides/reference/supported-records#cloudflare-proxy-proxied) for details.
 </Callout>
 
 ---
@@ -125,7 +129,9 @@ See [Naming Rules](/guides/getting-started/naming-rules) for the full character 
 |---------|----------------------|---------------|
 | Filename doesn't match `subdomain` field | File: `juan.json`, field: `"subdomain": "juan-dev"` | File and field must both be `juan` or both `juan-dev` |
 | `owner.github` is wrong casing | `"github": "JuanDeLaCruz"` when GitHub username is `juandelacruz` | Match exactly as shown on GitHub |
-| Missing trailing dot on CNAME | `"value": "yoursite.vercel.app"` | `"value": "yoursite.vercel.app."` |
+| CNAME points at a Vercel deployment alias | `"value": "yoursite.vercel.app."` | `"value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."` |
+| TXT record without `provider` | `{ "value": "vc-domain-verify=..." }` | `{ "value": "vc-domain-verify=...", "provider": "vercel" }` |
+| Both `A` and `CNAME` present | `"records": { "A": {...}, "CNAME": {...} }` | Use one or the other |
 | `email` field in wrong place | `"email": "..."` at top level | Must be inside `"owner": {}` |
 
 ---

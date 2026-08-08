@@ -7,17 +7,17 @@ Your subdomain must follow these rules to pass validation and review.
 
 ## Allowed characters
 
-| Rule | Valid | Invalid |
-|------|-------|---------|
-| Lowercase letters only | `juan` | `Juan` |
-| Numbers allowed | `juan2` | — |
-| Hyphens allowed | `juan-dev` | — |
-| No underscores | — | `juan_dev` |
-| No dots | — | `juan.dev` |
-| No leading hyphen | — | `-juan` |
-| No trailing hyphen | — | `juan-` |
+| Rule | Valid | Invalid | Caught by |
+|------|-------|---------|-----------|
+| Lowercase letters only | `juan` | `Juan` | Validator |
+| Numbers allowed | `juan2` | — | — |
+| Hyphens allowed | `juan-dev` | — | — |
+| No underscores | — | `juan_dev` | Validator |
+| No dots | — | `juan.dev` | Validator |
+| No leading hyphen | — | `-juan` | Review |
+| No trailing hyphen | — | `juan-` | Review |
 
-In regular expression form: `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`
+The schema enforces the pattern `^[a-z0-9-]+$`. Leading and trailing hyphens slip past that pattern but are not valid DNS labels, so they are rejected in review — the name you actually want is `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`.
 
 ## Length
 
@@ -43,6 +43,8 @@ The following subdomains are reserved and cannot be registered:
 | Commerce | `shop`, `store`, `pay`, `payment`, `checkout`, `billing`, `invoice` |
 | Brand protection | `pinoy`, `ispinoy`, `ispinodev`, `oss`, `app` |
 | Abuse / postmaster | `abuse`, `postmaster`, `hostmaster`, `webmaster`, `security`, `noreply`, `no-reply` |
+| Platform tooling | `_tools` |
+| Platform hosts | `portfolio` |
 
 ## What gets rejected
 

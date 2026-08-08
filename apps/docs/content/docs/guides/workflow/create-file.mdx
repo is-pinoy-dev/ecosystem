@@ -5,7 +5,7 @@ description: Steps 3–4 — Create subdomains/<name>.json and fill in your DNS 
 
 ## Step 3: Find your DNS values
 
-Before creating your file, you need the CNAME value (and sometimes a TXT value) from your hosting provider.
+Before creating your file, you need the CNAME value from your hosting provider — plus, on Vercel, a TXT verification value.
 
 See the [Provider Guides](/guides/providers) section and follow the guide for your platform. Come back here once you have your values.
 
@@ -23,24 +23,12 @@ Replace `yourname` with the subdomain you want (e.g. `juan` for `juan.is-pinoy.d
 
 Open the file and fill it in:
 
-<Tabs items={["CNAME only", "CNAME + TXT"]}>
-  <Tab value="CNAME only">
-    ```json
-    {
-      "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/ecosystem/main/packages/schemas/schema/v1/subdomain.schema.json",
-      "subdomain": "yourname",
-      "owner": {
-        "github": "your-github-username"
-      },
-      "records": {
-        "CNAME": {
-          "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
-        }
-      }
-    }
-    ```
-  </Tab>
-  <Tab value="CNAME + TXT">
+Pick the tab for your hosting provider:
+
+<Tabs items={["Vercel (CNAME + TXT)", "GitHub Pages", "Cloudflare Pages", "A record"]}>
+  <Tab value="Vercel (CNAME + TXT)">
+    Vercel needs both records — the TXT verification value is not optional. See the [Vercel guide](/guides/providers/vercel) for why.
+
     ```json
     {
       "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/ecosystem/main/packages/schemas/schema/v1/subdomain.schema.json",
@@ -60,6 +48,60 @@ Open the file and fill it in:
     }
     ```
   </Tab>
+  <Tab value="GitHub Pages">
+    Your CNAME target is your Pages hostname. No TXT record is used. See the [GitHub Pages guide](/guides/providers/github-pages).
+
+    ```json
+    {
+      "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/ecosystem/main/packages/schemas/schema/v1/subdomain.schema.json",
+      "subdomain": "yourname",
+      "owner": {
+        "github": "your-github-username"
+      },
+      "records": {
+        "CNAME": {
+          "value": "your-github-username.github.io."
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab value="Cloudflare Pages">
+    Your CNAME target is your project's `pages.dev` hostname, and the record must stay DNS-only. See the [Cloudflare Pages guide](/guides/providers/cloudflare-pages).
+
+    ```json
+    {
+      "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/ecosystem/main/packages/schemas/schema/v1/subdomain.schema.json",
+      "subdomain": "yourname",
+      "owner": {
+        "github": "your-github-username"
+      },
+      "records": {
+        "CNAME": {
+          "value": "your-project.pages.dev."
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab value="A record">
+    Use an `A` record only when you are pointing at your own server or VPS by IP.
+
+    ```json
+    {
+      "$schema": "https://raw.githubusercontent.com/is-pinoy-dev/ecosystem/main/packages/schemas/schema/v1/subdomain.schema.json",
+      "subdomain": "yourname",
+      "owner": {
+        "github": "your-github-username"
+      },
+      "records": {
+        "A": {
+          "value": "203.0.113.1"
+        }
+      }
+    }
+    ```
+  </Tab>
 </Tabs>
 
 Replace `yourname`, `your-github-username`, and the record values with your actual information.
@@ -67,10 +109,11 @@ Replace `yourname`, `your-github-username`, and the record values with your actu
 ## Before you continue — checklist
 
 <Callout type="warn">
-  Double-check all three of these before running the validator:
+  Double-check these before running the validator:
   - The **filename** (`yourname.json`) matches the **`subdomain` field** (`"subdomain": "yourname"`) exactly
   - **`owner.github`** matches your GitHub username exactly (case-sensitive)
-  - The **CNAME value ends with a trailing dot** (`.`)
+  - On Vercel, you included **both** the CNAME and the `vc-domain-verify` TXT record, with `"provider": "vercel"`
+  - You used **either** `CNAME` **or** `A` — never both
 </Callout>
 
 ---

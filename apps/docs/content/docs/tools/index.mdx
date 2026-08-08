@@ -18,11 +18,15 @@ All tools require your DNS record to have `"proxied": true` so that Cloudflare c
 ```json
 "records": {
   "CNAME": {
-    "value": "yoursite.vercel.app.",
+    "value": "your-origin.example.com.",
     "proxied": true
   }
 }
 ```
+
+<Callout type="warn">
+  Vercel, GitHub Pages, and Cloudflare Pages all need the record to stay DNS-only (`"proxied": false`), so tools are practically limited to origins you control. See [Which setting does my provider need?](/guides/reference/supported-records#which-setting-does-my-provider-need).
+</Callout>
 
 <Callout type="info">
   The `/_tools/` path is reserved by the platform. Requests to `yourname.is-pinoy.dev/_tools/*` are always handled by is-pinoy.dev infrastructure and never forwarded to your origin.

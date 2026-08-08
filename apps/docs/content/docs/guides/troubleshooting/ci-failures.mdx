@@ -3,50 +3,60 @@ title: CI Failures
 description: How to fix CI failures on your subdomain registration pull request.
 ---
 
-When you open a PR, CI runs two checks:
+When you open a PR, a GitHub Action validates every file in `subdomains/` and posts the result as a comment. On later pushes it edits that same comment instead of adding a new one.
 
-1. **JSON schema validation** — your file is validated against the official JSON schema
-2. **Owner verification** — `owner.github` must match the GitHub account that opened the PR
+## Reading the comment
 
-If either check fails, GitHub posts a comment on your PR with the error message. Fix the issue, push a new commit to your branch, and CI will re-run automatically.
+A failure looks like this:
 
-## Schema validation failed
+> ## ❌ Subdomain Validation Failed
+>
+> The following errors were found:
+>
+> ```
+> ✖ subdomain: Subdomain must be at least 3 characters
+> ```
+>
+> Please fix the errors above and push again.
 
-The CI comment will look something like:
+Each `✖` line is one problem. See [Common Errors](/guides/troubleshooting/common-errors) for what each message means.
+
+A pass looks like this:
+
+> ## ✅ Subdomain Validation Passed
+>
+> All subdomain files are valid.
+
+## Warnings
+
+A passing run can still include a **⚠️ Warnings** section. Warnings do not block your PR, but they usually mean the subdomain will not work once it goes live — most often a CNAME pointing at a `*.vercel.app` deployment alias instead of the `*.vercel-dns-*.com` target Vercel issues for a custom domain. Read them and fix the cause.
+
+## Sync dry-run
+
+When the run passes, the comment may also include a **🔍 Sync Dry-Run** section showing exactly which DNS records your PR would create, update, or delete:
 
 ```text
-✖ /records/CNAME/value: must match pattern "^.+\.$"
+  + CREATE  yourname.is-pinoy.dev → xxxxxxxxxxxxxxxx.vercel-dns-017.com.
+  + CREATE  _vercel.is-pinoy.dev → vc-domain-verify=yourname.is-pinoy.dev,abc123
 ```
 
-This means your CNAME value is missing the trailing dot. Fix your JSON:
+This is a preview only — nothing is applied until a maintainer merges. It is worth checking: if the records shown are not what you expect, your JSON is not saying what you think it says.
 
-```json
-"CNAME": {
-  "value": "xxxxxxxxxxxxxxxx.vercel-dns-017.com."
-}
-```
-
-For a full list of schema errors and their fixes, see [Common Errors](/guides/troubleshooting/common-errors).
+<Callout type="info">
+  On a pull request the dry-run is scoped to the subdomain files your PR actually changed, so you will never see entries for other people's subdomains.
+</Callout>
 
 ## `owner.github` mismatch
 
-The CI comment will say something like:
+`owner.github` must match the GitHub account that opened the pull request, and the check is **case-sensitive**. This one is enforced in review rather than by the validator, so a green CI run does not mean it is correct.
 
-```text
-✖ owner.github (juandelacruz) does not match the pull request author (JuanDeLaCruz)
-```
-
-This check is **case-sensitive**. Fix your JSON so `owner.github` exactly matches your GitHub username as shown in your profile URL (`github.com/your-username`).
+Copy your username from your GitHub profile URL (`github.com/your-username`) and use it verbatim:
 
 ```json
 "owner": {
   "github": "JuanDeLaCruz"
 }
 ```
-
-<Callout type="warn">
-  GitHub usernames are case-sensitive in this check. Copy your username from your GitHub profile URL to be sure.
-</Callout>
 
 ## How to push a fix
 
@@ -58,6 +68,4 @@ git commit -m "Fix validation error"
 git push
 ```
 
-This pushes to the same branch you used when opening the PR.
-
-CI will re-run automatically within a few seconds of the push.
+This pushes to the same branch you used when opening the PR. CI re-runs automatically within a few seconds, and the existing comment updates in place.
