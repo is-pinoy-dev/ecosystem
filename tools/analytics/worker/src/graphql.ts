@@ -33,6 +33,23 @@ interface GQLResponse {
   errors?: Array<{ message: string }>;
 }
 
+/**
+ * Whether a failure means "that day is gone" rather than "that day failed".
+ *
+ * Zone analytics retention is finite and plan-dependent — ours currently serves
+ * about eight days, and answers anything older with
+ *
+ *   cannot request data older than 1w1d, but your query requests data from …
+ *
+ * No retry will ever satisfy that, so counting it as a failure would mark every
+ * run that reaches past the window as failed and bury real errors in the noise.
+ * The caller skips these and reports them separately.
+ */
+export function isBeyondRetention(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes("cannot request data older than")
+}
+
 export async function fetchAnalytics(
   apiToken: string,
   zoneTag: string,

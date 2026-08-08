@@ -41,7 +41,7 @@ describe("persistSnapshots", () => {
     expect(batch).not.toHaveBeenCalled();
   });
 
-  it("batches 1 total row + N country rows per subdomain", async () => {
+  it("batches 1 clear + 1 total row + N country rows per subdomain", async () => {
     const { db, batch } = makeD1Mock();
     const rows: AnalyticsRow[] = [
       { host: "juan.is-pinoy.dev", country: "PH", requests: 30 },
@@ -50,8 +50,60 @@ describe("persistSnapshots", () => {
     await persistSnapshots(db, ["juan"], rows, "2026-05-28");
     expect(batch).toHaveBeenCalledOnce();
     const calls = batch.mock.calls[0][0] as MockStmt[];
-    // 1 total + 2 country rows = 3
-    expect(calls).toHaveLength(3);
+    // 1 clear + 1 total + 2 country rows = 4
+    expect(calls).toHaveLength(4);
+  });
+
+  // INSERT OR REPLACE only touches the keys it is handed, so without the clear
+  // a re-collected day that no longer reports a country keeps that country's
+  // old row — and the breakdown then exceeds the total it sits under.
+  it("clears a subdomain's country rows for the date before inserting", async () => {
+    const { db, batch } = makeD1Mock();
+    const rows: AnalyticsRow[] = [
+      { host: "juan.is-pinoy.dev", country: "PH", requests: 30 },
+    ];
+    await persistSnapshots(db, ["juan"], rows, "2026-05-28");
+    const calls = batch.mock.calls[0][0] as MockStmt[];
+    const clear = calls.find((s) => s.sql.startsWith("DELETE"))!;
+    expect(clear.sql).toBe(
+      "DELETE FROM visits_daily_by_country WHERE subdomain = ? AND date = ?"
+    );
+    expect(clear.bindings).toEqual(["juan", "2026-05-28"]);
+  });
+
+  // D1 runs a batch in order, so a clear placed after its inserts would wipe
+  // the very rows it was meant to make room for.
+  it("orders every clear before every insert", async () => {
+    const { db, batch } = makeD1Mock();
+    const rows: AnalyticsRow[] = [
+      { host: "juan.is-pinoy.dev", country: "PH", requests: 30 },
+      { host: "maria.is-pinoy.dev", country: "US", requests: 12 },
+    ];
+    await persistSnapshots(db, ["juan", "maria"], rows, "2026-05-28");
+    const calls = batch.mock.calls[0][0] as MockStmt[];
+    const clearAt = calls.flatMap((s, i) =>
+      s.sql.startsWith("DELETE") ? [i] : []
+    );
+    const insertAt = calls.flatMap((s, i) =>
+      s.sql.startsWith("INSERT") ? [i] : []
+    );
+    expect(clearAt).toHaveLength(2);
+    expect(Math.max(...clearAt)).toBeLessThan(Math.min(...insertAt));
+  });
+
+  // Only the pairs being written are cleared. Wiping the whole date would also
+  // drop a subdomain missing from a truncated response — unrecoverable, where a
+  // stale row is not.
+  it("does not clear subdomains absent from this response", async () => {
+    const { db, batch } = makeD1Mock();
+    const rows: AnalyticsRow[] = [
+      { host: "juan.is-pinoy.dev", country: "PH", requests: 30 },
+    ];
+    await persistSnapshots(db, ["juan", "maria"], rows, "2026-05-28");
+    const calls = batch.mock.calls[0][0] as MockStmt[];
+    const clears = calls.filter((s) => s.sql.startsWith("DELETE"));
+    expect(clears).toHaveLength(1);
+    expect(clears[0].bindings).toEqual(["juan", "2026-05-28"]);
   });
 
   it("computes correct total across countries", async () => {
@@ -62,8 +114,11 @@ describe("persistSnapshots", () => {
     ];
     await persistSnapshots(db, ["juan"], rows, "2026-05-28");
     const calls = batch.mock.calls[0][0] as MockStmt[];
-    const totalStmt = calls.find((s) =>
-      s.sql.includes("visits_daily") && !s.sql.includes("by_country")
+    const totalStmt = calls.find(
+      (s) =>
+        s.sql.startsWith("INSERT") &&
+        s.sql.includes("visits_daily") &&
+        !s.sql.includes("by_country")
     )!;
     expect(totalStmt.bindings).toEqual(["juan", "2026-05-28", 42]);
   });
@@ -78,8 +133,8 @@ describe("persistSnapshots", () => {
     await persistSnapshots(db, ["juan"], rows, "2026-05-28");
     expect(batch).toHaveBeenCalledOnce();
     const calls = batch.mock.calls[0][0] as MockStmt[];
-    // 1 total + 1 country = 2 (only juan)
-    expect(calls).toHaveLength(2);
+    // 1 clear + 1 total + 1 country = 3 (only juan)
+    expect(calls).toHaveLength(3);
   });
 
   it("uses correct INSERT OR REPLACE SQL for both tables", async () => {
@@ -89,8 +144,10 @@ describe("persistSnapshots", () => {
     ];
     await persistSnapshots(db, ["juan"], rows, "2026-05-28");
     const calls = batch.mock.calls[0][0] as MockStmt[];
-    const totalStmt = calls.find((s) => !s.sql.includes("by_country"))!;
-    const countryStmt = calls.find((s) => s.sql.includes("by_country"))!;
+    // Match on INSERT explicitly: the clear also names visits_daily_by_country.
+    const inserts = calls.filter((s) => s.sql.startsWith("INSERT"));
+    const totalStmt = inserts.find((s) => !s.sql.includes("by_country"))!;
+    const countryStmt = inserts.find((s) => s.sql.includes("by_country"))!;
     expect(totalStmt.sql).toBe(
       "INSERT OR REPLACE INTO visits_daily (subdomain, date, visits) VALUES (?, ?, ?)"
     );
