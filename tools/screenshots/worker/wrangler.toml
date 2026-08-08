@@ -1,0 +1,53 @@
+name = "portfolio-screenshots"
+main = "index.ts"
+compatibility_date = "2026-07-20"
+compatibility_flags = ["nodejs_compat"]
+account_id = "fc863d4a3faa0342c0f96ae1723e265a"
+workers_dev = false
+preview_urls = false
+
+[[routes]]
+pattern = "screenshots-api.is-pinoy.dev"
+custom_domain = true
+
+[browser]
+binding = "BROWSER"
+remote = true
+
+[[d1_databases]]
+binding = "SCREENSHOT_DB"
+database_name = "dashboard-db"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[[r2_buckets]]
+binding = "SCREENSHOT_BUCKET"
+bucket_name = "replace-with-existing-r2-bucket"
+
+[[queues.producers]]
+binding = "SCREENSHOT_QUEUE"
+queue = "portfolio-screenshots"
+
+[[queues.consumers]]
+queue = "portfolio-screenshots"
+max_batch_size = 5
+max_batch_timeout = 10
+max_retries = 3
+dead_letter_queue = "portfolio-screenshots-dlq"
+
+[triggers]
+crons = ["0 3 * * *"]
+
+[vars]
+SCREENSHOT_PUBLIC_BASE_URL = "https://replace-with-r2-public-host.invalid"
+PORTFOLIO_SCREENSHOT_REFRESH_DAYS = "30"
+PORTFOLIO_SCREENSHOT_MANUAL_COOLDOWN_HOURS = "24"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true

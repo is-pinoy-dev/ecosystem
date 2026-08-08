@@ -24,6 +24,10 @@ export type ReconcileStatement =
 export interface ReconcileResult {
   statements: ReconcileStatement[]
   counts: { inserted: number; updated: number; deleted: number; total: number }
+  screenshotCandidates: {
+    portfolioId: string
+    reason: "initial" | "scheduled_refresh"
+  }[]
 }
 
 // Pure reconciliation of the current table against a full registry snapshot.
@@ -33,19 +37,22 @@ export interface ReconcileResult {
 export function reconcile(
   existing: SubdomainRow[],
   incoming: IncomingDomain[],
-  syncedAt: Date,
+  syncedAt: Date
 ): ReconcileResult {
   const existingByName = new Map(existing.map((row) => [row.name, row]))
   const incomingNames = new Set(incoming.map((d) => d.subdomain))
 
   const statements: ReconcileStatement[] = []
+  const screenshotCandidates: ReconcileResult["screenshotCandidates"] = []
   let inserted = 0
   let updated = 0
 
   for (const domain of incoming) {
     const current = existingByName.get(domain.subdomain)
     const createdAt = domain.createdAt ? new Date(domain.createdAt) : null
-    const contentUpdatedAt = domain.updatedAt ? new Date(domain.updatedAt) : null
+    const contentUpdatedAt = domain.updatedAt
+      ? new Date(domain.updatedAt)
+      : null
     const syncFields = {
       syncStatus: domain.status,
       lastError:
@@ -63,6 +70,10 @@ export function reconcile(
           records: domain.records,
           features: domain.features ?? null,
           ...syncFields,
+          ...(domain.status === "synced" && {
+            screenshotStatus: "pending" as const,
+            screenshotRequestedAt: syncedAt,
+          }),
           // Prefer git-derived dates so a backfill of an old registry keeps
           // real registration dates instead of the insert time.
           ...(createdAt && { createdAt }),
@@ -71,6 +82,12 @@ export function reconcile(
           }),
         },
       })
+      if (domain.status === "synced") {
+        screenshotCandidates.push({
+          portfolioId: domain.subdomain,
+          reason: "initial",
+        })
+      }
       inserted++
       continue
     }
@@ -81,6 +98,8 @@ export function reconcile(
       JSON.stringify(current.records) !== JSON.stringify(domain.records) ||
       JSON.stringify(current.features ?? null) !==
         JSON.stringify(domain.features ?? null)
+    const becameActive =
+      current.syncStatus !== "synced" && domain.status === "synced"
 
     // Payload dates correct rows that were first inserted without git dates
     // (their timestamps are the backfill time, not registration or the last
@@ -108,9 +127,25 @@ export function reconcile(
           features: domain.features ?? null,
           updatedAt: contentUpdatedAt ?? syncedAt,
         }),
+        ...((becameActive ||
+          (contentChanged && domain.status === "synced")) && {
+          screenshotStatus: "pending" as const,
+          screenshotRequestedAt: syncedAt,
+        }),
       },
     })
     if (contentChanged) updated++
+    if (becameActive) {
+      screenshotCandidates.push({
+        portfolioId: domain.subdomain,
+        reason: "initial",
+      })
+    } else if (contentChanged && domain.status === "synced") {
+      screenshotCandidates.push({
+        portfolioId: domain.subdomain,
+        reason: "scheduled_refresh",
+      })
+    }
   }
 
   const toDelete = existing.filter((row) => !incomingNames.has(row.name))
@@ -120,6 +155,12 @@ export function reconcile(
 
   return {
     statements,
-    counts: { inserted, updated, deleted: toDelete.length, total: incoming.length },
+    counts: {
+      inserted,
+      updated,
+      deleted: toDelete.length,
+      total: incoming.length,
+    },
+    screenshotCandidates,
   }
 }

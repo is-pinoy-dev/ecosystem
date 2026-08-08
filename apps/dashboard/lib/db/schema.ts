@@ -3,6 +3,14 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
 export const SYNC_STATUSES = ["pending", "synced", "failed"] as const
 export type SyncStatus = (typeof SYNC_STATUSES)[number]
 
+export const SCREENSHOT_STATUSES = [
+  "pending",
+  "processing",
+  "ready",
+  "failed",
+] as const
+export type ScreenshotStatus = (typeof SCREENSHOT_STATUSES)[number]
+
 // Read model of the is-pinoy-dev/domains repo plus the outcome of the last
 // Cloudflare sync. Git stays the source of truth — every row here can be
 // rebuilt from the repo, so the table is deliberately a single flat snapshot.
@@ -36,8 +44,37 @@ export const subdomains = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),
+    screenshotStatus: text("screenshot_status", {
+      enum: SCREENSHOT_STATUSES,
+    })
+      .notNull()
+      .default("pending"),
+    screenshotKey: text("screenshot_key"),
+    screenshotUrl: text("screenshot_url"),
+    screenshotCapturedAt: integer("screenshot_captured_at", {
+      mode: "timestamp_ms",
+    }),
+    screenshotRequestedAt: integer("screenshot_requested_at", {
+      mode: "timestamp_ms",
+    }),
+    screenshotFailureReason: text("screenshot_failure_reason"),
+    screenshotRetryCount: integer("screenshot_retry_count")
+      .notNull()
+      .default(0),
+    screenshotVersion: integer("screenshot_version").notNull().default(0),
   },
-  (table) => [index("subdomains_owner_github_idx").on(table.ownerGithub)],
+  (table) => [
+    index("subdomains_owner_github_idx").on(table.ownerGithub),
+    index("subdomains_screenshot_status_idx").on(table.screenshotStatus),
+    index("subdomains_screenshot_captured_at_idx").on(
+      table.screenshotCapturedAt
+    ),
+    index("subdomains_screenshot_refresh_eligible_idx").on(
+      table.screenshotStatus,
+      table.screenshotCapturedAt,
+      table.screenshotRequestedAt
+    ),
+  ]
 )
 
 export type SubdomainRow = typeof subdomains.$inferSelect

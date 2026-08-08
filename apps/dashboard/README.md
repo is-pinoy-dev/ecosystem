@@ -106,3 +106,25 @@ Example workflow step for the domains repo, after the existing sync step:
 
 where `snapshot.json` is assembled from the `subdomains/*.json` files plus the
 sync results of the run.
+
+## Automated showcase screenshots
+
+Screenshot metadata is stored on the existing `subdomains` D1 row. After a
+synced registration is inserted, becomes active, or changes target records,
+the registry event schedules a bounded enqueue call after the response has
+completed. Screenshot generation never runs in the dashboard request.
+
+The dedicated Cloudflare Worker under `tools/screenshots` owns Browser Run,
+Queue, D1, and R2 bindings. Configure these server-only Vercel variables:
+
+```text
+SCREENSHOT_WORKER_URL=https://screenshots-api.is-pinoy.dev
+SCREENSHOT_WORKER_SECRET=<same secret as the Worker binding>
+PORTFOLIO_SCREENSHOT_MANUAL_COOLDOWN_HOURS=24
+```
+
+Owners can use **Refresh preview** on `/domains`. The action verifies the
+Auth.js GitHub login against `ownerGithub`, applies the cooldown, and sends only
+the portfolio ID and reason to the Worker. See
+[`tools/screenshots/README.md`](../../tools/screenshots/README.md) for
+Cloudflare provisioning and deployment.
