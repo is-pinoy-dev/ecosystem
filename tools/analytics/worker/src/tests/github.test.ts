@@ -63,9 +63,23 @@ describe("fetchSubdomains", () => {
     expect(await fetchSubdomains()).toEqual(["maria"])
   })
 
-  it("drops a subdomain whose record cannot be read, rather than assuming consent", async () => {
+  // Never treated as consent — but not dropped silently either. A rate-limited
+  // run used to store the day for whichever records happened to answer, and
+  // that partial day then looked complete to every later run.
+  it("aborts when a record cannot be read, rather than storing a partial day", async () => {
     mockRegistry(FILES, { juan: null, maria: {} })
-    expect(await fetchSubdomains()).toEqual(["maria"])
+    await expect(fetchSubdomains()).rejects.toThrow(
+      "Could not read 1/2 subdomain records (juan) — aborting"
+    )
+  })
+
+  it("names only the first few unreadable records", async () => {
+    const many = Array.from({ length: 7 }, (_, i) => ({
+      name: `s${i}.json`,
+      type: "file",
+    }))
+    mockRegistry(many)
+    await expect(fetchSubdomains()).rejects.toThrow(/Could not read 7\/7 .*, …/)
   })
 
   it("does not treat a non-false value as an opt-out", async () => {
@@ -81,6 +95,53 @@ describe("fetchSubdomains", () => {
       new Response("Not Found", { status: 404 })
     )
     await expect(fetchSubdomains()).rejects.toThrow("GitHub API error: 404")
+  })
+
+  // The failure this actually hits in production, so the message has to say
+  // what to do about it rather than just the status code.
+  it("names the missing token on an unauthenticated 403", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response("rate limited", { status: 403 })
+    )
+    await expect(fetchSubdomains()).rejects.toThrow(/403.*GITHUB_TOKEN/s)
+  })
+
+  it("does not blame the token when one was supplied", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response("forbidden", { status: 403 })
+    )
+    await expect(fetchSubdomains("tok")).rejects.toThrow(
+      "GitHub API error: 403"
+    )
+    await expect(fetchSubdomains("tok")).rejects.not.toThrow(/GITHUB_TOKEN/)
+  })
+
+  it("authenticates both the listing and the record reads", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) =>
+      String(input).includes("api.github.com")
+        ? new Response(JSON.stringify([{ name: "juan.json", type: "file" }]), {
+            status: 200,
+          })
+        : new Response("{}", { status: 200 })
+    )
+    await fetchSubdomains("tok")
+    expect(spy).toHaveBeenCalledTimes(2)
+    for (const [, init] of spy.mock.calls) {
+      const sent = (init as RequestInit).headers as Record<string, string>
+      expect(sent.Authorization).toBe("Bearer tok")
+    }
+  })
+
+  it("sends no Authorization header when there is no token", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify([]), { status: 200 })
+    )
+    await fetchSubdomains()
+    const sent = (spy.mock.calls[0][1] as RequestInit).headers as Record<
+      string,
+      string
+    >
+    expect(sent.Authorization).toBeUndefined()
   })
 
   it("returns empty array when directory has no .json files", async () => {
