@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { persistSnapshots } from "../db";
+import { latestStoredDate, persistSnapshots } from "../db";
 import type { AnalyticsRow } from "../types";
 
 interface MockStmt {
@@ -97,5 +97,32 @@ describe("persistSnapshots", () => {
     expect(countryStmt.sql).toBe(
       "INSERT OR REPLACE INTO visits_daily_by_country (subdomain, date, country, visits) VALUES (?, ?, ?, ?)"
     );
+  });
+});
+
+function makeFirstMock(row: { date: string | null } | null) {
+  const first = vi.fn().mockResolvedValue(row);
+  const db = {
+    prepare: (sql: string) => ({ sql, first }),
+  } as unknown as D1Database;
+  return { db, first };
+}
+
+describe("latestStoredDate", () => {
+  it("returns the stored maximum", async () => {
+    const { db } = makeFirstMock({ date: "2026-08-05" });
+    await expect(latestStoredDate(db)).resolves.toBe("2026-08-05");
+  });
+
+  // An empty table answers MAX(date) with one row whose column is NULL, not
+  // with no rows at all — both have to read as "nothing collected yet".
+  it("returns null when the column is NULL", async () => {
+    const { db } = makeFirstMock({ date: null });
+    await expect(latestStoredDate(db)).resolves.toBeNull();
+  });
+
+  it("returns null when there is no row", async () => {
+    const { db } = makeFirstMock(null);
+    await expect(latestStoredDate(db)).resolves.toBeNull();
   });
 });

@@ -38,3 +38,45 @@ jobs:
         run: pnpm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
+
+      # The cron reads zone traffic from Cloudflare's GraphQL Analytics API, so
+      # without these two the scheduled run throws on every invocation and the
+      # database stays empty. They are the Worker's *runtime* credentials and
+      # are unrelated to CF_WORKER_DEPLOY_TOKEN above, which only authenticates
+      # `wrangler deploy`.
+      #
+      # CF_API_TOKEN needs `Account Analytics: Read` plus `Zone Analytics: Read`
+      # on the is-pinoy.dev zone — no write scope of any kind.
+      #
+      # Kept here rather than in a manual `wrangler secret put` so rotating
+      # either one is a GitHub secret edit plus a re-run of this workflow, the
+      # same arrangement deploy-portfolio-proxy.yml uses.
+      #
+      # Runs after the deploy: `secret put` needs the script to already exist,
+      # which matters on a first deploy into a fresh account. Secrets outlive
+      # deploys, so re-running with the values unchanged is a no-op.
+      #
+      # `printf` rather than `echo` — a trailing newline would travel into the
+      # Authorization header and produce a 400 from an otherwise valid token.
+      #
+      # The "is it set?" guard lives in the script rather than a step-level
+      # `if:`. `secrets` is not an available context there, and referencing it
+      # is rejected when the workflow file is parsed — which fails the whole
+      # run before any job starts, rather than just skipping the step.
+      - name: Sync runtime secrets
+        working-directory: tools/analytics
+        run: |
+          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ZONE_ID" ]; then
+            echo "CF_API_TOKEN and/or CF_ZONE_ID are not set — skipping."
+            echo "The worker is deployed but its scheduled run will throw and"
+            echo "no visit data will be collected until both are configured."
+            exit 0
+          fi
+          printf '%s' "$CF_API_TOKEN" \
+            | pnpm exec wrangler secret put CF_API_TOKEN -c worker/wrangler.toml
+          printf '%s' "$CF_ZONE_ID" \
+            | pnpm exec wrangler secret put CF_ZONE_ID -c worker/wrangler.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
+          CF_API_TOKEN: ${{ secrets.CF_ECOSYSTEM_ANALYTICS_READ_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}

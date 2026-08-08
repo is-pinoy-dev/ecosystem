@@ -1,8 +1,6 @@
-import {
-  drizzle,
-  type SqliteRemoteDatabase,
-} from "drizzle-orm/sqlite-proxy"
+import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy"
 
+import { d1Query, type D1Config } from "./d1"
 import * as schema from "./schema"
 
 export type Db = SqliteRemoteDatabase<typeof schema>
@@ -10,12 +8,6 @@ export type Db = SqliteRemoteDatabase<typeof schema>
 // Cache the client on globalThis so dev-server hot reloads and route handlers
 // reuse one instance instead of rebuilding it per import.
 const globalForDb = globalThis as unknown as { __dashboardDb?: Db }
-
-interface D1Config {
-  accountId: string
-  databaseId: string
-  token: string
-}
 
 function readConfig(): Partial<D1Config> {
   return {
@@ -34,51 +26,17 @@ function requireConfig(): D1Config {
   const { accountId, databaseId, token } = readConfig()
   if (!accountId || !databaseId || !token) {
     throw new Error(
-      "D1 is not configured: set CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_D1_DATABASE_ID and CLOUDFLARE_D1_API_TOKEN",
+      "D1 is not configured: set CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_D1_DATABASE_ID and CLOUDFLARE_D1_API_TOKEN"
     )
   }
   return { accountId, databaseId, token }
-}
-
-interface D1QueryResponse {
-  success: boolean
-  errors?: { code?: number; message: string }[]
-  result?: { results?: Record<string, unknown>[]; success?: boolean }[]
-}
-
-// Run a single statement against the D1 HTTP API and return its rows as
-// objects keyed by column name.
-async function d1Fetch(
-  config: D1Config,
-  sql: string,
-  params: unknown[],
-): Promise<Record<string, unknown>[]> {
-  const res = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/d1/database/${config.databaseId}/query`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ sql, params }),
-    },
-  )
-
-  const body = (await res.json()) as D1QueryResponse
-  if (!res.ok || !body.success) {
-    const message =
-      body.errors?.map((e) => e.message).join("; ") || `HTTP ${res.status}`
-    throw new Error(`D1 query failed: ${message}`)
-  }
-  return body.result?.[0]?.results ?? []
 }
 
 // drizzle-orm/sqlite-proxy expects each row as an array of column values in
 // SELECT order. D1 returns objects; Object.values preserves that order.
 function toPositionalRows(
   rows: Record<string, unknown>[],
-  method: string,
+  method: string
 ): { rows: unknown[] } {
   const values = rows.map((row) => Object.values(row))
   if (method === "get") {
@@ -92,7 +50,7 @@ export function getDb(): Db {
     const config = requireConfig()
     globalForDb.__dashboardDb = drizzle(
       async (sql, params, method) => {
-        const rows = await d1Fetch(config, sql, params)
+        const rows = await d1Query(config, sql, params)
         return toPositionalRows(rows, method)
       },
       // Batch callback: the D1 HTTP API has no interactive transactions, so we
@@ -102,12 +60,12 @@ export function getDb(): Db {
       async (queries) => {
         const out: { rows: unknown[] }[] = []
         for (const query of queries) {
-          const rows = await d1Fetch(config, query.sql, query.params)
+          const rows = await d1Query(config, query.sql, query.params)
           out.push(toPositionalRows(rows, query.method))
         }
         return out
       },
-      { schema },
+      { schema }
     )
   }
   return globalForDb.__dashboardDb

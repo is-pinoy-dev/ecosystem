@@ -37,6 +37,8 @@ import {
   type SubdomainSaveResult,
 } from "@/app/(dashboard)/domains/actions"
 import { ProviderMark } from "@/components/provider-mark"
+import { VisitsPanel } from "@/components/visits-panel"
+import type { VisitsReport } from "@/lib/analytics"
 import {
   providerForRow,
   type DomainView,
@@ -52,6 +54,8 @@ interface Props {
   domains: DomainView[]
   /** Open settings pull requests keyed by subdomain. */
   pending: Record<string, PendingPRView>
+  /** Null when the analytics database is not configured for this deployment. */
+  visits: VisitsReport | null
 }
 
 /** Identity of one staged switch. */
@@ -84,7 +88,7 @@ export function syncLabel(status: DomainView["syncStatus"]): string {
  * confirmation. Git remains the source of truth, so while a pull request is open
  * that domain's switches are read-only and show what the pull request will apply.
  */
-export function DomainsManager({ domains, pending }: Props) {
+export function DomainsManager({ domains, pending, visits }: Props) {
   const [edits, setEdits] = useState<Record<string, boolean>>({})
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [results, setResults] = useState<SubdomainSaveResult[] | null>(null)
@@ -170,6 +174,7 @@ export function DomainsManager({ domains, pending }: Props) {
             key={domain.subdomain}
             domain={domain}
             pendingPR={pending[domain.subdomain] ?? null}
+            visits={visits}
             edits={edits}
             onSetEdit={setEdit}
           />
@@ -445,11 +450,13 @@ function SaveBar({
 function DomainCard({
   domain,
   pendingPR,
+  visits,
   edits,
   onSetEdit,
 }: {
   domain: DomainView
   pendingPR: PendingPRView | null
+  visits: VisitsReport | null
   edits: Record<string, boolean>
   onSetEdit: (key: string, value: boolean) => void
 }) {
@@ -574,6 +581,23 @@ function DomainCard({
           readOnly={pendingPR !== null}
           edits={edits}
           onSetEdit={onSetEdit}
+        />
+      ) : null}
+
+      {/* Reads the saved switch states, not the staged ones: the numbers below
+          describe traffic that has already been counted, so a switch flipped a
+          moment ago has not changed them and must not relabel them. */}
+      {domain.platform ? (
+        <VisitsPanel
+          visits={visits?.bySubdomain[domain.subdomain] ?? null}
+          through={visits?.through ?? null}
+          windowDays={visits?.windowDays ?? 0}
+          proxied={domain.platform.enabled}
+          enabled={
+            domain.platform.features.find(
+              (feature) => feature.id === "analytics"
+            )?.enabled ?? false
+          }
         />
       ) : null}
     </section>
