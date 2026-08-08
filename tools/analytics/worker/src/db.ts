@@ -19,8 +19,8 @@ export async function persistSnapshots(
   subdomains: string[],
   rows: AnalyticsRow[],
   date: string
-): Promise<void> {
-  if (rows.length === 0) return;
+): Promise<number> {
+  if (rows.length === 0) return 0;
 
   const allowed = new Set(subdomains);
 
@@ -35,7 +35,7 @@ export async function persistSnapshots(
     bySubdomain.set(subdomain, bucket);
   }
 
-  if (bySubdomain.size === 0) return;
+  if (bySubdomain.size === 0) return 0;
 
   const totalStmts: D1PreparedStatement[] = [];
   // Country rows are cleared for each (subdomain, date) before the fresh set is
@@ -84,4 +84,10 @@ export async function persistSnapshots(
   // Order matters: D1 runs a batch sequentially, so every clear has to land
   // before the inserts that repopulate those keys.
   await db.batch([...clearStmts, ...totalStmts, ...countryStmts]);
+
+  // The count the caller reports. A date can be fetched successfully and still
+  // store nothing — every hostname in the response may be the apex, or belong
+  // to a subdomain that opted out — and reporting the date as collected then
+  // claims data that does not exist.
+  return bySubdomain.size;
 }

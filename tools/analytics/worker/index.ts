@@ -66,11 +66,16 @@ export default {
     const failures: string[] = [];
     let expired = 0;
     let collected = 0;
+    // Counted apart from `collected` on purpose. A date can be fetched without
+    // error and store nothing, so "collected 7/30" was only ever a count of
+    // requests survived — it read as evidence that data had landed when it was
+    // not evidence of anything.
+    let written = 0;
 
     for (const date of dates) {
       try {
         const rows = await fetchAnalytics(env.CF_API_TOKEN, env.CF_ZONE_ID, date);
-        await persistSnapshots(env.ANALYTICS_DB, subdomains, rows, date);
+        written += await persistSnapshots(env.ANALYTICS_DB, subdomains, rows, date);
         collected++;
       } catch (error) {
         if (isBeyondRetention(error)) {
@@ -82,15 +87,25 @@ export default {
     }
 
     const expiredNote = expired > 0 ? `; ${expired} beyond zone retention` : "";
+    const summary = `Collected ${collected}/${dates.length} days, wrote ${written} subdomain-days${expiredNote}`;
 
     if (failures.length > 0) {
-      throw new Error(
-        `Collected ${collected}/${dates.length} days${expiredNote}; failed: ${failures.join("; ")}`
-      );
+      throw new Error(`${summary}; failed: ${failures.join("; ")}`);
     }
 
-    if (expired > 0) {
-      console.log(`Collected ${collected}/${dates.length} days${expiredNote}`);
+    // Every request succeeded and nothing was stored. Legitimate on a quiet
+    // zone, but it is also what a hostname-matching bug looks like, and the
+    // difference is invisible without saying so.
+    if (collected > 0 && written === 0) {
+      console.warn(
+        `${summary} — every response parsed but no hostname matched a ` +
+          `collectable subdomain. Expected only if no proxied subdomain had traffic.`
+      );
+      return;
+    }
+
+    if (expired > 0 || written > 0) {
+      console.log(summary);
     }
   },
 } satisfies ExportedHandler<Env>;

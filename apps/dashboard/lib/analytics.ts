@@ -75,6 +75,27 @@ export function hasAnalyticsDatabase(): boolean {
   return Boolean(accountId && databaseId && token)
 }
 
+/**
+ * Said once per process, not once per render.
+ *
+ * The panel renders nothing at all when this returns null, which makes "never
+ * configured", "not deployed yet" and "actually broken" look identical from the
+ * outside — there is no partial UI to give the game away. One line in the
+ * server log is the difference between a five-second answer and an afternoon.
+ * Once, because /domains is server-rendered on every request and a per-render
+ * warning would drown the log it is meant to help.
+ */
+let warnedUnconfigured = false
+
+function warnUnconfiguredOnce(missing: string[]): void {
+  if (warnedUnconfigured) return
+  warnedUnconfigured = true
+  console.warn(
+    `[analytics] visit totals disabled — missing ${missing.join(", ")}. ` +
+      `The Visits panel will not render until these are set on this deployment.`
+  )
+}
+
 function isoDate(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10)
 }
@@ -121,7 +142,16 @@ export async function getVisitsForSubdomains(
   windowDays: number = DEFAULT_WINDOW_DAYS
 ): Promise<VisitsReport | null> {
   const { accountId, databaseId, token } = readConfig()
-  if (!accountId || !databaseId || !token) return null
+  if (!accountId || !databaseId || !token) {
+    warnUnconfiguredOnce(
+      [
+        !accountId && "CLOUDFLARE_ACCOUNT_ID",
+        !token && "CLOUDFLARE_D1_API_TOKEN",
+        !databaseId && "CLOUDFLARE_ANALYTICS_D1_DATABASE_ID",
+      ].filter((name): name is string => typeof name === "string")
+    )
+    return null
+  }
   const config: D1Config = { accountId, databaseId, token }
 
   const empty: VisitsReport = { through: null, windowDays, bySubdomain: {} }

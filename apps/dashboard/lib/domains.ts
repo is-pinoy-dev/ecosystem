@@ -61,9 +61,35 @@ async function getSubdomainsFromDb(): Promise<RegistrySubdomain[]> {
 /** Every registered (non-destroyed) subdomain in the registry, sorted by name. */
 export async function getRegistrySubdomains(): Promise<RegistrySubdomain[]> {
   if (hasDatabase()) {
-    return getSubdomainsFromDb()
+    try {
+      return await getSubdomainsFromDb()
+    } catch (error) {
+      // A misconfigured database used to be worse than an absent one. With no
+      // credentials the listing quietly served from GitHub; with wrong ones —
+      // a token lacking `Account -> D1 -> Edit`, or one carrying a newline
+      // picked up from a paste — the query threw and took the whole page with
+      // it. The fallback exists precisely because git is the source of truth
+      // and D1 only a read model, so there is no reason a broken read model
+      // should be fatal when a missing one is not.
+      //
+      // Logged rather than swallowed: the page recovers, but silently serving
+      // the slower path forever is its own failure.
+      console.error(
+        "[domains] registry database unavailable, serving from GitHub instead",
+        error
+      )
+    }
   }
 
+  return getSubdomainsFromGitHub()
+}
+
+/**
+ * The registry as the public website reads it: one listing call plus one raw
+ * fetch per record. Slower and missing the sync metadata D1 carries, but it
+ * depends on nothing but the repo being public.
+ */
+async function getSubdomainsFromGitHub(): Promise<RegistrySubdomain[]> {
   let names: string[] = []
   try {
     const res = await fetch(
