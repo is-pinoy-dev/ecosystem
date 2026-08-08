@@ -38,10 +38,31 @@ export async function persistSnapshots(
   if (bySubdomain.size === 0) return;
 
   const totalStmts: D1PreparedStatement[] = [];
+  // Country rows are cleared for each (subdomain, date) before the fresh set is
+  // written. INSERT OR REPLACE only touches keys it is given, so a re-collected
+  // day that no longer reports a country would leave that country's old row
+  // behind — and the breakdown would then sum to more than the day's total it
+  // sits under. `visits_daily` needs no equivalent: it is one row per key, so
+  // replacing it is already complete.
+  //
+  // Scoped to the pairs actually being written rather than to the whole date.
+  // Deleting everything for a date and re-inserting would also clear a
+  // subdomain absent from this response, but a truncated or partial response
+  // would then destroy real history — and the GraphQL query has a row limit
+  // that makes that possible. Leaving a stale row is recoverable; deleting a
+  // real one is not.
+  const clearStmts: D1PreparedStatement[] = [];
   const countryStmts: D1PreparedStatement[] = [];
 
   for (const [subdomain, subRows] of bySubdomain) {
     const total = subRows.reduce((sum, r) => sum + r.requests, 0);
+    clearStmts.push(
+      db
+        .prepare(
+          "DELETE FROM visits_daily_by_country WHERE subdomain = ? AND date = ?"
+        )
+        .bind(subdomain, date)
+    );
     totalStmts.push(
       db
         .prepare(
@@ -60,5 +81,7 @@ export async function persistSnapshots(
     }
   }
 
-  await db.batch([...totalStmts, ...countryStmts]);
+  // Order matters: D1 runs a batch sequentially, so every clear has to land
+  // before the inserts that repopulate those keys.
+  await db.batch([...clearStmts, ...totalStmts, ...countryStmts]);
 }
