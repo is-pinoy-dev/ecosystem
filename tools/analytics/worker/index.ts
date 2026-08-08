@@ -7,6 +7,12 @@ export interface Env {
   ANALYTICS_DB: D1Database;
   CF_API_TOKEN: string;
   CF_ZONE_ID: string;
+  /**
+   * Optional in the type, effectively required in production: without it the
+   * registry listing is rate limited per shared Worker IP and 403s. See
+   * src/github.ts.
+   */
+  GITHUB_TOKEN?: string;
 }
 
 /**
@@ -32,7 +38,7 @@ export default {
     // registry says today, deliberately: a subdomain that switched analytics
     // off must not have history written for it by a backfill that happens to
     // run afterwards.
-    const subdomains = await fetchSubdomains();
+    const subdomains = await fetchSubdomains(env.GITHUB_TOKEN);
     if (subdomains.length === 0) {
       throw new Error("Empty subdomain list from GitHub — aborting to avoid data loss");
     }

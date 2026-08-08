@@ -58,9 +58,15 @@ change here needs to keep saying so.
 ## Opt-out
 
 `src/github.ts` lists `is-pinoy-dev/domains` and drops any subdomain whose
-record sets `features.analytics: false` **before** the write. A record that
-can't be read is dropped too: losing a day of one subdomain's numbers is
-recoverable, storing visits for someone who opted out is not.
+record sets `features.analytics: false` **before** the write.
+
+A record that can't be read is never treated as consent, but it is not dropped
+silently either — the whole run aborts. Dropping them individually meant a
+rate-limited run stored the day for whichever handful of records happened to
+answer, and since writes are keyed on the date and the backfill only looks at
+the newest date present, that partial day then looked complete to every later
+run. Aborting costs nothing: the writes are idempotent and the next run
+re-collects the date.
 
 The list is fetched once per invocation and reused for every date being
 collected, so a backfill applies today's opt-outs to the days it fills rather
@@ -86,20 +92,27 @@ days stay empty.
 
 ## Secrets
 
-Two GitHub **repository secrets** on `is-pinoy-dev/ecosystem`. The deploy
-workflow pushes both onto the Worker after deploying, so rotating either is a
+Three GitHub **repository secrets** on `is-pinoy-dev/ecosystem`. The deploy
+workflow pushes them onto the Worker after deploying, so rotating any is a
 secret edit plus a workflow re-run — no local wrangler.
 
 | Repository secret                   | Becomes        | Value                                                                                                 |
 | ----------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------- |
 | `CF_ECOSYSTEM_ANALYTICS_READ_TOKEN` | `CF_API_TOKEN` | Cloudflare API token, `Account Analytics: Read` + `Zone Analytics: Read`. No write scope of any kind. |
 | `CF_ZONE_ID`                        | `CF_ZONE_ID`   | The is-pinoy.dev zone id.                                                                             |
+| `CF_ECOSYSTEM_REGISTRY_READ_TOKEN`  | `GITHUB_TOKEN` | GitHub token with public read access, for the registry listing. Never writes.                         |
 
 `CF_WORKER_DEPLOY_TOKEN` is separate and only authenticates `wrangler deploy`.
 
-The sync step skips when either is absent, so the Worker deploys fine without
-them — it just collects nothing. **That is the failure mode to watch for:** the
-scheduled run throws, and nothing surfaces it except the Worker's logs.
+The third one is not optional in practice. GitHub rate limits unauthenticated
+REST calls to 60/hr **per IP**, and a Worker's egress address is shared across
+Cloudflare's pool — so the budget is usually already spent by someone else and
+the listing comes back `403`. With a token the limit is 5,000/hr against our own
+account, which one run a day nowhere near approaches.
+
+The sync step skips whatever is absent, so the Worker deploys fine without any
+of them — it just collects nothing. **That is the failure mode to watch for:**
+the scheduled run throws, and nothing surfaces it except the Worker's logs.
 
 ## Is collection healthy?
 
@@ -114,10 +127,15 @@ pnpm dlx wrangler d1 execute analytics-db --remote \
 | --------------------------- | ---------------------------------------------------------------------------------- |
 | `through` = yesterday       | Healthy.                                                                           |
 | `through` several days back | Runs are failing; the next success backfills up to 30 days. Check the Worker logs. |
-| `through` NULL, 0 rows      | Nothing has ever been collected — almost always the two secrets above.             |
+| `through` NULL, 0 rows      | Nothing has ever been collected — almost always the secrets above.                 |
 
 Observability is on (`wrangler.toml`), so failures appear in the Worker's logs
-with the message naming which dates failed and why.
+with the message naming which dates failed and why. Two worth recognising:
+
+| Message                                | Cause                                                                                                                                                                                   |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GitHub API error: 403`                | The registry listing is being rate limited. Set `CF_ECOSYSTEM_REGISTRY_READ_TOKEN` and re-run the deploy workflow.                                                                      |
+| `Could not read N/M subdomain records` | Some record files did not answer. The run aborted on purpose rather than storing a day for only the subdomains that did — usually the same rate limiting, and it clears with the token. |
 
 Worth adding a Cloudflare notification on Worker errors: a cron that throws is
 otherwise completely silent.

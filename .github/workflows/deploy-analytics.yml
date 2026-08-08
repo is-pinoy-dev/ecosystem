@@ -48,6 +48,12 @@ jobs:
       # CF_API_TOKEN needs `Account Analytics: Read` plus `Zone Analytics: Read`
       # on the is-pinoy.dev zone — no write scope of any kind.
       #
+      # GITHUB_TOKEN reads the public registry listing. GitHub rate limits
+      # unauthenticated REST calls to 60/hr per IP and a Worker's egress address
+      # is shared across Cloudflare's pool, so without it the listing 403s and
+      # nothing is collected. A fine-grained token with public read access is
+      # enough; it never writes.
+      #
       # Kept here rather than in a manual `wrangler secret put` so rotating
       # either one is a GitHub secret edit plus a re-run of this workflow, the
       # same arrangement deploy-portfolio-proxy.yml uses.
@@ -76,7 +82,16 @@ jobs:
             | pnpm exec wrangler secret put CF_API_TOKEN -c worker/wrangler.toml
           printf '%s' "$CF_ZONE_ID" \
             | pnpm exec wrangler secret put CF_ZONE_ID -c worker/wrangler.toml
+          if [ -n "$REGISTRY_READ_TOKEN" ]; then
+            printf '%s' "$REGISTRY_READ_TOKEN" \
+              | pnpm exec wrangler secret put GITHUB_TOKEN -c worker/wrangler.toml
+          else
+            echo "CF_ECOSYSTEM_REGISTRY_READ_TOKEN is not set — the worker will"
+            echo "read the registry unauthenticated and is likely to be rate"
+            echo "limited (403) on every run."
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
           CF_API_TOKEN: ${{ secrets.CF_ECOSYSTEM_ANALYTICS_READ_TOKEN }}
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          REGISTRY_READ_TOKEN: ${{ secrets.CF_ECOSYSTEM_REGISTRY_READ_TOKEN }}
