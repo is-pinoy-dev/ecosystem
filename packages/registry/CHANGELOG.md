@@ -1,5 +1,13 @@
 # @is-pinoy-dev/registry
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [41fb09a]
+  - @is-pinoy-dev/schemas@1.5.1
+  - @is-pinoy-dev/validate@1.1.1
+
 ## 0.3.0
 
 ### Minor Changes

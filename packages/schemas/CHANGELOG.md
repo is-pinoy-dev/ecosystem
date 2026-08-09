@@ -1,5 +1,11 @@
 # @is-pinoy-dev/schemas
 
+## 1.5.1
+
+### Patch Changes
+
+- 41fb09a: Add Bento, Noir, and Solar to the supported hosted portfolio templates.
+
 ## 1.5.0
 
 ### Minor Changes

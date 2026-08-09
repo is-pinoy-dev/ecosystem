@@ -1,5 +1,12 @@
 # @is-pinoy-dev/validate
 
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [41fb09a]
+  - @is-pinoy-dev/schemas@1.5.1
+
 ## 1.1.0
 
 ### Minor Changes
