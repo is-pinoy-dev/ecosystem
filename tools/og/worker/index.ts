@@ -4,6 +4,11 @@ import * as build from "../build/server"
 import { Resvg, initWasm } from "@resvg/resvg-wasm"
 import { buildSvg, type OgData } from "./generate"
 import { resolvePortfolioOgImage, resolveRequestedSubdomain } from "./preview"
+import {
+  isSelfGeneratedOgImage,
+  resolveScreenshotUrl,
+  type ScreenshotEnv,
+} from "./screenshot"
 // @ts-ignore - resvg.wasm is copied to worker/ at build time and pre-compiled by wrangler
 import resvgWasmModule from "./resvg.wasm"
 
@@ -30,7 +35,7 @@ const IMAGE_CACHE_TTL = 300
 const PREVIEW_CACHE_TTL = 3600
 const MAX_PREVIEW_BYTES = 4 * 1024 * 1024
 
-export interface Env {
+export interface Env extends ScreenshotEnv {
   ASSETS: Fetcher
 }
 
@@ -135,17 +140,52 @@ async function fetchGithubAvatar(username: string): Promise<ImageAsset | null> {
   }
 }
 
+/**
+ * Pull a stored capture down so it can be composited into the card. It comes
+ * from our own bucket, but it is still a fetch that can fail or return
+ * something unexpected, and it has to be decoded in memory — so anything that
+ * is not a sanely sized image collapses to null and the branded card is drawn
+ * instead.
+ */
+async function fetchScreenshot(url: string): Promise<ImageAsset | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: "image/*" },
+      redirect: "follow",
+    })
+
+    const contentType = res.headers.get("content-type")?.split(";")[0] ?? ""
+    if (!res.ok || !contentType.startsWith("image/")) return null
+
+    const buffer = await res.arrayBuffer()
+    if (buffer.byteLength > MAX_PREVIEW_BYTES) return null
+
+    return { buffer, contentType }
+  } catch {
+    return null
+  }
+}
+
 async function generateOgPng(
   ogData: OgData,
   geistFont: ArrayBuffer,
   backgroundImage: ArrayBuffer,
-  avatarImage: ImageAsset | null
+  avatarImage: ImageAsset | null,
+  screenshotImage: ImageAsset | null
 ): Promise<Uint8Array> {
   const backgroundDataUri = `data:image/jpeg;base64,${arrayBufferToBase64(backgroundImage)}`
   const avatarDataUri = avatarImage
     ? `data:${avatarImage.contentType};base64,${arrayBufferToBase64(avatarImage.buffer)}`
     : undefined
-  const svg = buildSvg(ogData, backgroundDataUri, avatarDataUri)
+  const screenshotDataUri = screenshotImage
+    ? `data:${screenshotImage.contentType};base64,${arrayBufferToBase64(screenshotImage.buffer)}`
+    : undefined
+  const svg = buildSvg(
+    ogData,
+    backgroundDataUri,
+    avatarDataUri,
+    screenshotDataUri
+  )
   const resvg = new Resvg(svg, {
     fitTo: { mode: "width", value: 1200 },
     font: {
@@ -170,20 +210,25 @@ async function handleImageRequest(
   }
 
   await ensureWasm()
-  const [ogData, geistFont, backgroundImage] = await Promise.all([
-    fetchSubdomainData(subdomain, ctx),
-    loadAsset(env, url.origin, "Geist-SemiBold.ttf"),
-    loadAsset(env, url.origin, "subdomain-og-background.jpg"),
+  const [ogData, geistFont, backgroundImage, screenshotUrl] = await Promise.all(
+    [
+      fetchSubdomainData(subdomain, ctx),
+      loadAsset(env, url.origin, "Geist-SemiBold.ttf"),
+      loadAsset(env, url.origin, "subdomain-og-background.jpg"),
+      resolveScreenshotUrl(subdomain, env),
+    ]
+  )
+  const [avatarImage, screenshotImage] = await Promise.all([
+    ogData.found ? fetchGithubAvatar(ogData.owner) : null,
+    ogData.found && screenshotUrl ? fetchScreenshot(screenshotUrl) : null,
   ])
-  const avatarImage = ogData.found
-    ? await fetchGithubAvatar(ogData.owner)
-    : null
 
   const png = await generateOgPng(
     ogData,
     geistFont,
     backgroundImage,
-    avatarImage
+    avatarImage,
+    screenshotImage
   )
   const response = new Response(png, {
     headers: {
@@ -234,11 +279,16 @@ async function cachedPortfolioOgImage(
 }
 
 /**
- * The showcase's second-choice preview: the portfolio's own og:image, streamed
- * through this Worker rather than redirected to. Proxying keeps the response an
- * image — a registered owner cannot point the URL at a page and have our domain
- * hand visitors off to it — and hides the visitor from the third-party host.
- * Anything short of a usable image falls through to the generated card.
+ * The picture of a portfolio, ranked: the capture we took of it, then the
+ * og:image it declares for itself, then the card this Worker generates. The
+ * showcase and the landing page both render whatever this returns, so the
+ * ranking is applied once here rather than per surface.
+ *
+ * Every rung is streamed through this Worker rather than redirected to.
+ * Proxying keeps the response an image — a registered owner cannot point the
+ * URL at a page and have our domain hand visitors off to it — and hides the
+ * visitor from the third-party host. Anything short of a usable image falls
+ * through to the next rung.
  */
 async function handlePreviewRequest(
   subdomain: string,
@@ -246,9 +296,31 @@ async function handlePreviewRequest(
   env: Env,
   ctx: ExecutionContext
 ): Promise<Response> {
+  // Rung one: the capture the screenshot Worker took of this portfolio. It is
+  // our own object on our own CDN, already immutable and long-cached there, so
+  // it is streamed straight back rather than re-resolved on every request.
+  const screenshotUrl = await resolveScreenshotUrl(subdomain, env)
+  if (screenshotUrl) {
+    const capture = await fetch(screenshotUrl, {
+      headers: { Accept: "image/*" },
+      redirect: "follow",
+    }).catch(() => null)
+    const captureType = capture?.headers.get("content-type")?.split(";")[0]
+    if (capture?.ok && capture.body && captureType?.startsWith("image/")) {
+      return new Response(capture.body, {
+        headers: {
+          "Content-Type": captureType,
+          "Cache-Control": `public, max-age=${PREVIEW_CACHE_TTL}`,
+        },
+      })
+    }
+  }
+
   const ogImage = await cachedPortfolioOgImage(subdomain, ctx)
 
-  if (ogImage) {
+  // A portfolio we host declares this endpoint's own last rung as its og:image.
+  // Following that would proxy the generated card to itself over the network.
+  if (ogImage && !isSelfGeneratedOgImage(ogImage)) {
     try {
       const upstream = await fetch(ogImage, {
         headers: { Accept: "image/*" },

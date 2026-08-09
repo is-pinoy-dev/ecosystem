@@ -19,6 +19,18 @@ zone_name = "is-pinoy.dev"
 pattern = "*.is-pinoy.dev/_tools/og*"
 zone_name = "is-pinoy.dev"
 
+# Read-only here: the screenshot Worker owns every write to these rows. This
+# binding only answers "is there a stored capture for this portfolio, and under
+# which key" — the version in the key means it cannot be derived without asking.
+[[d1_databases]]
+binding = "SCREENSHOT_DB"
+database_name = "dashboard-db"
+database_id = "58109557-f2e5-4dd3-8722-5fbea0e20dfc"
+
+[vars]
+# Must match tools/screenshots — the bucket's public origin.
+SCREENSHOT_PUBLIC_BASE_URL = "https://cdn.is-pinoy.dev"
+
 [observability]
 enabled = false
 head_sampling_rate = 1
