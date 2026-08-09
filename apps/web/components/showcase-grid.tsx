@@ -12,6 +12,14 @@ import {
   type ShowcasePreviewStatus,
 } from "@/lib/showcase-preview"
 
+/**
+ * Every preview is framed at the OG card's 1200x630. The showcase grid and the
+ * landing section render the same images from the same endpoint, so they crop
+ * them the same way — a preview must not change shape depending on which page
+ * it is seen on.
+ */
+const PREVIEW_FRAME = "aspect-[1200/630]"
+
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 interface SubdomainEntry extends RegisteredSubdomain {
@@ -61,7 +69,9 @@ function ShowcaseCard({
     >
       <Card className="h-full overflow-hidden bg-card py-0 transition-colors duration-150 group-hover:border-accent/50">
         {/* Preview */}
-        <div className="relative aspect-[16/10] overflow-hidden border-b border-border bg-muted">
+        <div
+          className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted`}
+        >
           <ShowcaseCardImage
             screenshotUrl={entry.screenshotUrl}
             screenshotStatus={entry.screenshotStatus}
@@ -111,7 +121,9 @@ function CardSkeleton() {
   return (
     <div className="overflow-hidden border border-border bg-card">
       {/* Image area — slightly lighter than bg-card so the pulse is visible */}
-      <Skeleton className="aspect-[16/10] w-full border-b border-border bg-muted" />
+      <Skeleton
+        className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted`}
+      />
       <div className="flex flex-col p-0">
         <div className="flex flex-col gap-2 px-4 pt-4 pb-3">
           <Skeleton className="h-2.5 w-20" />
@@ -171,7 +183,10 @@ export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
   )
 }
 
-// ─── Landing highlights (asymmetric featured + secondary) ────────────────────
+// ─── Landing highlights ──────────────────────────────────────────────────────
+
+/** How many entries the landing section shows. */
+const HIGHLIGHT_COUNT = 3
 
 function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
   return (
@@ -191,13 +206,7 @@ function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
   )
 }
 
-function HighlightCard({
-  entry,
-  previewClassName,
-}: {
-  entry: SubdomainEntry
-  previewClassName: string
-}) {
+function HighlightCard({ entry }: { entry: SubdomainEntry }) {
   return (
     <a
       href={`https://${entry.subdomain}.is-pinoy.dev`}
@@ -206,7 +215,7 @@ function HighlightCard({
       className="group block border border-border no-underline transition-colors duration-[140ms] hover:border-accent/60 [&:hover_.view-site]:underline"
     >
       <div
-        className={`relative overflow-hidden border-b border-border bg-muted ${previewClassName}`}
+        className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted`}
       >
         <ShowcaseCardImage
           screenshotUrl={entry.screenshotUrl}
@@ -220,15 +229,11 @@ function HighlightCard({
   )
 }
 
-function HighlightCardSkeleton({
-  previewClassName,
-}: {
-  previewClassName: string
-}) {
+function HighlightCardSkeleton() {
   return (
     <div className="border border-border">
       <Skeleton
-        className={`w-full border-b border-border bg-muted ${previewClassName}`}
+        className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted`}
       />
       <div className="flex items-center justify-between gap-3 bg-card px-3.5 py-3">
         <div className="flex min-w-0 flex-col gap-2">
@@ -241,78 +246,54 @@ function HighlightCardSkeleton({
   )
 }
 
+/** One row of equal cards, matching the showcase grid's own columns. */
+const HIGHLIGHT_ROW = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6"
+
 export function ShowcaseHighlightsSkeleton() {
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.18fr_0.92fr] lg:gap-6">
-      <HighlightCardSkeleton previewClassName="aspect-video lg:aspect-auto lg:h-[300px]" />
-      <div className="flex flex-col gap-4">
-        <HighlightCardSkeleton previewClassName="aspect-video lg:aspect-auto lg:h-32" />
-        <HighlightCardSkeleton previewClassName="aspect-video lg:aspect-auto lg:h-32" />
-      </div>
+    <div className={HIGHLIGHT_ROW}>
+      {Array.from({ length: HIGHLIGHT_COUNT }).map((_, i) => (
+        <HighlightCardSkeleton key={i} />
+      ))}
     </div>
   )
 }
 
 export async function ShowcaseHighlights() {
-  const entries = await fetchAllSubdomains()
+  // Registry order, unmodified — the same entries the showcase grid leads with,
+  // in the same sequence. Every card now resolves to a real preview through the
+  // same ranked endpoint, so there is nothing left to reshuffle around: sorting
+  // by which entries happened to have a stored capture only made the landing
+  // page disagree with /showcase about what was newest.
+  const highlights = await fetchAllSubdomains(HIGHLIGHT_COUNT)
 
-  if (entries.length === 0) {
+  if (highlights.length === 0) {
     return (
-      <div className="grid gap-4 lg:grid-cols-[1.18fr_0.92fr] lg:gap-6">
-        <div className="flex aspect-video items-center justify-center border border-border bg-card p-8 text-center lg:aspect-auto lg:h-[380px]">
-          <div>
-            <p className="m-0 font-mono text-xs tracking-[0.1em] text-muted-foreground uppercase">
-              No sites yet
-            </p>
-            <a
-              href="https://docs.is-pinoy.dev/guides"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-block text-[13px] font-semibold text-accent no-underline hover:underline"
-            >
-              Claim the first subdomain →
-            </a>
-          </div>
-        </div>
-        <div className="flex flex-col gap-4">
-          <div className="aspect-video border border-border bg-card lg:aspect-auto lg:h-32" />
-          <div className="aspect-video border border-border bg-card lg:aspect-auto lg:h-32" />
+      <div
+        className={`flex ${PREVIEW_FRAME} items-center justify-center border border-border bg-card p-8 text-center`}
+      >
+        <div>
+          <p className="m-0 font-mono text-xs tracking-[0.1em] text-muted-foreground uppercase">
+            No sites yet
+          </p>
+          <a
+            href="https://docs.is-pinoy.dev/guides"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-block text-[13px] font-semibold text-accent no-underline hover:underline"
+          >
+            Claim the first subdomain →
+          </a>
         </div>
       </div>
     )
   }
 
-  // Prefer entries with a stored screenshot so the featured slot has the
-  // strongest preview; secondary slots then favor a different owner so the
-  // row doesn't visually repeat the featured site.
-  const withImage = entries.filter((e) => e.screenshotUrl)
-  const withoutImage = entries.filter((e) => !e.screenshotUrl)
-  const ordered = [...withImage, ...withoutImage]
-  const featured = ordered[0]!
-  const secondary = ordered
-    .slice(1)
-    .filter((e) => e.owner.github !== featured.owner.github)
-  const fallbackSecondary = ordered.slice(1)
-  const pool = secondary.length >= 2 ? secondary : fallbackSecondary
-  const secondaryEntries = pool.slice(0, 2)
-
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.18fr_0.92fr] lg:gap-6">
-      <HighlightCard
-        entry={featured}
-        previewClassName="aspect-video lg:aspect-auto lg:h-[300px]"
-      />
-      {secondaryEntries.length > 0 && (
-        <div className="flex flex-col gap-4">
-          {secondaryEntries.map((entry) => (
-            <HighlightCard
-              key={entry.subdomain}
-              entry={entry}
-              previewClassName="aspect-video lg:aspect-auto lg:h-32"
-            />
-          ))}
-        </div>
-      )}
+    <div className={HIGHLIGHT_ROW}>
+      {highlights.map((entry) => (
+        <HighlightCard key={entry.subdomain} entry={entry} />
+      ))}
     </div>
   )
 }
