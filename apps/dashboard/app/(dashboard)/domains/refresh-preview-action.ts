@@ -94,6 +94,7 @@ export async function refreshPortfolioPreview(
       { portfolioId: portfolio.name, reason: "manual_refresh" },
     ])
     revalidatePath("/domains")
+    revalidatePath(`/domains/${portfolio.name}`)
     return { ok: true, message: "Updating preview…" }
   } catch (error) {
     if (error instanceof ScreenshotWorkerError) {

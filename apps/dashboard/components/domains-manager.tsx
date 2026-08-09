@@ -42,13 +42,9 @@ import type { VisitsReport } from "@/lib/analytics"
 import {
   providerForRow,
   type DomainView,
+  type PendingPRView,
   type PlatformView,
 } from "@/lib/domain-view"
-
-export interface PendingPRView {
-  url: string
-  number: number
-}
 
 interface Props {
   domains: DomainView[]
@@ -56,6 +52,8 @@ interface Props {
   pending: Record<string, PendingPRView>
   /** Null when the analytics database is not configured for this deployment. */
   visits: VisitsReport | null
+  /** Detail pages already render the domain identity and primary actions. */
+  detail?: boolean
 }
 
 /** Identity of one staged switch. */
@@ -88,7 +86,12 @@ export function syncLabel(status: DomainView["syncStatus"]): string {
  * confirmation. Git remains the source of truth, so while a pull request is open
  * that domain's switches are read-only and show what the pull request will apply.
  */
-export function DomainsManager({ domains, pending, visits }: Props) {
+export function DomainsManager({
+  domains,
+  pending,
+  visits,
+  detail = false,
+}: Props) {
   const [edits, setEdits] = useState<Record<string, boolean>>({})
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [results, setResults] = useState<SubdomainSaveResult[] | null>(null)
@@ -177,6 +180,7 @@ export function DomainsManager({ domains, pending, visits }: Props) {
             visits={visits}
             edits={edits}
             onSetEdit={setEdit}
+            showIdentity={!detail}
           />
         ))}
       </div>
@@ -453,12 +457,14 @@ function DomainCard({
   visits,
   edits,
   onSetEdit,
+  showIdentity,
 }: {
   domain: DomainView
   pendingPR: PendingPRView | null
   visits: VisitsReport | null
   edits: Record<string, boolean>
   onSetEdit: (key: string, value: boolean) => void
+  showIdentity: boolean
 }) {
   const meta = [
     domain.registered && `Registered ${domain.registered}`,
@@ -467,55 +473,77 @@ function DomainCard({
 
   return (
     <section className="flex flex-col border border-border bg-card">
-      <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border px-4 py-3">
-        <span className="flex min-w-0 items-center gap-3">
-          <span
-            className="flex size-8 shrink-0 items-center justify-center border border-border bg-background text-foreground"
-            title={domain.provider?.name}
-          >
-            {domain.provider ? (
-              <ProviderMark provider={domain.provider} />
-            ) : (
-              <StatusIndicator tone={syncTone(domain.syncStatus)} />
-            )}
+      {showIdentity ? (
+        <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border px-4 py-3">
+          <span className="flex min-w-0 items-center gap-3">
+            <span
+              className="flex size-8 shrink-0 items-center justify-center border border-border bg-background text-foreground"
+              title={domain.provider?.name}
+            >
+              {domain.provider ? (
+                <ProviderMark provider={domain.provider} />
+              ) : (
+                <StatusIndicator tone={syncTone(domain.syncStatus)} />
+              )}
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <a
+                href={`https://${domain.fqdn}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate font-mono text-sm font-semibold text-foreground no-underline hover:text-accent hover:underline"
+              >
+                {domain.fqdn}
+              </a>
+              <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <StatusIndicator
+                  tone={syncTone(domain.syncStatus)}
+                  className="size-1.5"
+                />
+                {syncLabel(domain.syncStatus)}
+                {domain.provider ? ` · ${domain.provider.name}` : null}
+              </span>
+            </span>
           </span>
-          <span className="flex min-w-0 flex-col">
+
+          <span className="flex flex-1 flex-wrap items-center justify-end gap-x-4 gap-y-1">
+            {meta.length > 0 && (
+              <span className="text-[11px] text-muted-foreground">
+                {meta.join(" · ")}
+              </span>
+            )}
             <a
-              href={`https://${domain.fqdn}`}
+              href={domain.recordUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="truncate font-mono text-sm font-semibold text-foreground no-underline hover:text-accent hover:underline"
+              className="inline-flex items-center gap-1 text-[13px] font-medium text-accent no-underline hover:underline"
             >
-              {domain.fqdn}
+              View record
+              <ArrowUpRight className="size-3.5" aria-hidden="true" />
             </a>
-            <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <StatusIndicator
-                tone={syncTone(domain.syncStatus)}
-                className="size-1.5"
-              />
-              {syncLabel(domain.syncStatus)}
-              {domain.provider ? ` · ${domain.provider.name}` : null}
+          </span>
+        </header>
+      ) : (
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <h2 className="m-0 text-sm font-semibold text-foreground">
+              DNS records
+            </h2>
+            <span className="text-[11px] text-muted-foreground">
+              The registry entries currently serving this address.
             </span>
           </span>
-        </span>
-
-        <span className="flex flex-1 flex-wrap items-center justify-end gap-x-4 gap-y-1">
-          {meta.length > 0 && (
-            <span className="text-[11px] text-muted-foreground">
-              {meta.join(" · ")}
-            </span>
-          )}
           <a
             href={domain.recordUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[13px] font-medium text-accent no-underline hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-medium text-accent no-underline hover:underline"
           >
-            View record
+            View source
             <ArrowUpRight className="size-3.5" aria-hidden="true" />
           </a>
-        </span>
-      </header>
+        </header>
+      )}
 
       {pendingPR ? (
         <p className="m-0 flex flex-wrap items-center gap-x-1.5 gap-y-1 border-b border-border bg-muted/40 px-4 py-2 text-[11px] text-muted-foreground">
@@ -550,7 +578,7 @@ function DomainCard({
               <Badge variant="secondary" className="w-16 justify-center">
                 {row.type}
               </Badge>
-              <span className="flex min-w-0 flex-1 items-center gap-2">
+              <span className="flex min-w-0 flex-1 items-center gap-2 max-sm:basis-[calc(100%-5rem)]">
                 {rowProvider ? (
                   <ProviderMark
                     provider={rowProvider}
@@ -564,7 +592,7 @@ function DomainCard({
               {row.meta.map((item) => (
                 <span
                   key={item}
-                  className="font-mono text-[11px] text-muted-foreground"
+                  className="font-mono text-[11px] text-muted-foreground max-sm:ml-20"
                 >
                   {item}
                 </span>

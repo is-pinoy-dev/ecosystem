@@ -92,7 +92,9 @@ export interface PlatformView {
 export interface DomainView {
   subdomain: string
   fqdn: string
+  siteUrl: string
   recordUrl: string
+  recordEditUrl: string
   syncStatus: RegistrySubdomain["syncStatus"]
   lastError: string | null
   /** Preformatted on the server so the client renders no locale-dependent text. */
@@ -104,10 +106,30 @@ export interface DomainView {
   platform: PlatformView | null
 }
 
+export interface PendingPRView {
+  url: string
+  number: number
+}
+
+/** The record that explains where browser traffic is routed. */
+export function primaryRouteFor(
+  domain: Pick<DomainView, "records">
+): RecordRowView | undefined {
+  return (
+    domain.records.find((record) => record.type === "CNAME") ??
+    domain.records.find((record) => record.type === "A") ??
+    domain.records[0]
+  )
+}
+
 const DOMAINS_REPO_URL = "https://github.com/is-pinoy-dev/domains"
 
 export function recordFileUrl(subdomain: string) {
   return `${DOMAINS_REPO_URL}/blob/main/subdomains/${subdomain}.json`
+}
+
+export function recordEditUrl(subdomain: string) {
+  return `${DOMAINS_REPO_URL}/edit/main/subdomains/${subdomain}.json`
 }
 
 /**
@@ -149,6 +171,7 @@ function formatDate(date: Date | null | undefined): string | null {
 }
 
 export function toDomainView(domain: RegistrySubdomain): DomainView {
+  const fqdn = `${domain.subdomain}.is-pinoy.dev`
   const records: RecordRowView[] = Object.entries(domain.records).map(
     ([type, value]) => {
       const parsed = parseRecordValue(value)
@@ -175,9 +198,11 @@ export function toDomainView(domain: RegistrySubdomain): DomainView {
 
   return {
     subdomain: domain.subdomain,
-    fqdn: `${domain.subdomain}.is-pinoy.dev`,
+    fqdn,
+    siteUrl: `https://${fqdn}`,
     platform: toPlatformView(domain),
     recordUrl: recordFileUrl(domain.subdomain),
+    recordEditUrl: recordEditUrl(domain.subdomain),
     syncStatus: domain.syncStatus,
     lastError: domain.lastError ?? null,
     registered: formatDate(domain.createdAt),

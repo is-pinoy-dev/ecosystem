@@ -212,6 +212,12 @@ export async function saveSettings(
     )
   }
 
-  if (results.some((r) => r.ok)) revalidatePath("/domains")
+  const saved = results.filter((result) => result.ok)
+  if (saved.length > 0) {
+    revalidatePath("/domains")
+    for (const result of saved) {
+      revalidatePath(`/domains/${result.subdomain}`)
+    }
+  }
   return { results }
 }
