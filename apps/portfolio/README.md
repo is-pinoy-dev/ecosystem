@@ -25,8 +25,44 @@ juan.is-pinoy.dev
                       no file, or no `portfolio` block → 404
   → lib/github.ts     fetches profile, repos, README (ISR-cached)
   → lib/parse.ts      sanitizes the README to safe HTML
+  → lib/seo.ts        derives the title, description, canonical, icons,
+                      theme color and Schema.org graph from that same data
   → templates/        renders the chosen template + theme
 ```
+
+## SEO, icons, and the rest of the site furniture
+
+A claimed portfolio is somebody's actual homepage, so it ships what a homepage
+ships. Everything below is derived from the one `PortfolioData` the templates
+render — there is no second copy of the owner's name or bio to fall out of sync.
+
+| Surface | Claimed subdomain | Renderer host / `?preview=` |
+| --- | --- | --- |
+| `robots.txt` | `Allow: /`, sitemap + host | `Disallow: /` |
+| `sitemap.xml` | the one URL, `lastmod` pinned to the ISR window | empty |
+| `manifest.webmanifest` | installable, owner's name/icon/colors | brand, `display: browser` |
+| `<link rel=icon>` | the owner's GitHub avatar at 32/96/192/180 | the brand marks |
+| `robots` meta | `index, follow` + `max-image-preview:large` | `noindex, nofollow` |
+| `<link rel=canonical>` | `https://<label>.is-pinoy.dev` | none |
+| `theme-color` / `color-scheme` | the template's own background | same |
+| Schema.org JSON-LD | `WebSite` + `ProfilePage` + `Person` + projects | none |
+
+Two rules hold the whole table up:
+
+- **Only a claimed subdomain is a real site.** A preview renders an arbitrary
+  GitHub login on our host, and `PORTFOLIO_SPIKE_*` is a demo. Both are the same
+  content at an address that isn't its home — the textbook duplicate a canonical
+  tag exists to prevent — so neither gets a canonical, structured data, an
+  install manifest, or a place in the index.
+- **The chrome matches the design that is about to paint.** `theme-color` and
+  the manifest's splash colors come from `backgroundFor()`, which mirrors
+  `themes.css` / `designer-themes.css`; `color-scheme` is computed from that
+  hex's luminance, so a new designer template gets the right answer without a
+  list to update. `tests/seo.test.ts` pins both.
+
+`robots.ts` and `sitemap.ts` answer from the subdomain and one cached
+domains-repo lookup — never a GitHub call. A crawler hitting them must not be
+able to spend the API budget that renders pages.
 
 ## Local development
 

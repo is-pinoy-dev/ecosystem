@@ -37,6 +37,7 @@ interface GhUser {
   avatar_url: string
   bio: string | null
   location: string | null
+  company: string | null
   blog: string | null
   twitter_username: string | null
   followers: number
@@ -121,6 +122,8 @@ export async function getPortfolioData(
       avatar: user.avatar_url,
       bio: user.bio,
       location: user.location,
+      company: user.company,
+      twitter: user.twitter_username,
       links,
     },
     readmeHtml: await renderReadme(readmeMd, sections),

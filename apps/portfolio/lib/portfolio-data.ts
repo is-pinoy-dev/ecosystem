@@ -13,6 +13,10 @@ export interface Profile {
   avatar: string
   bio: string | null
   location: string | null
+  /** GitHub's `company` field. Metadata only — no template renders it. */
+  company: string | null
+  /** Handle without the `@`, when the owner published one. Metadata only. */
+  twitter: string | null
   links: ProfileLink[]
 }
 
