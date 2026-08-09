@@ -1,5 +1,6 @@
 import "server-only"
 import { domainSchema, type PortfolioConfig } from "@is-pinoy-dev/schemas"
+import { portfolioSubdomain } from "./portfolio-subdomain"
 
 // Opens a portfolio-claim pull request against the public domains repo on the
 // signed-in user's behalf, using their OAuth token (public_repo scope):
@@ -8,6 +9,10 @@ import { domainSchema, type PortfolioConfig } from "@is-pinoy-dev/schemas"
 //
 // The generated file is validated against the real domainSchema first, so a
 // claim never opens a PR that the repo's schema check would reject.
+//
+// The claimed name is not a parameter. A hosted portfolio is that person's
+// GitHub profile, so its address is their GitHub username, derived here from
+// the login — there is no argument a caller could pass to claim anything else.
 
 const UPSTREAM_OWNER = "is-pinoy-dev"
 const UPSTREAM_REPO = "domains"
@@ -15,9 +20,11 @@ const CNAME_TARGET = "portfolio.is-pinoy.dev"
 const API = "https://api.github.com"
 
 export interface ClaimParams {
-  /** Signed-in user's GitHub login (fork owner + record owner). */
+  /**
+   * Signed-in user's GitHub login — fork owner, record owner, and (folded to
+   * lowercase) the claimed subdomain itself.
+   */
   login: string
-  subdomain: string
   portfolio: NonNullable<PortfolioConfig>
 }
 
@@ -39,7 +46,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 /** The plain domain-record object a claim writes to the domains repo. */
 export function buildDomainRecord(params: ClaimParams) {
   return {
-    subdomain: params.subdomain,
+    subdomain: portfolioSubdomain(params.login),
     owner: { github: params.login },
     portfolio: params.portfolio,
     records: {
@@ -160,7 +167,8 @@ export async function openPortfolioPR(
   token: string,
   params: ClaimParams,
 ): Promise<ClaimResult> {
-  const { login, subdomain } = params
+  const { login } = params
+  const subdomain = portfolioSubdomain(login)
 
   const built = buildDomainFile(params)
   if (built.error) return { ok: false, error: `Invalid record: ${built.error}` }

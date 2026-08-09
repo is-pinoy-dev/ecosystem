@@ -10,21 +10,20 @@ import { validateDomain } from "@is-pinoy-dev/validate"
 import { auth } from "@/auth"
 import { claimsEnabled } from "@/lib/flags-server"
 import { getGitHubAccessToken } from "@/lib/github-token"
+import { portfolioSubdomainFor } from "@/lib/portfolio-subdomain"
 import {
   buildDomainRecord,
   openPortfolioPR,
   type ClaimResult,
 } from "@/lib/claim-portfolio"
 
+// The subdomain is deliberately not an input. A hosted portfolio renders the
+// claimant's GitHub profile, so its address is their GitHub username, taken
+// from the session below — a hand-rolled call to this action's ID cannot ask
+// for a name that isn't theirs, because there is nowhere to put one.
+//
 // portfolioSchema is optional at the domain level; here a template is required.
 const claimInput = z.object({
-  subdomain: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(3, "Subdomain must be at least 3 characters")
-    .max(63)
-    .regex(/^[a-z0-9-]+$/, "Use only lowercase letters, numbers, and hyphens"),
   portfolio: z.object({
     template: z.enum(PORTFOLIO_TEMPLATES),
     theme: z.enum(PORTFOLIO_THEMES).optional(),
@@ -59,7 +58,11 @@ export async function claimPortfolio(input: ClaimInput): Promise<ClaimResult> {
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." }
   }
-  const { subdomain, portfolio } = parsed.data
+  const { portfolio } = parsed.data
+
+  const derived = portfolioSubdomainFor(login)
+  if (!derived.ok) return { ok: false, error: derived.error }
+  const { subdomain } = derived
 
   // Validate the full record (schema + reserved-name rules) before touching
   // GitHub, and confirm portfolio is well-formed.
@@ -67,7 +70,7 @@ export async function claimPortfolio(input: ClaimInput): Promise<ClaimResult> {
   if (!portfolioParsed.success || !portfolioParsed.data) {
     return { ok: false, error: "Invalid template or theme." }
   }
-  const record = buildDomainRecord({ login, subdomain, portfolio: portfolioParsed.data })
+  const record = buildDomainRecord({ login, portfolio: portfolioParsed.data })
   const validation = validateDomain(record)
   if (!validation.ok) {
     return { ok: false, error: validation.errors[0] ?? "Invalid record." }
@@ -85,5 +88,5 @@ export async function claimPortfolio(input: ClaimInput): Promise<ClaimResult> {
     }
   }
 
-  return openPortfolioPR(token, { login, subdomain, portfolio: portfolioParsed.data })
+  return openPortfolioPR(token, { login, portfolio: portfolioParsed.data })
 }
