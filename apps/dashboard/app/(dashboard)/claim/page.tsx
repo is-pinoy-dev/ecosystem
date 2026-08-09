@@ -31,7 +31,7 @@ export default async function ClaimPage() {
       <PageHeader
         eyebrow="Portfolio"
         title="Claim a portfolio subdomain"
-        description="Pick a subdomain and a template — your portfolio is rendered from your GitHub profile README. Submitting opens a pull request to the domains repo on your behalf; once it's merged, your subdomain goes live."
+        description="Choose an address and a look for a portfolio built from your GitHub profile. Preview it first, then open the claim pull request when it feels right."
       />
       <ClaimForm login={session.user.login} />
     </div>

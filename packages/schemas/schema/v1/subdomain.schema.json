@@ -211,7 +211,10 @@
             "phosphor",
             "draft",
             "bubblegum",
-            "grid"
+            "grid",
+            "bento",
+            "noir",
+            "solar"
           ]
         },
         "theme": {

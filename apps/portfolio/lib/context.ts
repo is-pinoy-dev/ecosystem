@@ -36,6 +36,9 @@ const TEMPLATES: TemplateName[] = [
   "draft",
   "bubblegum",
   "grid",
+  "bento",
+  "noir",
+  "solar",
 ]
 const THEMES: PortfolioTheme[] = [
   "gold-dark",

@@ -27,6 +27,41 @@ export const domainFeaturesSchema = z
   .partial()
   .optional()
 
+export const PORTFOLIO_LAYOUT_TEMPLATES = [
+  "terminal",
+  "pixel-card",
+  "minimal",
+] as const
+
+export const PORTFOLIO_DESIGNER_TEMPLATES = [
+  "concrete",
+  "broadsheet",
+  "phosphor",
+  "draft",
+  "bubblegum",
+  "grid",
+  "bento",
+  "noir",
+  "solar",
+] as const
+
+export const PORTFOLIO_TEMPLATES = [
+  ...PORTFOLIO_LAYOUT_TEMPLATES,
+  ...PORTFOLIO_DESIGNER_TEMPLATES,
+] as const
+
+export const PORTFOLIO_THEMES = [
+  "gold-dark",
+  "mono",
+  "matrix",
+  "midnight",
+  "crimson",
+  "sunset",
+] as const
+
+export const portfolioTemplateSchema = z.enum(PORTFOLIO_TEMPLATES)
+export const portfolioThemeSchema = z.enum(PORTFOLIO_THEMES)
+
 // Opt-in hosted portfolio. When present, the subdomain's CNAME points at our
 // own renderer (portfolio.is-pinoy.dev) and this block tells the renderer which
 // template/theme to use. Content itself comes from the owner's GitHub profile
@@ -37,20 +72,8 @@ export const portfolioSchema = z
     // The first three are "layout" templates styled by `theme`. The rest are
     // self-contained "designer themes" — each a complete design (layout + type
     // + color) that ignores `theme`.
-    template: z.enum([
-      "terminal",
-      "pixel-card",
-      "minimal",
-      "concrete",
-      "broadsheet",
-      "phosphor",
-      "draft",
-      "bubblegum",
-      "grid",
-    ]),
-    theme: z
-      .enum(["gold-dark", "mono", "matrix", "midnight", "crimson", "sunset"])
-      .optional(),
+    template: portfolioTemplateSchema,
+    theme: portfolioThemeSchema.optional(),
     // Optional allow-list / reordering of README sections by heading slug.
     // Omitted → render every section in document order.
     sections: z.array(z.string()).optional(),
