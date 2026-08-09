@@ -174,3 +174,18 @@ describe("hosted portfolio identity", () => {
     expect(result.ok).toBe(true);
   });
 });
+
+describe("hosted portfolio identity — teardown", () => {
+  it("exempts a record marked for destruction", () => {
+    // Otherwise the rule blocks the pull request that retires a
+    // non-conforming portfolio, which is the only way to fix one.
+    const result = validateDomain({
+      subdomain: "mee",
+      owner: { github: "bosquejun" },
+      portfolio: { template: "bubblegum" as const },
+      records: { CNAME: { value: "portfolio.is-pinoy.dev" } },
+      destroy: true,
+    });
+    expect(result.ok).toBe(true);
+  });
+});

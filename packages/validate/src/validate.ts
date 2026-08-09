@@ -40,7 +40,10 @@ export function validateDomain(json: Partial<Domain>): {
   //
   // Only hosted portfolios are constrained. A subdomain pointed at your own
   // host carries no `portfolio` block and stays free to be called anything.
-  if (domain.portfolio) {
+  // A record marked for destruction is mid-teardown and about to stop
+  // existing. Holding it to the rule would block the very pull request that
+  // retires a non-conforming portfolio — the one change that fixes it.
+  if (domain.portfolio && !domain.destroy) {
     const expected = domain.owner.github.toLowerCase()
     if (domain.subdomain !== expected) {
       errors.push(
