@@ -23,16 +23,19 @@ endpoints, but no endpoint or queue payload accepts a URL.
    pnpm --filter screenshots exec wrangler queues create portfolio-screenshots-dlq
    ```
 
-3. In `worker/wrangler.toml`, replace:
-   - the all-zero `database_id` with the existing dashboard D1 ID;
-   - `replace-with-existing-r2-bucket` with the existing R2 bucket name;
-   - `https://replace-with-r2-public-host.invalid` with the bucket's public custom
-     domain or approved R2 public base URL.
+3. The production bindings in `worker/wrangler.toml` use:
+   - D1 database `dashboard-db`
+     (`58109557-f2e5-4dd3-8722-5fbea0e20dfc`);
+   - R2 bucket `dashboard`;
+   - public asset base URL `https://cdn.is-pinoy.dev`.
+
+   Keep the R2 `r2.dev` development URL disabled so production reads always pass
+   through the custom domain's cache and security controls.
 
 4. Generate one service secret and set it on the Worker:
 
    ```bash
-   pnpm --filter screenshots exec wrangler secret put SCREENSHOT_WORKER_SECRET
+   pnpm --filter screenshots exec wrangler secret put SCREENSHOT_WORKER_SECRET -c worker/wrangler.toml
    ```
 
    Set the exact same value as `SCREENSHOT_WORKER_SECRET` in the Vercel
