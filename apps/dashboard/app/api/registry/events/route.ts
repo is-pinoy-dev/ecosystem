@@ -21,6 +21,10 @@ const domainSchema = z.object({
     .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/),
   owner: z.object({
     github: z.string().min(1),
+    // Numeric GitHub account ID. Optional on the same grounds as `features`
+    // below — a sync workflow that predates the field keeps validating, and
+    // its records simply fall back to login matching.
+    id: z.number().int().positive().optional(),
     email: z.string().optional(),
   }),
   records: z.record(z.string(), z.unknown()),

@@ -23,8 +23,8 @@ export default async function DomainsPage() {
   const session = await auth()
   if (!session?.user) redirect("/login")
 
-  const { login } = session.user
-  const { owned } = await getSubdomainsForOwner(login)
+  const { login, githubId } = session.user
+  const { owned } = await getSubdomainsForOwner({ login, githubId })
 
   // One listing call covers every row, so the pending-change state costs a
   // single request no matter how many domains the user owns.

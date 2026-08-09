@@ -139,3 +139,53 @@ describe("validateDomain", () => {
     expect(result.errors).toEqual([])
   })
 })
+
+describe("hosted portfolio identity", () => {
+  const record = (subdomain: string, github: string) => ({
+    subdomain,
+    owner: { github },
+    portfolio: { template: "terminal" as const },
+    records: { CNAME: { value: "portfolio.is-pinoy.dev" } },
+  });
+
+  it("accepts a portfolio addressed by its owner's username", () => {
+    expect(validateDomain(record("juan", "juan")).ok).toBe(true);
+  });
+
+  it("matches the username case-insensitively", () => {
+    // GitHub keeps a login's registered case; the subdomain is always lower.
+    expect(validateDomain(record("juandelacruz", "JuanDelaCruz")).ok).toBe(true);
+  });
+
+  it("rejects a portfolio rendering someone else's profile", () => {
+    // The impersonation shape: the address says one person, the page shows
+    // another's GitHub profile.
+    const result = validateDomain(record("famous-dev", "someone-else"));
+    expect(result.ok).toBe(false);
+    expect(result.errors[0]).toContain("someone-else.is-pinoy.dev");
+  });
+
+  it("leaves subdomains without a portfolio block free to be named anything", () => {
+    const result = validateDomain({
+      subdomain: "anything",
+      owner: { github: "juan" },
+      records: { CNAME: { value: "juan.github.io" } },
+    });
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe("hosted portfolio identity — teardown", () => {
+  it("exempts a record marked for destruction", () => {
+    // Otherwise the rule blocks the pull request that retires a
+    // non-conforming portfolio, which is the only way to fix one.
+    const result = validateDomain({
+      subdomain: "mee",
+      owner: { github: "bosquejun" },
+      portfolio: { template: "bubblegum" as const },
+      records: { CNAME: { value: "portfolio.is-pinoy.dev" } },
+      destroy: true,
+    });
+    expect(result.ok).toBe(true);
+  });
+});

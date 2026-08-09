@@ -76,3 +76,65 @@ describe("validateDomains", () => {
     expect(result.errors).toContain("Reserved subdomain: www");
   });
 });
+
+describe("validateDomains — per-owner quota", () => {
+  const portfolio = (subdomain: string, github: string, id?: number) => ({
+    subdomain,
+    owner: { github, ...(id ? { id } : {}) },
+    portfolio: { template: "terminal" as const },
+    records: { CNAME: { value: "portfolio.is-pinoy.dev" } },
+    file: `${subdomain}.json`,
+  });
+  const custom = (subdomain: string, github: string, id?: number) => ({
+    subdomain,
+    owner: { github, ...(id ? { id } : {}) },
+    records: { CNAME: { value: "x.vercel-dns-016.com" } },
+    file: `${subdomain}.json`,
+  });
+
+  it("warns rather than errors, so one over-quota account can't red the whole registry", () => {
+    vi.mocked(loadDomains).mockReturnValue([
+      custom("one", "juan"),
+      custom("two", "juan"),
+    ]);
+
+    const result = validateDomains();
+    expect(result.ok).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([
+      "@juan holds 2 custom subdomains (limit 1): one, two",
+    ]);
+  });
+
+  it("counts a renamed account's records as one owner via the numeric ID", () => {
+    // Renaming the GitHub account is the only route to a second portfolio.
+    // Keyed on the login these would look like two different people.
+    vi.mocked(loadDomains).mockReturnValue([
+      portfolio("oldname", "oldname", 42),
+      portfolio("newname", "newname", 42),
+    ]);
+
+    const result = validateDomains();
+    expect(result.warnings).toEqual([
+      "@oldname holds 2 hosted portfolios (limit 1): oldname, newname",
+    ]);
+  });
+
+  it("stays quiet at exactly one of each", () => {
+    vi.mocked(loadDomains).mockReturnValue([
+      portfolio("juan", "juan", 7),
+      custom("juan-blog", "juan", 7),
+    ]);
+
+    expect(validateDomains().warnings).toEqual([]);
+  });
+
+  it("ignores records marked for destruction", () => {
+    vi.mocked(loadDomains).mockReturnValue([
+      { ...custom("one", "juan"), destroy: true },
+      custom("two", "juan"),
+    ]);
+
+    expect(validateDomains().warnings).toEqual([]);
+  });
+});

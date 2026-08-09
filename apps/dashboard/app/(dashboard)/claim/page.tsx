@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { PageHeader } from "@/components/page-header"
 import { claimsEnabled } from "@/lib/flags-server"
+import { portfolioSubdomainFor } from "@/lib/portfolio-subdomain"
 import { ClaimForm } from "./claim-form"
 
 export const metadata: Metadata = {
@@ -26,14 +27,41 @@ export default async function ClaimPage() {
     notFound()
   }
 
+  const login = session.user.login
+  const derived = portfolioSubdomainFor(login)
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
         eyebrow="Portfolio"
-        title="Claim a portfolio subdomain"
-        description="Choose an address and a look for a portfolio built from your GitHub profile. Preview it first, then open the claim pull request when it feels right."
+        title="Claim your portfolio subdomain"
+        description="Your portfolio is built from your GitHub profile, so it lives at your GitHub username. Pick a look, preview it, then open the claim pull request when it feels right."
       />
-      <ClaimForm login={session.user.login} />
+      {derived.ok ? (
+        <ClaimForm login={login} subdomain={derived.subdomain} />
+      ) : (
+        <div className="flex flex-col gap-3 border border-destructive/35 bg-destructive/5 p-5 text-sm leading-6 text-foreground">
+          <p className="m-0">
+            {derived.error} Hosted portfolios are always addressed by their
+            owner&apos;s GitHub username, so there is no other address to claim
+            here.
+          </p>
+          <p className="m-0 text-muted-foreground">
+            You can still register an ordinary subdomain of your choosing and
+            point it at a site you host yourself — that route goes through a
+            pull request against the domains repo.{" "}
+            <a
+              href="https://docs.is-pinoy.dev/guides"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent underline"
+            >
+              Read the guide
+            </a>
+            .
+          </p>
+        </div>
+      )}
     </div>
   )
 }

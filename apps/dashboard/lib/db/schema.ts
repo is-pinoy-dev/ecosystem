@@ -23,6 +23,11 @@ export const subdomains = sqliteTable(
   {
     name: text("name").primaryKey(),
     ownerGithub: text("owner_github").notNull(),
+    // GitHub's numeric account ID (`owner.id` in the record file). Nullable:
+    // records written before the field existed don't carry one. Ownership
+    // lookups prefer it over the login, which a user can rename out from
+    // under us — and which someone else can then claim.
+    ownerId: integer("owner_id"),
     ownerEmail: text("owner_email"),
     records: text("records", { mode: "json" })
       .notNull()
@@ -65,6 +70,7 @@ export const subdomains = sqliteTable(
   },
   (table) => [
     index("subdomains_owner_github_idx").on(table.ownerGithub),
+    index("subdomains_owner_id_idx").on(table.ownerId),
     index("subdomains_screenshot_status_idx").on(table.screenshotStatus),
     index("subdomains_screenshot_captured_at_idx").on(
       table.screenshotCapturedAt

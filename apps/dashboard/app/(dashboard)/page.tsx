@@ -44,8 +44,11 @@ export default async function OverviewPage() {
     redirect("/login")
   }
 
-  const { login, name, email, image } = session.user
-  const { owned, registryTotal } = await getSubdomainsForOwner(login)
+  const { login, githubId, name, email, image } = session.user
+  const { owned, registryTotal } = await getSubdomainsForOwner({
+    login,
+    githubId,
+  })
   const dnsRecords = owned.reduce(
     (sum, domain) => sum + Object.keys(domain.records).length,
     0,

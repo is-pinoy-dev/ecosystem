@@ -18,7 +18,7 @@ const REVALIDATE_SECONDS = 300
 
 export interface RegistrySubdomain {
   subdomain: string
-  owner: { github: string; email?: string }
+  owner: { github: string; id?: number; email?: string }
   records: Record<string, unknown>
   features?: Record<string, unknown> | null
   /** Only available when reading from the database. */
@@ -55,7 +55,11 @@ async function getSubdomainsFromDb(): Promise<RegistrySubdomain[]> {
 
   return rows.map((row) => ({
     subdomain: row.name,
-    owner: { github: row.ownerGithub, email: row.ownerEmail ?? undefined },
+    owner: {
+      github: row.ownerGithub,
+      id: row.ownerId ?? undefined,
+      email: row.ownerEmail ?? undefined,
+    },
     records: row.records,
     features: row.features,
     syncStatus: row.syncStatus,
@@ -135,7 +139,7 @@ async function getSubdomainsFromGitHub(): Promise<RegistrySubdomain[]> {
       )
       if (!res.ok) return null
       const data = (await res.json()) as {
-        owner: { github: string; email?: string }
+        owner: { github: string; id?: number; email?: string }
         records: Record<string, unknown>
         features?: Record<string, unknown> | null
         destroy?: boolean
@@ -159,15 +163,43 @@ async function getSubdomainsFromGitHub(): Promise<RegistrySubdomain[]> {
     .sort((a, b) => a.subdomain.localeCompare(b.subdomain))
 }
 
-/** Registry snapshot scoped to one GitHub account (case-insensitive match). */
-export async function getSubdomainsForOwner(login: string): Promise<{
+/** The signed-in developer, as ownership is matched against a record. */
+export interface OwnerIdentity {
+  login: string
+  /** Numeric GitHub account ID, when the session carries one. */
+  githubId?: number
+}
+
+/**
+ * Does this record belong to this person?
+ *
+ * The numeric ID decides it whenever both sides have one: logins are
+ * renameable, and a freed login can be registered by somebody else, so
+ * matching on the login alone both loses records after a rename and — worse —
+ * hands them to whoever picks the name up next.
+ *
+ * The login remains the fallback for the records written before `owner.id`
+ * existed. A record that carries an ID that isn't ours is never ours, even if
+ * the logins agree: that is precisely the freed-login case.
+ */
+export function isOwnedBy(
+  domain: RegistrySubdomain,
+  owner: OwnerIdentity
+): boolean {
+  if (domain.owner.id !== undefined && owner.githubId !== undefined) {
+    return domain.owner.id === owner.githubId
+  }
+  return domain.owner.github.toLowerCase() === owner.login.toLowerCase()
+}
+
+/** Registry snapshot scoped to one GitHub account. */
+export async function getSubdomainsForOwner(owner: OwnerIdentity): Promise<{
   owned: RegistrySubdomain[]
   registryTotal: number
 }> {
   const all = await getRegistrySubdomains()
-  const normalized = login.toLowerCase()
   return {
-    owned: all.filter((d) => d.owner.github.toLowerCase() === normalized),
+    owned: all.filter((d) => isOwnedBy(d, owner)),
     registryTotal: all.length,
   }
 }

@@ -1,15 +1,16 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
 
-import { openPortfolioPR } from "./claim-portfolio"
+import { buildDomainRecord, openPortfolioPR } from "./claim-portfolio"
 
 const UPSTREAM_REF = "https://api.github.com/repos/is-pinoy-dev/domains/git/ref/heads/main"
 const FORK_REF = "https://api.github.com/repos/juan/domains/git/ref/heads/main"
 const UPSTREAM_SHA = "upstream-head-sha"
 const FORK_SHA = "stale-fork-head-sha"
 
+// No subdomain here on purpose: openPortfolioPR derives it from the login, so
+// a claim is always addressed by the claimant's own GitHub username.
 const params = {
   login: "juan",
-  subdomain: "cool",
   portfolio: { template: "bubblegum" as const },
 }
 
@@ -104,7 +105,52 @@ const find = (pred: (c: Call) => boolean) => calls.find(pred)
 beforeEach(() => stubGitHub())
 afterEach(() => vi.unstubAllGlobals())
 
+describe("buildDomainRecord — the claimed name", () => {
+  it("is the claimant's own GitHub username", () => {
+    expect(buildDomainRecord(params)).toMatchObject({
+      subdomain: "juan",
+      owner: { github: "juan" },
+    })
+  })
+
+  it("records the numeric account ID so a rename can't orphan the claim", () => {
+    expect(buildDomainRecord({ ...params, githubId: 42 })).toMatchObject({
+      owner: { github: "juan", id: 42 },
+    })
+  })
+
+  it("omits the ID rather than writing a null the schema would reject", () => {
+    // Sessions minted before githubId existed carry no ID until re-login.
+    expect(buildDomainRecord(params).owner).not.toHaveProperty("id")
+  })
+
+  it("folds a mixed-case login down to a lowercase label", () => {
+    // GitHub logins keep the case they were registered with; DNS labels and
+    // the subdomains/<name>.json files are lowercase.
+    const record = buildDomainRecord({ ...params, login: "JuanDelaCruz" })
+    expect(record.subdomain).toBe("juandelacruz")
+    expect(record.owner.github).toBe("JuanDelaCruz")
+  })
+})
+
 describe("openPortfolioPR — claim branch base", () => {
+  it("names the branch, file, and PR after the login, not a chosen name", async () => {
+    // The whole point of dropping `subdomain` from ClaimParams: there is no
+    // argument that could aim this at someone else's address.
+    await openPortfolioPR("token", params)
+
+    const write = find(
+      (c) => c.url.includes("/contents/subdomains/") && c.method === "PUT"
+    )
+    expect(write?.url).toContain("/contents/subdomains/juan.json")
+    expect(
+      JSON.parse(
+        Buffer.from(String(write?.body?.content), "base64").toString("utf8")
+      )
+    ).toMatchObject({ subdomain: "juan", owner: { github: "juan" } })
+  })
+
+
   // The PR targets upstream, so basing the branch on a fork that was forked
   // once and never synced makes every commit upstream has merged since show up
   // in the diff as a revert — and fails CI on files the claimant never touched.
@@ -120,7 +166,7 @@ describe("openPortfolioPR — claim branch base", () => {
 
     const create = find((c) => c.url.endsWith("/git/refs") && c.method === "POST")
     expect(create?.body).toEqual({
-      ref: "refs/heads/claim/portfolio-cool",
+      ref: "refs/heads/claim/portfolio-juan",
       sha: UPSTREAM_SHA,
     })
   })
@@ -133,7 +179,7 @@ describe("openPortfolioPR — claim branch base", () => {
 
     const pr = find((c) => c.url.endsWith("/pulls") && c.method === "POST")
     expect(pr?.url).toBe("https://api.github.com/repos/is-pinoy-dev/domains/pulls")
-    expect(pr?.body).toMatchObject({ head: "juan:claim/portfolio-cool", base: "main" })
+    expect(pr?.body).toMatchObject({ head: "juan:claim/portfolio-juan", base: "main" })
   })
 
   it("resets an existing claim branch onto the current upstream head", async () => {
@@ -146,7 +192,7 @@ describe("openPortfolioPR — claim branch base", () => {
 
     const reset = find((c) => c.method === "PATCH")
     expect(reset?.url).toBe(
-      "https://api.github.com/repos/juan/domains/git/refs/heads/claim/portfolio-cool"
+      "https://api.github.com/repos/juan/domains/git/refs/heads/claim/portfolio-juan"
     )
     expect(reset?.body).toEqual({ sha: UPSTREAM_SHA, force: true })
   })
@@ -220,11 +266,11 @@ describe("openPortfolioPR — claim branch base", () => {
       (c) => c.url.includes("/contents/") && c.method !== "GET"
     )
     expect(writes).toHaveLength(1)
-    expect(writes[0]!.url).toContain("/contents/subdomains/cool.json")
+    expect(writes[0]!.url).toContain("/contents/subdomains/juan.json")
 
     // Nor may it so much as read another subdomain's file.
     for (const c of calls.filter((c) => c.url.includes("/contents/"))) {
-      expect(c.url).toContain("/contents/subdomains/cool.json")
+      expect(c.url).toContain("/contents/subdomains/juan.json")
     }
   })
 })

@@ -88,6 +88,15 @@ export const domainSchema = z.object({
     .regex(/^[a-z0-9-]+$/),
   owner: z.object({
     github: z.string(),
+    // GitHub's numeric account ID. A login can be renamed and then claimed by
+    // somebody else; this cannot — it is issued once per account and never
+    // reused. Ownership is matched on it wherever it is present, so a rename
+    // no longer detaches someone from their own subdomains.
+    //
+    // Optional because every record written before this field existed lacks
+    // it, and backfilling means asking GitHub for 45 logins. Records minted by
+    // the dashboard carry it from the claim onward.
+    id: z.number().int().positive().optional(),
     email: z.email().optional(),
   }),
   records: z

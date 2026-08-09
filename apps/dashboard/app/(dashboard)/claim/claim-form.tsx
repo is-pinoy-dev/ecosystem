@@ -7,10 +7,10 @@ import {
   ExternalLink,
   Eye,
   Loader2,
+  Lock,
   XCircle,
 } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
-import { Input } from "@is-pinoy-dev/ui/components/input"
 import {
   InputGroup,
   InputGroupAddon,
@@ -128,8 +128,20 @@ const PORTFOLIO_URL =
 
 type Result = { ok: true; prUrl: string } | { ok: false; error: string } | null
 
-export function ClaimForm({ login }: { login: string }) {
-  const [subdomain, setSubdomain] = useState("")
+/**
+ * `subdomain` is the claimant's GitHub username, derived server-side. It is
+ * shown, never edited: a hosted portfolio renders that GitHub profile, so the
+ * address is a consequence of who is signed in rather than a choice. The
+ * server action derives it from the session too — this prop only spares the
+ * page a round trip to display it.
+ */
+export function ClaimForm({
+  login,
+  subdomain,
+}: {
+  login: string
+  subdomain: string
+}) {
   const [template, setTemplate] =
     useState<ClaimInput["portfolio"]["template"]>("terminal")
   const [theme, setTheme] =
@@ -137,9 +149,6 @@ export function ClaimForm({ login }: { login: string }) {
   const [result, setResult] = useState<Result>(null)
   const [pending, startTransition] = useTransition()
 
-  const normalized = subdomain.trim().toLowerCase()
-  const valid = /^[a-z0-9-]{3,63}$/.test(normalized)
-  const showInvalid = subdomain.length > 0 && !valid
   const isDesigner = DESIGNER_SET.has(template)
   const selectedStyle = ALL_STYLES.find((option) => option.value === template)!
   const selectedTheme = THEMES.find((option) => option.value === theme)!
@@ -149,11 +158,10 @@ export function ClaimForm({ login }: { login: string }) {
     (isDesigner ? "" : `&theme=${theme}`)
 
   function onSubmit() {
-    if (!valid || pending) return
+    if (pending) return
     setResult(null)
     startTransition(async () => {
       const response = await claimPortfolio({
-        subdomain: normalized,
         portfolio: isDesigner ? { template } : { template, theme },
       })
       setResult(response)
@@ -176,49 +184,41 @@ export function ClaimForm({ login }: { login: string }) {
           <StepHeading
             number="01"
             id="claim-domain-heading"
-            title="Choose your address"
-            description="Use your name, handle, or the identity you want to share."
+            title="Your address"
+            description="A hosted portfolio is your GitHub profile, so it lives at your GitHub username."
           />
           <div className="mt-5 flex max-w-2xl flex-col gap-3">
-            <label
-              htmlFor="subdomain"
+            <span
+              id="subdomain-label"
               className="text-sm font-medium text-foreground"
             >
               Subdomain
-            </label>
+            </span>
+            {/* Static text, not a disabled input: there is no value to edit
+                here, and a disabled field invites people to hunt for the
+                toggle that would enable it. */}
             <InputGroup
-              className={cn(
-                "h-12 bg-card",
-                showInvalid &&
-                  "border-destructive focus-within:border-destructive"
-              )}
+              role="group"
+              aria-labelledby="subdomain-label"
+              aria-describedby="subdomain-hint"
+              className="h-12 bg-muted/35"
             >
-              <Input
-                id="subdomain"
-                value={subdomain}
-                onChange={(event) => setSubdomain(event.target.value)}
-                placeholder="your-name"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                aria-invalid={showInvalid}
-                aria-describedby="subdomain-hint"
-                className="h-auto min-w-0 flex-1 border-0 bg-transparent px-4 font-mono text-sm text-foreground shadow-none outline-none focus-visible:border-transparent focus-visible:outline-none"
-              />
+              <span className="flex min-w-0 flex-1 items-center gap-2 px-4">
+                <Lock
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <span className="truncate font-mono text-sm text-foreground">
+                  {subdomain}
+                </span>
+              </span>
               <InputGroupAddon className="border-input bg-muted/50 px-4 font-mono text-sm whitespace-nowrap text-muted-foreground">
                 .is-pinoy.dev
               </InputGroupAddon>
             </InputGroup>
-            <p
-              id="subdomain-hint"
-              className={cn(
-                "m-0 text-xs",
-                showInvalid ? "text-destructive" : "text-muted-foreground"
-              )}
-            >
-              {showInvalid
-                ? "3–63 characters: lowercase letters, numbers, and hyphens only."
-                : "Lowercase letters, numbers, and hyphens. You can preview before submitting."}
+            <p id="subdomain-hint" className="m-0 text-xs text-muted-foreground">
+              Taken from your GitHub account (@{login}) and not editable. Sign
+              in as a different account to claim a different address.
             </p>
           </div>
         </section>
@@ -325,7 +325,7 @@ export function ClaimForm({ login }: { login: string }) {
                 Portfolio address
               </span>
               <span className="mt-1 block truncate font-mono text-sm text-foreground">
-                {normalized || "your-name"}.is-pinoy.dev
+                {subdomain}.is-pinoy.dev
               </span>
             </div>
 
@@ -334,7 +334,7 @@ export function ClaimForm({ login }: { login: string }) {
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={!valid || pending}
+                disabled={pending}
               >
                 {pending ? (
                   <>

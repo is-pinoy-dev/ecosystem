@@ -34,7 +34,10 @@ export default async function DomainDetailPage({ params }: Props) {
   const normalized = subdomain.trim().toLowerCase()
   if (!SUBDOMAIN_PATTERN.test(normalized)) notFound()
 
-  const { owned } = await getSubdomainsForOwner(session.user.login)
+  const { owned } = await getSubdomainsForOwner({
+    login: session.user.login,
+    githubId: session.user.githubId,
+  })
   const record = owned.find((domain) => domain.subdomain === normalized)
   if (!record) notFound()
 

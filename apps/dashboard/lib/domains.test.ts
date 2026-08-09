@@ -102,3 +102,37 @@ describe("getRegistrySubdomains", () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 })
+
+const { isOwnedBy } = await import("./domains")
+
+/** Minimal record shape for ownership matching. */
+const owned = (owner: { github: string; id?: number }) =>
+  ({ subdomain: "x", owner, records: {} }) as Parameters<typeof isOwnedBy>[0]
+
+describe("isOwnedBy", () => {
+  it("matches on the login when neither side has a numeric ID", () => {
+    // Every record written before owner.id existed takes this path.
+    expect(isOwnedBy(owned({ github: "JuanDelaCruz" }), { login: "juandelacruz" })).toBe(true)
+    expect(isOwnedBy(owned({ github: "juan" }), { login: "maria" })).toBe(false)
+  })
+
+  it("keeps a record attached to its owner after a GitHub rename", () => {
+    // The login on the record is stale; the ID is not.
+    expect(
+      isOwnedBy(owned({ github: "oldname", id: 42 }), { login: "newname", githubId: 42 })
+    ).toBe(true)
+  })
+
+  it("does not hand a freed login to whoever registers it next", () => {
+    // The dangerous half of a rename: someone else takes "oldname". Login
+    // matching alone would give them another person's records.
+    expect(
+      isOwnedBy(owned({ github: "oldname", id: 42 }), { login: "oldname", githubId: 99 })
+    ).toBe(false)
+  })
+
+  it("falls back to the login when only one side carries an ID", () => {
+    expect(isOwnedBy(owned({ github: "juan" }), { login: "juan", githubId: 42 })).toBe(true)
+    expect(isOwnedBy(owned({ github: "juan", id: 42 }), { login: "juan" })).toBe(true)
+  })
+})

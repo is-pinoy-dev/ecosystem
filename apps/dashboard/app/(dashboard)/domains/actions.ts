@@ -86,6 +86,7 @@ export async function saveSettings(
     return failure("", "You must be signed in to change a record.")
   }
   const login = session.user.login
+  const githubId = session.user.githubId
 
   const parsed = saveInput.safeParse(input)
   if (!parsed.success) return failure("", "Invalid request.")
@@ -105,7 +106,7 @@ export async function saveSettings(
     bySubdomain.set(change.subdomain, deduped)
   }
 
-  const { owned } = await getSubdomainsForOwner(login)
+  const { owned } = await getSubdomainsForOwner({ login, githubId })
   const token = await getGitHubAccessToken()
   if (!token) {
     return {
