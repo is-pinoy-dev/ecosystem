@@ -2,7 +2,10 @@
 
 import React, { useState } from "react"
 
-import type { ShowcaseScreenshotStatus } from "@/lib/screenshot-manifest"
+import {
+  previewFallbackUrl,
+  type ShowcasePreviewStatus,
+} from "@/lib/showcase-preview"
 
 function PreviewUnavailable({ subdomain }: { subdomain: string }) {
   return (
@@ -34,22 +37,6 @@ function PreviewUnavailable({ subdomain }: { subdomain: string }) {
   )
 }
 
-function PreviewPending({ subdomain }: { subdomain: string }) {
-  return (
-    <div
-      className="relative h-full w-full animate-pulse overflow-hidden bg-muted"
-      role="status"
-      aria-label={`Generating preview for ${subdomain}.is-pinoy.dev`}
-      data-state="pending"
-    >
-      <div className="absolute inset-x-5 top-5 h-2 bg-foreground/8" />
-      <div className="absolute top-10 left-5 h-2 w-2/3 bg-foreground/8" />
-      <div className="absolute inset-x-5 bottom-5 h-1/3 border border-border/60 bg-background/50" />
-      <span className="sr-only">Generating preview…</span>
-    </div>
-  )
-}
-
 export function ShowcaseCardImage({
   screenshotUrl,
   screenshotStatus,
@@ -57,40 +44,44 @@ export function ShowcaseCardImage({
   loading = "lazy",
 }: {
   screenshotUrl: string | null
-  screenshotStatus: ShowcaseScreenshotStatus
+  screenshotStatus: ShowcasePreviewStatus
   subdomain: string
   loading?: "eager" | "lazy"
 }) {
-  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  // Ranked preview sources: the capture we took, then the Worker endpoint that
+  // serves the portfolio's own og:image or a generated card. A source that
+  // fails in the browser is dropped and the next one takes over; exhausting
+  // them lands on the branded tile. Absence of a capture is never rendered as
+  // loading — a queued one can wait a full refresh cycle.
+  const sources = [
+    ...(screenshotUrl ? [screenshotUrl] : []),
+    previewFallbackUrl(subdomain),
+  ]
+  const [failed, setFailed] = useState<string[]>([])
+  const src = sources.find((candidate) => !failed.includes(candidate))
   const updating =
     screenshotStatus === "pending" || screenshotStatus === "processing"
-  const hasWorkingImage = screenshotUrl !== null && screenshotUrl !== failedUrl
 
-  if (hasWorkingImage) {
-    return (
-      <div className="relative h-full w-full" data-state={screenshotStatus}>
-        {/* R2 images are already versioned and CDN-cacheable. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={screenshotUrl}
-          alt={`Preview of ${subdomain}.is-pinoy.dev`}
-          loading={loading}
-          decoding="async"
-          onError={() => setFailedUrl(screenshotUrl)}
-          className="h-full w-full object-cover object-top"
-        />
-        {updating && (
-          <span className="absolute right-2 bottom-2 border border-border bg-background/90 px-2 py-1 font-mono text-[9px] font-semibold tracking-[0.06em] text-foreground uppercase">
-            Updating preview…
-          </span>
-        )}
-      </div>
-    )
-  }
+  if (!src) return <PreviewUnavailable subdomain={subdomain} />
 
-  if (screenshotStatus === "pending" || screenshotStatus === "processing") {
-    return <PreviewPending subdomain={subdomain} />
-  }
-
-  return <PreviewUnavailable subdomain={subdomain} />
+  return (
+    <div className="relative h-full w-full" data-state={screenshotStatus}>
+      {/* R2 images are already versioned and CDN-cacheable. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        key={src}
+        src={src}
+        alt={`Preview of ${subdomain}.is-pinoy.dev`}
+        loading={loading}
+        decoding="async"
+        onError={() => setFailed((current) => [...current, src])}
+        className="h-full w-full object-cover object-top"
+      />
+      {updating && screenshotUrl !== null && (
+        <span className="absolute right-2 bottom-2 border border-border bg-background/90 px-2 py-1 font-mono text-[9px] font-semibold tracking-[0.06em] text-foreground uppercase">
+          Updating preview…
+        </span>
+      )}
+    </div>
+  )
 }

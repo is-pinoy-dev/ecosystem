@@ -10,6 +10,8 @@
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "deploy": "pnpm build && wrangler deploy -c worker/wrangler.toml"
   },
   "dependencies": {
@@ -37,6 +39,7 @@
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "^8.1.1",
+    "vitest": "catalog:",
     "wrangler": "^4.95.0"
   }
 }

@@ -62,6 +62,12 @@ stored in git.
 
 Both require `Authorization: Bearer $SCREENSHOT_WORKER_SECRET`.
 
+A card without a capture is not a loading state. The showcase ranks previews:
+this Worker's screenshot, then `/_tools/og/preview?subdomain=<name>` (the
+portfolio's own `og:image`, else a generated OG card — see `tools/og`), then a
+branded tile. If the manifest request fails the web app logs it rather than
+silently degrading every card.
+
 ## Operations
 
 - Capture viewport: 1440×900, device scale factor 1, first viewport only,

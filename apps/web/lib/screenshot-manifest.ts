@@ -1,10 +1,6 @@
 import "server-only"
 
-export type ShowcaseScreenshotStatus =
-  | "pending"
-  | "processing"
-  | "ready"
-  | "failed"
+import type { ShowcaseScreenshotStatus } from "./showcase-preview"
 
 export interface ShowcaseScreenshot {
   portfolioId: string
@@ -29,7 +25,12 @@ export async function getScreenshotManifest(): Promise<
 > {
   const workerUrl = process.env.SCREENSHOT_WORKER_URL
   const workerSecret = process.env.SCREENSHOT_WORKER_SECRET
-  if (!workerUrl || !workerSecret) return new Map()
+  if (!workerUrl || !workerSecret) {
+    console.warn(
+      "[screenshots] manifest skipped: SCREENSHOT_WORKER_URL or SCREENSHOT_WORKER_SECRET is unset"
+    )
+    return new Map()
+  }
 
   try {
     const response = await fetch(
@@ -39,11 +40,19 @@ export async function getScreenshotManifest(): Promise<
         next: { revalidate: 300 },
       }
     )
-    if (!response.ok) return new Map()
+    // A failure here degrades every card to "no preview", so it must not be
+    // silent — a 401 means the shared secret drifted from the Worker binding.
+    if (!response.ok) {
+      console.warn(
+        `[screenshots] manifest request failed with ${response.status}`
+      )
+      return new Map()
+    }
     const body = (await response.json()) as ManifestResponse
     const entries = Array.isArray(body.entries) ? body.entries : []
     return new Map(entries.map((entry) => [entry.subdomain, entry]))
-  } catch {
+  } catch (error) {
+    console.warn("[screenshots] manifest request threw", error)
     return new Map()
   }
 }
