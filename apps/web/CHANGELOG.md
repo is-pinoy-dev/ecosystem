@@ -1,5 +1,11 @@
 # web
 
+## 0.0.9
+
+### Patch Changes
+
+- @is-pinoy-dev/validate@1.1.1
+
 ## 0.0.8
 
 ### Patch Changes
