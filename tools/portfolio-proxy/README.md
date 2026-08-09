@@ -86,6 +86,29 @@ curl -sI https://juan.is-pinoy.dev/ | grep -i x-portfolio-route
 | `bad-label` | Secret matched, label malformed. The Worker constrains it, so this means something else is forwarding |
 | `unlabelled` | No label and none presented — the apex, a preview, or this Worker not being in the path at all |
 
+### Which side is stale
+
+`secret-mismatch` says the two copies disagree, not which one is wrong — and a
+repository secret is write-only, so you cannot read either value back to compare
+them. Both sides instead log a fingerprint of their own copy once per cold start:
+32 bits of SHA-256, computed identically in `worker/index.ts` and
+`apps/portfolio/lib/diagnostics.ts`, and pinned to the same known answer in both
+test suites so they cannot drift apart.
+
+```
+[portfolio-proxy] config rootDomain=… proxySecret=set proxySecretFp=31eb0ae3 og=bound siteAudit=bound
+[portfolio] config proxySecret=set proxySecretFp=ea19211e githubToken=set rootDomain=is-pinoy.dev(default)
+```
+
+Equal tags mean equal secrets. Different tags, as above, name the side to fix:
+whichever disagrees with the value CI last pushed. `MISSING` in either line is a
+variable or binding that was never set — each fails silently in its own way, so
+both lines drop to `warn` level when anything is absent and stay at `info`/`log`
+when everything is present.
+
+The Worker's line is in `wrangler tail` or the Workers observability logs; the
+renderer's is in the Vercel runtime logs.
+
 A `worker` verdict on a 404 puts the fault past the proxy. The renderer names
 those in its runtime logs on one line each:
 

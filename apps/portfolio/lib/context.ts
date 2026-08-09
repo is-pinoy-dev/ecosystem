@@ -2,7 +2,7 @@ import { cache } from "react"
 import { headers } from "next/headers"
 import { getPortfolioData } from "./github"
 import { resolveOrLog } from "./resolve"
-import { logMiss, type MissReason } from "./diagnostics"
+import { logMiss, logConfigOnce, type MissReason } from "./diagnostics"
 import type { PortfolioData } from "./portfolio-data"
 import type { TemplateName, PortfolioTheme } from "@/templates"
 
@@ -113,6 +113,9 @@ export function parsePreview(
 export async function getRenderContext(
   preview?: PreviewParams | null
 ): Promise<RenderContext | null> {
+  // Once per cold start, ahead of any miss it might explain.
+  await logConfigOnce()
+
   if (preview) {
     const data = await loadPortfolio(preview.github, "")
     if (!data) {

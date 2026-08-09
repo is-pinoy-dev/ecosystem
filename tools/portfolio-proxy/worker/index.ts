@@ -26,6 +26,54 @@ export interface Env {
 const SUBDOMAIN_HEADER = "x-portfolio-subdomain"
 const SECRET_HEADER = "x-portfolio-proxy-secret"
 
+/**
+ * A short, non-reversible tag for the shared secret — the same construction the
+ * renderer uses in apps/portfolio/lib/diagnostics.ts, so the two `config` lines
+ * are directly comparable. Equal tags mean equal secrets; different tags say
+ * which side is stale, which `x-portfolio-route: secret-mismatch` cannot.
+ */
+async function fingerprint(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  )
+  return Array.from(new Uint8Array(digest).slice(0, 4))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+}
+
+let configLogged: Promise<void> | null = null
+
+/**
+ * What this Worker is actually configured with, once per isolate.
+ *
+ * Every value here is set somewhere other than this file — `[vars]` in
+ * wrangler.toml, a `wrangler secret put` from CI, service bindings resolved by
+ * script name at deploy time — and each fails silently in its own way. A missing
+ * secret means the renderer ignores every label this Worker sends; a missing
+ * binding means a portfolio's OG card renders the portfolio's own HTML.
+ */
+function logConfigOnce(env: Env): Promise<void> {
+  configLogged ??= (async () => {
+    const secret = env.PORTFOLIO_PROXY_SECRET
+    const parts = [
+      `rootDomain=${env.ROOT_DOMAIN}`,
+      `rendererHost=${env.RENDERER_HOST}`,
+      `proxySecret=${secret ? "set" : "MISSING"}`,
+      secret ? `proxySecretFp=${await fingerprint(secret)}` : "",
+      `og=${env.OG ? "bound" : "MISSING"}`,
+      `siteAudit=${env.SITE_AUDIT ? "bound" : "MISSING"}`,
+    ].filter(Boolean)
+    const healthy = secret && env.OG && env.SITE_AUDIT
+    // Same convention as the renderer: warn only when something is absent, so a
+    // healthy deploy doesn't fill the warning filter.
+    console[healthy ? "log" : "warn"](
+      `[portfolio-proxy] config ${parts.join(" ")}`,
+    )
+  })()
+  return configLogged
+}
+
 /** The renderer interpolates this into a raw.githubusercontent.com path. */
 const LABEL_PATTERN = /^[a-z0-9-]{1,63}$/
 
@@ -38,6 +86,7 @@ function extractLabel(hostname: string, rootDomain: string): string | null {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    await logConfigOnce(env)
     const url = new URL(request.url)
 
     // Nothing should reach this Worker but a claimed portfolio, since sync owns

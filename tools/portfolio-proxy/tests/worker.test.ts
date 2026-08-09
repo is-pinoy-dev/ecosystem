@@ -124,3 +124,72 @@ describe("portfolio proxy", () => {
     expect(sent.headers.get("x-portfolio-subdomain")).toBeNull()
   })
 })
+
+// The renderer computes this same tag over its own copy of the secret (see
+// apps/portfolio/lib/diagnostics.ts) and pins this identical constant in its
+// own suite. Comparing the two `config` lines is only meaningful while the two
+// implementations agree, so both are locked to a known answer rather than to
+// each other — the packages share no dependency.
+const FINGERPRINT_OF_SECRET = "9caf06bb"
+
+describe("portfolio proxy — config logging", () => {
+  /** Fresh module: the config line is memoized per isolate by design. */
+  async function freshWorker() {
+    vi.resetModules()
+    return (await import("../worker/index")).default
+  }
+
+  it("names the secret's fingerprint, not the secret", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {})
+    const w = await freshWorker()
+
+    await w.fetch(new Request("https://juan.is-pinoy.dev/"), makeEnv())
+
+    const line = log.mock.calls[0]![0] as string
+    expect(line).toContain("[portfolio-proxy] config")
+    expect(line).toContain("proxySecret=set")
+    expect(line).toContain(`proxySecretFp=${FINGERPRINT_OF_SECRET}`)
+    expect(line).not.toContain(SECRET)
+  })
+
+  it("logs once per isolate, not once per request", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {})
+    const w = await freshWorker()
+
+    for (let i = 0; i < 3; i++) {
+      await w.fetch(new Request("https://juan.is-pinoy.dev/"), makeEnv())
+    }
+
+    expect(log).toHaveBeenCalledTimes(1)
+  })
+
+  // Each of these fails silently in its own way: no secret and the renderer
+  // ignores every label we send; no binding and a portfolio's OG card renders
+  // the portfolio's own HTML.
+  it("warns, and says MISSING, when setup is incomplete", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const w = await freshWorker()
+
+    await w.fetch(
+      new Request("https://juan.is-pinoy.dev/"),
+      makeEnv({ PORTFOLIO_PROXY_SECRET: undefined, OG: undefined })
+    )
+
+    const line = warn.mock.calls[0]![0] as string
+    expect(line).toContain("proxySecret=MISSING")
+    expect(line).toContain("og=MISSING")
+    expect(line).toContain("siteAudit=bound")
+    // No secret to tag, so no tag — not an empty or bogus one.
+    expect(line).not.toContain("proxySecretFp=")
+  })
+
+  it("stays out of the warning filter when fully configured", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    vi.spyOn(console, "log").mockImplementation(() => {})
+    const w = await freshWorker()
+
+    await w.fetch(new Request("https://juan.is-pinoy.dev/"), makeEnv())
+
+    expect(warn).not.toHaveBeenCalled()
+  })
+})
