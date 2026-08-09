@@ -17,11 +17,11 @@ remote = true
 [[d1_databases]]
 binding = "SCREENSHOT_DB"
 database_name = "dashboard-db"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "58109557-f2e5-4dd3-8722-5fbea0e20dfc"
 
 [[r2_buckets]]
 binding = "SCREENSHOT_BUCKET"
-bucket_name = "replace-with-existing-r2-bucket"
+bucket_name = "dashboard"
 
 [[queues.producers]]
 binding = "SCREENSHOT_QUEUE"
@@ -38,7 +38,7 @@ dead_letter_queue = "portfolio-screenshots-dlq"
 crons = ["0 3 * * *"]
 
 [vars]
-SCREENSHOT_PUBLIC_BASE_URL = "https://replace-with-r2-public-host.invalid"
+SCREENSHOT_PUBLIC_BASE_URL = "https://cdn.is-pinoy.dev"
 PORTFOLIO_SCREENSHOT_REFRESH_DAYS = "30"
 PORTFOLIO_SCREENSHOT_MANUAL_COOLDOWN_HOURS = "24"
 
