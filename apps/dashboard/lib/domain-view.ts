@@ -42,12 +42,20 @@ export interface RecordRowView {
   proxy: RecordProxyView | null
 }
 
+export interface ToolLinkView {
+  label: string
+  url: string
+  /** Tool pages require the saved platform state; resources are always useful. */
+  kind: "tool" | "resource"
+}
+
 /** One switchable platform feature as the settings panel renders it. */
 export interface FeatureView {
   id: string
   name: string
   description: string
   docsUrl: string
+  links: ToolLinkView[]
   enabled: boolean
   /**
    * True when the feature is on by default and the switch turns it off. Those
@@ -63,6 +71,7 @@ export interface BuiltinView {
   name: string
   description: string
   docsUrl: string
+  links: ToolLinkView[]
   /** Endpoint the owner can reference, when the feature exposes one. */
   url?: string
   /** A copyable line showing how to use it. */
@@ -233,6 +242,7 @@ function toPlatformView(domain: RegistrySubdomain): PlatformView | null {
 
   const policy = proxyPolicy(domain.records, type)
   const lockedReason = proxyLockReason(domain.records, type)
+  const fqdn = `${domain.subdomain}.is-pinoy.dev`
 
   return {
     type,
@@ -242,14 +252,43 @@ function toPlatformView(domain: RegistrySubdomain): PlatformView | null {
     // The host wants a value this record does not have — actionable, not locked.
     correctionNote:
       policy.pinnedTo !== null && lockedReason === null ? policy.note : null,
-    features: TOGGLEABLE_FEATURES.map((feature) => ({
-      id: feature.id,
-      name: feature.name,
-      description: feature.description,
-      docsUrl: feature.docsUrl,
-      enabled: isFeatureEnabled(domain.features, feature),
-      optOut: feature.defaultEnabled,
-    })),
+    features: TOGGLEABLE_FEATURES.map((feature) => {
+      const links: ToolLinkView[] =
+        feature.id === "site-audit"
+          ? [
+              {
+                label: "Open Site Audit",
+                url: `https://${fqdn}/_tools/site-audit`,
+                kind: "tool",
+              },
+              { label: "View docs", url: feature.docsUrl, kind: "resource" },
+            ]
+          : feature.id === "analytics"
+            ? [
+                {
+                  label: "Privacy policy",
+                  url: feature.docsUrl,
+                  kind: "resource",
+                },
+              ]
+            : [
+                {
+                  label: "View docs",
+                  url: feature.docsUrl,
+                  kind: "resource",
+                },
+              ]
+
+      return {
+        id: feature.id,
+        name: feature.name,
+        description: feature.description,
+        docsUrl: feature.docsUrl,
+        links,
+        enabled: isFeatureEnabled(domain.features, feature),
+        optOut: feature.defaultEnabled,
+      }
+    }),
     builtins: BUILTIN_FEATURES.map((feature) => {
       if (feature.id !== "og") {
         return {
@@ -257,9 +296,11 @@ function toPlatformView(domain: RegistrySubdomain): PlatformView | null {
           name: feature.name,
           description: feature.description,
           docsUrl: feature.docsUrl,
+          links: [
+            { label: "View docs", url: feature.docsUrl, kind: "resource" },
+          ],
         }
       }
-      const fqdn = `${domain.subdomain}.is-pinoy.dev`
       const url = `https://${fqdn}/_tools/og/image`
       // A hosted portfolio is rendered by us, so its meta tag already points
       // here — there is nothing for the owner to copy.
@@ -269,6 +310,14 @@ function toPlatformView(domain: RegistrySubdomain): PlatformView | null {
         name: feature.name,
         description: feature.description,
         docsUrl: feature.docsUrl,
+        links: [
+          {
+            label: "Open OG tool",
+            url: `https://${fqdn}/_tools/og`,
+            kind: "tool",
+          },
+          { label: "View docs", url: feature.docsUrl, kind: "resource" },
+        ],
         url,
         snippet: hosted
           ? undefined
