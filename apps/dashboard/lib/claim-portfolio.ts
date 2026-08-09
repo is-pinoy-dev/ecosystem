@@ -16,7 +16,8 @@ import { portfolioSubdomain } from "./portfolio-subdomain"
 
 const UPSTREAM_OWNER = "is-pinoy-dev"
 const UPSTREAM_REPO = "domains"
-const CNAME_TARGET = "portfolio.is-pinoy.dev"
+/** Every hosted portfolio CNAMEs here; the proxy routes by subdomain. */
+export const CNAME_TARGET = "portfolio.is-pinoy.dev"
 const API = "https://api.github.com"
 
 export interface ClaimParams {
@@ -25,6 +26,12 @@ export interface ClaimParams {
    * lowercase) the claimed subdomain itself.
    */
   login: string
+  /**
+   * GitHub's numeric account ID, written into the record so ownership survives
+   * a username change. Optional only because a session minted before the field
+   * existed won't carry one until its owner signs in again.
+   */
+  githubId?: number
   portfolio: NonNullable<PortfolioConfig>
 }
 
@@ -47,7 +54,10 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 export function buildDomainRecord(params: ClaimParams) {
   return {
     subdomain: portfolioSubdomain(params.login),
-    owner: { github: params.login },
+    owner: {
+      github: params.login,
+      ...(params.githubId ? { id: params.githubId } : {}),
+    },
     portfolio: params.portfolio,
     records: {
       CNAME: { value: CNAME_TARGET, proxied: true },

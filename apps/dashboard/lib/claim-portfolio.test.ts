@@ -113,6 +113,17 @@ describe("buildDomainRecord — the claimed name", () => {
     })
   })
 
+  it("records the numeric account ID so a rename can't orphan the claim", () => {
+    expect(buildDomainRecord({ ...params, githubId: 42 })).toMatchObject({
+      owner: { github: "juan", id: 42 },
+    })
+  })
+
+  it("omits the ID rather than writing a null the schema would reject", () => {
+    // Sessions minted before githubId existed carry no ID until re-login.
+    expect(buildDomainRecord(params).owner).not.toHaveProperty("id")
+  })
+
   it("folds a mixed-case login down to a lowercase label", () => {
     // GitHub logins keep the case they were registered with; DNS labels and
     // the subdomains/<name>.json files are lowercase.

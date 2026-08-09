@@ -13,6 +13,7 @@ function existingRow(overrides: Partial<SubdomainRow> = {}): SubdomainRow {
   return {
     name: "juan",
     ownerGithub: "juandelacruz",
+    ownerId: null,
     ownerEmail: null,
     records: { CNAME: "juandelacruz.github.io" },
     features: null,

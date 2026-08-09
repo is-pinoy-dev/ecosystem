@@ -31,6 +31,24 @@ export function validateDomain(json: Partial<Domain>): {
     errors.push(`Reserved subdomain: ${domain.subdomain}`)
   }
 
+  // A hosted portfolio renders `owner.github`'s GitHub profile at
+  // `<subdomain>.is-pinoy.dev`. If those two disagree, the address advertises
+  // one person and the page shows another's profile — which is the whole
+  // mechanism of an impersonation claim, not a cosmetic mismatch. The
+  // dashboard can no longer produce such a record; this closes the same door
+  // for a hand-written pull request, where nothing else would catch it.
+  //
+  // Only hosted portfolios are constrained. A subdomain pointed at your own
+  // host carries no `portfolio` block and stays free to be called anything.
+  if (domain.portfolio) {
+    const expected = domain.owner.github.toLowerCase()
+    if (domain.subdomain !== expected) {
+      errors.push(
+        `${domain.subdomain}: a hosted portfolio must use its owner's GitHub username as the subdomain — expected "${expected}.is-pinoy.dev" for @${domain.owner.github}. Rename the file to ${expected}.json, or drop the "portfolio" block to keep this as an ordinary subdomain.`
+      )
+    }
+  }
+
   // Belt-and-suspenders: Zod's min(1)/ipv4/ipv6 constraints already enforce non-empty
   // values, so this loop is unreachable under the current schema. It guards against
   // future schema relaxation that could allow empty values through.

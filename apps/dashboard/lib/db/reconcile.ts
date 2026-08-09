@@ -7,7 +7,7 @@ type UpdateSet = Partial<Omit<InsertValues, "name">>
 // Git-derived dates arrive as optional ISO strings.
 export interface IncomingDomain {
   subdomain: string
-  owner: { github: string; email?: string }
+  owner: { github: string; id?: number; email?: string }
   records: Record<string, unknown>
   features?: Record<string, unknown> | null
   status: SyncStatus
@@ -66,6 +66,7 @@ export function reconcile(
         values: {
           name: domain.subdomain,
           ownerGithub: domain.owner.github,
+          ownerId: domain.owner.id ?? null,
           ownerEmail: domain.owner.email ?? null,
           records: domain.records,
           features: domain.features ?? null,
@@ -94,6 +95,7 @@ export function reconcile(
 
     const contentChanged =
       current.ownerGithub !== domain.owner.github ||
+      (current.ownerId ?? undefined) !== domain.owner.id ||
       (current.ownerEmail ?? undefined) !== domain.owner.email ||
       JSON.stringify(current.records) !== JSON.stringify(domain.records) ||
       JSON.stringify(current.features ?? null) !==
@@ -122,6 +124,7 @@ export function reconcile(
         // routine resync of unchanged domains is not an update.
         ...(contentChanged && {
           ownerGithub: domain.owner.github,
+          ownerId: domain.owner.id ?? null,
           ownerEmail: domain.owner.email ?? null,
           records: domain.records,
           features: domain.features ?? null,

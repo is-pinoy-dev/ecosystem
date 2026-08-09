@@ -7,8 +7,14 @@ import GitHub from "next-auth/providers/github"
 declare module "next-auth" {
   interface Session {
     user: {
-      /** GitHub username of the signed-in developer. */
+      /** GitHub username of the signed-in developer. Renameable. */
       login: string
+      /**
+       * GitHub's numeric account ID — stable across username changes, which
+       * `login` is not. Ownership matching prefers this so that renaming a
+       * GitHub account doesn't detach its owner from their own records.
+       */
+      githubId?: number
     } & DefaultSession["user"]
   }
 }
@@ -39,6 +45,11 @@ const nextAuth = NextAuth({
       if (profile?.login) {
         token.login = profile.login
       }
+      // GitHub sends `id` as a number; guard anyway rather than trust the
+      // provider's shape, since a bad value would silently mis-key ownership.
+      if (typeof profile?.id === "number" && Number.isInteger(profile.id)) {
+        token.githubId = profile.id
+      }
       // Persist the OAuth access token in the JWT (server-only). It is
       // deliberately NOT copied into `session` below, so it never reaches the
       // client; server code decodes the JWT cookie to use it.
@@ -50,6 +61,9 @@ const nextAuth = NextAuth({
     session({ session, token }) {
       if (typeof token.login === "string") {
         session.user.login = token.login
+      }
+      if (typeof token.githubId === "number") {
+        session.user.githubId = token.githubId
       }
       return session
     },
