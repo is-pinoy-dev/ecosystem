@@ -1,5 +1,9 @@
 import { createElement, type ComponentType, type ReactElement } from "react"
-import type { PortfolioConfig } from "@is-pinoy-dev/schemas"
+import type {
+  PORTFOLIO_DESIGNER_TEMPLATES,
+  PORTFOLIO_LAYOUT_TEMPLATES,
+  PortfolioConfig,
+} from "@is-pinoy-dev/schemas"
 import type { PortfolioData } from "@/lib/portfolio-data"
 import { TerminalTemplate } from "./terminal"
 import { PixelCardTemplate } from "./pixel-card"
@@ -10,9 +14,14 @@ import { PhosphorDesign } from "./designer/phosphor"
 import { DraftDesign } from "./designer/draft"
 import { BubblegumDesign } from "./designer/bubblegum"
 import { GridDesign } from "./designer/grid"
+import { BentoDesign } from "./designer/bento"
+import { NoirDesign } from "./designer/noir"
+import { SolarDesign } from "./designer/solar"
 
 export type TemplateName = NonNullable<PortfolioConfig>["template"]
 export type PortfolioTheme = NonNullable<NonNullable<PortfolioConfig>["theme"]>
+type LayoutTemplateName = (typeof PORTFOLIO_LAYOUT_TEMPLATES)[number]
+type DesignerTemplateName = (typeof PORTFOLIO_DESIGNER_TEMPLATES)[number]
 
 export interface TemplateProps {
   data: PortfolioData
@@ -22,19 +31,28 @@ export interface TemplateProps {
 // "Designer" templates are complete, self-contained designs (own layout, type,
 // color, light/dark) — they ignore `theme` and render their own full page, so
 // the renderer skips the theme shell for them (see isDesignerTemplate).
-const LAYOUT_TEMPLATES: Record<string, ComponentType<TemplateProps>> = {
+const LAYOUT_TEMPLATES: Record<
+  LayoutTemplateName,
+  ComponentType<TemplateProps>
+> = {
   terminal: TerminalTemplate,
   "pixel-card": PixelCardTemplate,
   minimal: MinimalTemplate,
 }
 
-const DESIGNER_TEMPLATES: Record<string, ComponentType<TemplateProps>> = {
+const DESIGNER_TEMPLATES: Record<
+  DesignerTemplateName,
+  ComponentType<TemplateProps>
+> = {
   concrete: ConcreteDesign,
   broadsheet: BroadsheetDesign,
   phosphor: PhosphorDesign,
   draft: DraftDesign,
   bubblegum: BubblegumDesign,
   grid: GridDesign,
+  bento: BentoDesign,
+  noir: NoirDesign,
+  solar: SolarDesign,
 }
 
 const TEMPLATES: Record<string, ComponentType<TemplateProps>> = {

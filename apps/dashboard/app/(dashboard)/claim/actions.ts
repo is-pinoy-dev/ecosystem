@@ -1,7 +1,11 @@
 "use server"
 
 import { z } from "zod"
-import { portfolioSchema } from "@is-pinoy-dev/schemas"
+import {
+  PORTFOLIO_TEMPLATES,
+  PORTFOLIO_THEMES,
+  portfolioSchema,
+} from "@is-pinoy-dev/schemas"
 import { validateDomain } from "@is-pinoy-dev/validate"
 import { auth } from "@/auth"
 import { claimsEnabled } from "@/lib/flags-server"
@@ -22,20 +26,8 @@ const claimInput = z.object({
     .max(63)
     .regex(/^[a-z0-9-]+$/, "Use only lowercase letters, numbers, and hyphens"),
   portfolio: z.object({
-    template: z.enum([
-      "terminal",
-      "pixel-card",
-      "minimal",
-      "concrete",
-      "broadsheet",
-      "phosphor",
-      "draft",
-      "bubblegum",
-      "grid",
-    ]),
-    theme: z
-      .enum(["gold-dark", "mono", "matrix", "midnight", "crimson", "sunset"])
-      .optional(),
+    template: z.enum(PORTFOLIO_TEMPLATES),
+    theme: z.enum(PORTFOLIO_THEMES).optional(),
   }),
 })
 
