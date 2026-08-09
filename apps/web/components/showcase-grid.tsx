@@ -6,15 +6,16 @@ import {
   getRegisteredSubdomains,
   type RegisteredSubdomain,
 } from "@/lib/subdomains"
+import { getScreenshotManifest } from "@/lib/screenshot-manifest"
 import {
-  getScreenshotManifest,
-  type ShowcaseScreenshotStatus,
-} from "@/lib/screenshot-manifest"
+  previewStatusFor,
+  type ShowcasePreviewStatus,
+} from "@/lib/showcase-preview"
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 interface SubdomainEntry extends RegisteredSubdomain {
-  screenshotStatus: ShowcaseScreenshotStatus
+  screenshotStatus: ShowcasePreviewStatus
   screenshotKey: string | null
   screenshotUrl: string | null
   screenshotCapturedAt: string | null
@@ -34,7 +35,7 @@ async function fetchAllSubdomains(limit?: number): Promise<SubdomainEntry[]> {
     const screenshot = screenshots.get(entry.subdomain)
     return {
       ...entry,
-      screenshotStatus: screenshot?.screenshotStatus ?? "pending",
+      screenshotStatus: previewStatusFor(screenshot),
       screenshotKey: screenshot?.screenshotKey ?? null,
       screenshotUrl: screenshot?.screenshotUrl ?? null,
       screenshotCapturedAt: screenshot?.screenshotCapturedAt ?? null,

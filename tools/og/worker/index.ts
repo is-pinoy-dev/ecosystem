@@ -3,6 +3,7 @@ import { createRequestHandler } from "@react-router/cloudflare"
 import * as build from "../build/server"
 import { Resvg, initWasm } from "@resvg/resvg-wasm"
 import { buildSvg, type OgData } from "./generate"
+import { resolvePortfolioOgImage, resolveRequestedSubdomain } from "./preview"
 // @ts-ignore - resvg.wasm is copied to worker/ at build time and pre-compiled by wrangler
 import resvgWasmModule from "./resvg.wasm"
 
@@ -21,19 +22,16 @@ const handleRequest = createRequestHandler({
 
 const PREFIX = "/_tools/og"
 const IMAGE_PATH = "/_tools/og/image"
+const PREVIEW_PATH = "/_tools/og/preview"
 const DOMAINS_RAW_BASE =
   "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains"
 const DOMAIN_CACHE_TTL = 300
 const IMAGE_CACHE_TTL = 300
+const PREVIEW_CACHE_TTL = 3600
+const MAX_PREVIEW_BYTES = 4 * 1024 * 1024
 
 export interface Env {
   ASSETS: Fetcher
-}
-
-/** Returns null for apex domain (is-pinoy.dev), otherwise the subdomain label. */
-function extractSubdomain(hostname: string): string | null {
-  const parts = hostname.split(".")
-  return parts.length > 2 ? parts.slice(0, parts.length - 2).join(".") : null
 }
 
 // Module-level WASM init — runs once per isolate lifetime
@@ -201,6 +199,85 @@ async function handleImageRequest(
   return response
 }
 
+/** Cached decision about a portfolio's own og:image — the URL, or null. */
+async function cachedPortfolioOgImage(
+  subdomain: string,
+  ctx: ExecutionContext
+): Promise<string | null> {
+  const cacheKey = `https://og-preview.internal/${subdomain}.json`
+
+  if (typeof caches !== "undefined") {
+    const cached = await caches.default.match(cacheKey)
+    if (cached) {
+      const body = await cached.json<{ ogImage: string | null }>()
+      return body.ogImage
+    }
+  }
+
+  const ogImage = await resolvePortfolioOgImage(subdomain)
+
+  if (typeof caches !== "undefined") {
+    ctx.waitUntil(
+      caches.default.put(
+        cacheKey,
+        new Response(JSON.stringify({ ogImage }), {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": `max-age=${PREVIEW_CACHE_TTL}`,
+          },
+        })
+      )
+    )
+  }
+
+  return ogImage
+}
+
+/**
+ * The showcase's second-choice preview: the portfolio's own og:image, streamed
+ * through this Worker rather than redirected to. Proxying keeps the response an
+ * image — a registered owner cannot point the URL at a page and have our domain
+ * hand visitors off to it — and hides the visitor from the third-party host.
+ * Anything short of a usable image falls through to the generated card.
+ */
+async function handlePreviewRequest(
+  subdomain: string,
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<Response> {
+  const ogImage = await cachedPortfolioOgImage(subdomain, ctx)
+
+  if (ogImage) {
+    try {
+      const upstream = await fetch(ogImage, {
+        headers: { Accept: "image/*" },
+        redirect: "follow",
+      })
+      const contentType = upstream.headers.get("content-type")?.split(";")[0]
+      const declaredLength = Number(upstream.headers.get("content-length") ?? 0)
+
+      if (
+        upstream.ok &&
+        upstream.body &&
+        contentType?.startsWith("image/") &&
+        declaredLength <= MAX_PREVIEW_BYTES
+      ) {
+        return new Response(upstream.body, {
+          headers: {
+            "Content-Type": contentType,
+            "Cache-Control": `public, max-age=${PREVIEW_CACHE_TTL}`,
+          },
+        })
+      }
+    } catch {
+      // fall through to the generated card
+    }
+  }
+
+  return handleImageRequest(subdomain, request, env, ctx)
+}
+
 export default {
   async fetch(
     request: Request,
@@ -208,7 +285,23 @@ export default {
     ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url)
-    const subdomain = extractSubdomain(url.hostname)
+    const subdomain = resolveRequestedSubdomain(url.hostname, url.searchParams)
+
+    // /_tools/og/preview — the portfolio's own og:image, else the generated card
+    if (url.pathname === PREVIEW_PATH || url.pathname === `${PREVIEW_PATH}/`) {
+      if (!subdomain) {
+        return new Response("Name a subdomain to preview", { status: 400 })
+      }
+      try {
+        return await handlePreviewRequest(subdomain, request, env, ctx)
+      } catch (err) {
+        console.error(
+          "[og] preview failed:",
+          err instanceof Error ? err.stack : String(err)
+        )
+        return new Response("Preview failed", { status: 500 })
+      }
+    }
 
     // /_tools/og/image — return the PNG for this subdomain
     if (url.pathname === IMAGE_PATH || url.pathname === `${IMAGE_PATH}/`) {
