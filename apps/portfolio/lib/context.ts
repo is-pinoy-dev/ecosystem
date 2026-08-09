@@ -74,6 +74,31 @@ const sectionsKeyOf = (sections?: string[]) =>
   sections?.length ? JSON.stringify(sections) : ""
 
 /**
+ * The subdomain this request was served from, or null on the renderer host.
+ *
+ * Split out of getRenderContext because robots.txt, the sitemap and the
+ * canonical URL only need to know *which site this is* — asking GitHub for a
+ * profile to answer that would put the whole rate limit behind a crawler.
+ */
+export async function getHostSubdomain(): Promise<string | null> {
+  const h = await headers()
+  return (
+    h.get("x-portfolio-subdomain") ||
+    process.env.PORTFOLIO_SPIKE_SUBDOMAIN ||
+    null
+  )
+}
+
+/**
+ * Whether this host is a claimed portfolio, without loading it. One cached
+ * domains-repo lookup, shared with getRenderContext on the same request.
+ */
+export async function isClaimedHost(): Promise<boolean> {
+  const subdomain = await getHostSubdomain()
+  return subdomain ? (await loadSubdomain(subdomain)) !== null : false
+}
+
+/**
  * Parse dashboard "Preview" query params (`?preview=1&github=&template=&theme=`)
  * into a validated PreviewParams, or null when not a preview request. Template
  * and theme are constrained to the known enums; anything else is ignored.
@@ -131,11 +156,7 @@ export async function getRenderContext(
     }
   }
 
-  const h = await headers()
-  const subdomain =
-    h.get("x-portfolio-subdomain") ??
-    process.env.PORTFOLIO_SPIKE_SUBDOMAIN ??
-    ""
+  const subdomain = await getHostSubdomain()
 
   if (subdomain) {
     // `resolveOrLog` has already named its own dead end.

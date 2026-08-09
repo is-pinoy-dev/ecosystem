@@ -127,6 +127,12 @@ function extractLabel(host: string): string | null {
   return label
 }
 
+// Everything except build output and the brand image assets in public/. The
+// exclusions are deliberately narrow: robots.txt, sitemap.xml and
+// manifest.webmanifest are all per-portfolio and answer differently depending
+// on the label, so they must keep going through here to get the header.
 export const config = {
-  matcher: ["/((?!_next|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next|favicon\\.ico|.*\\.(?:png|jpe?g|gif|webp|svg|ico)$).*)",
+  ],
 }

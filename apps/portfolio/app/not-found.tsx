@@ -1,8 +1,11 @@
 import type { Metadata } from "next"
+import { SITE_NAME } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "Not found — is-pinoy.dev",
-  robots: { index: false },
+  title: `Not found — ${SITE_NAME}`,
+  description: `No portfolio is claimed at this address. Claim a free subdomain at ${SITE_NAME}.`,
+  robots: { index: false, follow: false },
+  // The layout's brand icons apply; a 404 belongs to us, not to an owner.
 }
 
 export default function NotFound() {
@@ -12,12 +15,12 @@ export default function NotFound() {
       <p className="m-0 text-sm text-muted-foreground">
         No portfolio is claimed at this address. Claim one at{" "}
         <a
-          href="https://is-pinoy.dev"
+          href={`https://${SITE_NAME}`}
           className="text-accent underline"
           target="_blank"
           rel="noopener noreferrer"
         >
-          is-pinoy.dev
+          {SITE_NAME}
         </a>
         .
       </p>
