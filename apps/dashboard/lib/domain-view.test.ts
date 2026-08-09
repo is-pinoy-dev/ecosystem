@@ -35,4 +35,55 @@ describe("toDomainView", () => {
       value: "juandelacruz.github.io",
     })
   })
+
+  it("builds intent-specific links for each platform tool", () => {
+    const view = toDomainView({
+      subdomain: "juan",
+      owner: { github: "juandelacruz" },
+      records: {
+        CNAME: { value: "cname.vercel-dns.com", proxied: true },
+      },
+      features: { tools: { "site-audit": true }, analytics: true },
+    })
+
+    const siteAudit = view.platform?.features.find(
+      (feature) => feature.id === "site-audit"
+    )
+    const analytics = view.platform?.features.find(
+      (feature) => feature.id === "analytics"
+    )
+    const og = view.platform?.builtins.find((feature) => feature.id === "og")
+
+    expect(siteAudit?.links).toEqual([
+      {
+        label: "Open Site Audit",
+        url: "https://juan.is-pinoy.dev/_tools/site-audit",
+        kind: "tool",
+      },
+      {
+        label: "View docs",
+        url: "https://docs.is-pinoy.dev/tools/site-audit",
+        kind: "resource",
+      },
+    ])
+    expect(analytics?.links).toEqual([
+      {
+        label: "Privacy policy",
+        url: "https://is-pinoy.dev/privacy",
+        kind: "resource",
+      },
+    ])
+    expect(og?.links).toEqual([
+      {
+        label: "Open OG tool",
+        url: "https://juan.is-pinoy.dev/_tools/og",
+        kind: "tool",
+      },
+      {
+        label: "View docs",
+        url: "https://docs.is-pinoy.dev/tools",
+        kind: "resource",
+      },
+    ])
+  })
 })

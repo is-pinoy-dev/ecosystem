@@ -44,6 +44,7 @@ import {
   type DomainView,
   type PendingPRView,
   type PlatformView,
+  type ToolLinkView,
 } from "@/lib/domain-view"
 
 interface Props {
@@ -758,21 +759,13 @@ function PlatformPanel({
               <li
                 key={feature.id}
                 className={cn(
-                  "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/70 py-2.5 pr-4 pl-8 last:border-b-0",
-                  dirty && "bg-primary/5",
-                  (blocked || dormant) && "opacity-60"
+                  "flex flex-col items-stretch gap-2 border-b border-border/70 px-4 py-2.5 last:border-b-0 sm:flex-row sm:items-center sm:gap-x-4 sm:gap-y-1 sm:pl-8",
+                  dirty && "bg-primary/5"
                 )}
               >
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-                    <a
-                      href={feature.docsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-foreground no-underline hover:text-accent hover:underline"
-                    >
-                      {feature.name}
-                    </a>
+                    {feature.name}
                     {dirty ? (
                       <span className="text-[11px] font-medium text-primary">
                         Unsaved
@@ -787,12 +780,18 @@ function PlatformPanel({
                         : feature.description}
                   </span>
                 </span>
-                <Switch
-                  checked={on && !blocked}
-                  onCheckedChange={(next) => onSetEdit(fKey, next)}
-                  disabled={blocked || readOnly}
-                  aria-label={`${on ? "Disable" : "Enable"} ${feature.name} for ${subdomain}.is-pinoy.dev`}
-                />
+                <span className="flex flex-wrap items-center justify-end gap-2 self-end sm:self-auto">
+                  <ToolLinks
+                    links={feature.links}
+                    toolAvailable={platform.enabled && feature.enabled}
+                  />
+                  <Switch
+                    checked={on && !blocked}
+                    onCheckedChange={(next) => onSetEdit(fKey, next)}
+                    disabled={blocked || readOnly}
+                    aria-label={`${on ? "Disable" : "Enable"} ${feature.name} for ${subdomain}.is-pinoy.dev`}
+                  />
+                </span>
               </li>
             )
           })}
@@ -800,22 +799,12 @@ function PlatformPanel({
           {platform.builtins.map((builtin) => (
             <li
               key={builtin.id}
-              className={cn(
-                "flex flex-col gap-2 border-b border-border/70 py-2.5 pr-4 pl-8 last:border-b-0",
-                !proxyOn && "opacity-60"
-              )}
+              className="flex flex-col gap-2 border-b border-border/70 px-4 py-2.5 last:border-b-0 sm:pr-4 sm:pl-8"
             >
-              <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-x-4 sm:gap-y-1">
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-[13px] font-medium text-foreground">
-                    <a
-                      href={builtin.docsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-foreground no-underline hover:text-accent hover:underline"
-                    >
-                      {builtin.name}
-                    </a>
+                    {builtin.name}
                   </span>
                   <span className="text-[11px]/relaxed text-muted-foreground">
                     {!proxyOn
@@ -823,17 +812,27 @@ function PlatformPanel({
                       : (builtin.automaticNote ?? builtin.description)}
                   </span>
                 </span>
-                <span className="font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
-                  {proxyOn
-                    ? builtin.automaticNote
-                      ? "Applied"
-                      : "Included"
-                    : "Off"}
+                <span className="flex flex-wrap items-center justify-end gap-2 self-end sm:self-auto">
+                  <ToolLinks
+                    links={builtin.links}
+                    toolAvailable={platform.enabled}
+                  />
+                  <span className="font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
+                    {proxyOn
+                      ? builtin.automaticNote
+                        ? "Applied"
+                        : "Included"
+                      : "Off"}
+                  </span>
                 </span>
               </span>
 
               {proxyOn && builtin.snippet ? (
-                <CopyableSnippet snippet={builtin.snippet} url={builtin.url} />
+                <CopyableSnippet
+                  snippet={builtin.snippet}
+                  url={builtin.url}
+                  previewAvailable={platform.enabled}
+                />
               ) : null}
             </li>
           ))}
@@ -843,12 +842,59 @@ function PlatformPanel({
   )
 }
 
+function ToolLinks({
+  links,
+  toolAvailable,
+}: {
+  links: ToolLinkView[]
+  toolAvailable: boolean
+}) {
+  return links.map((link) => {
+    if (link.kind === "tool" && !toolAvailable) {
+      return (
+        <Button
+          key={link.url}
+          variant="default"
+          size="xs"
+          disabled
+          title="Available after this tool is live on the saved domain."
+        >
+          {link.label}
+          <ArrowUpRight aria-hidden="true" />
+        </Button>
+      )
+    }
+
+    return (
+      <Button
+        key={link.url}
+        asChild
+        variant={link.kind === "tool" ? "default" : "outline"}
+        size="xs"
+      >
+        <a href={link.url} target="_blank" rel="noopener noreferrer">
+          {link.label}
+          <ArrowUpRight aria-hidden="true" />
+        </a>
+      </Button>
+    )
+  })
+}
+
 /**
  * The meta tag an owner needs in order to use a built-in endpoint. Shown rather
  * than applied, because on a subdomain pointing at someone else's host we never
  * see the HTML — only the owner can add this.
  */
-function CopyableSnippet({ snippet, url }: { snippet: string; url?: string }) {
+function CopyableSnippet({
+  snippet,
+  url,
+  previewAvailable,
+}: {
+  snippet: string
+  url?: string
+  previewAvailable: boolean
+}) {
   const [copied, setCopied] = useState(false)
 
   async function copy() {
@@ -880,16 +926,23 @@ function CopyableSnippet({ snippet, url }: { snippet: string; url?: string }) {
           </>
         )}
       </Button>
-      {url ? (
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-[11px] text-accent no-underline hover:underline"
+      {url && previewAvailable ? (
+        <Button asChild variant="outline" size="xs">
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            Preview image
+            <ArrowUpRight aria-hidden="true" />
+          </a>
+        </Button>
+      ) : url ? (
+        <Button
+          variant="outline"
+          size="xs"
+          disabled
+          title="Available after the platform is live on the saved domain."
         >
-          Preview
-          <ArrowUpRight className="size-3" aria-hidden="true" />
-        </a>
+          Preview image
+          <ArrowUpRight aria-hidden="true" />
+        </Button>
       ) : null}
     </span>
   )
