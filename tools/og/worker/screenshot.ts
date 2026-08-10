@@ -62,6 +62,37 @@ export async function resolveScreenshotUrl(
 }
 
 /**
+ * Every portfolio this Worker would serve a stored capture for.
+ *
+ * The landing page shows only sites it has a real picture of, and this is the
+ * same question `resolveScreenshotUrl` answers one subdomain at a time — asked
+ * once for the whole grid. Answering it here rather than in the web app keeps
+ * one definition of "captured": the row this Worker reads through its binding,
+ * not a manifest the web app has to hold a shared secret to reach.
+ *
+ * Every failure collapses to null, which the caller must distinguish from an
+ * empty list — "no captures exist" and "could not find out" lead to different
+ * pages.
+ */
+export async function listCapturedSubdomains(
+  env: ScreenshotEnv
+): Promise<string[] | null> {
+  if (!env.SCREENSHOT_DB) return null
+
+  try {
+    const { results } = await env.SCREENSHOT_DB.prepare(
+      `SELECT name FROM subdomains
+       WHERE sync_status = 'synced' AND screenshot_key IS NOT NULL
+       ORDER BY name ASC`
+    ).all<{ name: string }>()
+
+    return (results ?? []).map((row) => row.name).filter(Boolean)
+  } catch {
+    return null
+  }
+}
+
+/**
  * Does this og:image point back at an image this Worker generates?
  *
  * Portfolios we host declare their og:image as their own `/_tools/og/image`, so

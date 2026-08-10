@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   isSelfGeneratedOgImage,
+  listCapturedSubdomains,
   resolveScreenshotUrl,
   screenshotUrlFrom,
   type ScreenshotEnv,
@@ -90,6 +91,55 @@ describe("resolveScreenshotUrl", () => {
 
   it("returns null when the query throws", async () => {
     await expect(resolveScreenshotUrl("juan", throwingDb())).resolves.toBeNull()
+  })
+})
+
+/** Stand-in for the list query, capturing the SQL it was asked to run. */
+function listDb(
+  rows: { name: string }[] | null,
+  sql: { text?: string } = {}
+): ScreenshotEnv {
+  return {
+    SCREENSHOT_PUBLIC_BASE_URL: BASE,
+    SCREENSHOT_DB: {
+      prepare: (query: string) => {
+        sql.text = query
+        return {
+          all: async () => {
+            if (rows === null) throw new Error("D1 unavailable")
+            return { results: rows }
+          },
+        }
+      },
+    } as unknown as D1Database,
+  }
+}
+
+describe("listCapturedSubdomains", () => {
+  it("returns the portfolios that have a stored capture", async () => {
+    await expect(
+      listCapturedSubdomains(listDb([{ name: "juan" }, { name: "maria" }]))
+    ).resolves.toEqual(["juan", "maria"])
+  })
+
+  it("asks only for synced rows that carry a key", async () => {
+    const sql: { text?: string } = {}
+    await listCapturedSubdomains(listDb([], sql))
+
+    // A row without a key has never been photographed, and an unsynced one is
+    // not serving at its subdomain yet.
+    expect(sql.text).toContain("sync_status = 'synced'")
+    expect(sql.text).toContain("screenshot_key IS NOT NULL")
+  })
+
+  it("distinguishes no captures from no answer", async () => {
+    // The caller renders a different page for each, so the empty list must not
+    // stand in for a failure.
+    await expect(listCapturedSubdomains(listDb([]))).resolves.toEqual([])
+    await expect(listCapturedSubdomains(listDb(null))).resolves.toBeNull()
+    await expect(
+      listCapturedSubdomains({ SCREENSHOT_PUBLIC_BASE_URL: BASE })
+    ).resolves.toBeNull()
   })
 })
 
