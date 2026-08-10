@@ -227,3 +227,57 @@ describe("proxy — the x-portfolio-route verdict", () => {
     expect(verdict(run("portfolio.is-pinoy.dev"))).toBe("unlabelled")
   })
 })
+
+// robots.txt, the sitemap and the manifest carry no <meta robots> of their own,
+// so the header is the only indexing signal on them. It has to reach the same
+// verdict app/page.tsx does, or a preview gets crawled on our host.
+describe("proxy — X-Robots-Tag", () => {
+  const SECRET = "shared-with-the-worker"
+
+  afterEach(() => {
+    delete process.env.PORTFOLIO_PROXY_SECRET
+  })
+
+  function robots(res: Response): string | null {
+    return res.headers.get("x-robots-tag")
+  }
+
+  it("lets a claimed portfolio be indexed in full", () => {
+    const res = run("juan.is-pinoy.dev")
+    expect(robots(res)).toContain("index")
+    expect(robots(res)).not.toContain("noindex")
+    expect(robots(res)).toContain("max-image-preview:large")
+  })
+
+  it("applies to a label the Worker carried, not just a Host label", () => {
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET
+    const res = run("portfolio.is-pinoy.dev", {
+      "x-portfolio-subdomain": "juan",
+      "x-portfolio-proxy-secret": SECRET,
+    })
+    expect(robots(res)).not.toContain("noindex")
+  })
+
+  // A `?preview=` renders an arbitrary GitHub login on the renderer host — the
+  // same content at an address that isn't its home.
+  it("keeps every unlabelled host out of the index", () => {
+    for (const host of [
+      "is-pinoy.dev",
+      "portfolio.is-pinoy.dev",
+      "portfolio.vercel.app",
+      "localhost",
+    ]) {
+      expect(robots(run(host)), host).toBe("noindex, nofollow")
+    }
+  })
+
+  it("keeps a spoofed label out of the index along with its label", () => {
+    process.env.PORTFOLIO_PROXY_SECRET = SECRET
+    const res = run("portfolio.is-pinoy.dev", {
+      "x-portfolio-subdomain": "juan",
+      "x-portfolio-proxy-secret": "wrong",
+    })
+    expect(subdomainSeenByPage(res)).toBeNull()
+    expect(robots(res)).toBe("noindex, nofollow")
+  })
+})

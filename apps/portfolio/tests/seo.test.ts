@@ -12,6 +12,10 @@ import {
   manifestFor,
   originFor,
   topLanguages,
+  titleFor,
+  MAX_DESCRIPTION,
+  MAX_TITLE,
+  MIN_DESCRIPTION,
 } from "../lib/seo"
 
 const AVATAR = "https://avatars.githubusercontent.com/u/1?v=4"
@@ -136,13 +140,76 @@ describe("topLanguages", () => {
   })
 })
 
+describe("titleFor", () => {
+  it("names the owner and then the page", () => {
+    expect(titleFor(data().profile)).toBe("Juan dela Cruz — Portfolio")
+  })
+
+  it("falls back to the login when there is no name", () => {
+    const d = data()
+    d.profile.name = null
+    expect(titleFor(d.profile)).toBe("juandelacruz — Portfolio")
+  })
+
+  // GitHub allows a 255-character display name; a search result shows ~60.
+  it("shortens the name rather than losing the suffix", () => {
+    const d = data()
+    d.profile.name = "Juan Miguel Bartolome de la Cruz y Santos de Manila III"
+    const title = titleFor(d.profile)
+    expect(title.length).toBeLessThanOrEqual(MAX_TITLE)
+    expect(title).toMatch(/ — Portfolio$/)
+    expect(title).toMatch(/^Juan Miguel/)
+  })
+})
+
 describe("descriptionFor", () => {
   it("leads with the owner's own bio", () => {
     expect(descriptionFor(data())).toMatch(/^Backend engineer building things/)
   })
 
-  it("stays inside what a search result will show", () => {
-    expect(descriptionFor(data()).length).toBeLessThanOrEqual(200)
+  // Under the floor a search engine discards the description and writes its own
+  // snippet from the page; over the ceiling it truncates mid-sentence. Every
+  // profile shape has to land inside the window, not just the well-filled one.
+  it("lands inside the window a search result will show", () => {
+    const shapes: Partial<PortfolioData["profile"]>[] = [
+      {},
+      { bio: "Dev." },
+      { bio: null },
+      { bio: null, location: null, company: null },
+      { bio: "x".repeat(400) },
+      { name: null, bio: null, location: null },
+    ]
+    for (const profile of shapes) {
+      const d = data()
+      Object.assign(d.profile, profile)
+      const description = descriptionFor(d)
+      expect(description.length, description).toBeGreaterThanOrEqual(
+        MIN_DESCRIPTION,
+      )
+      expect(description.length, description).toBeLessThanOrEqual(
+        MAX_DESCRIPTION,
+      )
+    }
+  })
+
+  it("pads a bio too short to be a snippet on its own", () => {
+    const d = data()
+    d.profile.bio = "Dev."
+    const description = descriptionFor(d)
+    expect(description).toMatch(/^Dev\./)
+    expect(description).toContain("Manila, Philippines")
+  })
+
+  // A profile with nothing to say about itself still has to clear the floor.
+  it("falls back to the generated summary when the bio is all there is", () => {
+    const d = data()
+    d.profile.bio = "Dev."
+    d.profile.location = null
+    d.repos = []
+    d.stats = { followers: 0, publicRepos: 0 }
+    expect(descriptionFor(d)).toBe(
+      "Dev. Juan dela Cruz's developer portfolio, built from their GitHub profile.",
+    )
   })
 
   it("drops the extras rather than truncating a long bio", () => {

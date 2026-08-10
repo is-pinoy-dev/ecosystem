@@ -14,6 +14,54 @@ function getOg(doc: Document, property: string): string | null {
   );
 }
 
+// @type values that unlock a rich result in Google Search. ProfilePage, Person
+// and ItemList are here because a personal site is one of the shapes this
+// auditor is pointed at most: a hosted portfolio describes a Person on a
+// ProfilePage with an ItemList of their work, and that is correct markup, not a
+// missing Article.
+const KNOWN_TYPES = [
+  "Article",
+  "FAQPage",
+  "Product",
+  "WebSite",
+  "WebPage",
+  "ProfilePage",
+  "CollectionPage",
+  "Person",
+  "Organization",
+  "LocalBusiness",
+  "BreadcrumbList",
+  "ItemList",
+];
+
+/**
+ * Every @type declared by one JSON-LD document, in document order.
+ *
+ * A block is rarely a single flat node. Publishers emit an array of nodes, or —
+ * the schema.org-recommended shape for a page describing several linked
+ * entities — one object wrapping an `@graph`. Reading `@type` off the outermost
+ * object sees `undefined` for both and reports perfectly good structured data
+ * as untyped, so unwrap first. `@type` may itself be an array; a node may carry
+ * a nested `@graph` of its own.
+ */
+function collectJsonLdTypes(value: unknown, depth = 0): string[] {
+  if (depth > 5 || value === null || typeof value !== "object") return [];
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => collectJsonLdTypes(entry, depth + 1));
+  }
+
+  const node = value as Record<string, unknown>;
+  const own = node["@type"];
+  const types = typeof own === "string" ? [own] : Array.isArray(own) ? own.filter((t): t is string => typeof t === "string") : [];
+  return [...types, ...collectJsonLdTypes(node["@graph"], depth + 1)];
+}
+
+/** The type to grade the document on: the first recognised one, else the first. */
+function primaryJsonLdType(value: unknown): string | null {
+  const types = collectJsonLdTypes(value);
+  return types.find((type) => KNOWN_TYPES.includes(type)) ?? types[0] ?? null;
+}
+
 function scoreCategory(fields: AuditField[]): AuditCategory {
   const passed = fields.filter((f) => f.status === "pass").length;
   return {
@@ -62,10 +110,9 @@ export function parseAudit(html: string, url: string, xRobotsTag: string | null 
   let jsonLdIsValid = false;
   if (jsonLdText) {
     try {
-      const parsed = JSON.parse(jsonLdText) as Record<string, unknown> | unknown[];
+      const parsed = JSON.parse(jsonLdText) as unknown;
       jsonLdIsValid = true;
-      const first = Array.isArray(parsed) ? (parsed[0] as Record<string, unknown>) : parsed;
-      jsonLdType = typeof first["@type"] === "string" ? first["@type"] : null;
+      jsonLdType = primaryJsonLdType(parsed);
     } catch {
       jsonLdIsValid = false;
     }
@@ -126,9 +173,7 @@ export function parseAudit(html: string, url: string, xRobotsTag: string | null 
     const raw = script.textContent ?? "";
     try {
       const parsed = JSON.parse(raw) as unknown;
-      const first = Array.isArray(parsed) ? (parsed[0] as Record<string, unknown>) : (parsed as Record<string, unknown>);
-      const type = typeof first?.["@type"] === "string" ? first["@type"] : null;
-      return { raw, type, isValid: true, parsed };
+      return { raw, type: primaryJsonLdType(parsed), isValid: true, parsed };
     } catch {
       return { raw, type: null, isValid: false, parsed: null };
     }
@@ -309,7 +354,6 @@ export function parseAudit(html: string, url: string, xRobotsTag: string | null 
       ? { label: "preload hints", value: preloadHint, status: "pass" }
       : { label: "preload hints", value: null, status: "warn", message: "No preload hints found — consider preloading critical fonts or images" },
     ((): AuditField => {
-      const KNOWN_TYPES = ["Article", "FAQPage", "Product", "WebSite", "Organization", "LocalBusiness", "BreadcrumbList"];
       if (!jsonLdText)
         return { label: "JSON-LD type", value: null, status: "fail", message: "No JSON-LD found — add structured data first" };
       if (!jsonLdType || !KNOWN_TYPES.includes(jsonLdType))
