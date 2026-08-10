@@ -15,8 +15,8 @@ import { DiscordIcon, GitHubIcon } from "@/components/icons"
 import {
   COMMUNITY_LINKS,
   NAV_LINKS,
-  NAV_SECTIONS,
   type NavItem,
+  type NavSection,
 } from "@/lib/navigation"
 
 function MobileNavItem({
@@ -82,15 +82,18 @@ export function MobileNav({
   open,
   onClose,
   returnFocusRef,
+  sections,
 }: {
   open: boolean
   onClose: () => void
   /** Focused when Escape closes the panel, so keyboard users land back on the toggle. */
   returnFocusRef?: React.RefObject<HTMLButtonElement | null>
+  /** Already filtered by the header — this panel never re-reads the registry. */
+  sections: NavSection[]
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   const [openSections, setOpenSections] = useState<string[]>(() =>
-    NAV_SECTIONS[0] ? [NAV_SECTIONS[0].id] : []
+    sections[0] ? [sections[0].id] : []
   )
   const titleId = useId()
   const pathname = usePathname()
@@ -175,7 +178,7 @@ export function MobileNav({
           value={openSections}
           onValueChange={setOpenSections}
         >
-          {NAV_SECTIONS.map((section) => (
+          {sections.map((section) => (
             <AccordionItem
               key={section.id}
               value={section.id}

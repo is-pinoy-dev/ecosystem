@@ -19,6 +19,7 @@ import {
   ShowcaseHighlights,
   ShowcaseHighlightsSkeleton,
 } from "@/components/showcase-grid"
+import { resolveFlagSet } from "@/lib/flags-server"
 
 export const metadata: Metadata = {
   title: "is-pinoy.dev — Free subdomains for Filipino developers.",
@@ -48,10 +49,14 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic"
 
-export default function Page() {
+export default async function Page() {
+  // Resolved once here, on the server, so only the booleans cross into the
+  // client nav — never the remote config behind a decision.
+  const flags = await resolveFlagSet()
+
   return (
     <>
-      <MainNav />
+      <MainNav flags={flags} />
 
       <main className="min-h-screen">
         <HeroSection />
@@ -69,8 +74,14 @@ export default function Page() {
           <RecentlyClaimed />
         </Suspense>
         <HowClaimingWorks />
-        <PortfolioFeature />
-        <ThemeMarketplace />
+        {/* Both sections lead to the dashboard's claim flow, which is behind
+            the same flag — while it is off there is nothing to send people to. */}
+        {flags.claims ? (
+          <>
+            <PortfolioFeature />
+            <ThemeMarketplace />
+          </>
+        ) : null}
 
         <section
           className="border-b border-border py-7 sm:py-10 lg:py-12"

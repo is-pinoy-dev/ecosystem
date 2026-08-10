@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { MainNav } from "@/components/main-nav"
+import { resolveFlagSet } from "@/lib/flags-server"
 
 interface DocLayoutProps {
   title: string
@@ -9,10 +10,19 @@ interface DocLayoutProps {
   children: React.ReactNode
 }
 
-export function DocLayout({ title, effectiveDate, children }: DocLayoutProps) {
+// Resolving flags here costs these pages their static rendering, and buys a
+// header that matches the rest of the site: a menu that offers an entry on the
+// landing page but not on the privacy page reads as a bug.
+export async function DocLayout({
+  title,
+  effectiveDate,
+  children,
+}: DocLayoutProps) {
+  const flags = await resolveFlagSet()
+
   return (
     <>
-      <MainNav />
+      <MainNav flags={flags} />
 
       <Container className="doc-main max-w-[780px] pt-12 pb-20 sm:pt-16">
         <p className="m-0 mb-5 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">

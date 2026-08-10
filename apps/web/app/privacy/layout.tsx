@@ -26,6 +26,11 @@ export const metadata: Metadata = {
     images: ["/opengraph-image"],
   },
 }
+// The shared header reads feature flags, which needs the request. Declared here
+// rather than discovered mid-render so the build says so plainly instead of
+// logging a DYNAMIC_SERVER_USAGE bail-out.
+export const dynamic = "force-dynamic"
+
 export default function PrivacyLayout({
   children,
 }: {

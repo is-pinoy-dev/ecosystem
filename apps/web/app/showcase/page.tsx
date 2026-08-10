@@ -9,6 +9,7 @@ import {
 } from "@is-pinoy-dev/ui/components/section-header"
 import { MainNav } from "@/components/main-nav"
 import { SiteFooter } from "@/components/site-footer"
+import { resolveFlagSet } from "@/lib/flags-server"
 import {
   ShowcaseGrid,
   ShowcaseGridSkeleton,
@@ -43,10 +44,12 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic"
 
-export default function ShowcasePage() {
+export default async function ShowcasePage() {
+  const flags = await resolveFlagSet()
+
   return (
     <>
-      <MainNav />
+      <MainNav flags={flags} />
 
       <main className="min-h-screen">
         <section className="py-16 sm:py-20">
