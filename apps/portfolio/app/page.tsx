@@ -14,6 +14,7 @@ import {
   isLight,
   keywordsFor,
   originFor,
+  titleFor,
 } from "@/lib/seo"
 
 // Reading the Host-derived header makes this route dynamic per subdomain; the
@@ -63,7 +64,7 @@ export async function generateMetadata({
 
   const { profile } = ctx.data
   const name = displayName(profile)
-  const title = `${name} — Portfolio`
+  const title = titleFor(profile)
   const description = descriptionFor(ctx.data)
   const origin = originFor(ctx.subdomain)
   // Only a claimed subdomain is a real, canonical site. A preview renders an
@@ -83,7 +84,18 @@ export async function generateMetadata({
     creator: name,
     publisher: SITE_NAME,
     category: "technology",
-    ...(canonical ? { alternates: { canonical } } : {}),
+    // A portfolio is one page in one language, so the hreflang set is just the
+    // canonical naming itself. Self-referential alternates are what tell a
+    // crawler the set is complete and deliberate rather than absent, and
+    // `x-default` is the entry that answers for every locale we don't publish.
+    ...(canonical
+      ? {
+          alternates: {
+            canonical,
+            languages: { en: canonical, "x-default": canonical },
+          },
+        }
+      : {}),
     icons: iconsFor(profile.avatar),
     manifest: "/manifest.webmanifest",
     // The tab icon is the owner's face; so is the icon an installed copy gets.
@@ -118,7 +130,13 @@ export async function generateMetadata({
       title,
       description,
       images: [ogImage(ctx.subdomain, profile.avatar, name).url],
-      ...(profile.twitter ? { creator: `@${profile.twitter}` } : {}),
+      // On a personal site the publisher and the author are the same person,
+      // so the owner's handle answers for both `twitter:site` (attribution and
+      // analytics on the card) and `twitter:creator`. We have no brand handle
+      // to fall back to, so a profile without one simply declares neither.
+      ...(profile.twitter
+        ? { site: `@${profile.twitter}`, creator: `@${profile.twitter}` }
+        : {}),
     },
   }
 }

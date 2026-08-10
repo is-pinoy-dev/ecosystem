@@ -104,8 +104,8 @@ export const GUIDELINES: Record<string, Guideline> = {
     impact: "Reduces render-blocking and improves LCP (Largest Contentful Paint), a Core Web Vital.",
   },
   "JSON-LD type": {
-    guideline: "Use a recognised schema.org @type: Article, FAQPage, Product, WebSite, Organization, LocalBusiness, or BreadcrumbList.",
-    impact: "A recognised type unlocks specific rich result formats (FAQ accordions, product prices, breadcrumbs) in Google.",
+    guideline: "Use a recognised schema.org @type: Article, FAQPage, Product, WebSite, WebPage, ProfilePage, CollectionPage, Person, Organization, LocalBusiness, BreadcrumbList, or ItemList. Nodes inside an @graph count.",
+    impact: "A recognised type unlocks specific rich result formats (FAQ accordions, product prices, breadcrumbs, profile cards) in Google.",
   },
   "JSON-LD valid": {
     guideline: "The JSON-LD script must be valid JSON — no trailing commas, unquoted keys, or syntax errors.",

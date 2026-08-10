@@ -205,7 +205,9 @@ describe("renderReadme — legitimate content survives", () => {
     )
     expect(html).toContain("Juan")
     expect(html).toContain("Dev from Manila")
-    expect(html).toMatch(/<h1/i)
+    // The heading survives as a heading — demoted, because the template owns
+    // the page's H1. See the document-structure suite below.
+    expect(html).toMatch(/<h2/i)
   })
 
   it("renders GFM tables, task lists, and fenced code", async () => {
@@ -241,5 +243,48 @@ describe("renderReadme — legitimate content survives", () => {
     expect(html).toContain('href="https://example.test"')
     expect(html).toContain('href="http://example.test"')
     expect(html).toContain('href="mailto:me@example.test"')
+  })
+})
+
+// The README is embedded inside a page the template already owns the top of.
+// These assertions are what keeps the merged document valid for a crawler and a
+// screen reader — see the site-audit tool's H1 and image-alt checks.
+describe("renderReadme — document structure", () => {
+  it("demotes every heading so the template keeps the only H1", async () => {
+    const html = await renderReadme(
+      ["# Hi there", "", "## Projects", "", "### Details"].join("\n"),
+    )
+    expect(html).not.toMatch(/<h1/i)
+    expect(html).toContain("<h2>Hi there</h2>")
+    expect(html).toContain("<h3>Projects</h3>")
+    expect(html).toContain("<h4>Details</h4>")
+  })
+
+  it("demotes headings nested inside the raw HTML wrappers READMEs use", async () => {
+    const html = await renderReadme(
+      `<div align="center"><h1>Juan</h1><h2>Backend</h2></div>`,
+    )
+    expect(html).not.toMatch(/<h1/i)
+    expect(html).toContain("<h2>Juan</h2>")
+    expect(html).toContain("<h3>Backend</h3>")
+  })
+
+  it("leaves H6 alone rather than inventing an H7", async () => {
+    const html = await renderReadme("###### Fine print")
+    expect(html).toContain("<h6>Fine print</h6>")
+  })
+
+  it("marks an image with no alt as decorative rather than leaving it bare", async () => {
+    const html = await renderReadme(
+      `<img src="https://img.shields.io/badge/build-passing-green">`,
+    )
+    expect(html).toContain('alt=""')
+  })
+
+  it("never overwrites an alt the author wrote", async () => {
+    const html = await renderReadme(
+      `![Build status](https://img.shields.io/badge/build-passing-green)`,
+    )
+    expect(html).toContain('alt="Build status"')
   })
 })

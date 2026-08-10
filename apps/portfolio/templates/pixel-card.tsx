@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
 } from "@is-pinoy-dev/ui/components/card"
 import type { PortfolioData } from "@/lib/portfolio-data"
 
@@ -28,9 +27,13 @@ export function PixelCardTemplate({ data }: { data: PortfolioData }) {
             priority
           />
           <div className="flex flex-col gap-2">
-            <CardTitle className="font-mono text-lg text-primary">
+            {/* The owner's name is the page's one H1 — the heading a crawler
+                reads the page's subject from. CardTitle renders a <div>, so
+                this is the native fallback, the same one MinimalTemplate and
+                TerminalTemplate use. */}
+            <h1 className="m-0 font-mono text-lg font-medium text-primary">
               {profile.name ?? profile.login}
-            </CardTitle>
+            </h1>
             <p className="m-0 font-mono text-xs text-muted-foreground">
               @{profile.login}
             </p>
