@@ -4,12 +4,15 @@ import {
   buildToggledFile,
   proxyBranch,
   subdomainFromHeadLabel,
+  summarizeChanges,
   type RecordChange,
 } from "@/lib/proxy-record"
 
-// Opens a "flip the Cloudflare proxy" pull request against the public domains
-// repo on the signed-in user's behalf, using their OAuth token (public_repo):
-//   sync fork → reset branch → read record file → rewrite `proxied` → open PR.
+// Opens a settings pull request against the public domains repo on the
+// signed-in user's behalf, using their OAuth token (public_repo):
+//   sync fork → reset branch → read record file → rewrite the record → open PR.
+// Carries the proxy flag, the platform tool flags, and the hosted portfolio's
+// style — one record file, so one branch and one pull request per subdomain.
 //
 // Mirrors lib/claim-portfolio.ts, with one structural difference: a claim adds
 // a new file, this edits an existing one. That means the file's blob sha is
@@ -298,16 +301,7 @@ export async function openProxyTogglePR(
   const built = buildToggledFile(file.content, changes)
   if ("error" in built) return { ok: false, error: built.error }
 
-  // All-on or all-off reads better as "enable"/"disable"; a mix of both only
-  // honestly summarises as "update".
-  const allOn = changes.every((c) => c.enabled)
-  const allOff = changes.every((c) => !c.enabled)
-  const action = allOn ? "Enable" : allOff ? "Disable" : "Update"
-  const subject =
-    changes.length === 1 && changes[0]!.kind === "proxy"
-      ? "Cloudflare proxy"
-      : "platform settings"
-  const message = `chore: ${action.toLowerCase()} ${subject} for ${subdomain}`
+  const summary = summarizeChanges(subdomain, changes)
 
   const putFile = await fetch(
     `${API}/repos/${login}/${UPSTREAM_REPO}/contents/subdomains/${subdomain}.json`,
@@ -315,7 +309,7 @@ export async function openProxyTogglePR(
       method: "PUT",
       headers: headers(token),
       body: JSON.stringify({
-        message,
+        message: summary.commitMessage,
         content: Buffer.from(built.content).toString("base64"),
         sha: file.sha,
         branch,
@@ -330,13 +324,9 @@ export async function openProxyTogglePR(
   }
 
   const prBody = [
-    `${action}s ${subject} for \`${subdomain}.is-pinoy.dev\`.`,
+    summary.lead,
     "",
-    ...changes.map((c) =>
-      c.kind === "proxy"
-        ? `- \`records.${c.type}.proxied\` → \`${c.enabled}\``
-        : `- \`features.${c.feature}\` → \`${c.enabled}\``
-    ),
+    ...summary.bullets,
     "",
     "Opened from the is-pinoy.dev dashboard. Git stays the source of truth —",
     "merging this applies the change on the next sync run.",
@@ -348,7 +338,7 @@ export async function openProxyTogglePR(
       method: "POST",
       headers: headers(token),
       body: JSON.stringify({
-        title: `${action} ${subject}: ${subdomain}`,
+        title: summary.title,
         head: `${login}:${branch}`,
         base: upstreamBase,
         body: prBody,
