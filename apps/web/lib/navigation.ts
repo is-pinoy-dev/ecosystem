@@ -7,10 +7,12 @@ import {
   Globe,
   Image as ImageIcon,
   LayoutDashboard,
+  LayoutTemplate,
   LifeBuoy,
   Search,
   Server,
   Sparkles,
+  Store,
   Terminal,
 } from "lucide-react"
 
@@ -75,6 +77,20 @@ export const NAV_SECTIONS: NavSection[] = [
         description: "Check availability and reserve your name.is-pinoy.dev.",
         href: "/#claim",
         icon: Globe,
+      },
+      {
+        label: "GitHub Portfolio",
+        description:
+          "Turn your GitHub profile into a hosted site with a design you pick.",
+        href: "/#portfolio",
+        icon: LayoutTemplate,
+      },
+      {
+        label: "Theme Marketplace",
+        description: "Browse, install, and publish community portfolio themes.",
+        href: "/#marketplace",
+        icon: Store,
+        tag: "Soon",
       },
       {
         label: "Showcase",

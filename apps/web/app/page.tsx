@@ -9,6 +9,8 @@ import {
   RecentlyClaimedSkeleton,
 } from "@/components/recently-claimed"
 import { HowClaimingWorks } from "@/components/how-claiming-works"
+import { PortfolioFeature } from "@/components/portfolio-feature"
+import { ThemeMarketplace } from "@/components/theme-marketplace"
 import { ProviderGuides } from "@/components/provider-guides"
 import { CommunitySection } from "@/components/cta-section"
 import { ReportAbuseSection } from "@/components/report-abuse-section"
@@ -67,6 +69,8 @@ export default function Page() {
           <RecentlyClaimed />
         </Suspense>
         <HowClaimingWorks />
+        <PortfolioFeature />
+        <ThemeMarketplace />
 
         <section
           className="border-b border-border py-7 sm:py-10 lg:py-12"
