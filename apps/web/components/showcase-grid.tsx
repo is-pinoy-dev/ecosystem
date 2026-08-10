@@ -14,6 +14,7 @@ import {
   type ShowcasePreviewStatus,
 } from "@/lib/showcase-preview"
 import { rotateWeekly } from "@/lib/showcase-rotation"
+import { showcaseKindLabel } from "@/lib/showcase-kind"
 
 /**
  * Every preview is framed at the OG card's 1200x630. The showcase grid and the
@@ -111,7 +112,7 @@ function ShowcaseCard({
             </span>
             <div className="flex items-center justify-between gap-2">
               <span className="truncate text-xs text-muted-foreground">
-                Portfolio
+                {showcaseKindLabel(entry)}
               </span>
               <span className="shrink-0 text-sm text-accent">→</span>
             </div>
@@ -219,7 +220,7 @@ function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
           {entry.subdomain}.is-pinoy.dev
         </p>
         <p className="m-0 mt-[3px] truncate text-xs text-muted-foreground">
-          Portfolio
+          {showcaseKindLabel(entry)}
         </p>
       </div>
       <span className="view-site shrink-0 text-xs font-semibold text-accent">
