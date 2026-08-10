@@ -8,6 +8,7 @@ import {
   type RegisteredSubdomain,
 } from "@/lib/subdomains"
 import { getScreenshotManifest } from "@/lib/screenshot-manifest"
+import { getCapturedSubdomains } from "@/lib/captured-subdomains"
 import {
   previewStatusFor,
   type ShowcasePreviewStatus,
@@ -52,12 +53,24 @@ async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
 }
 
 /**
- * Whether the entry has a capture of its own to show. The og fallback resolves
- * for every subdomain, so it can't decide this: only a stored screenshot means
- * the site itself has been seen.
+ * The entries there is a real capture of, or null when neither source could say.
+ *
+ * Two paths reach the same stored capture: the manifest, which hands us the URL
+ * outright, and the og Worker's list, which is what the card images themselves
+ * resolve through. Either one is proof, so a misconfigured secret on one path no
+ * longer decides what the landing page shows. When neither could answer, null
+ * says so — an empty list would claim, wrongly, that nothing has been captured.
  */
-function hasScreenshot(entry: SubdomainEntry): boolean {
-  return Boolean(entry.screenshotUrl)
+async function captured(
+  entries: SubdomainEntry[]
+): Promise<SubdomainEntry[] | null> {
+  const names = await getCapturedSubdomains()
+  const fromManifest = entries.filter((entry) => Boolean(entry.screenshotUrl))
+  if (names === null) return fromManifest.length > 0 ? fromManifest : null
+
+  return entries.filter(
+    (entry) => Boolean(entry.screenshotUrl) || names.has(entry.subdomain)
+  )
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
@@ -270,17 +283,17 @@ export function ShowcaseHighlightsSkeleton() {
 }
 
 export async function ShowcaseHighlights() {
-  // The landing page is a shop window: it shows only entries with a capture of
-  // the site itself, so a visitor never meets the community through a generated
-  // card. Those entries then rotate weekly in registry order, so a slot on the
-  // landing page is a turn every captured site gets rather than a reward for
-  // having claimed early. /showcase remains the complete, unrotated list.
+  // The landing page is a shop window: it shows only entries there is a real
+  // capture of, so a visitor never meets the community through a generated card.
+  // Those entries then rotate weekly in registry order, so a slot on the landing
+  // page is a turn every captured site gets rather than a reward for having
+  // claimed early. /showcase remains the complete, unrotated list.
   const entries = await fetchAllSubdomains()
-  const highlights = rotateWeekly(
-    entries.filter(hasScreenshot),
-    HIGHLIGHT_COUNT,
-    new Date()
-  )
+  const pool = await captured(entries)
+  // Nothing could tell us which entries are captured. Showing the newest few —
+  // previews and all — beats an empty section reporting an outage of ours as
+  // news about the community.
+  const highlights = rotateWeekly(pool ?? entries, HIGHLIGHT_COUNT, new Date())
 
   if (highlights.length === 0) {
     // Nothing registered and nothing captured yet are different situations, and

@@ -6,9 +6,11 @@ import type { ShowcaseScreenshot } from "@/lib/screenshot-manifest"
 
 const getRegisteredSubdomains = vi.fn()
 const getScreenshotManifest = vi.fn()
+const getCapturedSubdomains = vi.fn()
 
 vi.mock("@/lib/subdomains", () => ({ getRegisteredSubdomains }))
 vi.mock("@/lib/screenshot-manifest", () => ({ getScreenshotManifest }))
+vi.mock("@/lib/captured-subdomains", () => ({ getCapturedSubdomains }))
 
 const { ShowcaseGrid, ShowcaseHighlights } = await import("./showcase-grid")
 
@@ -79,6 +81,9 @@ describe("ShowcaseHighlights", () => {
     getScreenshotManifest.mockResolvedValue(
       captures(...REGISTRY.map((e) => e.subdomain))
     )
+    // The og Worker answered and knows of no captures, so every expectation
+    // below rests on the manifest unless it says otherwise.
+    getCapturedSubdomains.mockResolvedValue(new Set())
   })
 
   afterEach(() => {
@@ -111,6 +116,38 @@ describe("ShowcaseHighlights", () => {
     const html = await render(ShowcaseHighlights())
 
     expect(orderOf(html)).toEqual(["alpha", "charlie", "delta"])
+  })
+
+  it("counts a capture the og worker knows about but the manifest does not", async () => {
+    // The card images resolve captures through that Worker, so anything it can
+    // photograph belongs on the landing page even when the manifest — a second
+    // path, behind a shared secret — comes back empty.
+    getScreenshotManifest.mockResolvedValue(new Map())
+    getCapturedSubdomains.mockResolvedValue(new Set(["bravo", "charlie"]))
+
+    const html = await render(ShowcaseHighlights())
+
+    expect(orderOf(html)).toEqual(["bravo", "charlie"])
+  })
+
+  it("shows the newest entries when neither source can answer", async () => {
+    // A failure to ask is ours, not news about the community: reporting it as
+    // "no previews yet" would empty the section over an outage.
+    getScreenshotManifest.mockResolvedValue(new Map())
+    getCapturedSubdomains.mockResolvedValue(null)
+
+    const html = await render(ShowcaseHighlights())
+
+    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie"])
+  })
+
+  it("keeps filtering on the manifest when the og worker cannot answer", async () => {
+    getScreenshotManifest.mockResolvedValue(captures("delta"))
+    getCapturedSubdomains.mockResolvedValue(null)
+
+    const html = await render(ShowcaseHighlights())
+
+    expect(orderOf(html)).toEqual(["delta"])
   })
 
   it("holds the same entries for the rest of the week", async () => {
