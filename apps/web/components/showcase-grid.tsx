@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { Card, CardContent } from "@is-pinoy-dev/ui/components/card"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Skeleton } from "@is-pinoy-dev/ui/components/skeleton"
@@ -11,6 +12,7 @@ import {
   previewStatusFor,
   type ShowcasePreviewStatus,
 } from "@/lib/showcase-preview"
+import { rotateWeekly } from "@/lib/showcase-rotation"
 
 /**
  * Every preview is framed at the OG card's 1200x630. The showcase grid and the
@@ -29,17 +31,15 @@ interface SubdomainEntry extends RegisteredSubdomain {
   screenshotCapturedAt: string | null
 }
 
-async function fetchAllSubdomains(limit?: number): Promise<SubdomainEntry[]> {
+async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
   // The registry remains the source of truth for entries and ownership. The
   // Worker manifest is read-only metadata and can never trigger a capture.
   const [registered, screenshots] = await Promise.all([
     getRegisteredSubdomains(),
     getScreenshotManifest(),
   ])
-  const entries = limit ? registered.slice(0, limit) : registered
-  if (entries.length === 0) return []
 
-  return entries.map((entry) => {
+  return registered.map((entry) => {
     const screenshot = screenshots.get(entry.subdomain)
     return {
       ...entry,
@@ -49,6 +49,15 @@ async function fetchAllSubdomains(limit?: number): Promise<SubdomainEntry[]> {
       screenshotCapturedAt: screenshot?.screenshotCapturedAt ?? null,
     }
   })
+}
+
+/**
+ * Whether the entry has a capture of its own to show. The og fallback resolves
+ * for every subdomain, so it can't decide this: only a stored screenshot means
+ * the site itself has been seen.
+ */
+function hasScreenshot(entry: SubdomainEntry): boolean {
+  return Boolean(entry.screenshotUrl)
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
@@ -154,7 +163,8 @@ export function ShowcaseGridSkeleton({ limit = 6 }: { limit?: number }) {
 // ─── Grid (async, streamed) ───────────────────────────────────────────────────
 
 export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
-  const entries = await fetchAllSubdomains(limit)
+  const all = await fetchAllSubdomains()
+  const entries = limit ? all.slice(0, limit) : all
 
   return (
     <div className="flex flex-col gap-8">
@@ -260,30 +270,48 @@ export function ShowcaseHighlightsSkeleton() {
 }
 
 export async function ShowcaseHighlights() {
-  // Registry order, unmodified — the same entries the showcase grid leads with,
-  // in the same sequence. Every card now resolves to a real preview through the
-  // same ranked endpoint, so there is nothing left to reshuffle around: sorting
-  // by which entries happened to have a stored capture only made the landing
-  // page disagree with /showcase about what was newest.
-  const highlights = await fetchAllSubdomains(HIGHLIGHT_COUNT)
+  // The landing page is a shop window: it shows only entries with a capture of
+  // the site itself, so a visitor never meets the community through a generated
+  // card. Those entries then rotate weekly in registry order, so a slot on the
+  // landing page is a turn every captured site gets rather than a reward for
+  // having claimed early. /showcase remains the complete, unrotated list.
+  const entries = await fetchAllSubdomains()
+  const highlights = rotateWeekly(
+    entries.filter(hasScreenshot),
+    HIGHLIGHT_COUNT,
+    new Date()
+  )
 
   if (highlights.length === 0) {
+    // Nothing registered and nothing captured yet are different situations, and
+    // inviting the first claim is wrong copy for a registry that already has
+    // entries waiting on the screenshot worker.
+    const registered = entries.length > 0
     return (
       <div
         className={`flex ${PREVIEW_FRAME} items-center justify-center border border-border bg-card p-8 text-center`}
       >
         <div>
           <p className="m-0 font-mono text-xs tracking-[0.1em] text-muted-foreground uppercase">
-            No sites yet
+            {registered ? "Previews on the way" : "No sites yet"}
           </p>
-          <a
-            href="https://docs.is-pinoy.dev/guides"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-block text-[13px] font-semibold text-accent no-underline hover:underline"
-          >
-            Claim the first subdomain →
-          </a>
+          {registered ? (
+            <Link
+              href="/showcase"
+              className="mt-3 inline-block text-[13px] font-semibold text-accent no-underline hover:underline"
+            >
+              Browse the showcase →
+            </Link>
+          ) : (
+            <a
+              href="https://docs.is-pinoy.dev/guides"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block text-[13px] font-semibold text-accent no-underline hover:underline"
+            >
+              Claim the first subdomain →
+            </a>
+          )}
         </div>
       </div>
     )
