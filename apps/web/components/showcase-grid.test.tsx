@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { RegisteredSubdomain } from "@/lib/subdomains"
 import type { ShowcaseScreenshot } from "@/lib/screenshot-manifest"
@@ -62,13 +62,27 @@ function captures(...subdomains: string[]): Map<string, ShowcaseScreenshot> {
   return new Map(subdomains.map((name) => [name, capture(name)]))
 }
 
+/**
+ * A Monday whose rotation window starts at the head of a four-entry pool. The
+ * section rotates weekly, so every expectation here is anchored to a fixed
+ * clock rather than to whenever the suite happens to run.
+ */
+const WEEK_ONE = new Date("2026-01-19T00:00:00Z")
+const WEEK_TWO = new Date("2026-01-26T00:00:00Z")
+
 describe("ShowcaseHighlights", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useFakeTimers()
+    vi.setSystemTime(WEEK_ONE)
     getRegisteredSubdomains.mockResolvedValue(REGISTRY)
     getScreenshotManifest.mockResolvedValue(
       captures(...REGISTRY.map((e) => e.subdomain))
     )
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it("shows the newest captured entries in registry order", async () => {
@@ -88,8 +102,8 @@ describe("ShowcaseHighlights", () => {
   })
 
   it("does not float a captured entry ahead of an older captured one", async () => {
-    // Filtering decides which entries qualify; it never reorders the ones that
-    // do, so the section stays in step with /showcase about what is newest.
+    // Filtering decides which entries qualify and rotation decides when their
+    // turn comes; neither reshuffles registry order within a week's window.
     getScreenshotManifest.mockResolvedValue(
       captures("charlie", "delta", "alpha")
     )
@@ -99,13 +113,42 @@ describe("ShowcaseHighlights", () => {
     expect(orderOf(html)).toEqual(["alpha", "charlie", "delta"])
   })
 
-  it("leads with the same entries the showcase grid leads with", async () => {
-    const [highlights, grid] = await Promise.all([
-      render(ShowcaseHighlights()),
-      render(ShowcaseGrid()),
-    ])
+  it("holds the same entries for the rest of the week", async () => {
+    const monday = await render(ShowcaseHighlights())
+    vi.setSystemTime(new Date("2026-01-25T23:59:59Z"))
+    const sunday = await render(ShowcaseHighlights())
 
-    expect(orderOf(highlights)).toEqual(orderOf(grid).slice(0, 3))
+    expect(orderOf(sunday)).toEqual(orderOf(monday))
+  })
+
+  it("features different entries the following week", async () => {
+    const first = orderOf(await render(ShowcaseHighlights()))
+    vi.setSystemTime(WEEK_TWO)
+    const second = orderOf(await render(ShowcaseHighlights()))
+
+    expect(first).toEqual(["alpha", "bravo", "charlie"])
+    expect(second).toEqual(["delta", "alpha", "bravo"])
+  })
+
+  it("rotates only through entries that have a screenshot", async () => {
+    // `bravo` is uncaptured, so no week may feature it.
+    getScreenshotManifest.mockResolvedValue(
+      captures("alpha", "charlie", "delta")
+    )
+
+    for (const week of [WEEK_ONE, WEEK_TWO]) {
+      vi.setSystemTime(week)
+      expect(orderOf(await render(ShowcaseHighlights()))).not.toContain("bravo")
+    }
+  })
+
+  it("does not rotate the showcase grid", async () => {
+    // Rotation is a landing-page affordance; /showcase stays a stable list.
+    const first = orderOf(await render(ShowcaseGrid()))
+    vi.setSystemTime(WEEK_TWO)
+    const second = orderOf(await render(ShowcaseGrid()))
+
+    expect(second).toEqual(first)
   })
 
   it("keeps every registered entry in the showcase grid", async () => {

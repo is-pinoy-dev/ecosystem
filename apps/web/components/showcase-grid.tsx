@@ -12,6 +12,7 @@ import {
   previewStatusFor,
   type ShowcasePreviewStatus,
 } from "@/lib/showcase-preview"
+import { rotateWeekly } from "@/lib/showcase-rotation"
 
 /**
  * Every preview is framed at the OG card's 1200x630. The showcase grid and the
@@ -271,11 +272,15 @@ export function ShowcaseHighlightsSkeleton() {
 export async function ShowcaseHighlights() {
   // The landing page is a shop window: it shows only entries with a capture of
   // the site itself, so a visitor never meets the community through a generated
-  // card. Registry order is otherwise untouched — filtering picks which entries
-  // qualify, it never reorders the ones that do, so the section still agrees
-  // with /showcase about what is newest.
+  // card. Those entries then rotate weekly in registry order, so a slot on the
+  // landing page is a turn every captured site gets rather than a reward for
+  // having claimed early. /showcase remains the complete, unrotated list.
   const entries = await fetchAllSubdomains()
-  const highlights = entries.filter(hasScreenshot).slice(0, HIGHLIGHT_COUNT)
+  const highlights = rotateWeekly(
+    entries.filter(hasScreenshot),
+    HIGHLIGHT_COUNT,
+    new Date()
+  )
 
   if (highlights.length === 0) {
     // Nothing registered and nothing captured yet are different situations, and
