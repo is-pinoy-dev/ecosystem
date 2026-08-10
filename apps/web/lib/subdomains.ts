@@ -14,10 +14,22 @@
 const DOMAINS_REPO = "is-pinoy-dev/domains"
 const REVALIDATE_SECONDS = 3600
 
+/**
+ * The `portfolio` block of a registry entry, present only on subdomains we host
+ * and render ourselves. The showcase reads it for presence — which template was
+ * chosen is the renderer's business, not the card's.
+ */
+export interface HostedPortfolio {
+  template?: string
+  theme?: string
+}
+
 export interface RegisteredSubdomain {
   subdomain: string
   owner: { github: string; email?: string }
   records: Record<string, unknown>
+  /** The hosted-portfolio config, or null for a subdomain pointed elsewhere. */
+  portfolio: HostedPortfolio | null
   /** ISO date of the first commit that added the file, or null if unknown. */
   createdOn: string | null
   /** ISO date of the most recent commit touching the file, or null if unknown. */
@@ -32,6 +44,7 @@ export interface RegisteredSubdomainProfile {
 type DomainFile = {
   owner: { github: string; email?: string }
   records: Record<string, unknown>
+  portfolio?: HostedPortfolio
   destroy?: boolean
 }
 
@@ -139,6 +152,7 @@ export async function getRegisteredSubdomains(): Promise<RegisteredSubdomain[]> 
         subdomain,
         owner: data.owner,
         records: data.records,
+        portfolio: data.portfolio ?? null,
         createdOn: timestamps.createdOn,
         updatedOn: timestamps.updatedOn,
       }

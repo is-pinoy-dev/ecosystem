@@ -14,13 +14,19 @@ vi.mock("@/lib/captured-subdomains", () => ({ getCapturedSubdomains }))
 
 const { ShowcaseGrid, ShowcaseHighlights } = await import("./showcase-grid")
 
-function entry(subdomain: string, github: string): RegisteredSubdomain {
+function entry(
+  subdomain: string,
+  github: string,
+  overrides: Partial<RegisteredSubdomain> = {}
+): RegisteredSubdomain {
   return {
     subdomain,
     owner: { github },
     records: {},
+    portfolio: null,
     createdOn: "2026-01-01T00:00:00Z",
     updatedOn: "2026-01-01T00:00:00Z",
+    ...overrides,
   }
 }
 
@@ -195,6 +201,25 @@ describe("ShowcaseHighlights", () => {
     const html = await render(ShowcaseGrid())
 
     expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
+  })
+
+  it("labels each card by what the subdomain actually points at", async () => {
+    getRegisteredSubdomains.mockResolvedValue([
+      entry("alpha", "one", { portfolio: { template: "terminal" } }),
+      entry("bravo", "two", {
+        records: { CNAME: { value: "bravo.github.io" } },
+      }),
+      entry("charlie", "three", {
+        records: { CNAME: { value: "abc.vercel-dns-017.com." } },
+      }),
+    ])
+
+    const html = await render(ShowcaseGrid())
+
+    expect(html).toContain("Hosted portfolio")
+    expect(html).toContain("GitHub Pages")
+    // The third is somebody's own site on a host the showcase does not name.
+    expect(html).toContain("Portfolio<")
   })
 
   it("frames every preview at the same aspect ratio as the grid", async () => {
