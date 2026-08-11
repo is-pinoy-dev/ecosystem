@@ -17,12 +17,12 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@flags-sdk/vercel": "^1.4.6",
+    "@flags-sdk/vercel": "catalog:",
     "@is-pinoy-dev/schemas": "workspace:*",
     "@is-pinoy-dev/ui": "workspace:*",
     "@is-pinoy-dev/validate": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "flags": "^4.2.4",
+    "flags": "catalog:",
     "lucide-react": "catalog:",
     "next": "16.2.11",
     "next-auth": "5.0.0-beta.32",

@@ -7,12 +7,15 @@ import {
   Globe,
   Image as ImageIcon,
   LayoutDashboard,
+  LayoutTemplate,
   LifeBuoy,
   Search,
   Server,
   Sparkles,
+  Store,
   Terminal,
 } from "lucide-react"
+import type { FlagId, FlagSet } from "@/lib/flags"
 
 const DOCS_URL = "https://docs.is-pinoy.dev"
 
@@ -24,6 +27,11 @@ export interface NavItem {
   external?: boolean
   /** Short mono tag rendered next to the label. Metadata only, never decoration. */
   tag?: string
+  /**
+   * Rendered only when this flag resolves on. The section it points to is gated
+   * by the same flag — hiding the entry hides the way in, not the feature.
+   */
+  flag?: FlagId
 }
 
 export interface NavSection {
@@ -75,6 +83,22 @@ export const NAV_SECTIONS: NavSection[] = [
         description: "Check availability and reserve your name.is-pinoy.dev.",
         href: "/#claim",
         icon: Globe,
+      },
+      {
+        label: "GitHub Portfolio",
+        description:
+          "Turn your GitHub profile into a hosted site with a design you pick.",
+        href: "/#portfolio",
+        icon: LayoutTemplate,
+        flag: "claims",
+      },
+      {
+        label: "Theme Marketplace",
+        description: "Browse, install, and publish community portfolio themes.",
+        href: "/#marketplace",
+        icon: Store,
+        tag: "Soon",
+        flag: "claims",
       },
       {
         label: "Showcase",
@@ -196,6 +220,19 @@ export const NAV_SECTIONS: NavSection[] = [
     },
   },
 ]
+
+/**
+ * The mega-menu with every flagged-off entry removed, and any section left
+ * empty by that dropped. Both the desktop panels and the mobile accordion
+ * render from the result, so an unlaunched feature cannot appear in one and not
+ * the other.
+ */
+export function visibleNavSections(flags: FlagSet): NavSection[] {
+  return NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !item.flag || flags[item.flag]),
+  })).filter((section) => section.items.length > 0)
+}
 
 /** Plain links that sit beside the mega-menu triggers. */
 export const NAV_LINKS: NavLink[] = [

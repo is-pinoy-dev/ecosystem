@@ -17,7 +17,13 @@ import {
 } from "@is-pinoy-dev/ui/components/navigation-menu"
 import { GitHubStars } from "@/components/github-stars"
 import { MobileNav } from "@/components/mobile-nav"
-import { NAV_LINKS, NAV_SECTIONS, type NavItem } from "@/lib/navigation"
+import { FLAGS_OFF, type FlagSet } from "@/lib/flags"
+import {
+  NAV_LINKS,
+  visibleNavSections,
+  type NavItem,
+  type NavSection,
+} from "@/lib/navigation"
 
 function BrandLink() {
   return (
@@ -102,7 +108,7 @@ function MegaMenuItem({ item }: { item: NavItem }) {
   )
 }
 
-function DesktopNav() {
+function DesktopNav({ sections }: { sections: NavSection[] }) {
   return (
     // Panels are fixed to the header's bottom edge and span the full width
     // rather than hanging off their own trigger — a 700px popover anchored to a
@@ -116,7 +122,7 @@ function DesktopNav() {
       skipDelayDuration={240}
     >
       <NavigationMenuList className="gap-1 xl:gap-2">
-        {NAV_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <NavigationMenuItem key={section.id} value={section.id}>
             <NavigationMenuTrigger>{section.label}</NavigationMenuTrigger>
             <NavigationMenuContent className="fixed inset-x-0 top-16 border-x-0 border-t-0">
@@ -192,17 +198,24 @@ function DesktopNav() {
   )
 }
 
-export function MainNav() {
+/**
+ * `flags` arrives already resolved from the page: this component never sees the
+ * environment or the rules behind a decision, only the booleans. Pages that do
+ * not resolve flags leave every flagged entry hidden, which is the same answer
+ * an unreachable Flags service gives.
+ */
+export function MainNav({ flags = FLAGS_OFF }: { flags?: FlagSet }) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const closeMenu = useCallback(() => setOpen(false), [])
+  const sections = visibleNavSections(flags)
 
   return (
     <nav className="sticky top-0 z-50 h-[60px] border-b border-border bg-background/98 lg:h-16">
       <Container className="flex h-full items-center justify-between gap-6">
         <BrandLink />
 
-        <DesktopNav />
+        <DesktopNav sections={sections} />
 
         <div className="flex items-center gap-1 lg:gap-2">
           <AnimatedThemeToggler />
@@ -237,7 +250,12 @@ export function MainNav() {
         </div>
       </Container>
 
-      <MobileNav open={open} onClose={closeMenu} returnFocusRef={triggerRef} />
+      <MobileNav
+        open={open}
+        onClose={closeMenu}
+        returnFocusRef={triggerRef}
+        sections={sections}
+      />
     </nav>
   )
 }
