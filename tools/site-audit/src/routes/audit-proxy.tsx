@@ -41,9 +41,25 @@ export async function loader({ request }: Route.LoaderArgs) {
     const slice = buffer.byteLength > MAX_BYTES ? buffer.slice(0, MAX_BYTES) : buffer;
     const html = new TextDecoder().decode(slice);
 
-    return new Response(JSON.stringify({ html, xRobotsTag: response.headers.get("x-robots-tag") }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    // The status, the type and the size travel with the body. A 404, an empty
+    // response and a JSON error all parse as a valid-but-empty document, and
+    // every field then reports "missing" — a page that was never fetched
+    // grades as a page with no metadata. Only the caller can tell those apart,
+    // and only if we hand it more than the bytes.
+    return new Response(
+      JSON.stringify({
+        html,
+        xRobotsTag: response.headers.get("x-robots-tag"),
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get("content-type"),
+        bytes: buffer.byteLength,
+        // Redirects are followed, so this is where the bytes actually came
+        // from — not necessarily what was asked for.
+        finalUrl: response.url || parsedTarget.toString(),
+      }),
+      { headers: { "Content-Type": "application/json" } },
+    );
   } catch {
     return new Response("Failed to fetch target URL", { status: 502 });
   }

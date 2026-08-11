@@ -17,6 +17,55 @@ export type AuditContext = {
   runAudit: () => void
 }
 
+/** What /audit-proxy hands back about the fetch, alongside the bytes. */
+type ProxyResponse = {
+  html: string
+  xRobotsTag: string | null
+  status: number
+  statusText: string
+  contentType: string | null
+  bytes: number
+  finalUrl: string
+}
+
+/**
+ * Why this response can't be graded, or null if it can.
+ *
+ * An HTML parser accepts anything. A 404 body, an empty response and a JSON
+ * error all become a valid Document with an empty <head>, and every check then
+ * reports its field as missing — so a page that was never fetched scores like a
+ * page with no metadata at all, and the report reads as the site's fault. Each
+ * case below is a fetch that failed, and saying so is the whole report.
+ */
+function unscorable(res: ProxyResponse, target: string): string | null {
+  if (res.status < 200 || res.status >= 300) {
+    return `${target} responded ${res.status} ${res.statusText}. There is no page at this address to audit.`
+  }
+  if (res.bytes === 0) {
+    return `${target} responded ${res.status} with an empty body. Nothing was returned to audit.`
+  }
+  const type = res.contentType?.split(";")[0]?.trim().toLowerCase()
+  if (type && type !== "text/html" && type !== "application/xhtml+xml") {
+    return `${target} returned ${type}, not HTML. Point the scan at a page rather than an asset or an API route.`
+  }
+  if (!/<html[\s>]/i.test(res.html)) {
+    return `${target} returned ${res.bytes} bytes that are not an HTML document. Nothing was returned to audit.`
+  }
+  if (res.finalUrl && !sameOrigin(res.finalUrl, target)) {
+    return `${target} redirected to ${res.finalUrl}, which is a different origin. The audit would grade that site, not this one.`
+  }
+  return null
+}
+
+/** Unparseable either way is not evidence of a redirect; don't invent one. */
+function sameOrigin(a: string, b: string): boolean {
+  try {
+    return new URL(a).origin === new URL(b).origin
+  } catch {
+    return true
+  }
+}
+
 function getOrigin(): string {
   if (typeof window === "undefined") return ""
   const base = import.meta.env.DEV
@@ -58,11 +107,14 @@ export default function Layout() {
         `/_tools/site-audit/audit-proxy?url=${encodeURIComponent(target)}`,
         signal ? { signal } : undefined
       )
-      if (!res.ok) throw new Error(`Proxy error: ${res.status}`)
-      const json = (await res.json()) as {
-        html: string
-        xRobotsTag: string | null
+      if (!res.ok) {
+        // The proxy's own refusals are plain text and say why (blocked host,
+        // bad URL, upstream timeout); relaying the status alone loses that.
+        throw new Error((await res.text()).trim() || `Proxy error: ${res.status}`)
       }
+      const json = (await res.json()) as ProxyResponse
+      const problem = unscorable(json, target)
+      if (problem) throw new Error(problem)
       setState({
         status: "result",
         data: parseAudit(json.html, target, json.xRobotsTag),
