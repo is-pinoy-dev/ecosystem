@@ -3,14 +3,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { RegisteredSubdomain } from "@/lib/subdomains"
 import type { ShowcaseScreenshot } from "@/lib/screenshot-manifest"
+import type { ShowcaseVisitSummary } from "@/lib/visit-count"
 
 const getRegisteredSubdomains = vi.fn()
 const getScreenshotManifest = vi.fn()
 const getCapturedSubdomains = vi.fn()
+const getShowcaseVisits = vi.fn()
 
 vi.mock("@/lib/subdomains", () => ({ getRegisteredSubdomains }))
 vi.mock("@/lib/screenshot-manifest", () => ({ getScreenshotManifest }))
 vi.mock("@/lib/captured-subdomains", () => ({ getCapturedSubdomains }))
+vi.mock("@/lib/visits", () => ({ getShowcaseVisits }))
 
 const { ShowcaseGrid, ShowcaseHighlights } = await import("./showcase-grid")
 
@@ -70,6 +73,18 @@ function captures(...subdomains: string[]): Map<string, ShowcaseScreenshot> {
   return new Map(subdomains.map((name) => [name, capture(name)]))
 }
 
+/** Visit totals as lib/visits returns them, one entry per named subdomain. */
+function visits(
+  totals: Record<string, number>
+): Map<string, ShowcaseVisitSummary> {
+  return new Map(
+    Object.entries(totals).map(([subdomain, total]) => [
+      subdomain,
+      { total, windowDays: 30, through: "2026-01-18" },
+    ])
+  )
+}
+
 /**
  * A Monday whose rotation window starts at the head of a four-entry pool. The
  * section rotates weekly, so every expectation here is anchored to a fixed
@@ -90,6 +105,9 @@ describe("ShowcaseHighlights", () => {
     // The og Worker answered and knows of no captures, so every expectation
     // below rests on the manifest unless it says otherwise.
     getCapturedSubdomains.mockResolvedValue(new Set())
+    // Collection is configured but has stored nothing, so no card mentions
+    // visits unless the test says it should.
+    getShowcaseVisits.mockResolvedValue(new Map())
   })
 
   afterEach(() => {
@@ -220,6 +238,87 @@ describe("ShowcaseHighlights", () => {
     expect(html).toContain("GitHub Pages")
     // The third is somebody's own site on a host the showcase does not name.
     expect(html).toContain("Portfolio<")
+  })
+
+  it("shows each card's visit total on both surfaces", async () => {
+    getShowcaseVisits.mockResolvedValue(visits({ alpha: 1240 }))
+
+    const [grid, highlights] = await Promise.all([
+      render(ShowcaseGrid()),
+      render(ShowcaseHighlights()),
+    ])
+
+    // Compact past a thousand on both, with the exact figure and the day it
+    // runs to behind it.
+    expect(grid).toContain("1.2K visits")
+    expect(highlights).toContain("1.2K visits")
+    for (const html of [grid, highlights]) {
+      expect(html).toContain(
+        "1,240 visits in the last 30 days (through 2026-01-18)"
+      )
+    }
+  })
+
+  it("states the window it covers on every surface that shows a figure", async () => {
+    getShowcaseVisits.mockResolvedValue(visits({ alpha: 1240 }))
+
+    const [grid, highlights] = await Promise.all([
+      render(ShowcaseGrid()),
+      render(ShowcaseHighlights()),
+    ])
+
+    // A total with no window attached reads as all-time, and a tooltip is no
+    // answer on a phone. The grid says it once above cards too narrow to
+    // repeat it on; the landing card says it on the figure itself.
+    expect(grid).toContain("Visits · last 30 days")
+    expect(highlights).toContain("1.2K visits · 30d")
+  })
+
+  it("leaves the window unsaid when no card carries a figure", async () => {
+    const html = await render(ShowcaseGrid())
+
+    expect(html).not.toContain("Visits · last 30 days")
+  })
+
+  it("says nothing about visits for a subdomain with no total", async () => {
+    // `bravo` opted out of collection, or has simply never been collected —
+    // either way the card must not invent a figure or draw an empty one.
+    getShowcaseVisits.mockResolvedValue(visits({ alpha: 1240 }))
+
+    const html = await render(ShowcaseGrid())
+    const counted = [...html.matchAll(/visits in the last/g)]
+
+    expect(counted).toHaveLength(1)
+  })
+
+  it("drops a zero rather than printing it under somebody's site", async () => {
+    getShowcaseVisits.mockResolvedValue(visits({ alpha: 0 }))
+
+    const html = await render(ShowcaseGrid())
+
+    expect(html).not.toContain("0 visits")
+    expect(html).not.toMatch(/visits/i)
+  })
+
+  it("renders cards unchanged when the totals cannot be read", async () => {
+    // An unreachable analytics database is our problem, not news for a
+    // visitor: the cards lose a figure and nothing else.
+    getShowcaseVisits.mockResolvedValue(null)
+
+    const html = await render(ShowcaseGrid())
+
+    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
+    expect(html).not.toMatch(/visits/i)
+  })
+
+  it("does not let visit totals reorder or filter the showcase", async () => {
+    // The grid is the registry, in registry order. A busy subdomain does not
+    // buy a better slot and a quiet one does not lose its place.
+    getShowcaseVisits.mockResolvedValue(visits({ delta: 90_000, bravo: 12 }))
+
+    const html = await render(ShowcaseGrid())
+
+    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
   })
 
   it("frames every preview at the same aspect ratio as the grid", async () => {

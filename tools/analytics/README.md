@@ -160,7 +160,21 @@ otherwise completely silent.
 
 ## Who reads it
 
-`apps/dashboard` (`lib/analytics.ts`), over the D1 HTTP API — the same route it
+Two apps, both over the D1 HTTP API and both read-only:
+
+| Reader           | File               | Shows                                                                    |
+| ---------------- | ------------------ | ------------------------------------------------------------------------ |
+| `apps/dashboard` | `lib/analytics.ts` | The full picture — daily series and country split — to the owner, signed in. |
+| `apps/web`       | `lib/visits.ts`    | One 30-day total per showcase card, publicly.                            |
+
+The public one needs no opt-out check of its own, and that is deliberate: the
+collector drops an opted-out subdomain before anything is written, so a row
+existing is itself the record of consent. Any future reader that filters *after*
+reading is one edit away from publishing a total for someone who switched
+collection off — see `apps/web/app/privacy`, which now promises the same
+opt-out covers the display.
+
+`apps/dashboard` reads it over the D1 HTTP API — the same route it
 already uses for its registry read model, so no binding is involved. It reaches
 this database rather than the dashboard's own, because the dashboard schema is
 a read model that can be rebuilt from the domains repo and dropped on that

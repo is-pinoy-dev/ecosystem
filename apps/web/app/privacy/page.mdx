@@ -61,6 +61,8 @@ To monitor platform health and understand aggregate traffic patterns, we record 
 
 We do **not** receive or store paths, query strings, IP addresses, user-agent strings, referrers, session identifiers, or any other per-request detail at the platform level. The smallest unit of data we hold is one subdomain's total for one day.
 
+**Where these totals are shown.** Your subdomain's total for the last 30 days appears on its card in the public [showcase](https://is-pinoy.dev/showcase) and on the landing page, alongside the subdomain name and the owner handle already published there. Only that single rounded figure and the window it covers are shown publicly — the per-day series and the country breakdown are visible to you alone, signed in to the [dashboard](https://dashboard.is-pinoy.dev/domains). A subdomain with no visits recorded shows no figure at all.
+
 **This logging only applies to proxied subdomains.** If your DNS record has `"proxied": false` (DNS-only mode), your subdomain's traffic goes directly to your origin and is never intercepted by our infrastructure — no visit data is collected for DNS-only subdomains.
 
 **You can opt out while staying proxied.** Set `"analytics": false` in your record's `features` block, or switch off *Visit analytics* for the subdomain in the [dashboard](https://dashboard.is-pinoy.dev/domains):
@@ -71,7 +73,7 @@ We do **not** receive or store paths, query strings, IP addresses, user-agent st
 }
 ```
 
-Cloudflare measures traffic to any proxied domain at its edge regardless of this setting, so the opt-out is applied where it can be honoured: our analytics job drops opted-out subdomains before any visit data is written to our database. Nothing for that subdomain is stored, and nothing is backfilled if you opt back in.
+Cloudflare measures traffic to any proxied domain at its edge regardless of this setting, so the opt-out is applied where it can be honoured: our analytics job drops opted-out subdomains before any visit data is written to our database. Nothing for that subdomain is stored, and nothing is backfilled if you opt back in. Because the showcase can only display a figure we have stored, switching this off also removes the total from your card — the opt-out covers both the collection and the public display.
 
 Because the totals are counted per hostname rather than per path, requests to platform tool paths on your subdomain (such as `/_tools/site-audit`) are not separated out and may be included in your subdomain's count.
 

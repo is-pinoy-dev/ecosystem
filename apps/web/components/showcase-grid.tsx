@@ -15,6 +15,12 @@ import {
 } from "@/lib/showcase-preview"
 import { rotateWeekly } from "@/lib/showcase-rotation"
 import { showcaseKindLabel } from "@/lib/showcase-kind"
+import { getShowcaseVisits } from "@/lib/visits"
+import {
+  formatVisitCount,
+  visitSummaryLabel,
+  type ShowcaseVisitSummary,
+} from "@/lib/visit-count"
 
 /**
  * Every preview is framed at the OG card's 1200x630. The showcase grid and the
@@ -31,24 +37,39 @@ interface SubdomainEntry extends RegisteredSubdomain {
   screenshotKey: string | null
   screenshotUrl: string | null
   screenshotCapturedAt: string | null
+  /**
+   * The trailing-window visit total, or null when there is none to show —
+   * which covers a subdomain that opted out of collection, one collected but
+   * with no traffic yet, and a database we could not reach. A card treats all
+   * three the same way: it says nothing about visits.
+   */
+  visits: ShowcaseVisitSummary | null
 }
 
 async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
   // The registry remains the source of truth for entries and ownership. The
-  // Worker manifest is read-only metadata and can never trigger a capture.
-  const [registered, screenshots] = await Promise.all([
+  // Worker manifest is read-only metadata and can never trigger a capture, and
+  // the visit totals are read-only aggregates that can never add an entry —
+  // both are joined onto the registry list rather than extending it.
+  const [registered, screenshots, visits] = await Promise.all([
     getRegisteredSubdomains(),
     getScreenshotManifest(),
+    getShowcaseVisits(),
   ])
 
   return registered.map((entry) => {
     const screenshot = screenshots.get(entry.subdomain)
+    const seen = visits?.get(entry.subdomain) ?? null
     return {
       ...entry,
       screenshotStatus: previewStatusFor(screenshot),
       screenshotKey: screenshot?.screenshotKey ?? null,
       screenshotUrl: screenshot?.screenshotUrl ?? null,
       screenshotCapturedAt: screenshot?.screenshotCapturedAt ?? null,
+      // A zero is dropped rather than drawn. The showcase is a shop window,
+      // and "0 visits" under somebody's work reads as a verdict on it; the
+      // owner sees the real zero, dated and in context, in their dashboard.
+      visits: seen && seen.total > 0 ? seen : null,
     }
   })
 }
@@ -75,6 +96,38 @@ async function captured(
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
+
+/**
+ * The visit total as it appears on a card, or nothing at all.
+ *
+ * Plain text rather than a Badge, and muted rather than accented: a badge is an
+ * emphasis, and this number belongs among the card's metadata — not as a score
+ * the showcase is ranking anybody by.
+ *
+ * `showWindow` puts the span on the figure itself. A bare total reads as
+ * all-time and a tooltip is no answer on a phone, so every surface has to say
+ * the window somewhere — but the grid says it once above the cards instead,
+ * because repeating it on a three-column card in a narrow window costs the kind
+ * label its last few characters.
+ */
+function VisitCount({
+  visits,
+  showWindow = false,
+}: {
+  visits: ShowcaseVisitSummary | null
+  showWindow?: boolean
+}) {
+  if (!visits) return null
+  return (
+    <span
+      className="shrink-0 font-mono text-xs text-muted-foreground"
+      title={visitSummaryLabel(visits)}
+    >
+      {formatVisitCount(visits.total)} visits
+      {showWindow ? ` · ${visits.windowDays}d` : ""}
+    </span>
+  )
+}
 
 function ShowcaseCard({
   entry,
@@ -110,11 +163,20 @@ function ShowcaseCard({
             <span className="truncate font-mono text-sm font-semibold text-foreground">
               {entry.subdomain}.is-pinoy.dev
             </span>
+            {/* Visits ride this row rather than the owner strip below. Both
+                rows are tight in a three-column grid on a narrow window, but
+                only this one can afford it: a kind label is one of three short
+                fixed phrases, while a handle can run to thirty-nine characters
+                and is the credit on somebody's work — the wrong thing to spend
+                on a statistic. */}
             <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-xs text-muted-foreground">
+              <span className="min-w-0 truncate text-xs text-muted-foreground">
                 {showcaseKindLabel(entry)}
               </span>
-              <span className="shrink-0 text-sm text-accent">→</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <VisitCount visits={entry.visits} />
+                <span className="text-sm text-accent">→</span>
+              </div>
             </div>
           </div>
 
@@ -180,11 +242,26 @@ export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
   const all = await fetchAllSubdomains()
   const entries = limit ? all.slice(0, limit) : all
 
+  // The window the cards' figures cover, taken from a card rather than from the
+  // constant so the note and the numbers under it cannot drift apart. Absent
+  // when no card has a figure, which is when the note would be noise.
+  const visitWindow = entries.find((entry) => entry.visits)?.visits ?? null
+
   return (
     <div className="flex flex-col gap-8">
-      <span className="self-start border border-border bg-muted px-3 py-1.5 font-mono text-xs font-medium text-muted-foreground">
-        {entries.length} SITE{entries.length !== 1 ? "S" : ""}
-      </span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="border border-border bg-muted px-3 py-1.5 font-mono text-xs font-medium text-muted-foreground">
+          {entries.length} SITE{entries.length !== 1 ? "S" : ""}
+        </span>
+        {visitWindow ? (
+          // Said once for the grid instead of on every card. A card here is a
+          // third of a row and cannot spare the characters, and a total with no
+          // window attached invites reading it as all-time.
+          <span className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
+            Visits · last {visitWindow.windowDays} days
+          </span>
+        ) : null}
+      </div>
 
       {entries.length > 0 ? (
         <div className="grid grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
@@ -219,9 +296,20 @@ function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
         <p className="m-0 truncate font-mono text-[13px] font-semibold text-foreground">
           {entry.subdomain}.is-pinoy.dev
         </p>
-        <p className="m-0 mt-[3px] truncate text-xs text-muted-foreground">
-          {showcaseKindLabel(entry)}
-        </p>
+        {/* Kind and visits share the line the kind label used to hold alone.
+            A third line would push the previews apart and cost the section its
+            row of equal cards; the two together still fit inside one. */}
+        <div className="mt-[3px] flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="min-w-0 truncate">{showcaseKindLabel(entry)}</span>
+          {entry.visits ? (
+            <>
+              <span aria-hidden>·</span>
+              {/* One card per column here, wide enough to carry the window
+                  itself — the landing section has no header to hang it on. */}
+              <VisitCount visits={entry.visits} showWindow />
+            </>
+          ) : null}
+        </div>
       </div>
       <span className="view-site shrink-0 text-xs font-semibold text-accent">
         View site →
