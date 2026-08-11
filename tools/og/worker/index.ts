@@ -6,6 +6,7 @@ import { buildSvg, type OgData } from "./generate"
 import { resolvePortfolioOgImage, resolveRequestedSubdomain } from "./preview"
 import {
   isSelfGeneratedOgImage,
+  listCapturedSubdomains,
   resolveScreenshotUrl,
   type ScreenshotEnv,
 } from "./screenshot"
@@ -28,11 +29,15 @@ const handleRequest = createRequestHandler({
 const PREFIX = "/_tools/og"
 const IMAGE_PATH = "/_tools/og/image"
 const PREVIEW_PATH = "/_tools/og/preview"
+const CAPTURED_PATH = "/_tools/og/captured"
 const DOMAINS_RAW_BASE =
   "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains"
 const DOMAIN_CACHE_TTL = 300
 const IMAGE_CACHE_TTL = 300
 const PREVIEW_CACHE_TTL = 3600
+// Captures land on a daily cron, so a few minutes of staleness costs nothing
+// and keeps a burst of renders off D1.
+const CAPTURED_CACHE_TTL = 300
 const MAX_PREVIEW_BYTES = 4 * 1024 * 1024
 
 export interface Env extends ScreenshotEnv {
@@ -358,6 +363,29 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url)
     const subdomain = resolveRequestedSubdomain(url.hostname, url.searchParams)
+
+    // /_tools/og/captured — which portfolios have a stored capture. Names only,
+    // and only names already public in the domains repo, so this needs no
+    // authentication; it is asked once per render, not once per card.
+    if (
+      url.pathname === CAPTURED_PATH ||
+      url.pathname === `${CAPTURED_PATH}/`
+    ) {
+      const subdomains = await listCapturedSubdomains(env)
+      // A caller that cannot tell "nothing captured" from "could not ask" would
+      // present an empty showcase as fact, so say so with a status instead.
+      if (subdomains === null) {
+        return Response.json({ error: "unavailable" }, { status: 503 })
+      }
+      return Response.json(
+        { subdomains },
+        {
+          headers: {
+            "Cache-Control": `public, max-age=${CAPTURED_CACHE_TTL}`,
+          },
+        }
+      )
+    }
 
     // /_tools/og/preview — the portfolio's own og:image, else the generated card
     if (url.pathname === PREVIEW_PATH || url.pathname === `${PREVIEW_PATH}/`) {

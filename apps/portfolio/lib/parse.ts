@@ -87,6 +87,9 @@ export async function renderReadme(
     // Selection runs on the sanitized tree, so it can only ever remove or
     // reorder already-safe nodes — it is not part of the security boundary.
     .use(rehypeSelectSections, sections)
+    // Likewise: renames heading tags and fills in a missing alt. Neither can
+    // reintroduce anything the sanitizer removed.
+    .use(rehypeNormalizeDocument)
     .use(rehypeStringify)
     .process(markdown)
 
@@ -149,6 +152,40 @@ function rehypeSelectSections(sections?: string[]) {
 
     tree.children = [...preamble, ...selected]
   }
+}
+
+/**
+ * Make the README behave like a section of somebody's page rather than a page
+ * of its own.
+ *
+ * Two things a profile README does that break the host document:
+ *
+ * - It opens with `# Hi, I'm …`. The template already renders the owner's name
+ *   as the page's H1, so every README H1 is a second one, and a page with
+ *   several H1s tells a crawler it has several subjects. Each heading drops one
+ *   level (H6 has nowhere to go and stays), which preserves the README's own
+ *   hierarchy underneath the page's.
+ * - It ships `<img>` with no alt — badge rows especially. A missing alt is a
+ *   WCAG failure that a screen reader fills by reading out the URL. We can't
+ *   invent a description, but `alt=""` is the correct markup for an image that
+ *   carries no information the surrounding prose doesn't, which is what a badge
+ *   next to its own link text is.
+ */
+function rehypeNormalizeDocument() {
+  return (tree: Root) => walk(tree)
+}
+
+function walk(node: Root | RootContent): void {
+  if (node.type === "element") {
+    const element = node as Element
+    const heading = /^h([1-5])$/.exec(element.tagName)
+    if (heading) element.tagName = `h${Number(heading[1]) + 1}`
+    if (element.tagName === "img") {
+      element.properties ??= {}
+      if (element.properties.alt == null) element.properties.alt = ""
+    }
+  }
+  for (const child of (node as Element).children ?? []) walk(child)
 }
 
 /** Drop <img> whose src host isn't allow-listed. Runs after sanitization. */

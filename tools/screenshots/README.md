@@ -68,6 +68,12 @@ portfolio's own `og:image`, else a generated OG card — see `tools/og`), then a
 branded tile. If the manifest request fails the web app logs it rather than
 silently degrading every card.
 
+The landing page shows only portfolios with a stored capture, and asks
+`GET /_tools/og/captured` for that list rather than this Worker's manifest: the
+og Worker reads the same rows through a D1 binding, so the answer cannot drift
+from what its preview endpoint actually serves, and needs no shared secret.
+`/v1/showcase` still feeds the full `/showcase` grid.
+
 ## Operations
 
 - Capture viewport: 1440×900, device scale factor 1, first viewport only,

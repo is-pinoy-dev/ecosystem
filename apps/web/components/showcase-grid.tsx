@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { Card, CardContent } from "@is-pinoy-dev/ui/components/card"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Skeleton } from "@is-pinoy-dev/ui/components/skeleton"
@@ -7,10 +8,13 @@ import {
   type RegisteredSubdomain,
 } from "@/lib/subdomains"
 import { getScreenshotManifest } from "@/lib/screenshot-manifest"
+import { getCapturedSubdomains } from "@/lib/captured-subdomains"
 import {
   previewStatusFor,
   type ShowcasePreviewStatus,
 } from "@/lib/showcase-preview"
+import { rotateWeekly } from "@/lib/showcase-rotation"
+import { showcaseKindLabel } from "@/lib/showcase-kind"
 
 /**
  * Every preview is framed at the OG card's 1200x630. The showcase grid and the
@@ -29,17 +33,15 @@ interface SubdomainEntry extends RegisteredSubdomain {
   screenshotCapturedAt: string | null
 }
 
-async function fetchAllSubdomains(limit?: number): Promise<SubdomainEntry[]> {
+async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
   // The registry remains the source of truth for entries and ownership. The
   // Worker manifest is read-only metadata and can never trigger a capture.
   const [registered, screenshots] = await Promise.all([
     getRegisteredSubdomains(),
     getScreenshotManifest(),
   ])
-  const entries = limit ? registered.slice(0, limit) : registered
-  if (entries.length === 0) return []
 
-  return entries.map((entry) => {
+  return registered.map((entry) => {
     const screenshot = screenshots.get(entry.subdomain)
     return {
       ...entry,
@@ -49,6 +51,27 @@ async function fetchAllSubdomains(limit?: number): Promise<SubdomainEntry[]> {
       screenshotCapturedAt: screenshot?.screenshotCapturedAt ?? null,
     }
   })
+}
+
+/**
+ * The entries there is a real capture of, or null when neither source could say.
+ *
+ * Two paths reach the same stored capture: the manifest, which hands us the URL
+ * outright, and the og Worker's list, which is what the card images themselves
+ * resolve through. Either one is proof, so a misconfigured secret on one path no
+ * longer decides what the landing page shows. When neither could answer, null
+ * says so — an empty list would claim, wrongly, that nothing has been captured.
+ */
+async function captured(
+  entries: SubdomainEntry[]
+): Promise<SubdomainEntry[] | null> {
+  const names = await getCapturedSubdomains()
+  const fromManifest = entries.filter((entry) => Boolean(entry.screenshotUrl))
+  if (names === null) return fromManifest.length > 0 ? fromManifest : null
+
+  return entries.filter(
+    (entry) => Boolean(entry.screenshotUrl) || names.has(entry.subdomain)
+  )
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
@@ -89,7 +112,7 @@ function ShowcaseCard({
             </span>
             <div className="flex items-center justify-between gap-2">
               <span className="truncate text-xs text-muted-foreground">
-                Portfolio
+                {showcaseKindLabel(entry)}
               </span>
               <span className="shrink-0 text-sm text-accent">→</span>
             </div>
@@ -154,7 +177,8 @@ export function ShowcaseGridSkeleton({ limit = 6 }: { limit?: number }) {
 // ─── Grid (async, streamed) ───────────────────────────────────────────────────
 
 export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
-  const entries = await fetchAllSubdomains(limit)
+  const all = await fetchAllSubdomains()
+  const entries = limit ? all.slice(0, limit) : all
 
   return (
     <div className="flex flex-col gap-8">
@@ -196,7 +220,7 @@ function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
           {entry.subdomain}.is-pinoy.dev
         </p>
         <p className="m-0 mt-[3px] truncate text-xs text-muted-foreground">
-          Portfolio
+          {showcaseKindLabel(entry)}
         </p>
       </div>
       <span className="view-site shrink-0 text-xs font-semibold text-accent">
@@ -260,30 +284,48 @@ export function ShowcaseHighlightsSkeleton() {
 }
 
 export async function ShowcaseHighlights() {
-  // Registry order, unmodified — the same entries the showcase grid leads with,
-  // in the same sequence. Every card now resolves to a real preview through the
-  // same ranked endpoint, so there is nothing left to reshuffle around: sorting
-  // by which entries happened to have a stored capture only made the landing
-  // page disagree with /showcase about what was newest.
-  const highlights = await fetchAllSubdomains(HIGHLIGHT_COUNT)
+  // The landing page is a shop window: it shows only entries there is a real
+  // capture of, so a visitor never meets the community through a generated card.
+  // Those entries then rotate weekly in registry order, so a slot on the landing
+  // page is a turn every captured site gets rather than a reward for having
+  // claimed early. /showcase remains the complete, unrotated list.
+  const entries = await fetchAllSubdomains()
+  const pool = await captured(entries)
+  // Nothing could tell us which entries are captured. Showing the newest few —
+  // previews and all — beats an empty section reporting an outage of ours as
+  // news about the community.
+  const highlights = rotateWeekly(pool ?? entries, HIGHLIGHT_COUNT, new Date())
 
   if (highlights.length === 0) {
+    // Nothing registered and nothing captured yet are different situations, and
+    // inviting the first claim is wrong copy for a registry that already has
+    // entries waiting on the screenshot worker.
+    const registered = entries.length > 0
     return (
       <div
         className={`flex ${PREVIEW_FRAME} items-center justify-center border border-border bg-card p-8 text-center`}
       >
         <div>
           <p className="m-0 font-mono text-xs tracking-[0.1em] text-muted-foreground uppercase">
-            No sites yet
+            {registered ? "Previews on the way" : "No sites yet"}
           </p>
-          <a
-            href="https://docs.is-pinoy.dev/guides"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-block text-[13px] font-semibold text-accent no-underline hover:underline"
-          >
-            Claim the first subdomain →
-          </a>
+          {registered ? (
+            <Link
+              href="/showcase"
+              className="mt-3 inline-block text-[13px] font-semibold text-accent no-underline hover:underline"
+            >
+              Browse the showcase →
+            </Link>
+          ) : (
+            <a
+              href="https://docs.is-pinoy.dev/guides"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block text-[13px] font-semibold text-accent no-underline hover:underline"
+            >
+              Claim the first subdomain →
+            </a>
+          )}
         </div>
       </div>
     )

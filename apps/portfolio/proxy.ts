@@ -54,6 +54,24 @@ export type RouteVerdict =
 
 const ROUTE_HEADER = "x-portfolio-route"
 
+// Indexing, stated at the transport level as well as in the page's <meta>.
+//
+// The two must agree, and they're decided by the same fact: a request carrying
+// a label is somebody's portfolio at its own address, and anything else — the
+// apex, the renderer host, a `?preview=` of an arbitrary login — is our content
+// served from an address that isn't its home. app/page.tsx derives the meta
+// robots from exactly this condition.
+//
+// The header earns its place on the responses that have no <meta> to carry the
+// directive: robots.txt, the sitemap, the manifest. On a labelled name that
+// turns out unclaimed the page 404s and app/not-found.tsx says `noindex`; a
+// conflict resolves to the more restrictive of the two, which is the one we
+// want there anyway.
+const ROBOTS_HEADER = "X-Robots-Tag"
+const INDEXABLE =
+  "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+const NOINDEX = "noindex, nofollow"
+
 export default function proxy(req: NextRequest) {
   const host = req.headers.get("host")?.split(":")[0] ?? ""
   const fromHost = extractLabel(host)
@@ -73,6 +91,7 @@ export default function proxy(req: NextRequest) {
 
   const res = NextResponse.next({ request: { headers } })
   res.headers.set(ROUTE_HEADER, verdict)
+  res.headers.set(ROBOTS_HEADER, label ? INDEXABLE : NOINDEX)
   return res
 }
 

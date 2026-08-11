@@ -23,7 +23,7 @@
     "isbot": "^5.1.36",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "7.18.1"
+    "react-router": "7.18.2"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260527.1",

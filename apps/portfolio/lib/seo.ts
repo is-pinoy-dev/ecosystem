@@ -121,34 +121,57 @@ export function topLanguages(data: PortfolioData, limit = 5): string[] {
     .map(([language]) => language)
 }
 
-const MAX_DESCRIPTION = 200
-/** Search engines truncate around here; composing past it just wastes crawl. */
-const DESCRIPTION_BUDGET = 160
+// A search result cuts the title off around here, and a cut title loses the
+// suffix that says what the page is. A GitHub display name can be 255
+// characters, so the name yields rather than the suffix.
+export const MAX_TITLE = 60
+const TITLE_SUFFIX = " — Portfolio"
+
+/** The page title: the owner's name, then what the page is. */
+export function titleFor(profile: Profile): string {
+  const name = displayName(profile)
+  return `${truncate(name, MAX_TITLE - TITLE_SUFFIX.length)}${TITLE_SUFFIX}`
+}
+
+// The window a search result actually shows, and the window every SEO auditor
+// (ours at /_tools/site-audit included) grades against. Under the floor the
+// engine ignores our description and invents a snippet from the page; over the
+// ceiling it truncates mid-sentence.
+export const MIN_DESCRIPTION = 50
+export const MAX_DESCRIPTION = 160
 
 /**
  * The meta description. A GitHub bio is the owner's own one-liner and always
  * leads; the rest is appended only while it still fits, so a long bio is never
  * cut mid-word by a sentence we chose to add.
+ *
+ * The one exception is a bio too short to be a description at all — "Dev." is
+ * a legitimate GitHub bio and a useless snippet. Below the floor the next
+ * sentence goes on regardless of the budget, and `truncate` trims the result
+ * back to the ceiling.
  */
 export function descriptionFor(data: PortfolioData): string {
   const { profile, stats } = data
   const name = displayName(profile)
   const bio = profile.bio?.trim()
+  const summary = `${name}'s developer portfolio, built from their GitHub profile.`
 
-  const sentences = [
-    bio || `${name}'s developer portfolio, built from their GitHub profile.`,
-  ]
+  const sentences = [bio || summary]
   if (profile.location) sentences.push(`Based in ${profile.location}.`)
   const languages = topLanguages(data, 3)
   if (languages.length) sentences.push(`Works with ${listSentence(languages)}.`)
-  else if (stats.publicRepos) {
+  if (stats.publicRepos) {
     sentences.push(`${stats.publicRepos} public repositories on GitHub.`)
   }
+  // Last resort for a profile that is a two-word bio and nothing else: the
+  // sentence we would have led with had there been no bio at all.
+  if (bio) sentences.push(summary)
 
   let out = sentences[0]!
   for (const sentence of sentences.slice(1)) {
-    if (out.length + 1 + sentence.length > DESCRIPTION_BUDGET) break
-    out += ` ${sentence}`
+    const extended = `${out} ${sentence}`
+    if (extended.length > MAX_DESCRIPTION && out.length >= MIN_DESCRIPTION) break
+    out = extended
   }
   return truncate(out, MAX_DESCRIPTION)
 }
@@ -203,12 +226,11 @@ export function manifestFor(args: {
   theme?: string
 }): MetadataRoute.Manifest {
   const { data, template, theme } = args
-  const name = displayName(data.profile)
   const background = backgroundFor(template, theme)
 
   return {
     id: "/",
-    name: `${name} — Portfolio`,
+    name: titleFor(data.profile),
     // Home-screen labels are clipped around 12 characters; the login is the
     // short handle the owner already answers to.
     short_name: data.profile.login,
@@ -268,6 +290,7 @@ export function buildJsonLd(args: {
   const { data, origin } = args
   const { profile } = data
   const name = displayName(profile)
+  const title = titleFor(profile)
   const description = descriptionFor(data)
   const personId = `${origin}/#person`
   const websiteId = `${origin}/#website`
@@ -315,7 +338,7 @@ export function buildJsonLd(args: {
       "@type": "WebSite",
       "@id": websiteId,
       url: origin,
-      name: `${name} — Portfolio`,
+      name: title,
       description,
       inLanguage: "en",
       publisher: { "@id": personId },
@@ -324,7 +347,7 @@ export function buildJsonLd(args: {
       "@type": "ProfilePage",
       "@id": `${origin}/#profilepage`,
       url: origin,
-      name: `${name} — Portfolio`,
+      name: title,
       description,
       isPartOf: { "@id": websiteId },
       about: { "@id": personId },

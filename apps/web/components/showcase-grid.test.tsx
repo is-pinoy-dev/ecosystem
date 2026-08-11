@@ -1,24 +1,32 @@
 import { renderToStaticMarkup } from "react-dom/server"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { RegisteredSubdomain } from "@/lib/subdomains"
 import type { ShowcaseScreenshot } from "@/lib/screenshot-manifest"
 
 const getRegisteredSubdomains = vi.fn()
 const getScreenshotManifest = vi.fn()
+const getCapturedSubdomains = vi.fn()
 
 vi.mock("@/lib/subdomains", () => ({ getRegisteredSubdomains }))
 vi.mock("@/lib/screenshot-manifest", () => ({ getScreenshotManifest }))
+vi.mock("@/lib/captured-subdomains", () => ({ getCapturedSubdomains }))
 
 const { ShowcaseGrid, ShowcaseHighlights } = await import("./showcase-grid")
 
-function entry(subdomain: string, github: string): RegisteredSubdomain {
+function entry(
+  subdomain: string,
+  github: string,
+  overrides: Partial<RegisteredSubdomain> = {}
+): RegisteredSubdomain {
   return {
     subdomain,
     owner: { github },
     records: {},
+    portfolio: null,
     createdOn: "2026-01-01T00:00:00Z",
     updatedOn: "2026-01-01T00:00:00Z",
+    ...overrides,
   }
 }
 
@@ -57,42 +65,161 @@ const REGISTRY = [
   entry("delta", "four"),
 ]
 
+/** Manifest holding a ready capture for each named subdomain. */
+function captures(...subdomains: string[]): Map<string, ShowcaseScreenshot> {
+  return new Map(subdomains.map((name) => [name, capture(name)]))
+}
+
+/**
+ * A Monday whose rotation window starts at the head of a four-entry pool. The
+ * section rotates weekly, so every expectation here is anchored to a fixed
+ * clock rather than to whenever the suite happens to run.
+ */
+const WEEK_ONE = new Date("2026-01-19T00:00:00Z")
+const WEEK_TWO = new Date("2026-01-26T00:00:00Z")
+
 describe("ShowcaseHighlights", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useFakeTimers()
+    vi.setSystemTime(WEEK_ONE)
     getRegisteredSubdomains.mockResolvedValue(REGISTRY)
+    getScreenshotManifest.mockResolvedValue(
+      captures(...REGISTRY.map((e) => e.subdomain))
+    )
+    // The og Worker answered and knows of no captures, so every expectation
+    // below rests on the manifest unless it says otherwise.
+    getCapturedSubdomains.mockResolvedValue(new Set())
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it("shows the newest captured entries in registry order", async () => {
+    const html = await render(ShowcaseHighlights())
+
+    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie"])
+  })
+
+  it("shows only entries that have a screenshot", async () => {
+    // `bravo` and `charlie` have no capture, so the landing page would present
+    // them through a generated OG card rather than the site itself.
+    getScreenshotManifest.mockResolvedValue(captures("alpha", "delta"))
+
+    const html = await render(ShowcaseHighlights())
+
+    expect(orderOf(html)).toEqual(["alpha", "delta"])
+  })
+
+  it("does not float a captured entry ahead of an older captured one", async () => {
+    // Filtering decides which entries qualify and rotation decides when their
+    // turn comes; neither reshuffles registry order within a week's window.
+    getScreenshotManifest.mockResolvedValue(
+      captures("charlie", "delta", "alpha")
+    )
+
+    const html = await render(ShowcaseHighlights())
+
+    expect(orderOf(html)).toEqual(["alpha", "charlie", "delta"])
+  })
+
+  it("counts a capture the og worker knows about but the manifest does not", async () => {
+    // The card images resolve captures through that Worker, so anything it can
+    // photograph belongs on the landing page even when the manifest — a second
+    // path, behind a shared secret — comes back empty.
     getScreenshotManifest.mockResolvedValue(new Map())
+    getCapturedSubdomains.mockResolvedValue(new Set(["bravo", "charlie"]))
+
+    const html = await render(ShowcaseHighlights())
+
+    expect(orderOf(html)).toEqual(["bravo", "charlie"])
   })
 
-  it("shows the newest entries in registry order", async () => {
+  it("shows the newest entries when neither source can answer", async () => {
+    // A failure to ask is ours, not news about the community: reporting it as
+    // "no previews yet" would empty the section over an outage.
+    getScreenshotManifest.mockResolvedValue(new Map())
+    getCapturedSubdomains.mockResolvedValue(null)
+
     const html = await render(ShowcaseHighlights())
 
     expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie"])
   })
 
-  it("does not float an entry forward for having a stored capture", async () => {
-    // `delta` is the oldest entry and the only captured one. Promoting it would
-    // put the landing page out of step with /showcase about what is newest.
-    getScreenshotManifest.mockResolvedValue(
-      new Map([["delta", capture("delta")]])
-    )
+  it("keeps filtering on the manifest when the og worker cannot answer", async () => {
+    getScreenshotManifest.mockResolvedValue(captures("delta"))
+    getCapturedSubdomains.mockResolvedValue(null)
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie"])
+    expect(orderOf(html)).toEqual(["delta"])
   })
 
-  it("leads with the same entries the showcase grid leads with", async () => {
+  it("holds the same entries for the rest of the week", async () => {
+    const monday = await render(ShowcaseHighlights())
+    vi.setSystemTime(new Date("2026-01-25T23:59:59Z"))
+    const sunday = await render(ShowcaseHighlights())
+
+    expect(orderOf(sunday)).toEqual(orderOf(monday))
+  })
+
+  it("features different entries the following week", async () => {
+    const first = orderOf(await render(ShowcaseHighlights()))
+    vi.setSystemTime(WEEK_TWO)
+    const second = orderOf(await render(ShowcaseHighlights()))
+
+    expect(first).toEqual(["alpha", "bravo", "charlie"])
+    expect(second).toEqual(["delta", "alpha", "bravo"])
+  })
+
+  it("rotates only through entries that have a screenshot", async () => {
+    // `bravo` is uncaptured, so no week may feature it.
     getScreenshotManifest.mockResolvedValue(
-      new Map([["charlie", capture("charlie")]])
+      captures("alpha", "charlie", "delta")
     )
 
-    const [highlights, grid] = await Promise.all([
-      render(ShowcaseHighlights()),
-      render(ShowcaseGrid()),
+    for (const week of [WEEK_ONE, WEEK_TWO]) {
+      vi.setSystemTime(week)
+      expect(orderOf(await render(ShowcaseHighlights()))).not.toContain("bravo")
+    }
+  })
+
+  it("does not rotate the showcase grid", async () => {
+    // Rotation is a landing-page affordance; /showcase stays a stable list.
+    const first = orderOf(await render(ShowcaseGrid()))
+    vi.setSystemTime(WEEK_TWO)
+    const second = orderOf(await render(ShowcaseGrid()))
+
+    expect(second).toEqual(first)
+  })
+
+  it("keeps every registered entry in the showcase grid", async () => {
+    // Only the landing page is filtered — /showcase still lists everyone.
+    getScreenshotManifest.mockResolvedValue(captures("alpha"))
+
+    const html = await render(ShowcaseGrid())
+
+    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
+  })
+
+  it("labels each card by what the subdomain actually points at", async () => {
+    getRegisteredSubdomains.mockResolvedValue([
+      entry("alpha", "one", { portfolio: { template: "terminal" } }),
+      entry("bravo", "two", {
+        records: { CNAME: { value: "bravo.github.io" } },
+      }),
+      entry("charlie", "three", {
+        records: { CNAME: { value: "abc.vercel-dns-017.com." } },
+      }),
     ])
 
-    expect(orderOf(highlights)).toEqual(orderOf(grid).slice(0, 3))
+    const html = await render(ShowcaseGrid())
+
+    expect(html).toContain("Hosted portfolio")
+    expect(html).toContain("GitHub Pages")
+    // The third is somebody's own site on a host the showcase does not name.
+    expect(html).toContain("Portfolio<")
   })
 
   it("frames every preview at the same aspect ratio as the grid", async () => {
@@ -118,6 +245,7 @@ describe("ShowcaseHighlights", () => {
 
   it("prompts for the first claim when nothing is registered", async () => {
     getRegisteredSubdomains.mockResolvedValue([])
+    getScreenshotManifest.mockResolvedValue(new Map())
 
     const html = await render(ShowcaseHighlights())
 
@@ -125,8 +253,20 @@ describe("ShowcaseHighlights", () => {
     expect(orderOf(html)).toEqual([])
   })
 
-  it("shows what there is when fewer than three are registered", async () => {
-    getRegisteredSubdomains.mockResolvedValue(REGISTRY.slice(0, 2))
+  it("points at the showcase when entries are registered but uncaptured", async () => {
+    // Inviting the first claim would be wrong copy for a registry that already
+    // has entries waiting on the screenshot worker.
+    getScreenshotManifest.mockResolvedValue(new Map())
+
+    const html = await render(ShowcaseHighlights())
+
+    expect(html).toContain("Previews on the way")
+    expect(html).not.toContain("No sites yet")
+    expect(orderOf(html)).toEqual([])
+  })
+
+  it("shows what there is when fewer than three are captured", async () => {
+    getScreenshotManifest.mockResolvedValue(captures("alpha", "bravo"))
 
     const html = await render(ShowcaseHighlights())
 
@@ -134,16 +274,12 @@ describe("ShowcaseHighlights", () => {
   })
 
   it("passes a stored capture through to the card that shows it", async () => {
-    getScreenshotManifest.mockResolvedValue(
-      new Map([["alpha", capture("alpha")]])
-    )
+    getScreenshotManifest.mockResolvedValue(captures("alpha"))
 
     const html = await render(ShowcaseHighlights())
 
     expect(html).toContain(
       "https://cdn.is-pinoy.dev/showcase/alpha/preview-v1.jpeg"
     )
-    // Entries without one fall to the ranked preview endpoint, not to nothing.
-    expect(html).toContain("/_tools/og/preview?subdomain=bravo")
   })
 })
