@@ -14,4 +14,11 @@ score rather than a page that was never fetched.
 `/audit-proxy` now returns the status, content type, byte count and final URL
 alongside the bytes, and the scan refuses to grade a response that isn't a
 2xx HTML document from the origin that was asked for, naming which of those it
-was instead.
+was instead. It also sends `Accept: text/html`, so an origin that
+content-negotiates hands back the document a crawler would see.
+
+When the failed response carries `x-portfolio-route` — the verdict
+`apps/portfolio/proxy.ts` sets on every response — the error names it and says
+what it means, so a hosted portfolio that returned a 404 reports the reason it
+never rendered (no label, no secret, secret mismatch) rather than reporting
+that the page has no metadata.

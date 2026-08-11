@@ -33,7 +33,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   try {
     const response = await fetch(parsedTarget.toString(), {
-      headers: { "User-Agent": "is-pinoy-dev-site-audit/1.0" },
+      headers: {
+        "User-Agent": "is-pinoy-dev-site-audit/1.0",
+        // Origins that content-negotiate will hand a bare fetch JSON or an
+        // RSC payload. We are auditing the document a crawler would see.
+        Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+      },
       signal: AbortSignal.timeout(10000),
     });
 
@@ -54,6 +59,13 @@ export async function loader({ request }: Route.LoaderArgs) {
         statusText: response.statusText,
         contentType: response.headers.get("content-type"),
         bytes: buffer.byteLength,
+        // The renderer's own verdict on how it routed this request — see
+        // apps/portfolio/proxy.ts. When a hosted portfolio serves a 404 or an
+        // empty body, this header is what says whether the label never
+        // arrived, the shared secret didn't match, or the deployment has no
+        // secret at all. It is the difference between "your page is missing
+        // metadata" and "your page was never rendered".
+        portfolioRoute: response.headers.get("x-portfolio-route"),
         // Redirects are followed, so this is where the bytes actually came
         // from — not necessarily what was asked for.
         finalUrl: response.url || parsedTarget.toString(),

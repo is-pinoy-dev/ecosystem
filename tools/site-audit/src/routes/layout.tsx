@@ -26,6 +26,23 @@ type ProxyResponse = {
   contentType: string | null
   bytes: number
   finalUrl: string
+  portfolioRoute: string | null
+}
+
+/**
+ * What a hosted portfolio's own routing verdict means, when the fetch came
+ * back unusable. `x-portfolio-route` is set by apps/portfolio/proxy.ts on every
+ * response; these are the values that explain a page that didn't render.
+ */
+const ROUTE_DIAGNOSIS: Record<string, string> = {
+  unlabelled:
+    "The renderer saw no subdomain on this request, so it had no portfolio to render. Check that a Worker route exists for this subdomain.",
+  "no-secret":
+    "The Worker sent a subdomain but the running renderer deployment has no PORTFOLIO_PROXY_SECRET to check it against — usually a value added to the project but never redeployed.",
+  "secret-mismatch":
+    "The Worker's PORTFOLIO_PROXY_SECRET does not match the renderer's. Check for a trailing newline on either copy.",
+  "bad-label":
+    "The Worker sent a subdomain the renderer rejected as malformed.",
 }
 
 /**
@@ -39,22 +56,41 @@ type ProxyResponse = {
  */
 function unscorable(res: ProxyResponse, target: string): string | null {
   if (res.status < 200 || res.status >= 300) {
-    return `${target} responded ${res.status} ${res.statusText}. There is no page at this address to audit.`
+    return withDiagnosis(
+      `${target} responded ${res.status} ${res.statusText}. There is no page at this address to audit.`,
+      res,
+    )
   }
   if (res.bytes === 0) {
-    return `${target} responded ${res.status} with an empty body. Nothing was returned to audit.`
+    return withDiagnosis(
+      `${target} responded ${res.status} with an empty body. Nothing was returned to audit.`,
+      res,
+    )
   }
   const type = res.contentType?.split(";")[0]?.trim().toLowerCase()
   if (type && type !== "text/html" && type !== "application/xhtml+xml") {
     return `${target} returned ${type}, not HTML. Point the scan at a page rather than an asset or an API route.`
   }
   if (!/<html[\s>]/i.test(res.html)) {
-    return `${target} returned ${res.bytes} bytes that are not an HTML document. Nothing was returned to audit.`
+    return withDiagnosis(
+      `${target} returned ${res.bytes} bytes that are not an HTML document. Nothing was returned to audit.`,
+      res,
+    )
   }
   if (res.finalUrl && !sameOrigin(res.finalUrl, target)) {
     return `${target} redirected to ${res.finalUrl}, which is a different origin. The audit would grade that site, not this one.`
   }
   return null
+}
+
+/** Append the renderer's own account of the request, when it gave one. */
+function withDiagnosis(message: string, res: ProxyResponse): string {
+  const route = res.portfolioRoute
+  if (!route) return message
+  const explanation = ROUTE_DIAGNOSIS[route]
+  return explanation
+    ? `${message} The renderer reported x-portfolio-route: ${route}. ${explanation}`
+    : `${message} The renderer reported x-portfolio-route: ${route}.`
 }
 
 /** Unparseable either way is not evidence of a redirect; don't invent one. */
