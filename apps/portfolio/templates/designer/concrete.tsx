@@ -1,3 +1,4 @@
+import { compactCount } from "@/lib/format"
 import type { PortfolioData } from "@/lib/portfolio-data"
 
 // CONCRETE — brutalist, light. Oversized Helvetica Black, numbered work index.
@@ -22,8 +23,8 @@ export function ConcreteDesign({ data }: { data: PortfolioData }) {
         {profile.bio ? <p className="bio">{profile.bio}</p> : null}
         <div className="meta">
           {profile.location ? <span>◉ {profile.location}</span> : null}
-          <span>{stats.followers} followers</span>
-          <span>{stats.publicRepos} repos</span>
+          <span>{compactCount(stats.followers)} followers</span>
+          <span>{compactCount(stats.publicRepos)} repos</span>
         </div>
 
         {readmeHtml ? (
@@ -32,7 +33,7 @@ export function ConcreteDesign({ data }: { data: PortfolioData }) {
 
         {repos.length > 0 ? (
           <>
-            <div className="sec">Selected Work</div>
+            <h2 className="sec">Selected Work</h2>
             {repos.map((r, i) => (
               <div className="row" key={r.name}>
                 <div className="num">{String(i + 1).padStart(2, "0")}</div>
@@ -41,7 +42,7 @@ export function ConcreteDesign({ data }: { data: PortfolioData }) {
                   {r.description ? <div className="rd">{r.description}</div> : null}
                 </div>
                 <div className="rs">
-                  ★ {r.stars}
+                  ★ {compactCount(r.stars)}
                   {r.language ? <span className="rl">{r.language}</span> : null}
                 </div>
               </div>

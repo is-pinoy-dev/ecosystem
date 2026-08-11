@@ -1,3 +1,4 @@
+import { compactCount } from "@/lib/format"
 import type { PortfolioData } from "@/lib/portfolio-data"
 
 // PHOSPHOR — terminal, dark. Window chrome, CRT-green glow, ls -la listing.
@@ -22,7 +23,7 @@ export function PhosphorDesign({ data }: { data: PortfolioData }) {
             <h1>{profile.name ?? profile.login}</h1>
             <div className="dim">
               {"// "}
-              {[profile.location, `${stats.followers} followers`].filter(Boolean).join(" — ")}
+              {[profile.location, `${compactCount(stats.followers)} followers`].filter(Boolean).join(" — ")}
             </div>
 
             {profile.bio ? (
@@ -66,7 +67,7 @@ export function PhosphorDesign({ data }: { data: PortfolioData }) {
                   {repos.map((r) => (
                     <div className="lsrow" key={r.name}>
                       <span className="dim">-rwxr-xr-x</span>
-                      <span className="amb">{r.stars}★</span>
+                      <span className="amb">{compactCount(r.stars)}★</span>
                       <span>
                         <a href={r.url} target="_blank" rel="noopener noreferrer">
                           {r.name}

@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { compactCount } from "@/lib/format"
 import type { PortfolioData } from "@/lib/portfolio-data"
 
 // SOLAR — colorful. A vivid poster system with citrus orange, ultramarine,
@@ -43,8 +44,8 @@ export function SolarDesign({ data }: { data: PortfolioData }) {
               <h1>{profile.name ?? profile.login}</h1>
               {profile.bio ? <p className="solar-bio">{profile.bio}</p> : null}
               <div className="solar-meta">
-                <span>{stats.followers} followers</span>
-                <span>{stats.publicRepos} public repos</span>
+                <span>{compactCount(stats.followers)} followers</span>
+                <span>{compactCount(stats.publicRepos)} public repos</span>
               </div>
             </div>
             <div className="solar-photo-wrap">
@@ -108,7 +109,7 @@ export function SolarDesign({ data }: { data: PortfolioData }) {
                     <p>{repo.description ?? "Open-source repository"}</p>
                     <small>
                       {repo.language ?? "Repository"}
-                      <span>★ {repo.stars}</span>
+                      <span>★ {compactCount(repo.stars)}</span>
                     </small>
                     <b aria-hidden="true">↗</b>
                   </a>

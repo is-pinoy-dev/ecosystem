@@ -93,7 +93,7 @@ export async function renderReadme(
     .use(rehypeStringify)
     .process(markdown)
 
-  return stripDisallowedImages(String(file))
+  return pruneEmptied(stripDisallowedImages(String(file)))
 }
 
 /** GitHub-style heading slug: lowercase, punctuation dropped, spaces hyphenated. */
@@ -198,4 +198,35 @@ function stripDisallowedImages(html: string): string {
       return ""
     }
   })
+}
+
+/**
+ * Clear away what the image filter emptied.
+ *
+ * Badges are `<a href="…"><img …></a>`, and a README's badge row routinely
+ * mixes shields.io with hosts we don't allow. Dropping only the `<img>` leaves
+ * the anchor behind — a link with nothing inside it, which is invisible on the
+ * page, a WCAG 2.4.4 failure in a screen reader (a link with no accessible
+ * name), and still a tab stop. The paragraph or `<div align="center">` that
+ * held the row has the same problem one level up: it survives as an empty
+ * block, and the design pays for a badge row that isn't there.
+ *
+ * Runs on our own serialized output, after sanitization, so it can only ever
+ * remove markup that is already safe — like the image filter above, it is not
+ * part of the security boundary. Repeats until nothing more matches, because
+ * emptying an anchor is what empties the paragraph around it.
+ */
+function pruneEmptied(html: string): string {
+  const empty = /<(a|p|div|h[1-6])\b([^>]*)>(?:\s|<br\s*\/?>)*<\/\1>/gi
+  let previous: string
+  let out = html
+  do {
+    previous = out
+    // An empty anchor carrying an id or name is a link *target*, not a broken
+    // link — something else in the document points at it.
+    out = out.replace(empty, (match, tag: string, attrs: string) =>
+      tag.toLowerCase() === "a" && /\b(?:id|name)=/i.test(attrs) ? match : "",
+    )
+  } while (out !== previous)
+  return out
 }

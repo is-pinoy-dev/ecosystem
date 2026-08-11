@@ -1,13 +1,15 @@
 /* Designer themes — complete, self-contained portfolio designs. Unlike the
    layout templates (terminal/pixel-card/minimal) these do not use the shadcn
    design tokens or the theme system: each owns its full look (layout, type,
-   color, light/dark) and is scoped under a `.dt-<name>` root class. The shared
-   `.dt-readme` block styles the injected, pre-sanitized profile-README HTML to
-   fit each design. */
+   color, light/dark) and is scoped under a `.dt-<name>` root class.
+
+   The injected, pre-sanitized profile-README HTML is laid out by the shared
+   contract in readme.css; what each design declares below is its own palette
+   and type for that surface, through the --readme-* custom properties. A theme
+   that sets none still renders — the contract falls back to values mixed from
+   the surrounding text color. */
 
 .dt-root { min-height: 100vh; }
-.dt-readme :where(img) { max-width: 100%; }
-.dt-readme :where(pre) { overflow-x: auto; }
 
 /* ============================ CONCRETE — brutalist, light ============================ */
 .dt-concrete {
@@ -16,8 +18,9 @@
 }
 .dt-concrete .pg { max-width: 1000px; margin: 0 auto; padding: 48px 40px 64px; }
 .dt-concrete .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; border-bottom: 5px solid #0a0a0a; padding-bottom: 14px; font-weight: 700; font-size: 13px; letter-spacing: .02em; text-transform: uppercase; }
+.dt-concrete .top > span:last-child { display: inline-flex; flex-wrap: wrap; gap: 6px 18px; }
 .dt-concrete .top a { color: #0a0a0a; text-decoration: none; border-bottom: 3px solid #0a0a0a; }
-.dt-concrete h1 { font-family: "Arial Black", Impact, sans-serif; font-weight: 900; font-size: clamp(48px, 12vw, 130px); line-height: .84; letter-spacing: -.04em; text-transform: uppercase; margin: 26px 0 0; }
+.dt-concrete h1 { font-family: "Arial Black", Impact, sans-serif; font-weight: 900; font-size: clamp(48px, 12vw, 130px); line-height: .84; letter-spacing: -.04em; text-transform: uppercase; margin: 26px 0 0; overflow-wrap: anywhere; }
 .dt-concrete .role { font-weight: 900; font-size: clamp(16px, 3vw, 28px); text-transform: uppercase; margin: 8px 0 0; background: #0a0a0a; color: #e8e8e6; display: inline-block; padding: 4px 12px; }
 .dt-concrete .bio { font-size: 21px; line-height: 1.3; font-weight: 600; max-width: 30ch; margin: 30px 0 0; }
 .dt-concrete .meta { display: flex; flex-wrap: wrap; gap: 12px 26px; margin-top: 18px; font-weight: 700; text-transform: uppercase; font-size: 13px; }
@@ -28,10 +31,20 @@
 .dt-concrete .rd { font-size: 14px; font-weight: 600; color: #333; }
 .dt-concrete .rs { font-weight: 900; font-size: 18px; white-space: nowrap; }
 .dt-concrete .rl { font-size: 11px; font-weight: 700; text-transform: uppercase; border: 3px solid #0a0a0a; padding: 2px 7px; margin-left: 8px; }
-.dt-concrete .dt-readme { margin-top: 30px; font-size: 16px; line-height: 1.5; max-width: 62ch; }
-.dt-concrete .dt-readme :where(h1,h2,h3) { font-family: "Arial Black", sans-serif; font-weight: 900; text-transform: uppercase; font-size: 22px; margin: 22px 0 8px; }
-.dt-concrete .dt-readme :where(a) { color: #0a0a0a; }
-.dt-concrete .dt-readme :where(pre) { border: 3px solid #0a0a0a; padding: 12px; font-size: 13px; }
+.dt-concrete .dt-readme {
+  --readme-heading: #0a0a0a; --readme-heading-font: "Arial Black", Impact, sans-serif;
+  --readme-heading-weight: 900; --readme-heading-transform: uppercase; --readme-h-max: 24px;
+  --readme-link: #0a0a0a; --readme-muted: #3d3d3d; --readme-marker: #0a0a0a;
+  --readme-rule: #0a0a0a; --readme-fill: #dbdbd7;
+  margin-top: 34px; font-size: 16px; line-height: 1.5; max-width: 62ch;
+}
+.dt-concrete .dt-readme :where(h1,h2,h3,h4,h5,h6) { margin: 26px 0 8px; }
+/* Every rule on this page is heavy; the README's borders match rather than
+   thinning out to a hairline in the middle of it. */
+.dt-concrete .dt-readme :where(a) { text-decoration-thickness: 2px; }
+.dt-concrete .dt-readme :where(pre) { border-width: 3px; padding: 12px; font-size: 13px; }
+.dt-concrete .dt-readme :where(blockquote) { border-left-width: 5px; }
+.dt-concrete .dt-readme :where(th, td) { border-width: 2px; }
 .dt-concrete .foot { margin-top: 40px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
 .dt-concrete .foot a { color: #0a0a0a; }
 
@@ -41,21 +54,30 @@
 .dt-broadsheet .masthead { text-align: center; border-bottom: 1px solid #1c1a17; padding-bottom: 20px; }
 .dt-broadsheet .kicker { font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: #6b5f4a; }
 .dt-broadsheet .drule { border-top: 3px double #1c1a17; margin: 8px 0; }
-.dt-broadsheet h1 { font-size: clamp(40px, 8vw, 68px); font-weight: 400; margin: 14px 0 6px; font-style: italic; }
+.dt-broadsheet h1 { font-size: clamp(40px, 8vw, 68px); font-weight: 400; margin: 14px 0 6px; font-style: italic; overflow-wrap: anywhere; }
 .dt-broadsheet .role { font-size: 14px; letter-spacing: .2em; text-transform: uppercase; color: #6b5f4a; }
 .dt-broadsheet .byline { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 22px; margin-top: 16px; font-size: 13px; font-style: italic; color: #4a4238; }
 .dt-broadsheet .byline a { color: #8a3b2a; text-decoration: none; border-bottom: 1px solid #c9a99a; }
-.dt-broadsheet .dt-readme { font-size: 19px; line-height: 1.6; margin-top: 34px; }
-.dt-broadsheet .dt-readme > :first-child::first-letter { font-size: 68px; float: left; line-height: .72; padding: 8px 12px 0 0; font-weight: 700; }
-.dt-broadsheet .dt-readme :where(h1,h2,h3) { font-style: italic; font-weight: 400; font-size: 24px; margin: 30px 0 6px; }
-.dt-broadsheet .dt-readme :where(a) { color: #8a3b2a; }
-.dt-broadsheet .dt-readme :where(pre) { background: #efe9db; padding: 12px; font-size: 14px; font-family: "Courier New", monospace; }
+.dt-broadsheet .dt-readme {
+  --readme-heading: #1c1a17; --readme-heading-weight: 400; --readme-h-max: 26px;
+  --readme-link: #8a3b2a; --readme-muted: #5a5347; --readme-marker: #8a3b2a;
+  --readme-rule: #b7ad97; --readme-fill: #efe9db;
+  --readme-mono: "Courier New", Courier, monospace;
+  font-size: 19px; line-height: 1.6; margin-top: 34px;
+}
+.dt-broadsheet .dt-readme :where(h1,h2,h3,h4,h5,h6) { font-style: italic; margin: 30px 0 6px; }
+/* The drop cap belongs to the opening paragraph. A README that opens with a
+   badge row or a heading has no first letter to set, and pinning it to `p`
+   keeps the cap from landing on one of those instead. */
+.dt-broadsheet .dt-readme > p:first-child::first-letter { font-size: 68px; float: left; line-height: .72; padding: 8px 12px 0 0; font-weight: 700; }
+.dt-broadsheet .dt-readme :where(pre) { border-color: #d8cfba; padding: 12px; font-size: 14px; }
+.dt-broadsheet .dt-readme :where(blockquote) { font-style: italic; }
 .dt-broadsheet .sec { font-size: 12px; letter-spacing: .26em; text-transform: uppercase; color: #6b5f4a; margin: 44px 0 4px; border-bottom: 1px solid #1c1a17; padding-bottom: 8px; }
 .dt-broadsheet .item { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 12px 0; border-bottom: 1px dotted #b7ad97; }
 .dt-broadsheet .it-t { font-size: 18px; font-style: italic; }
 .dt-broadsheet .it-d { font-size: 14px; color: #5a5347; font-style: normal; }
 .dt-broadsheet .dots { flex: 1; border-bottom: 1px dotted #b7ad97; margin: 0 6px; transform: translateY(-4px); }
-.dt-broadsheet .it-s { font-variant-numeric: tabular-nums; font-size: 15px; color: #4a4238; }
+.dt-broadsheet .it-s { font-variant-numeric: tabular-nums; font-size: 15px; color: #4a4238; white-space: nowrap; }
 .dt-broadsheet .foot { text-align: center; margin-top: 40px; font-size: 12px; font-style: italic; color: #6b5f4a; }
 .dt-broadsheet .foot a { color: #8a3b2a; }
 
@@ -72,10 +94,21 @@
 .dt-phosphor .prompt { color: #2fbf55; }
 .dt-phosphor a { color: #7fffa8; text-decoration: none; }
 .dt-phosphor .lsrow { display: grid; grid-template-columns: 110px 64px 1fr auto; gap: 10px; }
-.dt-phosphor .dt-readme { margin: 6px 0 0; }
-.dt-phosphor .dt-readme :where(h1,h2,h3) { color: #7fffa8; font-size: 15px; margin: 14px 0 4px; }
-.dt-phosphor .dt-readme :where(a) { color: #7fffa8; text-decoration: underline; }
-.dt-phosphor .dt-readme :where(pre) { border: 1px solid #1c3b22; padding: 10px; background: #010301; }
+.dt-phosphor .dt-readme {
+  --readme-heading: #7fffa8; --readme-h-max: 16px; --readme-heading-weight: 400;
+  --readme-heading-tracking: .06em; --readme-heading-transform: uppercase;
+  --readme-link: #7fffa8; --readme-muted: #2b8f45; --readme-marker: #2fbf55;
+  --readme-rule: #1c3b22; --readme-fill: #010301; --readme-mono: inherit;
+  --readme-gap: .8em;
+  margin: 6px 0 0;
+}
+.dt-phosphor .dt-readme :where(h1,h2,h3,h4,h5,h6) { margin: 14px 0 4px; }
+/* The design's links are bare (they sit in prompts and file listings, where
+   position identifies them); a link buried in README prose has nothing to give
+   it away, so inside the README they stay underlined. */
+.dt-phosphor .dt-readme :where(a) { text-decoration: underline; }
+.dt-phosphor .dt-readme :where(pre) { padding: 10px; }
+.dt-phosphor .dt-readme :where(ul) { list-style: "› "; }
 .dt-phosphor .cur { display: inline-block; width: 9px; height: 16px; background: #33ff66; margin-left: 4px; vertical-align: -2px; }
 .dt-phosphor .scan { position: fixed; inset: 0; pointer-events: none; z-index: 50; background: repeating-linear-gradient(to bottom, transparent 0, transparent 2px, rgba(0,0,0,.25) 3px, transparent 4px); }
 
@@ -91,14 +124,19 @@
 .dt-draft .frame::before { top: -6px; left: -6px; }
 .dt-draft .frame::after { bottom: -6px; right: -6px; }
 .dt-draft .tag { font-size: 11px; letter-spacing: .24em; color: #6fd3ff; text-transform: uppercase; }
-.dt-draft h1 { font-family: "Helvetica Neue", Arial, sans-serif; font-weight: 700; font-size: clamp(34px, 7vw, 58px); letter-spacing: .02em; margin: 6px 0 2px; color: #fff; }
+.dt-draft h1 { font-family: "Helvetica Neue", Arial, sans-serif; font-weight: 700; font-size: clamp(34px, 7vw, 58px); letter-spacing: .02em; margin: 6px 0 2px; color: #fff; overflow-wrap: anywhere; }
 .dt-draft .role { font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: #9cc7ee; }
 .dt-draft .dim { position: absolute; right: 34px; top: 30px; text-align: right; font-size: 11px; color: #7fb3de; line-height: 1.9; }
 .dt-draft .dim b { color: #6fd3ff; }
-.dt-draft .dt-readme { max-width: 62ch; font-size: 14px; line-height: 1.7; margin: 24px 0; color: #dcefff; }
-.dt-draft .dt-readme :where(h1,h2,h3) { color: #6fd3ff; font-size: 15px; letter-spacing: .04em; margin: 16px 0 4px; }
-.dt-draft .dt-readme :where(a) { color: #6fd3ff; }
-.dt-draft .dt-readme :where(pre) { border: 1px solid #2f5d86; padding: 10px; }
+.dt-draft .dt-readme {
+  --readme-heading: #6fd3ff; --readme-h-max: 16px; --readme-heading-weight: 600;
+  --readme-heading-tracking: .04em; --readme-heading-transform: uppercase;
+  --readme-link: #6fd3ff; --readme-muted: #9cc7ee; --readme-marker: #6fd3ff;
+  --readme-rule: #2f5d86; --readme-fill: rgba(9, 41, 68, .75);
+  max-width: 62ch; font-size: 14px; line-height: 1.7; margin: 24px 0; color: #dcefff;
+}
+.dt-draft .dt-readme :where(h1,h2,h3,h4,h5,h6) { margin: 18px 0 4px; }
+.dt-draft .dt-readme :where(pre) { padding: 10px; }
 .dt-draft .grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #2f5d86; margin-top: 16px; }
 .dt-draft .part { border-bottom: 1px solid #2f5d86; border-right: 1px solid #2f5d86; padding: 16px 18px; }
 .dt-draft .part:nth-child(2n) { border-right: none; }
@@ -119,14 +157,24 @@
 .dt-bubblegum .top .brand { font-weight: 900; color: #7b2ff7; }
 .dt-bubblegum .top a { color: #7b2ff7; text-decoration: none; background: #fff; border: 2px solid #2a1245; padding: 4px 10px; box-shadow: 2px 2px 0 #2a1245; display: inline-block; margin-left: 6px; }
 .dt-bubblegum .hero { margin-top: 22px; background: #fff; border: 3px solid #2a1245; box-shadow: 8px 8px 0 #ff5ea8; padding: 26px 28px; }
-.dt-bubblegum h1 { font-size: clamp(38px, 8vw, 68px); line-height: .95; margin: 0; font-weight: 900; letter-spacing: -.02em; background: linear-gradient(90deg, #ff4fa3, #7b2ff7 60%, #2bb3ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dt-bubblegum h1 { font-size: clamp(38px, 8vw, 68px); line-height: .95; margin: 0; font-weight: 900; letter-spacing: -.02em; overflow-wrap: anywhere; background: linear-gradient(90deg, #ff4fa3, #7b2ff7 60%, #2bb3ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .dt-bubblegum .role { display: inline-block; margin-top: 12px; font-weight: 800; background: #ffe14d; border: 2px solid #2a1245; padding: 3px 12px; box-shadow: 3px 3px 0 #2a1245; transform: rotate(-2deg); }
 .dt-bubblegum .bio { font-size: 19px; font-weight: 600; line-height: 1.4; margin: 18px 0 0; max-width: 42ch; }
-.dt-bubblegum .meta { margin-top: 14px; font-weight: 800; font-size: 13px; color: #7b2ff7; }
-.dt-bubblegum .dt-readme { background: #fff; border: 3px solid #2a1245; box-shadow: 6px 6px 0 #2bb3ff; padding: 20px 24px; margin-top: 24px; font-size: 15px; line-height: 1.55; }
-.dt-bubblegum .dt-readme :where(h1,h2,h3) { font-weight: 900; font-size: 20px; margin: 16px 0 6px; color: #7b2ff7; }
-.dt-bubblegum .dt-readme :where(a) { color: #ff4fa3; }
-.dt-bubblegum .dt-readme :where(pre) { background: #f3ecff; padding: 12px; border: 2px solid #2a1245; }
+.dt-bubblegum .meta { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 14px; font-weight: 800; font-size: 13px; color: #7b2ff7; }
+.dt-bubblegum .dt-readme {
+  --readme-heading: #7b2ff7; --readme-heading-weight: 900; --readme-h-max: 21px;
+  --readme-link: #ff4fa3; --readme-muted: #5a4a72; --readme-marker: #ff4fa3;
+  --readme-rule: #2a1245; --readme-fill: #f3ecff; --readme-radius: 8px;
+  background: #fff; border: 3px solid #2a1245; box-shadow: 6px 6px 0 #2bb3ff;
+  padding: 20px 24px; margin-top: 24px; font-size: 15px; line-height: 1.55;
+}
+.dt-bubblegum .dt-readme :where(h1,h2,h3,h4,h5,h6) { margin: 18px 0 6px; }
+/* Every edge in this design is a sticker outline; a 1px hairline inside the
+   README would read as a rendering mistake next to them. */
+.dt-bubblegum .dt-readme :where(pre) { padding: 12px; border-width: 2px; }
+.dt-bubblegum .dt-readme :where(th, td) { border-width: 2px; }
+.dt-bubblegum .dt-readme :where(blockquote) { border-left-width: 4px; }
+.dt-bubblegum .sec { margin: 28px 0 0; font-weight: 900; font-size: 20px; color: #7b2ff7; }
 .dt-bubblegum .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 24px; }
 .dt-bubblegum .c { background: #fff; border: 3px solid #2a1245; padding: 18px 20px; box-shadow: 6px 6px 0 #2a1245; }
 .dt-bubblegum .c:nth-child(4n+1) { box-shadow: 6px 6px 0 #ff5ea8; transform: rotate(-1.4deg); }
@@ -145,16 +193,27 @@
 .dt-grid .pg { max-width: 1080px; margin: 0 auto; padding: 56px 48px 80px; }
 .dt-grid .head { display: grid; grid-template-columns: 2fr 1fr; gap: 40px; border-top: 4px solid #e2231a; padding-top: 14px; }
 .dt-grid .idxn { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #111; }
-.dt-grid .idxn.r { text-align: right; white-space: nowrap; }
-.dt-grid h1 { font-size: clamp(36px, 6vw, 64px); font-weight: 700; letter-spacing: -.025em; line-height: 1; margin: 40px 0 0; }
-.dt-grid .rt { font-size: 13px; line-height: 1.6; color: #444; align-self: end; }
+/* Distinct from `.r`, the repository row below: an element matching both
+   would inherit the row grid and its 680px mobile minimum. */
+.dt-grid .idxn-right { text-align: right; }
+.dt-grid h1 { font-size: clamp(36px, 6vw, 64px); font-weight: 700; letter-spacing: -.025em; line-height: 1; margin: 40px 0 0; overflow-wrap: anywhere; }
+/* The sidebar spans the name's row and the README's, so the README begins
+   directly under the name instead of after the tallest column in the row —
+   which used to leave a band of dead space across the page. */
+.dt-grid .rt { grid-column: 2; grid-row: 2 / span 2; align-self: start; font-size: 13px; line-height: 1.6; color: #444; }
 .dt-grid .rt .lbl { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #999; display: block; margin-bottom: 4px; }
-.dt-grid .rt a { color: #e2231a; text-decoration: none; }
-.dt-grid .dt-readme { grid-column: 1 / 2; font-size: 15px; line-height: 1.6; max-width: 52ch; margin-top: 4px; }
-.dt-grid .dt-readme :where(h1,h2,h3) { font-size: 15px; font-weight: 700; letter-spacing: .01em; margin: 18px 0 4px; }
-.dt-grid .dt-readme :where(a) { color: #e2231a; }
-.dt-grid .dt-readme :where(pre) { background: #f4f4f4; padding: 12px; font-size: 13px; }
+.dt-grid .rt a { color: #e2231a; text-decoration: none; margin-right: 14px; }
+.dt-grid .dt-readme {
+  --readme-heading: #111; --readme-h-max: 17px; --readme-heading-tracking: .01em;
+  --readme-link: #e2231a; --readme-muted: #666; --readme-marker: #e2231a;
+  --readme-rule: #ddd; --readme-fill: #f4f4f4;
+  grid-column: 1; font-size: 15px; line-height: 1.6; max-width: 52ch; margin-top: 8px;
+}
+.dt-grid .dt-readme :where(h1,h2,h3,h4,h5,h6) { margin: 20px 0 4px; }
+.dt-grid .dt-readme :where(pre) { border-color: #e6e6e6; padding: 12px; font-size: 13px; }
+.dt-grid .dt-readme :where(th, td) { border-color: #ccc; }
 .dt-grid .sec { margin-top: 60px; border-top: 1px solid #111; }
+.dt-grid .sec-title { margin: 12px 0 20px; font-size: 11px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase; }
 .dt-grid .r { display: grid; grid-template-columns: 38px 1.6fr 2fr 90px 70px; gap: 16px; align-items: baseline; padding: 14px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
 .dt-grid .r .n { color: #e2231a; font-variant-numeric: tabular-nums; font-size: 12px; }
 .dt-grid .r .t { font-weight: 600; }
@@ -164,8 +223,6 @@
 .dt-grid .r.colhead { color: #999; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
 .dt-grid .foot { margin-top: 40px; font-size: 12px; color: #999; letter-spacing: .1em; text-transform: uppercase; }
 .dt-grid .foot a { color: #e2231a; text-decoration: none; }
-.dt-readme :where(p, li, td, th, code) { overflow-wrap: anywhere; }
-.dt-readme :where(table) { display: block; max-width: 100%; overflow-x: auto; }
 
 /* ============================ BENTO — modern, light ============================ */
 .dt-bento { background: #dce7d5; color: #132218; font-family: "Helvetica Neue", "Segoe UI", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
@@ -199,10 +256,14 @@
 .dt-bento .bento-about .bento-section-label { color: #99ad9f; }
 .dt-bento .bento-section-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
 .dt-bento .bento-section-head > span { color: #5c6d26; font-size: 10px; font-weight: 800; text-transform: uppercase; }
-.dt-bento .dt-readme { margin-top: 0; color: #dbe5dc; font-size: 14px; line-height: 1.65; }
-.dt-bento .dt-readme :where(h1, h2, h3) { margin: 22px 0 7px; color: #e5ff68; font-size: 18px; line-height: 1.15; }
-.dt-bento .dt-readme :where(a) { color: #e5ff68; }
-.dt-bento .dt-readme :where(pre) { border: 1px solid #45584b; border-radius: 12px; padding: 12px; background: #1a2b20; font-size: 12px; }
+.dt-bento .dt-readme {
+  --readme-heading: #e5ff68; --readme-h-max: 19px; --readme-heading-weight: 600;
+  --readme-link: #e5ff68; --readme-muted: #a3b3a6; --readme-marker: #8fa793;
+  --readme-rule: #45584b; --readme-fill: #1a2b20; --readme-radius: 12px;
+  margin-top: 0; color: #dbe5dc; font-size: 14px; line-height: 1.65;
+}
+.dt-bento .dt-readme :where(h1,h2,h3,h4,h5,h6) { margin: 22px 0 7px; }
+.dt-bento .dt-readme :where(pre) { padding: 12px; font-size: 12px; }
 .dt-bento .bento-repos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .dt-bento .bento-repo { display: grid; min-height: 154px; grid-template-rows: auto auto 1fr auto; gap: 6px; padding: 16px; border: 1px solid rgba(19, 34, 24, 0.14); border-radius: 17px; background: rgba(255, 255, 255, 0.52); color: #132218; text-decoration: none; transition: background-color 160ms ease, transform 160ms ease; }
 .dt-bento .bento-repo:hover { background: #fff; transform: translateY(-2px); }
@@ -239,11 +300,18 @@
 .dt-noir .noir-section-title { display: grid; align-content: start; grid-template-columns: 34px 1fr; gap: 12px; }
 .dt-noir .noir-section-title span { color: #cbb780; font-family: Georgia, serif; font-size: 11px; font-style: italic; }
 .dt-noir .noir-section-title h2 { max-width: 8ch; margin: 0; color: #f0ecdf; font-size: 30px; font-weight: 500; letter-spacing: -0.035em; line-height: 1; text-transform: uppercase; }
-.dt-noir .dt-readme { max-width: 68ch; color: #c9c4b8; font-family: Georgia, "Times New Roman", serif; font-size: 17px; line-height: 1.7; }
-.dt-noir .dt-readme > :first-child { margin-top: 0; }
-.dt-noir .dt-readme :where(h1, h2, h3) { margin: 28px 0 8px; color: #f0ecdf; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; }
-.dt-noir .dt-readme :where(a) { color: #d9c68e; }
-.dt-noir .dt-readme :where(pre) { border: 1px solid #3e3c37; padding: 14px; background: #11110f; color: #e3ded2; font-size: 12px; }
+.dt-noir .dt-readme {
+  --readme-heading: #f0ecdf; --readme-heading-font: "Helvetica Neue", Arial, sans-serif;
+  --readme-heading-weight: 500; --readme-heading-transform: uppercase;
+  --readme-heading-tracking: .04em; --readme-h-max: 18px;
+  --readme-link: #d9c68e; --readme-muted: #948f85; --readme-marker: #cbb780;
+  --readme-rule: #3e3c37; --readme-fill: #11110f;
+  max-width: 68ch; color: #c9c4b8; font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px; line-height: 1.7;
+}
+.dt-noir .dt-readme :where(h1,h2,h3,h4,h5,h6) { margin: 28px 0 8px; }
+.dt-noir .dt-readme :where(pre) { padding: 14px; color: #e3ded2; font-size: 12px; }
+.dt-noir .dt-readme :where(blockquote) { border-left-color: #cbb780; font-style: italic; }
 .dt-noir .noir-projects { border-top: 1px solid #3e3c37; }
 .dt-noir .noir-project { display: grid; grid-template-columns: 34px minmax(130px, 0.75fr) minmax( 180px, 1.4fr ) 90px 60px 20px; gap: 14px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid #2d2c29; color: #aaa69c; text-decoration: none; transition: color 150ms ease, padding 150ms ease; }
 .dt-noir .noir-project:hover { padding-right: 8px; padding-left: 8px; color: #f0ecdf; }
@@ -285,11 +353,17 @@
 .dt-solar .solar-about { display: grid; grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr); gap: 48px; margin-top: 28px; padding: 36px 38px 42px; border: 3px solid #171717; background: #fff4e7; box-shadow: 10px 10px 0 #2025b9; }
 .dt-solar .solar-section-title span { font-size: 10px; font-weight: 900; letter-spacing: 0.13em; text-transform: uppercase; }
 .dt-solar .solar-section-title h2 { max-width: 9ch; margin: 16px 0 0; color: #2025b9; font-size: 38px; font-weight: 900; letter-spacing: -0.045em; line-height: 0.95; text-transform: uppercase; }
-.dt-solar .dt-readme { font-size: 15px; line-height: 1.65; }
-.dt-solar .dt-readme > :first-child { margin-top: 0; }
-.dt-solar .dt-readme :where(h1, h2, h3) { margin: 22px 0 7px; color: #2025b9; font-size: 18px; font-weight: 900; }
-.dt-solar .dt-readme :where(a) { color: #2025b9; font-weight: 800; }
-.dt-solar .dt-readme :where(pre) { border: 2px solid #171717; padding: 12px; background: #ffdfc7; font-size: 12px; }
+.dt-solar .dt-readme {
+  --readme-heading: #2025b9; --readme-heading-weight: 900; --readme-h-max: 20px;
+  --readme-link: #2025b9; --readme-muted: #4c443a; --readme-marker: #f45a32;
+  --readme-rule: #171717; --readme-fill: #ffdfc7;
+  font-size: 15px; line-height: 1.65;
+}
+.dt-solar .dt-readme :where(h1,h2,h3,h4,h5,h6) { margin: 22px 0 7px; }
+.dt-solar .dt-readme :where(a) { font-weight: 800; }
+.dt-solar .dt-readme :where(pre) { border-width: 2px; padding: 12px; font-size: 12px; }
+.dt-solar .dt-readme :where(th, td) { border-width: 2px; }
+.dt-solar .dt-readme :where(blockquote) { border-left-width: 4px; }
 .dt-solar .solar-work { margin-top: 76px; }
 .dt-solar .solar-work > .solar-section-title { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
 .dt-solar .solar-work > .solar-section-title h2 { max-width: 13ch; margin: 0; text-align: right; }
@@ -325,9 +399,9 @@
   .dt-bubblegum .grid { grid-template-columns: 1fr; }
   .dt-bubblegum .top a { margin-bottom: 6px; }
   .dt-grid .head { grid-template-columns: 1fr; gap: 18px; }
-  .dt-grid .idxn.r { text-align: left; }
+  .dt-grid .idxn-right { text-align: left; }
+  .dt-grid .rt { grid-column: auto; grid-row: auto; }
   .dt-grid h1 { margin-top: 16px; }
-  .dt-grid .dt-readme { grid-column: 1; }
   .dt-grid .sec { overflow-x: auto; }
   .dt-grid .r { min-width: 680px; }
   .dt-bento .pg { padding: 18px 14px 28px; }
@@ -375,6 +449,17 @@
   .dt-solar .solar-foot { align-items: flex-start; flex-direction: column; }
   .dt-solar .solar-foot span { text-align: left; }
 }
+/* Between the phone breakpoint and a laptop, noir's section label column takes
+   220px of the width and leaves its project rows less than the ~590px their
+   own columns add up to — the rows then overflow the page rather than the row.
+   Stacking the section hands them the full measure back. */
+@media (min-width: 761px) and (max-width: 1023px) {
+  .dt-noir .noir-about, .dt-noir .noir-work { grid-template-columns: 1fr; gap: 26px; }
+  .dt-noir .noir-section-title h2 { max-width: none; }
+  .dt-noir .noir-hero { grid-template-columns: minmax(0, 1.2fr) minmax(220px, .7fr); }
+  .dt-noir .noir-stats { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; gap: 40px; border-top: 1px solid #3e3c37; border-left: 0; padding-top: 18px; padding-left: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dt-bento .bento-repo, .dt-noir .noir-project { transition: none; }
 }

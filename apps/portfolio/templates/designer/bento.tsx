@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { compactCount } from "@/lib/format"
 import type { PortfolioData } from "@/lib/portfolio-data"
 
 // BENTO — modern, light. A soft-sage modular canvas with a portrait card,
@@ -45,11 +46,11 @@ export function BentoDesign({ data }: { data: PortfolioData }) {
             <dl className="bento-stats">
               <div>
                 <dt>Followers</dt>
-                <dd>{stats.followers}</dd>
+                <dd>{compactCount(stats.followers)}</dd>
               </div>
               <div>
                 <dt>Public repos</dt>
-                <dd>{stats.publicRepos}</dd>
+                <dd>{compactCount(stats.publicRepos)}</dd>
               </div>
               <div>
                 <dt>Selected here</dt>
@@ -108,7 +109,7 @@ export function BentoDesign({ data }: { data: PortfolioData }) {
                     {repo.description ? <span>{repo.description}</span> : null}
                     <small>
                       {repo.language ?? "Repository"}
-                      <span>★ {repo.stars}</span>
+                      <span>★ {compactCount(repo.stars)}</span>
                     </small>
                   </a>
                 ))}

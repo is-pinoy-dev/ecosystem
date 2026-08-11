@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import "@is-pinoy-dev/ui/globals.css"
+import "./readme.css"
 import "./globals.css"
 import "./themes.css"
 import "./designer-themes.css"

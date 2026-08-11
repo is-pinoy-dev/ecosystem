@@ -1,0 +1,341 @@
+/* Profile-README rendering contract — shared by every template.
+   ---------------------------------------------------------------------------
+   Each template injects the same sanitized HTML (lib/parse.ts) into one of two
+   surfaces: `.portfolio-readme` for the layout templates, which take their
+   colors from the shadcn tokens, and `.dt-readme` for the designer templates,
+   which each own theirs. That HTML is somebody else's document — headings four
+   levels deep, badge rows, task lists, tables, block quotes — so its structure
+   is styled once here rather than a handful of tags at a time per theme.
+
+   Much of what follows undoes Tailwind's preflight for this subtree only.
+   Preflight makes images block-level (which stacks a badge row one badge per
+   line), removes list markers and their indent, and flattens every heading to
+   body size: all correct for an app's own components, all wrong for third-party
+   document markup.
+
+   Two properties keep this safe to share:
+
+   - Every selector sits inside :where(), so each declaration below carries zero
+     specificity. A theme's own `.dt-noir .dt-readme :where(a)` outranks it with
+     no !important and no ordering games.
+   - No color literal appears here. The palette arrives through the --readme-*
+     custom properties, and their defaults are mixed out of currentColor, so a
+     design that declares none still renders legibly on any ground. */
+
+:where(.portfolio-readme, .dt-readme) {
+  /* Ink. Themes override with their own hierarchy colors. */
+  --readme-heading: currentColor;
+  --readme-link: currentColor;
+  --readme-muted: color-mix(in srgb, currentColor 66%, transparent);
+  --readme-marker: color-mix(in srgb, currentColor 50%, transparent);
+  /* Hairlines and the tint behind code, table headers and quotes. Both are
+     mixed from the text color, so they sit at the same distance from any
+     background without a theme having to name a value. */
+  --readme-rule: color-mix(in srgb, currentColor 20%, transparent);
+  --readme-fill: color-mix(in srgb, currentColor 7%, transparent);
+
+  /* Type. --readme-h-max is the largest heading; the rest are struck from it,
+     which lets a theme retune the whole scale with one declaration. Note that
+     lib/parse.ts demotes every README heading one level, so h2 is the top
+     heading a document actually renders and h4 is ordinary. */
+  --readme-h-max: 1.5em;
+  --readme-heading-font: inherit;
+  --readme-heading-weight: 700;
+  --readme-heading-transform: none;
+  --readme-heading-tracking: normal;
+  --readme-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Vertical rhythm between blocks. In em so a dense design (phosphor at 14px)
+     spaces proportionally rather than inheriting a roomy design's gaps. */
+  --readme-gap: 1em;
+  --readme-radius: 0;
+
+  /* Three designs place the README in a grid cell (bento, noir, solar). A grid
+     item defaults to `min-width: auto`, so its column is sized to fit its
+     widest indivisible content — which, for a README carrying a wide table,
+     means the column grows and the page scrolls sideways. Allowing the item to
+     shrink puts the scrolling back inside the table, where it belongs. */
+  min-width: 0;
+}
+
+/* The README is a section of a page, not a page: its outer edges are the
+   template's business, so the first and last blocks add no margin of their
+   own. Without this every design pays for the README's leading margin twice. */
+:where(.portfolio-readme, .dt-readme) > :first-child {
+  margin-top: 0;
+}
+
+:where(.portfolio-readme, .dt-readme) > :last-child {
+  margin-bottom: 0;
+}
+
+/* ---------------------------------------------------------------- headings */
+
+:where(.portfolio-readme, .dt-readme) :where(h1, h2, h3, h4, h5, h6) {
+  margin: 1.6em 0 0.5em;
+  color: var(--readme-heading);
+  font-family: var(--readme-heading-font);
+  font-weight: var(--readme-heading-weight);
+  letter-spacing: var(--readme-heading-tracking);
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  text-transform: var(--readme-heading-transform);
+  text-wrap: balance;
+}
+
+/* Struck from --readme-h-max, with a floor so the deepest headings stay
+   distinguishable from body copy instead of collapsing into it. */
+:where(.portfolio-readme, .dt-readme) :where(h1) {
+  font-size: var(--readme-h-max);
+}
+
+:where(.portfolio-readme, .dt-readme) :where(h2) {
+  font-size: max(1.05em, calc(var(--readme-h-max) * 0.87));
+}
+
+:where(.portfolio-readme, .dt-readme) :where(h3) {
+  font-size: max(1em, calc(var(--readme-h-max) * 0.75));
+}
+
+:where(.portfolio-readme, .dt-readme) :where(h4) {
+  font-size: max(0.95em, calc(var(--readme-h-max) * 0.65));
+}
+
+:where(.portfolio-readme, .dt-readme) :where(h5, h6) {
+  font-size: max(0.9em, calc(var(--readme-h-max) * 0.58));
+}
+
+:where(.portfolio-readme, .dt-readme) :where(h6) {
+  color: var(--readme-muted);
+}
+
+/* --------------------------------------------------------- text and blocks */
+
+:where(.portfolio-readme, .dt-readme) :where(p, dl, figure) {
+  margin: var(--readme-gap) 0;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(p, li, dd, td, th) {
+  overflow-wrap: break-word;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(a) {
+  color: var(--readme-link);
+  text-decoration: underline;
+  text-decoration-thickness: from-font;
+  text-underline-offset: 0.18em;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(a):focus-visible {
+  outline: 2px solid var(--readme-link);
+  outline-offset: 2px;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(blockquote) {
+  margin: var(--readme-gap) 0;
+  border-left: 3px solid var(--readme-rule);
+  padding: 0.15em 0 0.15em 1em;
+  color: var(--readme-muted);
+}
+
+:where(.portfolio-readme, .dt-readme) :where(hr) {
+  height: 0;
+  margin: calc(var(--readme-gap) * 1.8) 0;
+  border: 0;
+  border-top: 1px solid var(--readme-rule);
+}
+
+:where(.portfolio-readme, .dt-readme) :where(details) {
+  margin: var(--readme-gap) 0;
+  border: 1px solid var(--readme-rule);
+  border-radius: var(--readme-radius);
+  padding: 0.7em 0.9em;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(summary) {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(details[open]) :where(summary) {
+  margin-bottom: 0.6em;
+}
+
+/* ------------------------------------------------------------------- lists */
+
+:where(.portfolio-readme, .dt-readme) :where(ul, ol) {
+  margin: var(--readme-gap) 0;
+  padding-left: 1.4em;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(ul) {
+  list-style: disc;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(ul ul) {
+  list-style: circle;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(ul ul ul) {
+  list-style: square;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(ol) {
+  list-style: decimal;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(li) {
+  margin: 0.3em 0;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(li)::marker {
+  color: var(--readme-marker);
+}
+
+:where(.portfolio-readme, .dt-readme) :where(li) > :where(ul, ol) {
+  margin: 0.3em 0 0;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(dt) {
+  font-weight: 600;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(dd) {
+  margin: 0.2em 0 0.6em 1.4em;
+}
+
+/* GFM task lists. The sanitizer keeps the disabled checkbox but drops the
+   class names GitHub styles them by, so the checkbox itself is the hook: the
+   item loses its marker and the box is pulled into the vacated slot. */
+:where(.portfolio-readme, .dt-readme)
+  :where(li):has(> input[type="checkbox"]:first-child) {
+  list-style: none;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(input[type="checkbox"]) {
+  width: 1em;
+  height: 1em;
+  margin: 0 0.45em 0 -1.4em;
+  appearance: auto;
+  accent-color: var(--readme-link);
+  vertical-align: -0.1em;
+}
+
+/* --------------------------------------------------------- code and tables */
+
+:where(.portfolio-readme, .dt-readme) :where(code, kbd, samp) {
+  border-radius: var(--readme-radius);
+  background: var(--readme-fill);
+  padding: 0.12em 0.36em;
+  font-family: var(--readme-mono);
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(kbd) {
+  border: 1px solid var(--readme-rule);
+}
+
+:where(.portfolio-readme, .dt-readme) :where(pre) {
+  margin: var(--readme-gap) 0;
+  border: 1px solid var(--readme-rule);
+  border-radius: var(--readme-radius);
+  background: var(--readme-fill);
+  padding: 0.85em 1em;
+  font-family: var(--readme-mono);
+  font-size: 0.88em;
+  line-height: 1.55;
+  overflow-x: auto;
+}
+
+/* A fenced block already has the padding and tint of its <pre>; the inline
+   treatment inside one reads as a box within a box. */
+:where(.portfolio-readme, .dt-readme) :where(pre) :where(code) {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* `width: max-content` keeps a narrow table narrow and lets a wide one scroll
+   inside its own box rather than widening the page — the one place a README
+   can otherwise force a horizontal scrollbar onto the whole design. */
+:where(.portfolio-readme, .dt-readme) :where(table) {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: var(--readme-gap) 0;
+  border-collapse: collapse;
+  font-size: 0.94em;
+  overflow-x: auto;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(th, td) {
+  border: 1px solid var(--readme-rule);
+  padding: 0.45em 0.75em;
+  text-align: left;
+  vertical-align: top;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(thead th) {
+  background: var(--readme-fill);
+  font-weight: 700;
+}
+
+/* -------------------------------------------------------- images and badges */
+
+/* Badge rows are the single most common thing in a profile README, and the
+   most fragile: they are <img> elements, usually wrapped in <a>, usually with
+   no whitespace between them in the source. Preflight's `display: block` puts
+   each one on its own line — a twelve-badge row becomes twelve rows. Restoring
+   inline flow rebuilds the row, `vertical-align: middle` levels badges of
+   different heights, and the sibling margin supplies a consistent gutter
+   whether or not the author separated them with whitespace. */
+:where(.portfolio-readme, .dt-readme) :where(img) {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  margin-block: 0.12em;
+  vertical-align: middle;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(a):has(> img) {
+  display: inline-block;
+  border: 0;
+  text-decoration: none;
+}
+
+:where(.portfolio-readme, .dt-readme)
+  :where(img, a:has(> img))
+  + :where(img, a:has(> img)) {
+  margin-left: 0.4em;
+}
+
+/* A row that wraps needs room between its lines; a paragraph of prose does
+   not, so this is scoped to the containers that actually hold images. */
+:where(.portfolio-readme, .dt-readme)
+  :where(p, div):has(> img, > a > img, > picture) {
+  line-height: 1.7;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(picture, video, svg) {
+  max-width: 100%;
+}
+
+/* ------------------------------------------------------------- small print */
+
+:where(.portfolio-readme, .dt-readme) :where(sub, sup) {
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(mark) {
+  background: var(--readme-fill);
+  padding: 0 0.2em;
+  color: inherit;
+}
+
+:where(.portfolio-readme, .dt-readme) :where(del) {
+  color: var(--readme-muted);
+}
