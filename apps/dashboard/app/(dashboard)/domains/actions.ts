@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
+import { PORTFOLIO_TEMPLATES, PORTFOLIO_THEMES } from "@is-pinoy-dev/schemas"
+
 import { auth } from "@/auth"
 import { getSubdomainsForOwner } from "@/lib/domains"
 import {
@@ -11,6 +13,7 @@ import {
   TOGGLEABLE_FEATURES,
 } from "@/lib/features"
 import { getGitHubAccessToken } from "@/lib/github-token"
+import { providerForRecords } from "@/lib/providers"
 import { getPendingProxyPRs, openProxyTogglePR } from "@/lib/proxy-pr"
 import {
   PROXYABLE_TYPES,
@@ -47,6 +50,18 @@ const changeInput = z.discriminatedUnion("kind", [
 ])
 
 const saveInput = z.array(changeInput).min(1).max(50)
+
+// The style edit is its own action rather than a member of `changeInput`: it is
+// a separate panel with its own submit, and its payload is a pair of enums
+// rather than a switch. `theme` is accepted for any template and discarded
+// downstream when the template is a designer design — see buildToggledFile.
+const portfolioStyleInput = z.object({
+  subdomain: subdomainField,
+  template: z.enum(PORTFOLIO_TEMPLATES),
+  theme: z.enum(PORTFOLIO_THEMES).optional(),
+})
+
+export type PortfolioStyleInput = z.infer<typeof portfolioStyleInput>
 
 export type SettingChangeInput = z.infer<typeof changeInput>
 
@@ -221,4 +236,92 @@ export async function saveSettings(
     }
   }
   return { results }
+}
+
+/**
+ * Open a pull request restyling a hosted portfolio.
+ *
+ * Same route as every other settings edit — the style lives in the record file,
+ * so changing it is a commit against the domains repo, not a write to anything
+ * we control. Ownership, the hosted-portfolio requirement, and the one-change-
+ * in-flight rule are all re-checked here; the client controls none of them.
+ *
+ * Not gated on the claims flag: that flag governs handing out new subdomains,
+ * and this only touches a record its owner already holds.
+ */
+export async function savePortfolioStyle(
+  input: PortfolioStyleInput
+): Promise<SubdomainSaveResult> {
+  const session = await auth()
+  if (!session?.user?.login) {
+    return {
+      subdomain: "",
+      ok: false,
+      error: "You must be signed in to change a portfolio.",
+    }
+  }
+  const login = session.user.login
+
+  const parsed = portfolioStyleInput.safeParse(input)
+  if (!parsed.success) {
+    return { subdomain: "", ok: false, error: "Invalid template or theme." }
+  }
+  const { subdomain, template, theme } = parsed.data
+
+  const { owned } = await getSubdomainsForOwner({
+    login,
+    githubId: session.user.githubId,
+  })
+  const domain = owned.find((d) => d.subdomain === subdomain)
+  if (!domain) {
+    return {
+      subdomain,
+      ok: false,
+      error: `You do not own ${subdomain}.is-pinoy.dev.`,
+    }
+  }
+
+  // A style only means something on a record pointed at our own renderer.
+  // Checked before touching GitHub so a nonsense request costs one lookup
+  // rather than a fork, a branch, and a file read.
+  if (providerForRecords(domain.records)?.id !== "portfolio") {
+    return {
+      subdomain,
+      ok: false,
+      error: `${subdomain}.is-pinoy.dev is not a hosted portfolio.`,
+    }
+  }
+
+  const token = await getGitHubAccessToken()
+  if (!token) {
+    return {
+      subdomain,
+      ok: false,
+      error:
+        "Your GitHub authorization is missing the required access. Sign out and sign in again to grant it.",
+    }
+  }
+
+  const pending = await getPendingProxyPRs(login, token)
+  const open = pending.get(subdomain)
+  if (open) {
+    return {
+      subdomain,
+      ok: false,
+      error: `A change is already open as pull request #${open.number}. Merge or close it first.`,
+    }
+  }
+
+  const result = await openProxyTogglePR(token, {
+    login,
+    subdomain,
+    changes: [{ kind: "portfolio", template, ...(theme ? { theme } : {}) }],
+  })
+  if (!result.ok) {
+    return { subdomain, ok: false, error: result.error }
+  }
+
+  revalidatePath("/domains")
+  revalidatePath(`/domains/${subdomain}`)
+  return { subdomain, ok: true, prUrl: result.prUrl }
 }
