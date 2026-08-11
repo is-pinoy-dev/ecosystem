@@ -287,4 +287,42 @@ describe("renderReadme — document structure", () => {
     )
     expect(html).toContain('alt="Build status"')
   })
+
+  it("takes the link and the row with a badge whose host is not allowed", async () => {
+    // Badge rows mix hosts freely. Dropping only the <img> would leave an
+    // anchor with nothing inside it — invisible, still focusable, and a link
+    // with no accessible name — inside a block that still takes up space.
+    const html = await renderReadme(
+      `<p align="center"><a href="https://example.test"><img src="https://stats.test/card.svg"></a></p>`,
+    )
+    expect(html).not.toMatch(/<a\b/i)
+    expect(html).not.toMatch(/<p\b/i)
+  })
+
+  it("keeps the badges around one that was dropped", async () => {
+    const html = await renderReadme(
+      [
+        `<p align="center">`,
+        `<a href="https://example.test"><img src="https://img.shields.io/badge/build-passing-green" alt="Build"></a>`,
+        `<a href="https://example.test"><img src="https://stats.test/card.svg" alt="Stats"></a>`,
+        `</p>`,
+      ].join(""),
+    )
+    expect(html).toContain("img.shields.io/badge/build-passing-green")
+    expect(html).not.toContain("stats.test")
+    // One anchor survives — the one that still has its badge.
+    expect(html.match(/<a\b/gi)).toHaveLength(1)
+  })
+
+  it("keeps links that have text, and anchors that are link targets", async () => {
+    const html = await renderReadme(
+      [
+        `<a href="https://example.test">Read more</a>`,
+        `<a id="section-one"></a>`,
+      ].join("\n\n"),
+    )
+    expect(html).toContain("Read more")
+    // The sanitizer namespaces ids so a README can't clobber the page's own.
+    expect(html).toContain('id="user-content-section-one"')
+  })
 })

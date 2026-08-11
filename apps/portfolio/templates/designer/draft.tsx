@@ -1,3 +1,4 @@
+import { compactCount } from "@/lib/format"
 import type { PortfolioData } from "@/lib/portfolio-data"
 
 // DRAFT — blueprint, dark. Grid paper, title block, repos as a bill of
@@ -30,7 +31,7 @@ export function DraftDesign({ data }: { data: PortfolioData }) {
 
           {repos.length > 0 ? (
             <>
-              <div className="tag">Repositories — Bill of Materials</div>
+              <h2 className="tag">Repositories — Bill of Materials</h2>
               <div className="grid">
                 {repos.map((r, i) => (
                   <div className="part" key={r.name}>
@@ -39,7 +40,7 @@ export function DraftDesign({ data }: { data: PortfolioData }) {
                     {r.description ? <div className="pd">{r.description}</div> : null}
                     <div className="pm">
                       <span>MAT: {r.language ?? "—"}</span>
-                      <span>★ {r.stars}</span>
+                      <span>★ {compactCount(r.stars)}</span>
                     </div>
                   </div>
                 ))}
@@ -57,7 +58,7 @@ export function DraftDesign({ data }: { data: PortfolioData }) {
                 </a>
               </span>
             ))}{" "}
-            · {stats.followers} followers · is-pinoy.dev
+            · {compactCount(stats.followers)} followers · is-pinoy.dev
           </div>
         </div>
       </div>

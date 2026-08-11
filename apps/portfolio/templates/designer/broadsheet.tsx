@@ -1,3 +1,4 @@
+import { compactCount } from "@/lib/format"
 import type { PortfolioData } from "@/lib/portfolio-data"
 
 // BROADSHEET — editorial, warm paper. Italic serif masthead, drop-cap README,
@@ -34,7 +35,7 @@ export function BroadsheetDesign({ data }: { data: PortfolioData }) {
 
         {repos.length > 0 ? (
           <>
-            <div className="sec">Selected Works</div>
+            <h2 className="sec">Selected Works</h2>
             {repos.map((r) => (
               <div className="item" key={r.name}>
                 <span className="it-t">
@@ -42,7 +43,7 @@ export function BroadsheetDesign({ data }: { data: PortfolioData }) {
                   {r.description ? <span className="it-d"> — {r.description}</span> : null}
                 </span>
                 <span className="dots" />
-                <span className="it-s">{r.stars} ★</span>
+                <span className="it-s">{compactCount(r.stars)} ★</span>
               </div>
             ))}
           </>

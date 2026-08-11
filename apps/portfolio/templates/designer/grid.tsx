@@ -1,3 +1,4 @@
+import { compactCount } from "@/lib/format"
 import type { PortfolioData } from "@/lib/portfolio-data"
 
 // GRID — Swiss, light. Red rule, tabular repository index, strict grid.
@@ -9,7 +10,7 @@ export function GridDesign({ data }: { data: PortfolioData }) {
       <div className="pg">
         <div className="head">
           <div className="idxn">Portfolio / {profile.login}.is-pinoy.dev</div>
-          <div className="idxn r">{profile.location ?? ""}</div>
+          <div className="idxn idxn-right">{profile.location ?? ""}</div>
           <h1>{profile.name ?? profile.login}</h1>
           <div className="rt">
             {profile.bio ? (
@@ -21,7 +22,7 @@ export function GridDesign({ data }: { data: PortfolioData }) {
               </>
             ) : null}
             <span className="lbl">Index</span>
-            {stats.followers} followers · {stats.publicRepos} repos
+            {compactCount(stats.followers)} followers · {compactCount(stats.publicRepos)} repos
             <br />
             <br />
             <span className="lbl">Links</span>
@@ -41,6 +42,7 @@ export function GridDesign({ data }: { data: PortfolioData }) {
 
         {repos.length > 0 ? (
           <div className="sec">
+            <h2 className="sec-title">Repository index</h2>
             <div className="r colhead">
               <span>№</span>
               <span>Repository</span>
@@ -54,7 +56,7 @@ export function GridDesign({ data }: { data: PortfolioData }) {
                 <span className="t">{r.name}</span>
                 <span className="d">{r.description ?? ""}</span>
                 <span className="l">{r.language ?? ""}</span>
-                <span className="s">{r.stars} ★</span>
+                <span className="s">{compactCount(r.stars)} ★</span>
               </div>
             ))}
           </div>

@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { compactCount } from "@/lib/format"
 import type { PortfolioData } from "@/lib/portfolio-data"
 
 // NOIR — cinematic, dark. High-contrast display type, monochrome portrait,
@@ -56,11 +57,11 @@ export function NoirDesign({ data }: { data: PortfolioData }) {
             <dl className="noir-stats">
               <div>
                 <dt>Followers</dt>
-                <dd>{String(stats.followers).padStart(2, "0")}</dd>
+                <dd>{compactCount(stats.followers).padStart(2, "0")}</dd>
               </div>
               <div>
                 <dt>Repositories</dt>
-                <dd>{String(stats.publicRepos).padStart(2, "0")}</dd>
+                <dd>{compactCount(stats.publicRepos).padStart(2, "0")}</dd>
               </div>
             </dl>
           </section>
@@ -97,7 +98,7 @@ export function NoirDesign({ data }: { data: PortfolioData }) {
                     <strong>{repo.name}</strong>
                     <span>{repo.description ?? "Open-source repository"}</span>
                     <small>{repo.language ?? "—"}</small>
-                    <small>★ {repo.stars}</small>
+                    <small>★ {compactCount(repo.stars)}</small>
                     <b aria-hidden="true">↗</b>
                   </a>
                 ))}

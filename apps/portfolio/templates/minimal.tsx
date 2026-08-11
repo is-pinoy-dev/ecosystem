@@ -1,5 +1,6 @@
 import Image from "next/image"
 import { Separator } from "@is-pinoy-dev/ui/components/separator"
+import { compactCount } from "@/lib/format"
 import type { PortfolioData } from "@/lib/portfolio-data"
 
 // A restrained, typographic layout: narrow centered column, generous
@@ -7,10 +8,17 @@ import type { PortfolioData } from "@/lib/portfolio-data"
 // and the page frame come from the shell.
 export function MinimalTemplate({ data }: { data: PortfolioData }) {
   const { profile, readmeHtml, repos, stats } = data
+  // One typographic line rather than a row of chips: an absent location has to
+  // take its separator with it, which a joined list does for free.
+  const meta = [
+    profile.location,
+    `${compactCount(stats.followers)} followers`,
+    `${compactCount(stats.publicRepos)} repos`,
+  ].filter(Boolean)
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-      <header className="flex flex-col items-center gap-4 text-center">
+      <header className="flex flex-col items-center gap-5 text-center">
         <Image
           src={profile.avatar}
           alt={profile.name ?? profile.login}
@@ -20,34 +28,36 @@ export function MinimalTemplate({ data }: { data: PortfolioData }) {
           priority
         />
         <div className="flex flex-col gap-1">
-          <h1 className="m-0 text-xl font-semibold text-foreground">
+          <h1 className="m-0 text-xl font-semibold wrap-anywhere text-foreground">
             {profile.name ?? profile.login}
           </h1>
-          <p className="m-0 text-sm text-muted-foreground">@{profile.login}</p>
+          <p className="m-0 font-mono text-sm text-muted-foreground">
+            @{profile.login}
+          </p>
         </div>
         {profile.bio ? (
           <p className="m-0 max-w-prose text-sm leading-relaxed text-foreground">
             {profile.bio}
           </p>
         ) : null}
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          {profile.location ? <span>{profile.location}</span> : null}
-          <span>{stats.followers} followers</span>
-          <span>{stats.publicRepos} repos</span>
-        </div>
-        <div className="flex flex-wrap justify-center gap-4">
-          {profile.links.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-accent underline"
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
+        <p className="m-0 font-mono text-xs text-balance text-muted-foreground">
+          {meta.join(" · ")}
+        </p>
+        {profile.links.length > 0 ? (
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
+            {profile.links.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-accent underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        ) : null}
       </header>
 
       {readmeHtml ? (
@@ -66,28 +76,28 @@ export function MinimalTemplate({ data }: { data: PortfolioData }) {
         <>
           <Separator className="my-10" />
           <section aria-label="Top repositories">
-            <h2 className="m-0 mb-4 text-xs tracking-[0.12em] text-muted-foreground uppercase">
+            <h2 className="m-0 mb-5 font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
               Selected work
             </h2>
-            <ul className="m-0 flex list-none flex-col gap-4 p-0">
+            <ul className="m-0 flex list-none flex-col gap-5 p-0">
               {repos.map((repo) => (
-                <li key={repo.name} className="flex flex-col gap-1">
+                <li key={repo.name} className="flex flex-col gap-1.5">
                   <a
                     href={repo.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-medium text-foreground underline decoration-border underline-offset-4"
+                    className="text-sm font-medium wrap-anywhere text-foreground underline decoration-border underline-offset-4 transition-colors duration-150 hover:decoration-accent"
                   >
                     {repo.name}
                   </a>
                   {repo.description ? (
-                    <p className="m-0 text-xs text-muted-foreground">
+                    <p className="m-0 text-xs leading-relaxed text-muted-foreground">
                       {repo.description}
                     </p>
                   ) : null}
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3 font-mono text-xs text-muted-foreground">
                     {repo.language ? <span>{repo.language}</span> : null}
-                    <span>★ {repo.stars}</span>
+                    <span>★ {compactCount(repo.stars)}</span>
                   </div>
                 </li>
               ))}
