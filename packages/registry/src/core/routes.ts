@@ -61,7 +61,26 @@ export function diffWorkerRoutes(
   options: RouteDiffOptions = {},
 ): RouteAction[] {
   const script = env("PORTFOLIO_WORKER");
-  if (!script) return [];
+  if (!script) {
+    // Skipping reconciliation is only harmless when there is nothing to
+    // reconcile. A hosted portfolio's CNAME points at the renderer, and the
+    // renderer's host only holds a certificate for its own name — the route is
+    // what rewrites the request onto it. Without the route Cloudflare goes
+    // straight to that origin under the portfolio's own hostname, the TLS
+    // handshake fails, and the address serves HTTP 525 with nothing in any log
+    // to say why. Never a teardown, but never silent either.
+    const stranded = desired
+      .filter((d) => d.portfolio && !d.destroy)
+      .map((d) => d.subdomain);
+    if (stranded.length) {
+      console.warn(
+        `WARNING: PORTFOLIO_WORKER is unset, so no Workers route was reconciled for ${stranded.length} hosted portfolio(s): ${stranded.join(", ")}. ` +
+          `Each will serve HTTP 525 (SSL handshake failed) until its route exists. ` +
+          `Set PORTFOLIO_WORKER to the deployed Worker script name and sync again.`,
+      );
+    }
+    return [];
+  }
 
   const actions: RouteAction[] = [];
 

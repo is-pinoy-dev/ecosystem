@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Domain, CloudflareWorkerRoute } from "@is-pinoy-dev/schemas";
 import { diffWorkerRoutes } from "../core/routes.js";
 
@@ -110,5 +110,38 @@ describe("diffWorkerRoutes", () => {
     delete process.env.PORTFOLIO_WORKER;
     const actual = [route("r1", "juan.is-pinoy.dev/*")];
     expect(diffWorkerRoutes([portfolioDomain("maria")], actual)).toEqual([]);
+  });
+
+  // A portfolio whose route was never created serves 525, because its CNAME
+  // points at a host that holds no certificate for it. Silence is what makes
+  // that take an afternoon to find.
+  it("names the portfolios it stranded when PORTFOLIO_WORKER is unset", () => {
+    delete process.env.PORTFOLIO_WORKER;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    diffWorkerRoutes([portfolioDomain("maria"), portfolioDomain("juan")], []);
+    expect(warn).toHaveBeenCalledOnce();
+    const message = warn.mock.calls[0]![0] as string;
+    expect(message).toContain("maria");
+    expect(message).toContain("juan");
+    expect(message).toContain("525");
+    expect(message).toContain("PORTFOLIO_WORKER");
+    warn.mockRestore();
+  });
+
+  it("stays quiet when there are no portfolios to strand", () => {
+    delete process.env.PORTFOLIO_WORKER;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    diffWorkerRoutes([plainDomain("maria")], []);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  // A record on its way out needs no route, so it is not stranded.
+  it("does not count a destroyed portfolio as stranded", () => {
+    delete process.env.PORTFOLIO_WORKER;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    diffWorkerRoutes([portfolioDomain("maria", { destroy: true })], []);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
