@@ -38,19 +38,33 @@ function executeAction(action: DNSAction): Promise<string> {
   }
 }
 
-export async function sync(actions: DNSAction[], isDryRun = false) {
+/**
+ * Apply the actions, and report how many did not.
+ *
+ * Every action is still attempted — one rejected call must not strand the rest
+ * half-applied — but the count comes back so the caller can exit non-zero. A
+ * sync that logs `FAILED:` and then reports success is how a token missing one
+ * permission ends up looking like a green run with a broken zone behind it.
+ */
+export async function sync(
+  actions: DNSAction[],
+  isDryRun = false,
+): Promise<number> {
   if (isDryRun) {
     actions.forEach(logAction);
-    return;
+    return 0;
   }
 
   const results = await Promise.allSettled(actions.map(executeAction));
 
+  let failed = 0;
   for (const result of results) {
     if (result.status === "fulfilled") {
       console.log(result.value);
     } else {
+      failed++;
       console.error(`FAILED: ${String(result.reason)}`);
     }
   }
+  return failed;
 }

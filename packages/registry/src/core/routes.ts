@@ -139,22 +139,38 @@ function executeRouteAction(action: RouteAction): Promise<string> {
   }
 }
 
+/**
+ * Apply the route actions, and report how many did not.
+ *
+ * A failure here is worse than it reads. The DNS record has already been
+ * written by then, so the name resolves and Cloudflare proxies it — to an
+ * origin holding no certificate for it. The portfolio serves HTTP 525 from the
+ * moment the record lands until the route exists. A rejected CREATE_ROUTE is
+ * therefore a broken site, not a partial sync, and the count exists so the
+ * caller can end the run non-zero instead of printing success over it.
+ *
+ * The commonest cause is an API token scoped for DNS but not for Workers
+ * Routes — every DNS action succeeds and every route action 403s.
+ */
 export async function syncWorkerRoutes(
   actions: RouteAction[],
   isDryRun = false,
-) {
+): Promise<number> {
   if (isDryRun) {
     actions.forEach(logRouteAction);
-    return;
+    return 0;
   }
 
   const results = await Promise.allSettled(actions.map(executeRouteAction));
 
+  let failed = 0;
   for (const result of results) {
     if (result.status === "fulfilled") {
       console.log(result.value);
     } else {
+      failed++;
       console.error(`FAILED: ${String(result.reason)}`);
     }
   }
+  return failed;
 }

@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Domain, CloudflareWorkerRoute } from "@is-pinoy-dev/schemas";
-import { diffWorkerRoutes } from "../core/routes.js";
+vi.mock("../providers/cloudflare/client.js", () => ({
+  createWorkerRoute: vi.fn(),
+  deleteWorkerRoute: vi.fn(),
+}));
+
+import { diffWorkerRoutes, syncWorkerRoutes } from "../core/routes.js";
+import * as cloudflare from "../providers/cloudflare/client.js";
 
 const SCRIPT = "tools-portfolio-proxy";
 
@@ -143,5 +149,45 @@ describe("diffWorkerRoutes", () => {
     diffWorkerRoutes([portfolioDomain("maria", { destroy: true })], []);
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
+  });
+});
+
+// A rejected CREATE_ROUTE leaves the portfolio's DNS record live and its route
+// absent, which is a 525 rather than a no-op. The count is what lets the CLI
+// end the run non-zero instead of reporting success over it.
+describe("syncWorkerRoutes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("reports how many route actions failed", async () => {
+    vi.mocked(cloudflare.createWorkerRoute)
+      .mockRejectedValueOnce(new Error("403 Forbidden"))
+      .mockResolvedValueOnce(route("r9", "maria.is-pinoy.dev/*"));
+    const warn = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const failed = await syncWorkerRoutes([
+      { type: "CREATE_ROUTE", pattern: "juan.is-pinoy.dev/*", script: SCRIPT },
+      { type: "CREATE_ROUTE", pattern: "maria.is-pinoy.dev/*", script: SCRIPT },
+    ]);
+
+    // Both were attempted; only one failed.
+    expect(cloudflare.createWorkerRoute).toHaveBeenCalledTimes(2);
+    expect(failed).toBe(1);
+    warn.mockRestore();
+  });
+
+  it("reports no failures for a clean run, and none for a dry run", async () => {
+    vi.mocked(cloudflare.createWorkerRoute).mockResolvedValue(
+      route("r9", "juan.is-pinoy.dev/*"),
+    );
+    const action = {
+      type: "CREATE_ROUTE" as const,
+      pattern: "juan.is-pinoy.dev/*",
+      script: SCRIPT,
+    };
+
+    expect(await syncWorkerRoutes([action])).toBe(0);
+    expect(await syncWorkerRoutes([action], true)).toBe(0);
   });
 });

@@ -7,6 +7,7 @@ import {
   info,
   warning,
   success,
+  error,
   divider,
   printActionTable,
 } from "../../utils/output.js";
@@ -96,10 +97,30 @@ export async function handleSync(
     }
   }
 
-  await registry.sync(actions);
+  const failedRecords = await registry.sync(actions);
   // After the DNS records, so a portfolio's route is never live before the
   // name it routes resolves.
-  if (routeActions.length > 0) await registry.syncWorkerRoutes(routeActions);
+  const failedRoutes =
+    routeActions.length > 0
+      ? await registry.syncWorkerRoutes(routeActions)
+      : 0;
+
+  // A partly-applied sync used to end in "Sync complete." and exit 0, so a
+  // token missing one permission left a green workflow behind a broken zone.
+  // A stranded portfolio is the loudest version of that: its DNS record is
+  // live and its route is not, which serves 525 rather than nothing.
+  if (failedRecords > 0 || failedRoutes > 0) {
+    error(
+      `Sync incomplete: ${failedRecords} record change(s) and ${failedRoutes} route change(s) failed — see the errors above.`,
+    );
+    if (failedRoutes > 0) {
+      error(
+        "A hosted portfolio whose Workers route is missing serves HTTP 525 until it exists. Check that CLOUDFLARE_API_TOKEN carries the Workers Routes edit permission, then sync again.",
+      );
+    }
+    process.exit(1);
+  }
+
   success("Sync complete.");
   process.exit(0);
 }
