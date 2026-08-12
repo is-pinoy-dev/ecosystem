@@ -63,7 +63,7 @@ export const FEATURES: PlatformFeature[] = [
     id: "analytics",
     name: "Visit analytics",
     description:
-      "Daily visit counts for your subdomain. Switch off and your traffic is dropped before anything is stored.",
+      "Daily visit counts for your subdomain, with the 30-day total shown on your showcase card. Switch off and your traffic is dropped before anything is stored — and the card stops showing a total.",
     docsUrl: "https://is-pinoy.dev/privacy",
     kind: "toggle",
     flagPath: ["analytics"],
