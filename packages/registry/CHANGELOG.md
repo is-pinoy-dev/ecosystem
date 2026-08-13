@@ -1,5 +1,48 @@
 # @is-pinoy-dev/registry
 
+## 0.5.0
+
+### Minor Changes
+
+- cd7be16: Fail a sync that failed.
+
+  `sync` and `syncWorkerRoutes` applied every action with `Promise.allSettled`,
+  logged rejections as `FAILED:`, and returned normally. The CLI then printed
+  "Sync complete." and exited 0 regardless, so a run in which every call was
+  rejected was indistinguishable from a clean one — in CI, a green check over a
+  broken zone.
+
+  This is worst for hosted portfolios, because the two halves fail apart. DNS
+  records are written first and Workers routes second, so a token scoped for DNS
+  but not for Workers Routes writes every record and creates no route. The name
+  then resolves and Cloudflare proxies it to an origin holding no certificate for
+  it, and the portfolio serves **HTTP 525** from that moment on — with a green
+  sync behind it.
+
+  Both functions now return the number of actions that failed. Every action is
+  still attempted, so one rejection cannot strand the rest. `registry sync` exits
+  1 when any failed, and when the failures are routes it names the consequence
+  and the permission to check.
+
+### Patch Changes
+
+- cd7be16: Say something when a sync strands a hosted portfolio.
+
+  `diffWorkerRoutes` returns no actions when `PORTFOLIO_WORKER` is unset, so a
+  sync run from an environment predating the feature is a no-op rather than a
+  teardown. That is only harmless when there is nothing to reconcile: a hosted
+  portfolio's CNAME points at the renderer, whose host holds a certificate for
+  its own name only, and the Workers route is what rewrites the request onto it.
+  Without the route Cloudflare connects to that origin under the portfolio's own
+  hostname, the TLS handshake fails, and the address serves HTTP 525 — with
+  nothing in the sync output to say why.
+
+  The skip stays a skip, but a sync that leaves hosted portfolios without routes
+  now names them and says what they will serve until the routes exist.
+
+- Updated dependencies [89c4ad3]
+  - @is-pinoy-dev/validate@1.3.0
+
 ## 0.4.0
 
 ### Minor Changes

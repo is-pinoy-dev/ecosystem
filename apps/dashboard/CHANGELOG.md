@@ -1,5 +1,12 @@
 # dashboard
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [89c4ad3]
+  - @is-pinoy-dev/validate@1.3.0
+
 ## 0.0.4
 
 ### Patch Changes
