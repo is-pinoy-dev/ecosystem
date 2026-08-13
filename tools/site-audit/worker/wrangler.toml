@@ -7,6 +7,24 @@ compatibility_flags = ["nodejs_compat"]
 directory = "../build/client"
 binding = "ASSETS"
 
+# How the audit reaches a hosted portfolio. A Worker's fetch to its own zone
+# does not re-run that zone's Workers routes, so scanning `<label>.is-pinoy.dev`
+# would bypass tools-portfolio-proxy, reach the origin under a hostname its
+# certificate does not cover, and fail the handshake — HTTP 525 for a page that
+# serves fine to a browser. These let /audit-proxy address the renderer directly
+# and carry the label itself, exactly as the proxy Worker does.
+#
+# Must stay in step with tools/portfolio-proxy/worker/wrangler.toml.
+[vars]
+ROOT_DOMAIN = "is-pinoy.dev"
+RENDERER_HOST = "portfolio.is-pinoy.dev"
+
+# PORTFOLIO_PROXY_SECRET is a secret, not a var — the same value held by
+# tools-portfolio-proxy and the renderer's Vercel environment:
+#   wrangler secret put PORTFOLIO_PROXY_SECRET -c worker/wrangler.toml
+# Unset, /audit-proxy falls back to fetching the target's public address, which
+# is correct for the apex and for external sites but 525s on a portfolio.
+
 [[routes]]
 pattern = "is-pinoy.dev/_tools/site-audit*"
 zone_name = "is-pinoy.dev"

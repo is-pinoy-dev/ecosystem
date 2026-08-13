@@ -111,4 +111,49 @@ describe("sync", () => {
     expect(cloudflare.createRecord).toHaveBeenCalledTimes(1);
     expect(cloudflare.updateRecord).toHaveBeenCalledTimes(1);
   });
+
+  // The count is what the CLI turns into an exit code. Without it a run that
+  // failed every call still printed "Sync complete." and exited 0.
+  it("reports how many actions failed", async () => {
+    vi.mocked(cloudflare.createRecord).mockRejectedValue(new Error("403"));
+    vi.mocked(cloudflare.updateRecord).mockResolvedValue({
+      type: "CNAME",
+      content: "new.vercel.app",
+      id: "456",
+      name: "bob.is-pinoy.dev",
+    });
+
+    const failed = await sync([
+      {
+        type: "CREATE",
+        fqdn: "jun.is-pinoy.dev",
+        record: { type: "CNAME", value: "jun.vercel.app" },
+      },
+      {
+        type: "UPDATE",
+        id: "456",
+        fqdn: "bob.is-pinoy.dev",
+        record: { type: "CNAME", value: "new.vercel.app" },
+      },
+    ]);
+
+    expect(failed).toBe(1);
+  });
+
+  it("reports no failures for a clean run, and none for a dry run", async () => {
+    vi.mocked(cloudflare.createRecord).mockResolvedValue({
+      type: "CNAME",
+      content: "jun.vercel.app",
+      id: "1",
+      name: "jun.is-pinoy.dev",
+    });
+    const action = {
+      type: "CREATE" as const,
+      fqdn: "jun.is-pinoy.dev",
+      record: { type: "CNAME" as const, value: "jun.vercel.app" },
+    };
+
+    expect(await sync([action])).toBe(0);
+    expect(await sync([action], true)).toBe(0);
+  });
 });
