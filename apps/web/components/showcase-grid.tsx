@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { ArrowUpRight } from "lucide-react"
 import { Card, CardContent } from "@is-pinoy-dev/ui/components/card"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Skeleton } from "@is-pinoy-dev/ui/components/skeleton"
@@ -291,28 +292,33 @@ const HIGHLIGHT_COUNT = 3
 
 function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
   return (
-    <div className="flex items-center justify-between gap-3 bg-card px-3.5 py-3">
-      <div className="min-w-0">
-        <p className="m-0 truncate font-mono text-[13px] font-semibold text-foreground">
+    <div className="flex min-h-[88px] items-center justify-between gap-4 bg-card px-4 py-3.5">
+      <div className="min-w-0 flex-1">
+        <p className="m-0 truncate font-mono text-sm font-semibold text-foreground">
           {entry.subdomain}.is-pinoy.dev
         </p>
-        {/* Kind and visits share the line the kind label used to hold alone.
-            A third line would push the previews apart and cost the section its
-            row of equal cards; the two together still fit inside one. */}
-        <div className="mt-[3px] flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="min-w-0 truncate">{showcaseKindLabel(entry)}</span>
-          {entry.visits ? (
-            <>
-              <span aria-hidden>·</span>
-              {/* One card per column here, wide enough to carry the window
-                  itself — the landing section has no header to hang it on. */}
-              <VisitCount visits={entry.visits} showWindow />
-            </>
-          ) : null}
+        <div className="mt-2 flex min-w-0 items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
+              alt=""
+              aria-hidden="true"
+              className="size-5 shrink-0 border border-border object-cover"
+            />
+            <span className="min-w-0 truncate font-mono">
+              @{entry.owner.github}
+            </span>
+            <span aria-hidden>·</span>
+            <span className="shrink-0">{showcaseKindLabel(entry)}</span>
+          </div>
+          {/* One card per column here, wide enough to carry the visit window. */}
+          <VisitCount visits={entry.visits} showWindow />
         </div>
       </div>
-      <span className="view-site shrink-0 text-xs font-semibold text-accent">
-        View site →
+      <span className="flex size-9 shrink-0 items-center justify-center border border-border text-accent transition-colors duration-[140ms] group-hover:border-accent group-hover:bg-secondary">
+        <ArrowUpRight className="size-4" aria-hidden="true" />
+        <span className="sr-only">View site</span>
       </span>
     </div>
   )
@@ -324,7 +330,7 @@ function HighlightCard({ entry }: { entry: SubdomainEntry }) {
       href={`https://${entry.subdomain}.is-pinoy.dev`}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block border border-border no-underline transition-colors duration-[140ms] hover:border-accent/60 [&:hover_.view-site]:underline"
+      className="group block h-full border border-border bg-card no-underline transition-colors duration-[140ms] outline-none hover:border-accent/60 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
       <div
         className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted`}
@@ -335,6 +341,7 @@ function HighlightCard({ entry }: { entry: SubdomainEntry }) {
           subdomain={entry.subdomain}
           loading="eager"
         />
+        <div className="pointer-events-none absolute inset-0 bg-primary/0 transition-colors duration-[140ms] group-hover:bg-primary/5" />
       </div>
       <HighlightMeta entry={entry} />
     </a>
@@ -347,12 +354,15 @@ function HighlightCardSkeleton() {
       <Skeleton
         className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted`}
       />
-      <div className="flex items-center justify-between gap-3 bg-card px-3.5 py-3">
+      <div className="flex min-h-[88px] items-center justify-between gap-4 bg-card px-4 py-3.5">
         <div className="flex min-w-0 flex-col gap-2">
-          <Skeleton className="h-2.5 w-24" />
-          <Skeleton className="h-2 w-16" />
+          <Skeleton className="h-3 w-32" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="size-5" />
+            <Skeleton className="h-2.5 w-20" />
+          </div>
         </div>
-        <Skeleton className="h-2 w-14 shrink-0" />
+        <Skeleton className="size-9 shrink-0" />
       </div>
     </div>
   )

@@ -1,6 +1,15 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
+import Link from "next/link"
+import { ArrowRight } from "lucide-react"
+import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
+import {
+  SectionDescription,
+  SectionEyebrow,
+  SectionHeader,
+  SectionTitle,
+} from "@is-pinoy-dev/ui/components/section-header"
 import { MainNav } from "@/components/main-nav"
 import { HeroSection } from "@/components/hero-section"
 import { SubdomainChecker } from "@/components/subdomain-checker"
@@ -84,16 +93,32 @@ export default async function Page() {
         ) : null}
 
         <section
-          className="border-b border-border py-7 sm:py-10 lg:py-12"
+          className="border-b border-border bg-surface-subtle py-12 sm:py-14 lg:py-20"
           aria-labelledby="showcase-title"
         >
           <Container>
-            <h2 id="showcase-title" className="sr-only">
-              Community showcase
-            </h2>
-            <p className="m-0 mb-4 font-mono text-xs font-semibold tracking-[0.12em] text-accent uppercase">
-              Built by Pinoy developers
-            </p>
+            <div className="mb-8 grid gap-6 border-b border-border pb-8 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.48fr)] md:items-end lg:mb-10 lg:pb-10">
+              <SectionHeader>
+                <SectionEyebrow>Community showcase</SectionEyebrow>
+                <SectionTitle id="showcase-title">
+                  Built by Pinoy developers, shared with the world.
+                </SectionTitle>
+              </SectionHeader>
+
+              <div className="flex flex-col items-start gap-5 md:items-end">
+                <SectionDescription className="md:max-w-[390px] md:text-right">
+                  Explore portfolios, experiments, and ideas from developers
+                  across the Filipino community.
+                </SectionDescription>
+                <Button asChild variant="outline" className="bg-card">
+                  <Link href="/showcase">
+                    View the full showcase
+                    <ArrowRight aria-hidden="true" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
             <Suspense fallback={<ShowcaseHighlightsSkeleton />}>
               <ShowcaseHighlights />
             </Suspense>
