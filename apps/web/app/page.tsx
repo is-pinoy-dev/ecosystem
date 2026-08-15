@@ -100,7 +100,10 @@ export default async function Page() {
             <div className="mb-8 grid gap-6 border-b border-border pb-8 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.48fr)] md:items-end lg:mb-10 lg:pb-10">
               <SectionHeader>
                 <SectionEyebrow>Community showcase</SectionEyebrow>
-                <SectionTitle id="showcase-title">
+                <SectionTitle
+                  id="showcase-title"
+                  className="max-w-[560px] lg:text-[40px] lg:leading-[1.1]"
+                >
                   Built by Pinoy developers, shared with the world.
                 </SectionTitle>
               </SectionHeader>

@@ -290,33 +290,48 @@ export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
 /** How many entries the landing section shows. */
 const HIGHLIGHT_COUNT = 3
 
-function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
+function HighlightMeta({
+  entry,
+  featured = false,
+}: {
+  entry: SubdomainEntry
+  featured?: boolean
+}) {
   return (
-    <div className="flex min-h-[88px] items-center justify-between gap-4 bg-card px-4 py-3.5">
-      <div className="min-w-0 flex-1">
-        <p className="m-0 truncate font-mono text-sm font-semibold text-foreground">
-          {entry.subdomain}.is-pinoy.dev
+    <div
+      className={`flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 lg:min-h-0 lg:flex-col lg:items-stretch lg:p-5 ${featured ? "lg:p-6" : ""}`}
+    >
+      <div className="min-w-0 flex-1 lg:flex lg:flex-col">
+        {featured ? (
+          <p className="m-0 mb-5 font-mono text-[10px] font-semibold tracking-[0.12em] text-primary-dark uppercase">
+            Featured this week
+          </p>
+        ) : null}
+        <p
+          className={`m-0 font-mono font-semibold text-foreground ${featured ? "text-base lg:text-lg" : "text-sm"}`}
+        >
+          <span className="block break-words">{entry.subdomain}</span>
+          <span className="block text-muted-foreground">.is-pinoy.dev</span>
         </p>
-        <div className="mt-2 flex min-w-0 items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
-              alt=""
-              aria-hidden="true"
-              className="size-5 shrink-0 border border-border object-cover"
-            />
-            <span className="min-w-0 truncate font-mono">
-              @{entry.owner.github}
-            </span>
-            <span aria-hidden>·</span>
-            <span className="shrink-0">{showcaseKindLabel(entry)}</span>
-          </div>
-          {/* One card per column here, wide enough to carry the visit window. */}
+        <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
+            alt=""
+            aria-hidden="true"
+            className="size-5 shrink-0 border border-border object-cover"
+          />
+          <span className="min-w-0 truncate font-mono">
+            @{entry.owner.github}
+          </span>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground lg:mt-auto">
+          <span>{showcaseKindLabel(entry)}</span>
+          {entry.visits ? <span aria-hidden>·</span> : null}
           <VisitCount visits={entry.visits} showWindow />
         </div>
       </div>
-      <span className="flex size-9 shrink-0 items-center justify-center border border-border text-accent transition-colors duration-[140ms] group-hover:border-accent group-hover:bg-secondary">
+      <span className="flex size-9 shrink-0 items-center justify-center border border-border text-accent transition-colors duration-[140ms] group-hover:border-accent group-hover:bg-secondary lg:self-end">
         <ArrowUpRight className="size-4" aria-hidden="true" />
         <span className="sr-only">View site</span>
       </span>
@@ -324,16 +339,22 @@ function HighlightMeta({ entry }: { entry: SubdomainEntry }) {
   )
 }
 
-function HighlightCard({ entry }: { entry: SubdomainEntry }) {
+function HighlightCard({
+  entry,
+  featured = false,
+}: {
+  entry: SubdomainEntry
+  featured?: boolean
+}) {
   return (
     <a
       href={`https://${entry.subdomain}.is-pinoy.dev`}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block h-full border border-border bg-card no-underline transition-colors duration-[140ms] outline-none hover:border-accent/60 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className={`group block h-full border border-border bg-card no-underline transition-colors duration-[140ms] outline-none hover:border-accent/60 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:grid ${featured ? "lg:row-span-2 lg:min-h-[430px] lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.6fr)]" : "lg:min-h-[207px] lg:grid-cols-[minmax(0,1.05fr)_minmax(180px,0.95fr)]"}`}
     >
       <div
-        className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted`}
+        className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted lg:aspect-auto lg:h-full lg:border-r lg:border-b-0`}
       >
         <ShowcaseCardImage
           screenshotUrl={entry.screenshotUrl}
@@ -342,40 +363,50 @@ function HighlightCard({ entry }: { entry: SubdomainEntry }) {
           loading="eager"
         />
         <div className="pointer-events-none absolute inset-0 bg-primary/0 transition-colors duration-[140ms] group-hover:bg-primary/5" />
+        {featured ? (
+          <span className="absolute top-3 left-3 border border-primary-dark bg-primary px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.1em] text-primary-foreground uppercase">
+            Featured
+          </span>
+        ) : null}
       </div>
-      <HighlightMeta entry={entry} />
+      <HighlightMeta entry={entry} featured={featured} />
     </a>
   )
 }
 
-function HighlightCardSkeleton() {
+function HighlightCardSkeleton({ featured = false }: { featured?: boolean }) {
   return (
-    <div className="border border-border">
+    <div
+      className={`border border-border bg-card lg:grid ${featured ? "lg:row-span-2 lg:min-h-[430px] lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.6fr)]" : "lg:min-h-[207px] lg:grid-cols-[minmax(0,1.05fr)_minmax(180px,0.95fr)]"}`}
+    >
       <Skeleton
-        className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted`}
+        className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted lg:aspect-auto lg:h-full lg:border-r lg:border-b-0`}
       />
-      <div className="flex min-h-[88px] items-center justify-between gap-4 bg-card px-4 py-3.5">
-        <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 lg:min-h-0 lg:flex-col lg:items-stretch lg:p-5">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          {featured ? <Skeleton className="mb-3 h-2 w-24" /> : null}
           <Skeleton className="h-3 w-32" />
           <div className="flex items-center gap-2">
             <Skeleton className="size-5" />
             <Skeleton className="h-2.5 w-20" />
           </div>
+          <Skeleton className="mt-auto h-2.5 w-24" />
         </div>
-        <Skeleton className="size-9 shrink-0" />
+        <Skeleton className="size-9 shrink-0 lg:self-end" />
       </div>
     </div>
   )
 }
 
-/** One row of equal cards, matching the showcase grid's own columns. */
-const HIGHLIGHT_ROW = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6"
+/** One weekly feature and two supporting projects in an asymmetric bento. */
+const HIGHLIGHT_ROW =
+  "grid gap-4 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr] lg:grid-rows-2"
 
 export function ShowcaseHighlightsSkeleton() {
   return (
     <div className={HIGHLIGHT_ROW}>
       {Array.from({ length: HIGHLIGHT_COUNT }).map((_, i) => (
-        <HighlightCardSkeleton key={i} />
+        <HighlightCardSkeleton key={i} featured={i === 0} />
       ))}
     </div>
   )
@@ -432,7 +463,11 @@ export async function ShowcaseHighlights() {
   return (
     <div className={HIGHLIGHT_ROW}>
       {highlights.map((entry) => (
-        <HighlightCard key={entry.subdomain} entry={entry} />
+        <HighlightCard
+          key={entry.subdomain}
+          entry={entry}
+          featured={entry === highlights[0]}
+        />
       ))}
     </div>
   )
