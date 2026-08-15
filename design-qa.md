@@ -1,61 +1,59 @@
-# Design QA — Banig Grid v2
+# Design QA — landing showcase bento grid
 
 ## Evidence
 
-- Source visual truth — landing page: `/workspace/scratch/070383f942e2/generated_images/exec-d7179ece-f74e-4138-9e67-6fa56ca20ea4.png`
-- Source visual truth — docs: `/workspace/scratch/070383f942e2/generated_images/exec-642fb9b2-a99f-46b6-8042-4fb0fc5ae8c7.png`
-- Implementation routes: `apps/web/app/page.tsx` and `apps/docs/src/app/(docs)/[[...slug]]/page.tsx`
-- Browser-rendered implementation screenshot: unavailable
-- Intended viewport: desktop, 1440 px wide, light theme
-- Intended state: default landing page and default docs page
+- Selected source visual: `C:\Users\Work\.codex\generated_images\01a00399-e538-7f71-80c5-b3de542b85fb\exec-772f076b-dd0c-43b2-86e8-a9349e848a55.png`
+- Source dimensions: 1600 × 1000 px.
+- Desktop implementation capture: `C:\Users\Work\.codex\generated_images\01a00399-e538-7f71-80c5-b3de542b85fb\showcase-bento-implementation-desktop.png`
+- Desktop viewport: 1440 × 1000 CSS px, DPR 1, light theme.
+- Mobile implementation capture: `C:\Users\Work\.codex\generated_images\01a00399-e538-7f71-80c5-b3de542b85fb\showcase-bento-implementation-mobile.png`
+- Mobile viewport: requested at 390 px wide; the visible content capture is 375 × 1800 px because of the browser scrollbar, DPR 1.
+- Tested state: three real weekly showcase entries. Local visual QA used the public preview-image origin because the local development server does not expose the production image worker. Visit counts were unavailable without the optional local analytics token; their conditional layout is covered by component tests.
 
 ## Full-view comparison evidence
 
-Blocked. The local docs preview started successfully at the intended workspace port, but the required cloud browser rejected the local preview URL under its security policy. No browser-rendered implementation screenshot was produced, so a visual comparison cannot be made without inventing evidence.
+- Combined source and implementation comparison: `C:\Users\Work\.codex\generated_images\01a00399-e538-7f71-80c5-b3de542b85fb\showcase-bento-comparison.png`
+- The source was normalized to 1200 × 750 px and the implementation to 1080 × 750 px, preserving each image's aspect ratio.
+- The implementation retains the selected direction's hierarchy: editorial heading and CTA above a dominant left feature, with two stacked supporting cards on the right.
 
 ## Focused region comparison evidence
 
-Blocked for the same reason. The regions that still require browser evidence are the landing hero and subdomain checker, the preserved animated brand GIF in the navigation, the docs banner GIF and sidebar, shared buttons and inputs, and responsive navigation.
+- Focused bento comparison: `C:\Users\Work\.codex\generated_images\01a00399-e538-7f71-80c5-b3de542b85fb\showcase-bento-focused-comparison.png`
+- The featured-card scale, supporting-card proportions, metadata rail, card borders, spacing, and directional affordances were compared side by side.
+- The source uses illustrative project names and descriptions. The implementation intentionally renders the real registry metadata and real project previews available to the product.
 
 ## Findings
 
-- [P1] Browser-rendered evidence is unavailable
-  - Location: landing page and docs page.
-  - Evidence: both source mockups are available, but the cloud browser blocked the local implementation URL before capture.
-  - Impact: typography, layout rhythm, token rendering, GIF fidelity, and responsive behavior cannot be accepted from source code alone.
-  - Fix: capture both routes in an allowed browser preview at 1440 px and repeat the full-view and focused-region comparison.
+No actionable P0, P1, or P2 issues remain after the second visual comparison pass.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: IBM Plex Sans and IBM Plex Mono are vendored and mapped through shared tokens; visual rendering remains unverified.
-- Spacing and layout rhythm: implemented with shared container and section primitives; visual rendering remains unverified.
-- Colors and visual tokens: yellow primary, navy structure, blue links/focus, green success, and red destructive tokens are implemented; browser output remains unverified.
-- Image quality and asset fidelity: the existing `banner.gif` and `docs-banner.gif` remain in use; animation, crop, and sharpness remain unverified.
-- Copy and content: the revised landing and docs content is present in source; wrapping and truncation remain unverified.
+- Typography: the title now wraps at the same editorial cadence as the source while using the site's existing display styles.
+- Layout rhythm: the desktop bento uses a 1.6:1 split with the feature spanning both supporting rows; the grid stacks cleanly on smaller screens.
+- Colors and tokens: the implementation uses the existing yellow, navy, border, foreground, and muted design tokens rather than introducing isolated values.
+- Image fidelity: real project previews preserve their 1200:630 ratio when stacked and use a full-height crop within desktop bento cells.
+- Content fidelity: real subdomains, GitHub owners, project kinds, and optional visits replace the source's illustrative copy.
+- Responsive behavior: the 375 px content viewport has no horizontal overflow, and all three cards remain legible and tappable.
 
 ## Primary interactions tested
 
-- Static verification only: shared UI, web, and docs TypeScript checks pass.
-- Web production build passes.
-- Browser interaction testing could not begin because navigation to the local preview was rejected.
+- The “View the full showcase” CTA navigates to `/showcase`, where the “Work worth sharing” heading is present.
+- All three project cards expose external links that open in a new tab.
+- The light-theme default state and mobile stacked layout were captured and compared.
+- Component tests cover weekly rotation, preview filtering, card hierarchy, project types, visit counts, and the optional local preview-image origin.
 
 ## Console errors checked
 
-Not available because the cloud browser did not open the local implementation.
+- The final local showcase view reported no browser console errors.
 
 ## Comparison history
 
-- Pass 1: blocked before capture. No visual fixes were made in response because there was no browser-rendered evidence to judge.
-
-## Implementation checklist
-
-- Capture the landing and docs routes in an allowed browser preview.
-- Compare each capture with its corresponding source mockup at the same viewport.
-- Test the checker input/button, mobile navigation, docs navigation, theme behavior, and GIF animation.
-- Check console errors and repeat capture after any P0/P1/P2 fixes.
+- Pass 1: found two P2 differences — the headline wrapped later than the source, and long domains truncated too aggressively.
+- Fixes: constrained the title measure and adjusted its desktop scale; split each domain into the subdomain and `.is-pinoy.dev` suffix across two readable lines.
+- Pass 2: the full-view and focused comparisons showed no remaining actionable P0, P1, or P2 issues.
 
 ## Follow-up polish
 
-- None classified until browser evidence is available.
+- P3: if the registry later gains curated project titles and one-line descriptions, the metadata rail could surface them without changing the bento structure.
 
-final result: blocked
+final result: passed

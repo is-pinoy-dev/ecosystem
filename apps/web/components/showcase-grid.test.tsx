@@ -321,25 +321,27 @@ describe("ShowcaseHighlights", () => {
     expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
   })
 
-  it("frames every preview at the same aspect ratio as the grid", async () => {
+  it("keeps the shared preview ratio when the bento stacks", async () => {
     const [highlights, grid] = await Promise.all([
       render(ShowcaseHighlights()),
       render(ShowcaseGrid()),
     ])
 
-    // A preview must not change shape depending on which page it is seen on.
+    // At mobile and tablet widths every card stacks with the same frame as the
+    // full grid. The desktop bento intentionally lets that frame fill its cell.
     expect(highlights).toContain("aspect-[1200/630]")
     expect(grid).toContain("aspect-[1200/630]")
+    expect(highlights).toContain("lg:aspect-auto")
     expect(highlights).not.toContain("aspect-video")
   })
 
-  it("renders every card the same size", async () => {
-    // The section used to size one card differently from the other two, which
-    // cropped their previews to a sliver.
+  it("gives the weekly feature a deliberate bento hierarchy", async () => {
     const html = await render(ShowcaseHighlights())
     const frames = html.match(/aspect-\[1200\/630\]/g)
 
     expect(frames).toHaveLength(3)
+    expect(html).toContain("lg:row-span-2")
+    expect(html).toContain("Featured this week")
   })
 
   it("prompts for the first claim when nothing is registered", async () => {

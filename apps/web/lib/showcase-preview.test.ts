@@ -1,14 +1,26 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { previewFallbackUrl, previewStatusFor } from "./showcase-preview"
 
 describe("previewFallbackUrl", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it("asks the apex so externally hosted portfolios are covered too", () => {
     expect(previewFallbackUrl("juan")).toBe("/_tools/og/preview?subdomain=juan")
   })
 
   it("encodes the subdomain it is given", () => {
     expect(previewFallbackUrl("a b")).toBe("/_tools/og/preview?subdomain=a%20b")
+  })
+
+  it("can point local previews at the public worker", () => {
+    vi.stubEnv("NEXT_PUBLIC_OG_WORKER_ORIGIN", "https://is-pinoy.dev/")
+
+    expect(previewFallbackUrl("juan")).toBe(
+      "https://is-pinoy.dev/_tools/og/preview?subdomain=juan"
+    )
   })
 })
 
