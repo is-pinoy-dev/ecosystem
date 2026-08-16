@@ -328,7 +328,8 @@ describe("ShowcaseHighlights", () => {
     ])
 
     // At mobile and tablet widths every card stacks with the same frame as the
-    // full grid. The desktop bento intentionally lets that frame fill its cell.
+    // full grid. On desktop the bento cell may stretch, while ShowcaseCardImage
+    // keeps the returned artwork contained at its own intrinsic aspect ratio.
     expect(highlights).toContain("aspect-[1200/630]")
     expect(grid).toContain("aspect-[1200/630]")
     expect(highlights).toContain("lg:aspect-auto")
