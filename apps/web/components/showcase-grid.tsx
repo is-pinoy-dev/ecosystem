@@ -24,10 +24,10 @@ import {
 } from "@/lib/visit-count"
 
 /**
- * Every preview is framed at the OG card's 1200x630. The showcase grid and the
- * landing section render the same images from the same endpoint, so they crop
- * them the same way — a preview must not change shape depending on which page
- * it is seen on.
+ * Every preview slot is framed at the generated OG card's 1200x630. The image
+ * inside is contained rather than cropped because the endpoint can also return
+ * a 1440x900 stored capture or a portfolio's own differently sized OG image.
+ * Those source dimensions remain authoritative on every showcase surface.
  */
 const PREVIEW_FRAME = "aspect-[1200/630]"
 

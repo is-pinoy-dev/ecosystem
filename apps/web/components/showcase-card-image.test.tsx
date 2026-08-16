@@ -15,7 +15,8 @@ describe("ShowcaseCardImage", () => {
     )
 
     expect(html).toContain("https://cdn.example/showcase/juan/preview-v1.jpeg")
-    expect(html).toContain("object-top")
+    expect(html).toContain("object-contain")
+    expect(html).not.toContain("object-cover")
   })
 
   it("falls back to the preview endpoint when no screenshot exists yet", () => {
@@ -71,6 +72,6 @@ describe("ShowcaseCardImage", () => {
       "https://screenshots.example/showcase/juan/preview-v1.jpeg"
     )
     expect(html).toContain("Updating preview")
-    expect(html).toContain("object-top")
+    expect(html).toContain("object-contain")
   })
 })
