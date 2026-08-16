@@ -5,15 +5,23 @@
 //
 // It mirrors the static SVG badges (packages/badge-kit/src/lib/svg.ts) exactly
 // — same Banig Grid palette, same 8-ray sun mark, same IBM Plex Mono voice —
-// and adds only a single quiet hover: a 140ms border/opacity shift. The old
-// arcade effects (3D tilt, holographic glare, diagonal shimmer, pixel shadow)
-// are retired along with the retro design system; motion is now limited to
-// color, border, and small opacity changes per the v2.0 spec.
+// and layers three interactions on top, all of which a static SVG cannot do:
+//
+//   • hover   — a 140ms border/opacity shift (the quiet v2.0 baseline).
+//   • tilt    — an "ID card" 3D tilt that rotates toward the cursor, with a
+//               pointer-tracking glare highlight. Opt out with tilt="false".
+//   • shimmer — a diagonal light sweep, configurable via the shimmer attribute
+//               (off | sweep | loop | always) and shimmer-color.
+//
+// The pixel-offset shadow stays retired — it conflicts with the v2.0 1px border
+// rule — and all motion here still yields to prefers-reduced-motion.
 //
 // Authored as a plain string (no backticks, no ${} inside) so it can be embedded
 // in this TS template literal and shipped to the browser without a build step.
+// Backslashes are avoided too: a template literal eats them, so regexes below
+// use character classes ([(] rather than an escaped paren) to stay literal.
 
-export const WEB_COMPONENT_VERSION = '0.3.0'
+export const WEB_COMPONENT_VERSION = '0.4.0'
 
 export const WEB_COMPONENT_JS = `(function () {
   'use strict';
@@ -33,6 +41,17 @@ export const WEB_COMPONENT_JS = `(function () {
 
   var DEFAULT_THEME = 'light';
   var TYPE_ALIASES = { 'deployed-on': 'subdomain', 'subdomain': 'subdomain', 'member': 'member', 'pinoy-made': 'pinoy-made', 'certified': 'certified' };
+  var SHIMMER_MODES = { off: 1, sweep: 1, loop: 1, always: 1 };
+  var TILT_OFF = { 'false': 1, 'off': 1, '0': 1, 'no': 1 };
+  var DEFAULT_SHIMMER_COLOR = 'rgba(255,255,255,0.55)';
+
+  // Read at render time rather than once at load, so a badge rendered after the
+  // reader changes their OS setting still respects it.
+  function prefersReducedMotion() {
+    return window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
+  }
 
   function sanitizeHandle(raw) {
     return String(raw || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -48,6 +67,22 @@ export const WEB_COMPONENT_JS = `(function () {
     if (v.toLowerCase() === 'transparent') return 'transparent';
     if (HEX.test(v)) return v.charAt(0) === '#' ? v : '#' + v;
     return null;
+  }
+
+  // shimmer-color is documented as "any CSS color", so it needs a wider grammar
+  // than parseColor's hex-only rule -- but it still lands inside a <style> block,
+  // where an unvalidated value could close the rule and inject arbitrary CSS.
+  // Accept hex, a bare keyword, or an rgb/hsl function whose arguments contain
+  // no parens, quotes, semicolons, or braces. Anything else falls back.
+  var NAMED_COLOR = /^[a-z]{3,20}$/i;
+  var COLOR_FN = /^(rgb|rgba|hsl|hsla)[(][0-9a-z.,%/ +-]*[)]$/i;
+
+  function parseCssColor(raw, fallback) {
+    if (!raw) return fallback;
+    var v = String(raw).trim();
+    if (HEX.test(v)) return v.charAt(0) === '#' ? v : '#' + v;
+    if (NAMED_COLOR.test(v) || COLOR_FN.test(v)) return v;
+    return fallback;
   }
 
   // Layer validated color attributes on top of a theme palette (mirrors
@@ -106,14 +141,36 @@ export const WEB_COMPONENT_JS = `(function () {
       + '</span>';
   }
 
-  function styles(p) {
+  function styles(p, shimmerColor) {
     return FONTS
       + ':host{display:inline-block;}'
       + '*{box-sizing:border-box;border-radius:0;margin:0;padding:0;}'
+      // overflow:hidden clips the shimmer sweep to the card; the tilt rotates
+      // the whole card around its center via the --rx/--ry vars set on pointermove.
       + '.ipd-card{position:relative;display:inline-flex;align-items:stretch;text-decoration:none;cursor:pointer;'
-      +   'border:1px solid ' + p.border + ';background:' + p.surface + ';'
-      +   'transition:border-color .14s ease,box-shadow .14s ease;}'
+      +   'border:1px solid ' + p.border + ';background:' + p.surface + ';overflow:hidden;'
+      +   'transform:perspective(620px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));'
+      +   'transform-style:preserve-3d;will-change:transform;'
+      +   'transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease-out;}'
       + '.ipd-card:hover{border-color:' + p.hover + ';box-shadow:inset 0 0 0 1px ' + p.hover + ';}'
+      + '.ipd-card.no-tilt{transform:none;}'
+      // Pointer-tracking glare -- the holographic ID-card sheen. Rendered only
+      // when tilt is on, since the same pointer handler drives --mx/--my.
+      + '.ipd-glare{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s;z-index:2;'
+      +   'background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,0.35),transparent 45%);'
+      +   'mix-blend-mode:overlay;}'
+      + '.ipd-card:hover .ipd-glare{opacity:1;}'
+      // Configurable diagonal shimmer sweep.
+      + '.ipd-shimmer{position:absolute;top:0;left:0;height:100%;width:60%;pointer-events:none;z-index:3;'
+      +   'background:linear-gradient(100deg,transparent 8%,' + shimmerColor + ' 38%,' + shimmerColor + ' 62%,transparent 92%);'
+      +   'transform:translateX(-180%) skewX(-18deg);}'
+      + '.sh-off{display:none;}'
+      + '.ipd-card:hover .sh-sweep{animation:ipd-shimmer .85s ease-out;}'
+      + '.ipd-card:hover .sh-loop{animation:ipd-shimmer 1.6s linear infinite;}'
+      + '.sh-always{animation:ipd-shimmer 2.6s linear infinite;}'
+      + '@keyframes ipd-shimmer{from{transform:translateX(-180%) skewX(-18deg);}to{transform:translateX(300%) skewX(-18deg);}}'
+      // Content sits below the glare/shimmer overlays.
+      + '.ipd-mark,.ipd-body{position:relative;z-index:1;}'
       + '.ipd-mark{flex:0 0 auto;align-self:stretch;aspect-ratio:1;display:grid;place-items:center;'
       +   'background:' + p.markBg + ';border-right:1px solid ' + p.divider + ';}'
       + '.ipd-glyph{width:66%;height:66%;display:block;}'
@@ -138,8 +195,10 @@ export const WEB_COMPONENT_JS = `(function () {
       + '.ipd-card.a-hover .ipd-glyph{transform-origin:50% 50%;transition:transform .5s cubic-bezier(.34,1.5,.64,1);}'
       + '.ipd-card.a-hover:hover .ipd-glyph{transform:rotate(45deg);}'
       + '@media (prefers-reduced-motion: reduce){'
-      +   '.ipd-card{transition:none;}'
+      +   '.ipd-card{transition:none;transform:none!important;}'
       +   '.ipd-glyph{animation:none!important;transition:none!important;transform:none!important;}'
+      +   '.ipd-shimmer{display:none!important;}'
+      +   '.ipd-glare{display:none!important;}'
       + '}';
   }
 
@@ -155,7 +214,7 @@ export const WEB_COMPONENT_JS = `(function () {
   IsPinoyBadge.prototype.constructor = IsPinoyBadge;
   Object.setPrototypeOf(IsPinoyBadge, HTMLElement);
 
-  IsPinoyBadge.observedAttributes = ['handle', 'type', 'theme', 'label', 'icon', 'animate', 'bg', 'text', 'muted', 'border', 'mark', 'markbg'];
+  IsPinoyBadge.observedAttributes = ['handle', 'type', 'theme', 'label', 'icon', 'animate', 'shimmer', 'shimmer-color', 'tilt', 'bg', 'text', 'muted', 'border', 'mark', 'markbg'];
 
   var MARK_OFF = { 'false': 1, 'off': 1, '0': 1, 'no': 1 };
   var ANIM = { spin: 1, hover: 1 };
@@ -183,15 +242,50 @@ export const WEB_COMPONENT_JS = `(function () {
     var anim = (this.getAttribute('animate') || '').toLowerCase();
     var animClass = showMark && ANIM[anim] ? ' a-' + anim : '';
 
-    var html = '<style>' + styles(p) + '</style>'
-      + '<a class="ipd-card t-' + type + animClass + '" part="card" style="height:' + h + 'px" '
+    var shimmer = (this.getAttribute('shimmer') || '').toLowerCase();
+    if (!SHIMMER_MODES[shimmer]) shimmer = 'sweep';
+    var shimmerColor = parseCssColor(this.getAttribute('shimmer-color'), DEFAULT_SHIMMER_COLOR);
+
+    var reduced = prefersReducedMotion();
+    var tilt = !TILT_OFF[(this.getAttribute('tilt') || '').toLowerCase()] && !reduced;
+
+    var html = '<style>' + styles(p, shimmerColor) + '</style>'
+      + '<a class="ipd-card t-' + type + animClass + (tilt ? '' : ' no-tilt') + '" part="card" style="height:' + h + 'px" '
       +   'href="' + esc(href) + '" target="_blank" rel="noopener" '
       +   'aria-label="' + esc(handle) + ' on is-pinoy.dev">'
+      +   (tilt ? '<span class="ipd-glare" aria-hidden="true"></span>' : '')
+      +   '<span class="ipd-shimmer sh-' + shimmer + '" aria-hidden="true"></span>'
       +   (showMark ? '<span class="ipd-mark">' + mark(p.mark) + '</span>' : '')
       +   '<span class="ipd-body">' + body(type, p, handle, label) + '</span>'
       + '</a>';
 
     this._root.innerHTML = html;
+
+    if (tilt) this._attachTilt(this._root.querySelector('.ipd-card'));
+  };
+
+  // Rotate the card toward the cursor and move the glare hotspot with it. The
+  // listeners live on the card element, which _render replaces wholesale, so
+  // there is nothing to detach on re-render.
+  IsPinoyBadge.prototype._attachTilt = function (card) {
+    if (!card) return;
+    var MAX = 9; // degrees of rotation at the card edges
+    card.addEventListener('pointermove', function (e) {
+      var r = card.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var px = (e.clientX - r.left) / r.width;
+      var py = (e.clientY - r.top) / r.height;
+      card.style.setProperty('--ry', ((px - 0.5) * 2 * MAX).toFixed(2) + 'deg');
+      card.style.setProperty('--rx', ((0.5 - py) * 2 * MAX).toFixed(2) + 'deg');
+      card.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
+      card.style.setProperty('--my', (py * 100).toFixed(1) + '%');
+    });
+    card.addEventListener('pointerleave', function () {
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+      card.style.removeProperty('--mx');
+      card.style.removeProperty('--my');
+    });
   };
 
   window.customElements.define('is-pinoy-badge', IsPinoyBadge);
