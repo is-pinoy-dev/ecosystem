@@ -79,12 +79,50 @@ from what its preview endpoint actually serves, and needs no shared secret.
 - Capture viewport: 1440×900, device scale factor 1, first viewport only,
   JPEG quality 85.
 - Object key: `showcase/{portfolioId}/preview-v{version}.jpeg`.
+- Navigation waits for `networkidle2`, up to 45 seconds. A page that renders
+  but never goes quiet is photographed anyway — the usability check, not the
+  clock, decides whether there is anything worth storing.
 - Automatic retry delays: 5 minutes, 30 minutes, and 6 hours.
-- Daily scheduling selects at most 25 rows, oldest first.
+- Daily scheduling selects at most 25 rows: portfolios with no picture first,
+  then least recently attempted. Nothing is ever selected last-in-alphabet.
 - Ready screenshots older than 30 days are refreshed.
 - Manual owner refresh defaults to one request per 24 hours.
 - Older R2 versions remain available; cleanup can be added as a separate
   lifecycle policy without affecting the active database key.
+
+### A portfolio is never given up on
+
+After the three in-queue retries a failed portfolio falls back to the daily
+sweep, which widens its wait rather than dropping it: 7 hours through the third
+failure, then a day, then a week, settling at one attempt a month. A failed
+row's retry count is only reset by a successful capture, so a row the sweep
+stops selecting is a portfolio that leaves the showcase permanently — which is
+what happened when the sweep gave up at four failures, and why it no longer does.
+
+### Reading the logs
+
+Observability is on in `worker/wrangler.toml` with full sampling and
+persistence, so every event below is queryable after the fact. Live tail:
+
+```bash
+pnpm --filter screenshots exec wrangler tail portfolio-screenshots --format pretty
+```
+
+For history, open the Worker in the Cloudflare dashboard (Compute → Workers →
+`portfolio-screenshots`) and use its Logs tab; every line is JSON with an
+`event` field, so filter on that.
+
+| Event                             | When                | Read it for                                                                                                                                                         |
+| --------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `screenshot.sweep.completed`      | Once per cron run   | Backlog totals: `synced`, `captured`, `failed`, `failedPastQueueRetries`, plus `eligible`/`enqueued` and `saturated` when one run could not take everything waiting |
+| `screenshot.sweep.uncaptured`     | Same run, if any    | Every portfolio with no picture, worst first, with its `status`, `retryCount` and recorded `failureReason` — this is the "why is the showcase stuck at N" list      |
+| `screenshot.capture.failed`       | Per attempt         | `errorCode`, `retryCount` and the `url` that was tried                                                                                                              |
+| `screenshot.job.ladder_exhausted` | Per portfolio       | The in-queue retries are spent and the sweep now owns it; `nextSweepAfterMs` is the wait                                                                            |
+| `screenshot.job.rejected`         | Per refused enqueue | `rejectedBecause`: `not_found`, `inactive`, or `cooldown`                                                                                                           |
+| `screenshot.capture.succeeded`    | Per capture         | `settled: false` marks a page photographed without ever going quiet                                                                                                 |
+
+`GET /v1/showcase` returns the same per-row state on demand — status, retry
+count and failure reason for every synced portfolio.
 
 Local Browser Run development requires remote mode; `pnpm dev` enables it.
 Unit tests mock Browser Run and R2 and never make a live capture.

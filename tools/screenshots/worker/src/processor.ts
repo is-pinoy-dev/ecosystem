@@ -103,6 +103,10 @@ export async function processScreenshotJob(
       reason: job.reason,
       attempt: claim.portfolio.screenshotRetryCount + 1,
       durationMs: now() - startedAt,
+      bytes: capture.bytes.byteLength,
+      // A picture of a page that never went quiet. Under the old wait this was
+      // a timeout and no picture at all.
+      settled: capture.settled,
     })
     return { outcome: "ready", version: claim.version }
   } catch (error) {
@@ -118,6 +122,8 @@ export async function processScreenshotJob(
       attempt: claim.portfolio.screenshotRetryCount + 1,
       durationMs: now() - startedAt,
       errorCode: classified.code,
+      retryCount,
+      url: url.href,
     })
     return {
       outcome: "failed",
