@@ -47,6 +47,8 @@ interface SubdomainEntry extends RegisteredSubdomain {
   visits: ShowcaseVisitSummary | null
 }
 
+export type ShowcaseSort = "newest" | "visits"
+
 async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
   // The registry remains the source of truth for entries and ownership. The
   // Worker manifest is read-only metadata and can never trigger a capture, and
@@ -239,9 +241,73 @@ export function ShowcaseGridSkeleton({ limit = 6 }: { limit?: number }) {
 
 // ─── Grid (async, streamed) ───────────────────────────────────────────────────
 
-export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
+function sortShowcaseEntries(
+  entries: SubdomainEntry[],
+  sort: ShowcaseSort
+): SubdomainEntry[] {
+  return [...entries].sort((a, b) => {
+    if (sort === "visits") {
+      return (b.visits?.total ?? -1) - (a.visits?.total ?? -1)
+    }
+
+    const parsedA = a.createdOn ? Date.parse(a.createdOn) : Number.NaN
+    const parsedB = b.createdOn ? Date.parse(b.createdOn) : Number.NaN
+    const aCreated = Number.isNaN(parsedA) ? 0 : parsedA
+    const bCreated = Number.isNaN(parsedB) ? 0 : parsedB
+    return bCreated - aCreated
+  })
+}
+
+function ShowcaseSortLinks({ sort }: { sort: ShowcaseSort }) {
+  const linkClass =
+    "-mb-px flex min-h-11 items-center border-b-2 px-3 text-sm font-medium no-underline transition-colors duration-[140ms] outline-none first:pl-0 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+
+  return (
+    <nav
+      aria-label="Sort showcase"
+      className="flex items-center gap-3 max-sm:w-full max-sm:justify-between"
+    >
+      <span className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
+        Sort by
+      </span>
+      <div className="flex">
+        <Link
+          href="/showcase"
+          aria-current={sort === "newest" ? "page" : undefined}
+          className={`${linkClass} ${
+            sort === "newest"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground"
+          }`}
+        >
+          Newest
+        </Link>
+        <Link
+          href="/showcase?sort=visits"
+          aria-current={sort === "visits" ? "page" : undefined}
+          className={`${linkClass} ${
+            sort === "visits"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground"
+          }`}
+        >
+          Most visited
+        </Link>
+      </div>
+    </nav>
+  )
+}
+
+export async function ShowcaseGrid({
+  limit,
+  sort = "newest",
+}: {
+  limit?: number
+  sort?: ShowcaseSort
+} = {}) {
   const all = await fetchAllSubdomains()
-  const entries = limit ? all.slice(0, limit) : all
+  const sorted = sortShowcaseEntries(all, sort)
+  const entries = limit ? sorted.slice(0, limit) : sorted
 
   // The window the cards' figures cover, taken from a card rather than from the
   // constant so the note and the numbers under it cannot drift apart. Absent
@@ -250,18 +316,21 @@ export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="border border-border bg-muted px-3 py-1.5 font-mono text-xs font-medium text-muted-foreground">
-          {entries.length} SITE{entries.length !== 1 ? "S" : ""}
-        </span>
-        {visitWindow ? (
-          // Said once for the grid instead of on every card. A card here is a
-          // third of a row and cannot spare the characters, and a total with no
-          // window attached invites reading it as all-time.
-          <span className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
-            Visits · last {visitWindow.windowDays} days
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3 max-sm:pb-0">
+          <span className="border border-border bg-muted px-3 py-1.5 font-mono text-xs font-medium text-muted-foreground">
+            {entries.length} SITE{entries.length !== 1 ? "S" : ""}
           </span>
-        ) : null}
+          {visitWindow ? (
+            // Said once for the grid instead of on every card. A card here is a
+            // third of a row and cannot spare the characters, and a total with no
+            // window attached invites reading it as all-time.
+            <span className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
+              Visits · last {visitWindow.windowDays} days
+            </span>
+          ) : null}
+        </div>
+        <ShowcaseSortLinks sort={sort} />
       </div>
 
       {entries.length > 0 ? (
@@ -287,8 +356,8 @@ export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
 
 // ─── Landing highlights ──────────────────────────────────────────────────────
 
-/** How many entries the landing section shows. */
-const HIGHLIGHT_COUNT = 3
+/** One feature and three supporting entries in the landing section. */
+const HIGHLIGHT_COUNT = 4
 
 function HighlightMeta({
   entry,
@@ -297,44 +366,70 @@ function HighlightMeta({
   entry: SubdomainEntry
   featured?: boolean
 }) {
-  return (
+  const cta = (
+    <span className="flex size-9 shrink-0 items-center justify-center border border-border text-accent transition-colors duration-[140ms] group-hover:border-accent group-hover:bg-secondary">
+      <ArrowUpRight className="size-4" aria-hidden="true" />
+      <span className="sr-only">View site</span>
+    </span>
+  )
+
+  const identity = (
+    <>
+      <p
+        className={`m-0 font-mono font-semibold text-foreground ${featured ? "text-lg sm:text-xl lg:text-2xl" : "text-sm"}`}
+      >
+        <span className="block break-words">{entry.subdomain}</span>
+        <span className="block text-muted-foreground">.is-pinoy.dev</span>
+      </p>
+      <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
+          alt=""
+          aria-hidden="true"
+          className="size-5 shrink-0 border border-border object-cover"
+        />
+        <span className="min-w-0 truncate font-mono">
+          @{entry.owner.github}
+        </span>
+      </div>
+    </>
+  )
+
+  const footer = (
     <div
-      className={`flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 lg:min-h-0 lg:flex-col lg:items-stretch lg:p-5 ${featured ? "lg:p-6" : ""}`}
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground ${featured ? "" : "mt-4"}`}
     >
-      <div className="min-w-0 flex-1 lg:flex lg:flex-col">
-        {featured ? (
-          <p className="m-0 mb-5 font-mono text-[10px] font-semibold tracking-[0.12em] text-primary-dark uppercase">
+      <span>{showcaseKindLabel(entry)}</span>
+      {entry.visits ? <span aria-hidden>·</span> : null}
+      <VisitCount visits={entry.visits} showWindow />
+    </div>
+  )
+
+  if (featured) {
+    return (
+      <div className="flex min-h-[180px] flex-col bg-card px-4 py-3.5 lg:min-h-0 lg:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <p className="m-0 pt-1 font-mono text-[10px] font-semibold tracking-[0.12em] text-primary-dark uppercase">
             Featured this week
           </p>
-        ) : null}
-        <p
-          className={`m-0 font-mono font-semibold text-foreground ${featured ? "text-base lg:text-lg" : "text-sm"}`}
-        >
-          <span className="block break-words">{entry.subdomain}</span>
-          <span className="block text-muted-foreground">.is-pinoy.dev</span>
-        </p>
-        <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
-            alt=""
-            aria-hidden="true"
-            className="size-5 shrink-0 border border-border object-cover"
-          />
-          <span className="min-w-0 truncate font-mono">
-            @{entry.owner.github}
-          </span>
+          {cta}
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground lg:mt-auto">
-          <span>{showcaseKindLabel(entry)}</span>
-          {entry.visits ? <span aria-hidden>·</span> : null}
-          <VisitCount visits={entry.visits} showWindow />
+        <div className="flex flex-1 flex-col justify-center py-5 lg:py-6">
+          {identity}
         </div>
+        {footer}
       </div>
-      <span className="flex size-9 shrink-0 items-center justify-center border border-border text-accent transition-colors duration-[140ms] group-hover:border-accent group-hover:bg-secondary lg:self-end">
-        <ArrowUpRight className="size-4" aria-hidden="true" />
-        <span className="sr-only">View site</span>
-      </span>
+    )
+  }
+
+  return (
+    <div className="flex min-h-[112px] items-start justify-between gap-4 bg-card px-4 py-3.5 lg:p-4">
+      <div className="min-w-0 flex-1">
+        {identity}
+        {footer}
+      </div>
+      {cta}
     </div>
   )
 }
@@ -351,10 +446,10 @@ function HighlightCard({
       href={`https://${entry.subdomain}.is-pinoy.dev`}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group block border border-border bg-card no-underline transition-colors duration-[140ms] outline-none hover:border-accent/60 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:grid ${featured ? "sm:col-span-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.7fr)]" : "lg:grid-cols-[minmax(0,1.15fr)_minmax(210px,0.85fr)]"}`}
+      className={`group block border border-border bg-card no-underline transition-colors duration-[140ms] outline-none hover:border-accent/60 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${featured ? "sm:col-span-2 lg:col-span-3 lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.7fr)]" : ""}`}
     >
       <div
-        className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted lg:self-start lg:border-r lg:border-b-0`}
+        className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted ${featured ? "lg:self-start lg:border-r lg:border-b-0" : ""}`}
       >
         <ShowcaseCardImage
           screenshotUrl={entry.screenshotUrl}
@@ -377,29 +472,47 @@ function HighlightCard({
 function HighlightCardSkeleton({ featured = false }: { featured?: boolean }) {
   return (
     <div
-      className={`border border-border bg-card lg:grid ${featured ? "sm:col-span-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.7fr)]" : "lg:grid-cols-[minmax(0,1.15fr)_minmax(210px,0.85fr)]"}`}
+      className={`border border-border bg-card ${featured ? "sm:col-span-2 lg:col-span-3 lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.7fr)]" : ""}`}
     >
       <Skeleton
-        className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted lg:self-start lg:border-r lg:border-b-0`}
+        className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted ${featured ? "lg:self-start lg:border-r lg:border-b-0" : ""}`}
       />
-      <div className="flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 lg:min-h-0 lg:flex-col lg:items-stretch lg:p-5">
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          {featured ? <Skeleton className="mb-3 h-2 w-24" /> : null}
-          <Skeleton className="h-3 w-32" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="size-5" />
-            <Skeleton className="h-2.5 w-20" />
+      {featured ? (
+        <div className="flex min-h-[180px] flex-col bg-card px-4 py-3.5 lg:min-h-0 lg:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <Skeleton className="mt-1 h-2 w-24" />
+            <Skeleton className="size-9 shrink-0" />
           </div>
-          <Skeleton className="mt-auto h-2.5 w-24" />
+          <div className="flex flex-1 flex-col justify-center gap-2 py-5 lg:py-6">
+            <Skeleton className="h-4 w-32" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="size-5" />
+              <Skeleton className="h-2.5 w-20" />
+            </div>
+          </div>
+          <div className="border-t border-border/60 pt-3">
+            <Skeleton className="h-2.5 w-24" />
+          </div>
         </div>
-        <Skeleton className="size-9 shrink-0 lg:self-end" />
-      </div>
+      ) : (
+        <div className="flex min-h-[112px] items-start justify-between gap-4 bg-card px-4 py-3.5 lg:p-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <Skeleton className="h-3 w-32" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="size-5" />
+              <Skeleton className="h-2.5 w-20" />
+            </div>
+            <Skeleton className="mt-2 h-2.5 w-24" />
+          </div>
+          <Skeleton className="size-9 shrink-0" />
+        </div>
+      )}
     </div>
   )
 }
 
-/** One wide weekly feature with two supporting projects beneath it. */
-const HIGHLIGHT_ROW = "grid gap-4 sm:grid-cols-2"
+/** One wide weekly feature with three supporting projects beneath it. */
+const HIGHLIGHT_ROW = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
 
 export function ShowcaseHighlightsSkeleton() {
   return (
@@ -412,17 +525,33 @@ export function ShowcaseHighlightsSkeleton() {
 }
 
 export async function ShowcaseHighlights() {
-  // The landing page is a shop window: it shows only entries there is a real
-  // capture of, so a visitor never meets the community through a generated card.
-  // Those entries then rotate weekly in registry order, so a slot on the landing
-  // page is a turn every captured site gets rather than a reward for having
-  // claimed early. /showcase remains the complete, unrotated list.
+  // Captured sites lead the landing page, then the newest registered entries
+  // fill any remaining slots through the OG-preview endpoint. This preserves a
+  // full 1+3 showcase while still giving real captures first claim on a slot.
   const entries = await fetchAllSubdomains()
   const pool = await captured(entries)
   // Nothing could tell us which entries are captured. Showing the newest few —
   // previews and all — beats an empty section reporting an outage of ours as
   // news about the community.
-  const highlights = rotateWeekly(pool ?? entries, HIGHLIGHT_COUNT, new Date())
+  const capturedHighlights = rotateWeekly(
+    pool ?? entries,
+    HIGHLIGHT_COUNT,
+    new Date()
+  )
+  const highlights =
+    pool !== null && capturedHighlights.length < HIGHLIGHT_COUNT
+      ? [
+          ...capturedHighlights,
+          ...entries
+            .filter(
+              (entry) =>
+                !capturedHighlights.some(
+                  (highlight) => highlight.subdomain === entry.subdomain
+                )
+            )
+            .slice(0, HIGHLIGHT_COUNT - capturedHighlights.length),
+        ]
+      : capturedHighlights
 
   if (highlights.length === 0) {
     // Nothing registered and nothing captured yet are different situations, and
