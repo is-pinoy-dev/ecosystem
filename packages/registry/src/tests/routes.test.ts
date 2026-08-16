@@ -1,6 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Domain, CloudflareWorkerRoute } from "@is-pinoy-dev/schemas";
-import { diffWorkerRoutes } from "../core/routes.js";
+vi.mock("../providers/cloudflare/client.js", () => ({
+  createWorkerRoute: vi.fn(),
+  deleteWorkerRoute: vi.fn(),
+}));
+
+import { diffWorkerRoutes, syncWorkerRoutes } from "../core/routes.js";
+import * as cloudflare from "../providers/cloudflare/client.js";
 
 const SCRIPT = "tools-portfolio-proxy";
 
@@ -110,5 +116,78 @@ describe("diffWorkerRoutes", () => {
     delete process.env.PORTFOLIO_WORKER;
     const actual = [route("r1", "juan.is-pinoy.dev/*")];
     expect(diffWorkerRoutes([portfolioDomain("maria")], actual)).toEqual([]);
+  });
+
+  // A portfolio whose route was never created serves 525, because its CNAME
+  // points at a host that holds no certificate for it. Silence is what makes
+  // that take an afternoon to find.
+  it("names the portfolios it stranded when PORTFOLIO_WORKER is unset", () => {
+    delete process.env.PORTFOLIO_WORKER;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    diffWorkerRoutes([portfolioDomain("maria"), portfolioDomain("juan")], []);
+    expect(warn).toHaveBeenCalledOnce();
+    const message = warn.mock.calls[0]![0] as string;
+    expect(message).toContain("maria");
+    expect(message).toContain("juan");
+    expect(message).toContain("525");
+    expect(message).toContain("PORTFOLIO_WORKER");
+    warn.mockRestore();
+  });
+
+  it("stays quiet when there are no portfolios to strand", () => {
+    delete process.env.PORTFOLIO_WORKER;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    diffWorkerRoutes([plainDomain("maria")], []);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  // A record on its way out needs no route, so it is not stranded.
+  it("does not count a destroyed portfolio as stranded", () => {
+    delete process.env.PORTFOLIO_WORKER;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    diffWorkerRoutes([portfolioDomain("maria", { destroy: true })], []);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
+
+// A rejected CREATE_ROUTE leaves the portfolio's DNS record live and its route
+// absent, which is a 525 rather than a no-op. The count is what lets the CLI
+// end the run non-zero instead of reporting success over it.
+describe("syncWorkerRoutes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("reports how many route actions failed", async () => {
+    vi.mocked(cloudflare.createWorkerRoute)
+      .mockRejectedValueOnce(new Error("403 Forbidden"))
+      .mockResolvedValueOnce(route("r9", "maria.is-pinoy.dev/*"));
+    const warn = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const failed = await syncWorkerRoutes([
+      { type: "CREATE_ROUTE", pattern: "juan.is-pinoy.dev/*", script: SCRIPT },
+      { type: "CREATE_ROUTE", pattern: "maria.is-pinoy.dev/*", script: SCRIPT },
+    ]);
+
+    // Both were attempted; only one failed.
+    expect(cloudflare.createWorkerRoute).toHaveBeenCalledTimes(2);
+    expect(failed).toBe(1);
+    warn.mockRestore();
+  });
+
+  it("reports no failures for a clean run, and none for a dry run", async () => {
+    vi.mocked(cloudflare.createWorkerRoute).mockResolvedValue(
+      route("r9", "juan.is-pinoy.dev/*"),
+    );
+    const action = {
+      type: "CREATE_ROUTE" as const,
+      pattern: "juan.is-pinoy.dev/*",
+      script: SCRIPT,
+    };
+
+    expect(await syncWorkerRoutes([action])).toBe(0);
+    expect(await syncWorkerRoutes([action], true)).toBe(0);
   });
 });

@@ -1,5 +1,57 @@
 # site-audit
 
+## 0.3.0
+
+### Minor Changes
+
+- cd7be16: Reach a hosted portfolio the way the proxy does, instead of through the edge.
+
+  A hosted portfolio is only reachable at its own hostname because a Workers
+  route rewrites the request onto the renderer — and a `fetch()` from inside a
+  Worker to its own zone does not re-run that zone's routes. Cloudflare skips
+  them to keep Workers from recursing.
+
+  So `/audit-proxy` scanning `<label>.is-pinoy.dev` bypassed
+  tools-portfolio-proxy, reached the origin still carrying the portfolio's own
+  hostname, and failed the TLS handshake against a certificate that does not
+  cover it. The scan reported **HTTP 525** for a page that serves perfectly to a
+  browser — and before the previous release, reported it as 7 of 29 SEO checks
+  passing rather than as a failed fetch.
+
+  For a subdomain of our own zone the proxy now does what portfolio-proxy does:
+  addresses the renderer directly and carries the label in a header,
+  authenticated by the shared secret. The apex and external sites are fetched as
+  asked, and the secret never travels to a host outside the zone. Unconfigured,
+  it falls back to the plain public fetch.
+
+  Deploying this needs `PORTFOLIO_PROXY_SECRET` on the site-audit Worker — the
+  same value tools-portfolio-proxy and the renderer already hold:
+
+  ```
+  wrangler secret put PORTFOLIO_PROXY_SECRET -c worker/wrangler.toml
+  ```
+
+- 84398a4: Report a failed fetch as a failed fetch, instead of scoring it.
+
+  An HTML parser accepts anything. A 404 body, an empty response and a JSON
+  error each parse into a valid `Document` with an empty `<head>`, so every check
+  found its field missing and the report read as the audited site's fault. The
+  floor this produces is 7 of 29 SEO checks — `URL`, the five heading counts, and
+  `Image Alt Texts` passing on "no images" — which looks like a real, very bad
+  score rather than a page that was never fetched.
+
+  `/audit-proxy` now returns the status, content type, byte count and final URL
+  alongside the bytes, and the scan refuses to grade a response that isn't a
+  2xx HTML document from the origin that was asked for, naming which of those it
+  was instead. It also sends `Accept: text/html`, so an origin that
+  content-negotiates hands back the document a crawler would see.
+
+  When the failed response carries `x-portfolio-route` — the verdict
+  `apps/portfolio/proxy.ts` sets on every response — the error names it and says
+  what it means, so a hosted portfolio that returned a 404 reports the reason it
+  never rendered (no label, no secret, secret mismatch) rather than reporting
+  that the page has no metadata.
+
 ## 0.2.8
 
 ### Patch Changes

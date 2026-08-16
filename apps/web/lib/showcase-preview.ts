@@ -30,5 +30,7 @@ export function previewStatusFor(
  * showcase still makes exactly one server-side request for the whole grid.
  */
 export function previewFallbackUrl(subdomain: string): string {
-  return `/_tools/og/preview?subdomain=${encodeURIComponent(subdomain)}`
+  const origin =
+    process.env.NEXT_PUBLIC_OG_WORKER_ORIGIN?.replace(/\/+$/, "") ?? ""
+  return `${origin}/_tools/og/preview?subdomain=${encodeURIComponent(subdomain)}`
 }
