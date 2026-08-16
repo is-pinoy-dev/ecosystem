@@ -368,9 +368,11 @@ function HighlightMeta({
 }) {
   return (
     <div
-      className={`flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 lg:min-h-0 lg:flex-col lg:items-stretch lg:p-5 ${featured ? "lg:p-6" : ""}`}
+      className={`flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 ${featured ? "lg:min-h-0 lg:flex-col lg:items-stretch lg:p-6" : "lg:items-start lg:p-4"}`}
     >
-      <div className="min-w-0 flex-1 lg:flex lg:flex-col">
+      <div
+        className={`min-w-0 flex-1 ${featured ? "lg:flex lg:flex-col" : ""}`}
+      >
         {featured ? (
           <p className="m-0 mb-5 font-mono text-[10px] font-semibold tracking-[0.12em] text-primary-dark uppercase">
             Featured this week
@@ -402,7 +404,9 @@ function HighlightMeta({
           <VisitCount visits={entry.visits} showWindow />
         </div>
       </div>
-      <span className="flex size-9 shrink-0 items-center justify-center border border-border text-accent transition-colors duration-[140ms] group-hover:border-accent group-hover:bg-secondary lg:self-end">
+      <span
+        className={`flex size-9 shrink-0 items-center justify-center border border-border text-accent transition-colors duration-[140ms] group-hover:border-accent group-hover:bg-secondary ${featured ? "lg:self-end" : "lg:self-start"}`}
+      >
         <ArrowUpRight className="size-4" aria-hidden="true" />
         <span className="sr-only">View site</span>
       </span>
@@ -453,7 +457,9 @@ function HighlightCardSkeleton({ featured = false }: { featured?: boolean }) {
       <Skeleton
         className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted ${featured ? "lg:self-start lg:border-r lg:border-b-0" : ""}`}
       />
-      <div className="flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 lg:min-h-0 lg:flex-col lg:items-stretch lg:p-5">
+      <div
+        className={`flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 ${featured ? "lg:min-h-0 lg:flex-col lg:items-stretch lg:p-6" : "lg:items-start lg:p-4"}`}
+      >
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           {featured ? <Skeleton className="mb-3 h-2 w-24" /> : null}
           <Skeleton className="h-3 w-32" />
@@ -463,7 +469,9 @@ function HighlightCardSkeleton({ featured = false }: { featured?: boolean }) {
           </div>
           <Skeleton className="mt-auto h-2.5 w-24" />
         </div>
-        <Skeleton className="size-9 shrink-0 lg:self-end" />
+        <Skeleton
+          className={`size-9 shrink-0 ${featured ? "lg:self-end" : "lg:self-start"}`}
+        />
       </div>
     </div>
   )
