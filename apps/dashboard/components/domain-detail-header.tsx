@@ -41,9 +41,11 @@ function syncLabel(status: DomainView["syncStatus"]): string {
 export function DomainDetailHeader({
   domain,
   pendingPR,
+  canRefreshPreview,
 }: {
   domain: DomainView
   pendingPR: PendingPRView | null
+  canRefreshPreview: boolean
 }) {
   const [copied, setCopied] = useState(false)
   const route = primaryRouteFor(domain)
@@ -209,7 +211,7 @@ export function DomainDetailHeader({
         </div>
       </section>
 
-      {domain.provider?.id === "portfolio" ? (
+      {canRefreshPreview ? (
         <div className="flex flex-wrap items-center justify-between gap-3 border border-border bg-muted/30 px-4 py-3">
           <div>
             <p className="m-0 text-sm font-medium text-foreground">
