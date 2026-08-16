@@ -26,11 +26,9 @@ export const metadata: Metadata = {
     images: ["/opengraph-image"],
   },
 }
-// The shared header reads feature flags, which needs the request. Declared here
-// rather than discovered mid-render so the build says so plainly instead of
-// logging a DYNAMIC_SERVER_USAGE bail-out.
-export const dynamic = "force-dynamic"
-
+// This page is static MDX and declares no rendering mode of its own: the root
+// layout's shared header is the only thing here that reads the request, and it
+// declares `force-dynamic` for every route beneath it.
 export default function PrivacyLayout({
   children,
 }: {

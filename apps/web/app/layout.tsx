@@ -1,6 +1,10 @@
+import { Suspense } from "react"
 import type { Metadata, Viewport } from "next"
 import "@is-pinoy-dev/ui/globals.css"
 import "./globals.css"
+import { NavigationProgress } from "@/components/navigation-progress"
+import { SiteFooter } from "@/components/site-footer"
+import { SiteHeader, SiteHeaderSkeleton } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
 
 export const viewport: Viewport = {
@@ -91,15 +95,45 @@ export const metadata: Metadata = {
   },
 }
 
+// The header reads feature flags, which needs the request, and the header is now
+// on every page. Declared here rather than discovered mid-render so the build says
+// so plainly instead of logging a DYNAMIC_SERVER_USAGE bail-out per route — and
+// declared once here rather than repeated on every page beneath it.
+export const dynamic = "force-dynamic"
+
+/**
+ * The header and footer live here rather than in each page, which is what makes
+ * navigation feel like navigation: a root layout is not re-rendered on a client
+ * route change, so the chrome keeps its DOM while pages swap underneath it and
+ * no page has to `await` feature flags before it can render its own shell.
+ *
+ * `SiteHeader` is the one part that reads the request, so it sits behind its own
+ * Suspense boundary — the document, the page, and everything below the header
+ * all flush without waiting on the flags service.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    // `data-scroll-behavior` tells the router that the smooth scrolling the design
+    // system sets on `html` is intentional, so it can suppress it for the jump to
+    // the top of a new route. Without it, arriving on a page means watching it
+    // glide there — which is the opposite of the feedback a route change wants.
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <NavigationProgress />
+
+          <Suspense fallback={<SiteHeaderSkeleton />}>
+            <SiteHeader />
+          </Suspense>
+
+          {children}
+
+          <SiteFooter />
+        </ThemeProvider>
       </body>
     </html>
   )

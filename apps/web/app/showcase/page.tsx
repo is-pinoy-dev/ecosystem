@@ -7,9 +7,6 @@ import {
   SectionHeader,
   SectionTitle,
 } from "@is-pinoy-dev/ui/components/section-header"
-import { MainNav } from "@/components/main-nav"
-import { SiteFooter } from "@/components/site-footer"
-import { resolveFlagSet } from "@/lib/flags-server"
 import {
   ShowcaseGrid,
   ShowcaseGridSkeleton,
@@ -42,37 +39,32 @@ export const metadata: Metadata = {
   },
 }
 
-export const dynamic = "force-dynamic"
-
-export default async function ShowcasePage() {
-  const flags = await resolveFlagSet()
-
+/**
+ * Synchronous on purpose. The header's feature flags are resolved once in the
+ * root layout, so nothing here sits behind an `await` and the router can commit
+ * this route as soon as it asks for it — which is what finally lets the Suspense
+ * boundary below do its job instead of being unreachable behind a blocked shell.
+ */
+export default function ShowcasePage() {
   return (
-    <>
-      <MainNav flags={flags} />
+    <main className="min-h-screen">
+      <section className="py-16 sm:py-20">
+        <Container>
+          <SectionHeader className="mb-12">
+            <SectionEyebrow>Showcase</SectionEyebrow>
+            <SectionTitle>Work worth sharing</SectionTitle>
+            <SectionDescription>
+              Filipino developer portfolios and projects living on is-pinoy.dev.
+            </SectionDescription>
+          </SectionHeader>
 
-      <main className="min-h-screen">
-        <section className="py-16 sm:py-20">
-          <Container>
-            <SectionHeader className="mb-12">
-              <SectionEyebrow>Showcase</SectionEyebrow>
-              <SectionTitle>Work worth sharing</SectionTitle>
-              <SectionDescription>
-                Filipino developer portfolios and projects living on
-                is-pinoy.dev.
-              </SectionDescription>
-            </SectionHeader>
+          <Suspense fallback={<ShowcaseGridSkeleton />}>
+            <ShowcaseGrid />
+          </Suspense>
 
-            <Suspense fallback={<ShowcaseGridSkeleton />}>
-              <ShowcaseGrid />
-            </Suspense>
-
-            <ShowcaseCTA />
-          </Container>
-        </section>
-
-        <SiteFooter />
-      </main>
-    </>
+          <ShowcaseCTA />
+        </Container>
+      </section>
+    </main>
   )
 }

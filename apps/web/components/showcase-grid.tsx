@@ -1,8 +1,8 @@
-import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 import { Card, CardContent } from "@is-pinoy-dev/ui/components/card"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Skeleton } from "@is-pinoy-dev/ui/components/skeleton"
+import { ProgressLink } from "@/components/progress-link"
 import { ShowcaseCardImage } from "@/components/showcase-card-image"
 import {
   getRegisteredSubdomains,
@@ -99,6 +99,37 @@ async function captured(
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 /**
+ * An owner's GitHub avatar, as it appears on every showcase surface.
+ *
+ * A plain `<img>` rather than `next/image`: these are third-party avatars for
+ * every entry in the registry, and routing all of them through the optimizer
+ * would put a per-request transform in front of a file GitHub already serves at
+ * the right size.
+ *
+ * Always `lazy`, and never on the critical path. A card's own preview is the
+ * image that matters, and the browser resolves lazy images already in the
+ * viewport immediately anyway — so this costs the above-the-fold cards nothing
+ * while keeping the long tail of avatars out of the initial request queue.
+ * `width`/`height` state the source's real dimensions; the box itself is pinned
+ * by the utility classes, so nothing moves once one arrives.
+ */
+function OwnerAvatar({ github }: { github: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://avatars.githubusercontent.com/${encodeURIComponent(github)}?size=32`}
+      alt=""
+      aria-hidden="true"
+      width={32}
+      height={32}
+      loading="lazy"
+      decoding="async"
+      className="size-5 shrink-0 border border-border object-cover"
+    />
+  )
+}
+
+/**
  * The visit total as it appears on a card, or nothing at all.
  *
  * Plain text rather than a Badge, and muted rather than accented: a badge is an
@@ -184,13 +215,7 @@ function ShowcaseCard({
           {/* Owner strip */}
           <div className="mx-4 h-px bg-border/40" />
           <div className="flex items-center gap-2 px-4 py-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
-              alt=""
-              aria-hidden
-              className="h-5 w-5 shrink-0 border border-border object-cover"
-            />
+            <OwnerAvatar github={entry.owner.github} />
             <span className="truncate font-mono text-xs text-muted-foreground">
               @{entry.owner.github}
             </span>
@@ -314,13 +339,7 @@ function HighlightMeta({
           <span className="block text-muted-foreground">.is-pinoy.dev</span>
         </p>
         <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
-            alt=""
-            aria-hidden="true"
-            className="size-5 shrink-0 border border-border object-cover"
-          />
+          <OwnerAvatar github={entry.owner.github} />
           <span className="min-w-0 truncate font-mono">
             @{entry.owner.github}
           </span>
@@ -438,12 +457,12 @@ export async function ShowcaseHighlights() {
             {registered ? "Previews on the way" : "No sites yet"}
           </p>
           {registered ? (
-            <Link
+            <ProgressLink
               href="/showcase"
               className="mt-3 inline-block text-[13px] font-semibold text-accent no-underline hover:underline"
             >
               Browse the showcase →
-            </Link>
+            </ProgressLink>
           ) : (
             <a
               href="https://docs.is-pinoy.dev/guides"
