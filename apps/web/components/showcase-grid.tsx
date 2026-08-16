@@ -356,8 +356,8 @@ export async function ShowcaseGrid({
 
 // ─── Landing highlights ──────────────────────────────────────────────────────
 
-/** How many entries the landing section shows. */
-const HIGHLIGHT_COUNT = 3
+/** One feature and three supporting entries in the landing section. */
+const HIGHLIGHT_COUNT = 4
 
 function HighlightMeta({
   entry,
@@ -394,7 +394,9 @@ function HighlightMeta({
             @{entry.owner.github}
           </span>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground lg:mt-auto">
+        <div
+          className={`mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground ${featured ? "lg:mt-auto" : ""}`}
+        >
           <span>{showcaseKindLabel(entry)}</span>
           {entry.visits ? <span aria-hidden>·</span> : null}
           <VisitCount visits={entry.visits} showWindow />
@@ -420,10 +422,10 @@ function HighlightCard({
       href={`https://${entry.subdomain}.is-pinoy.dev`}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group block border border-border bg-card no-underline transition-colors duration-[140ms] outline-none hover:border-accent/60 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:grid ${featured ? "sm:col-span-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.7fr)]" : "lg:grid-cols-[minmax(0,1.15fr)_minmax(210px,0.85fr)]"}`}
+      className={`group block border border-border bg-card no-underline transition-colors duration-[140ms] outline-none hover:border-accent/60 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${featured ? "sm:col-span-2 lg:col-span-3 lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.7fr)]" : ""}`}
     >
       <div
-        className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted lg:self-start lg:border-r lg:border-b-0`}
+        className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted ${featured ? "lg:self-start lg:border-r lg:border-b-0" : ""}`}
       >
         <ShowcaseCardImage
           screenshotUrl={entry.screenshotUrl}
@@ -446,10 +448,10 @@ function HighlightCard({
 function HighlightCardSkeleton({ featured = false }: { featured?: boolean }) {
   return (
     <div
-      className={`border border-border bg-card lg:grid ${featured ? "sm:col-span-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.7fr)]" : "lg:grid-cols-[minmax(0,1.15fr)_minmax(210px,0.85fr)]"}`}
+      className={`border border-border bg-card ${featured ? "sm:col-span-2 lg:col-span-3 lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.7fr)]" : ""}`}
     >
       <Skeleton
-        className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted lg:self-start lg:border-r lg:border-b-0`}
+        className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted ${featured ? "lg:self-start lg:border-r lg:border-b-0" : ""}`}
       />
       <div className="flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 lg:min-h-0 lg:flex-col lg:items-stretch lg:p-5">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -467,8 +469,8 @@ function HighlightCardSkeleton({ featured = false }: { featured?: boolean }) {
   )
 }
 
-/** One wide weekly feature with two supporting projects beneath it. */
-const HIGHLIGHT_ROW = "grid gap-4 sm:grid-cols-2"
+/** One wide weekly feature with three supporting projects beneath it. */
+const HIGHLIGHT_ROW = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
 
 export function ShowcaseHighlightsSkeleton() {
   return (
@@ -481,17 +483,33 @@ export function ShowcaseHighlightsSkeleton() {
 }
 
 export async function ShowcaseHighlights() {
-  // The landing page is a shop window: it shows only entries there is a real
-  // capture of, so a visitor never meets the community through a generated card.
-  // Those entries then rotate weekly in registry order, so a slot on the landing
-  // page is a turn every captured site gets rather than a reward for having
-  // claimed early. /showcase remains the complete, unrotated list.
+  // Captured sites lead the landing page, then the newest registered entries
+  // fill any remaining slots through the OG-preview endpoint. This preserves a
+  // full 1+3 showcase while still giving real captures first claim on a slot.
   const entries = await fetchAllSubdomains()
   const pool = await captured(entries)
   // Nothing could tell us which entries are captured. Showing the newest few —
   // previews and all — beats an empty section reporting an outage of ours as
   // news about the community.
-  const highlights = rotateWeekly(pool ?? entries, HIGHLIGHT_COUNT, new Date())
+  const capturedHighlights = rotateWeekly(
+    pool ?? entries,
+    HIGHLIGHT_COUNT,
+    new Date()
+  )
+  const highlights =
+    pool !== null && capturedHighlights.length < HIGHLIGHT_COUNT
+      ? [
+          ...capturedHighlights,
+          ...entries
+            .filter(
+              (entry) =>
+                !capturedHighlights.some(
+                  (highlight) => highlight.subdomain === entry.subdomain
+                )
+            )
+            .slice(0, HIGHLIGHT_COUNT - capturedHighlights.length),
+        ]
+      : capturedHighlights
 
   if (highlights.length === 0) {
     // Nothing registered and nothing captured yet are different situations, and
