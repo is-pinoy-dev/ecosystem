@@ -328,11 +328,11 @@ describe("ShowcaseHighlights", () => {
     ])
 
     // At mobile and tablet widths every card stacks with the same frame as the
-    // full grid. On desktop the bento cell may stretch, while ShowcaseCardImage
-    // keeps the returned artwork contained at its own intrinsic aspect ratio.
+    // full grid. The bento's desktop media cells remain rectangular too, while
+    // ShowcaseCardImage keeps the returned artwork at its intrinsic ratio.
     expect(highlights).toContain("aspect-[1200/630]")
     expect(grid).toContain("aspect-[1200/630]")
-    expect(highlights).toContain("lg:aspect-auto")
+    expect(highlights).not.toContain("lg:aspect-auto")
     expect(highlights).not.toContain("aspect-video")
   })
 
@@ -341,7 +341,7 @@ describe("ShowcaseHighlights", () => {
     const frames = html.match(/aspect-\[1200\/630\]/g)
 
     expect(frames).toHaveLength(3)
-    expect(html).toContain("lg:row-span-2")
+    expect(html).toContain("sm:col-span-2")
     expect(html).toContain("Featured this week")
   })
 
