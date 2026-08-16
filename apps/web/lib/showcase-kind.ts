@@ -1,26 +1,21 @@
 // What kind of thing a showcase card points at.
 //
-// Every card used to be labelled "Portfolio" regardless, which flattened a real
-// distinction: some subdomains are rendered by us from their owner's GitHub
-// profile, and some are sites their owners built and host themselves. The
-// registry already knows which is which, so the card can say so.
-//
-// Deliberately three values, not one per host. Which CDN somebody's own site
-// sits on is not something a visitor to the showcase is asking about, and
-// naming it would turn the community grid into a list of hosting vendors.
+// Two values, and the line between them is who built the page. A subdomain with
+// a `portfolio` block is rendered by us from the owner's GitHub profile;
+// everything else is a site its owner built and hosts themselves. Where they
+// host it — GitHub Pages, Vercel, Netlify, their own box — is not something a
+// visitor to the showcase is asking about, and naming it would turn the
+// community grid into a list of hosting vendors.
 
 import { hostProviderForRecords } from "@is-pinoy-dev/validate"
 
-export type ShowcaseKind = "hosted-portfolio" | "github-pages" | "site"
+export type ShowcaseKind = "github-profile" | "portfolio"
 
 export const SHOWCASE_KIND_LABELS: Record<ShowcaseKind, string> = {
-  // Rendered by us from the owner's GitHub profile README.
-  "hosted-portfolio": "Hosted portfolio",
-  // The owner's own site, built and published through GitHub.
-  "github-pages": "GitHub Pages",
-  // The owner's own site on a host we either know or don't — either way, the
-  // showcase's own premise is the honest label for it.
-  site: "Portfolio",
+  // Rendered by us from the owner's GitHub profile.
+  "github-profile": "GitHub Profile",
+  // The owner's own site, wherever it happens to be hosted.
+  portfolio: "Portfolio",
 }
 
 export interface ShowcaseKindInput {
@@ -33,17 +28,12 @@ export function showcaseKind(entry: ShowcaseKindInput): ShowcaseKind {
   // written downstream of it by sync. Reading the block first means a card is
   // labelled correctly during the window before DNS has caught up, and that a
   // record hand-pointed at the renderer without a block still resolves through
-  // the fallback below rather than being mislabelled a plain site.
-  if (entry.portfolio) return "hosted-portfolio"
+  // the fallback below rather than being mislabelled a self-hosted site.
+  if (entry.portfolio) return "github-profile"
 
-  switch (hostProviderForRecords(entry.records)) {
-    case "portfolio":
-      return "hosted-portfolio"
-    case "github":
-      return "github-pages"
-    default:
-      return "site"
-  }
+  return hostProviderForRecords(entry.records) === "portfolio"
+    ? "github-profile"
+    : "portfolio"
 }
 
 export function showcaseKindLabel(entry: ShowcaseKindInput): string {
