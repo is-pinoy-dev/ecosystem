@@ -366,50 +366,70 @@ function HighlightMeta({
   entry: SubdomainEntry
   featured?: boolean
 }) {
-  return (
-    <div
-      className={`flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 ${featured ? "lg:min-h-0 lg:flex-col lg:items-stretch lg:p-6" : "lg:items-start lg:p-4"}`}
-    >
-      <div
-        className={`min-w-0 flex-1 ${featured ? "lg:flex lg:flex-col" : ""}`}
+  const cta = (
+    <span className="flex size-9 shrink-0 items-center justify-center border border-border text-accent transition-colors duration-[140ms] group-hover:border-accent group-hover:bg-secondary">
+      <ArrowUpRight className="size-4" aria-hidden="true" />
+      <span className="sr-only">View site</span>
+    </span>
+  )
+
+  const identity = (
+    <>
+      <p
+        className={`m-0 font-mono font-semibold text-foreground ${featured ? "text-lg sm:text-xl lg:text-2xl" : "text-sm"}`}
       >
-        {featured ? (
-          <p className="m-0 mb-5 font-mono text-[10px] font-semibold tracking-[0.12em] text-primary-dark uppercase">
+        <span className="block break-words">{entry.subdomain}</span>
+        <span className="block text-muted-foreground">.is-pinoy.dev</span>
+      </p>
+      <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
+          alt=""
+          aria-hidden="true"
+          className="size-5 shrink-0 border border-border object-cover"
+        />
+        <span className="min-w-0 truncate font-mono">
+          @{entry.owner.github}
+        </span>
+      </div>
+    </>
+  )
+
+  const footer = (
+    <div
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground ${featured ? "" : "mt-4"}`}
+    >
+      <span>{showcaseKindLabel(entry)}</span>
+      {entry.visits ? <span aria-hidden>·</span> : null}
+      <VisitCount visits={entry.visits} showWindow />
+    </div>
+  )
+
+  if (featured) {
+    return (
+      <div className="flex min-h-[180px] flex-col bg-card px-4 py-3.5 lg:min-h-0 lg:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <p className="m-0 pt-1 font-mono text-[10px] font-semibold tracking-[0.12em] text-primary-dark uppercase">
             Featured this week
           </p>
-        ) : null}
-        <p
-          className={`m-0 font-mono font-semibold text-foreground ${featured ? "text-base lg:text-lg" : "text-sm"}`}
-        >
-          <span className="block break-words">{entry.subdomain}</span>
-          <span className="block text-muted-foreground">.is-pinoy.dev</span>
-        </p>
-        <div className="mt-3 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`https://avatars.githubusercontent.com/${entry.owner.github}?size=32`}
-            alt=""
-            aria-hidden="true"
-            className="size-5 shrink-0 border border-border object-cover"
-          />
-          <span className="min-w-0 truncate font-mono">
-            @{entry.owner.github}
-          </span>
+          {cta}
         </div>
-        <div
-          className={`mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground ${featured ? "lg:mt-auto" : ""}`}
-        >
-          <span>{showcaseKindLabel(entry)}</span>
-          {entry.visits ? <span aria-hidden>·</span> : null}
-          <VisitCount visits={entry.visits} showWindow />
+        <div className="flex flex-1 flex-col justify-center py-5 lg:py-6">
+          {identity}
         </div>
+        {footer}
       </div>
-      <span
-        className={`flex size-9 shrink-0 items-center justify-center border border-border text-accent transition-colors duration-[140ms] group-hover:border-accent group-hover:bg-secondary ${featured ? "lg:self-end" : "lg:self-start"}`}
-      >
-        <ArrowUpRight className="size-4" aria-hidden="true" />
-        <span className="sr-only">View site</span>
-      </span>
+    )
+  }
+
+  return (
+    <div className="flex min-h-[112px] items-start justify-between gap-4 bg-card px-4 py-3.5 lg:p-4">
+      <div className="min-w-0 flex-1">
+        {identity}
+        {footer}
+      </div>
+      {cta}
     </div>
   )
 }
@@ -457,22 +477,36 @@ function HighlightCardSkeleton({ featured = false }: { featured?: boolean }) {
       <Skeleton
         className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted ${featured ? "lg:self-start lg:border-r lg:border-b-0" : ""}`}
       />
-      <div
-        className={`flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 ${featured ? "lg:min-h-0 lg:flex-col lg:items-stretch lg:p-6" : "lg:items-start lg:p-4"}`}
-      >
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          {featured ? <Skeleton className="mb-3 h-2 w-24" /> : null}
-          <Skeleton className="h-3 w-32" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="size-5" />
-            <Skeleton className="h-2.5 w-20" />
+      {featured ? (
+        <div className="flex min-h-[180px] flex-col bg-card px-4 py-3.5 lg:min-h-0 lg:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <Skeleton className="mt-1 h-2 w-24" />
+            <Skeleton className="size-9 shrink-0" />
           </div>
-          <Skeleton className="mt-auto h-2.5 w-24" />
+          <div className="flex flex-1 flex-col justify-center gap-2 py-5 lg:py-6">
+            <Skeleton className="h-4 w-32" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="size-5" />
+              <Skeleton className="h-2.5 w-20" />
+            </div>
+          </div>
+          <div className="border-t border-border/60 pt-3">
+            <Skeleton className="h-2.5 w-24" />
+          </div>
         </div>
-        <Skeleton
-          className={`size-9 shrink-0 ${featured ? "lg:self-end" : "lg:self-start"}`}
-        />
-      </div>
+      ) : (
+        <div className="flex min-h-[112px] items-start justify-between gap-4 bg-card px-4 py-3.5 lg:p-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <Skeleton className="h-3 w-32" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="size-5" />
+              <Skeleton className="h-2.5 w-20" />
+            </div>
+            <Skeleton className="mt-2 h-2.5 w-24" />
+          </div>
+          <Skeleton className="size-9 shrink-0" />
+        </div>
+      )}
     </div>
   )
 }
