@@ -65,7 +65,10 @@ export function ShowcaseCardImage({
   if (!src) return <PreviewUnavailable subdomain={subdomain} />
 
   return (
-    <div className="relative h-full w-full" data-state={screenshotStatus}>
+    <div
+      className="relative flex h-full w-full items-center justify-center"
+      data-state={screenshotStatus}
+    >
       {/* R2 images are already versioned and CDN-cacheable. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -75,7 +78,7 @@ export function ShowcaseCardImage({
         loading={loading}
         decoding="async"
         onError={() => setFailed((current) => [...current, src])}
-        className="h-full w-full object-cover object-top"
+        className="max-h-full max-w-full object-contain object-center"
       />
       {updating && screenshotUrl !== null && (
         <span className="absolute right-2 bottom-2 border border-border bg-background/90 px-2 py-1 font-mono text-[9px] font-semibold tracking-[0.06em] text-foreground uppercase">

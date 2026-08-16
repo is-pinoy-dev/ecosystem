@@ -24,10 +24,10 @@ import {
 } from "@/lib/visit-count"
 
 /**
- * Every preview is framed at the OG card's 1200x630. The showcase grid and the
- * landing section render the same images from the same endpoint, so they crop
- * them the same way — a preview must not change shape depending on which page
- * it is seen on.
+ * Every preview slot is framed at the generated OG card's 1200x630. The image
+ * inside is contained rather than cropped because the endpoint can also return
+ * a 1440x900 stored capture or a portfolio's own differently sized OG image.
+ * Those source dimensions remain authoritative on every showcase surface.
  */
 const PREVIEW_FRAME = "aspect-[1200/630]"
 
@@ -351,10 +351,10 @@ function HighlightCard({
       href={`https://${entry.subdomain}.is-pinoy.dev`}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group block h-full border border-border bg-card no-underline transition-colors duration-[140ms] outline-none hover:border-accent/60 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:grid ${featured ? "lg:row-span-2 lg:min-h-[430px] lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.6fr)]" : "lg:min-h-[207px] lg:grid-cols-[minmax(0,1.05fr)_minmax(180px,0.95fr)]"}`}
+      className={`group block border border-border bg-card no-underline transition-colors duration-[140ms] outline-none hover:border-accent/60 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:grid ${featured ? "sm:col-span-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.7fr)]" : "lg:grid-cols-[minmax(0,1.15fr)_minmax(210px,0.85fr)]"}`}
     >
       <div
-        className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted lg:aspect-auto lg:h-full lg:border-r lg:border-b-0`}
+        className={`relative ${PREVIEW_FRAME} overflow-hidden border-b border-border bg-muted lg:self-start lg:border-r lg:border-b-0`}
       >
         <ShowcaseCardImage
           screenshotUrl={entry.screenshotUrl}
@@ -377,10 +377,10 @@ function HighlightCard({
 function HighlightCardSkeleton({ featured = false }: { featured?: boolean }) {
   return (
     <div
-      className={`border border-border bg-card lg:grid ${featured ? "lg:row-span-2 lg:min-h-[430px] lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.6fr)]" : "lg:min-h-[207px] lg:grid-cols-[minmax(0,1.05fr)_minmax(180px,0.95fr)]"}`}
+      className={`border border-border bg-card lg:grid ${featured ? "sm:col-span-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(260px,0.7fr)]" : "lg:grid-cols-[minmax(0,1.15fr)_minmax(210px,0.85fr)]"}`}
     >
       <Skeleton
-        className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted lg:aspect-auto lg:h-full lg:border-r lg:border-b-0`}
+        className={`${PREVIEW_FRAME} w-full border-b border-border bg-muted lg:self-start lg:border-r lg:border-b-0`}
       />
       <div className="flex min-h-[112px] items-center justify-between gap-4 bg-card px-4 py-3.5 lg:min-h-0 lg:flex-col lg:items-stretch lg:p-5">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -398,9 +398,8 @@ function HighlightCardSkeleton({ featured = false }: { featured?: boolean }) {
   )
 }
 
-/** One weekly feature and two supporting projects in an asymmetric bento. */
-const HIGHLIGHT_ROW =
-  "grid gap-4 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr] lg:grid-rows-2"
+/** One wide weekly feature with two supporting projects beneath it. */
+const HIGHLIGHT_ROW = "grid gap-4 sm:grid-cols-2"
 
 export function ShowcaseHighlightsSkeleton() {
   return (
