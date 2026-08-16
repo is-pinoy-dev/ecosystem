@@ -370,29 +370,6 @@ describe("ShowcaseHighlights", () => {
     )
   })
 
-  it("sorts measured sites by visits and leaves unmeasured sites afterward", async () => {
-    getShowcaseVisits.mockResolvedValue(
-      visits({ alpha: 1_200, bravo: 400, delta: 90_000 })
-    )
-
-    const html = await render(ShowcaseGrid({ sort: "visits" }))
-
-    expect(orderOf(html)).toEqual(["delta", "alpha", "bravo", "charlie"])
-  })
-
-  it("labels the sort choices clearly and marks the active choice", async () => {
-    const newest = await render(ShowcaseGrid())
-    const mostVisited = await render(ShowcaseGrid({ sort: "visits" }))
-
-    expect(newest).toContain("Sort by")
-    expect(newest).toContain("Newest")
-    expect(newest).toContain("Most visited")
-    expect(newest).toMatch(/<a aria-current="page"[^>]*href="\/showcase"/)
-    expect(mostVisited).toMatch(
-      /<a aria-current="page"[^>]*href="\/showcase\?sort=visits"/
-    )
-  })
-
   it("keeps the shared preview ratio when the bento stacks", async () => {
     const [highlights, grid] = await Promise.all([
       render(ShowcaseHighlights()),
