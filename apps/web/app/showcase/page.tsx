@@ -45,7 +45,11 @@ export const metadata: Metadata = {
  * this route as soon as it asks for it — which is what finally lets the Suspense
  * boundary below do its job instead of being unreachable behind a blocked shell.
  */
-export default function ShowcasePage() {
+export default function ShowcasePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string | string[] }>
+}) {
   return (
     <main className="min-h-screen">
       <section className="py-16 sm:py-20">
@@ -59,7 +63,7 @@ export default function ShowcasePage() {
           </SectionHeader>
 
           <Suspense fallback={<ShowcaseGridSkeleton />}>
-            <ShowcaseGrid />
+            <SortedShowcaseGrid searchParams={searchParams} />
           </Suspense>
 
           <ShowcaseCTA />
@@ -67,4 +71,15 @@ export default function ShowcasePage() {
       </section>
     </main>
   )
+}
+
+async function SortedShowcaseGrid({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string | string[] }>
+}) {
+  const params = await searchParams
+  const sort = params.sort === "visits" ? "visits" : "newest"
+
+  return <ShowcaseGrid sort={sort} />
 }

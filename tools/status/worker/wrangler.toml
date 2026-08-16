@@ -2,6 +2,8 @@ name = "tools-status"
 main = "index.ts"
 compatibility_date = "2026-05-27"
 compatibility_flags = ["nodejs_compat"]
+# Runtime variables such as MAINTENANCE_MODE are managed in Cloudflare.
+keep_vars = true
 
 [assets]
 directory = "../build/client"

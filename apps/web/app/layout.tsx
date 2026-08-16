@@ -6,6 +6,8 @@ import { NavigationProgress } from "@/components/navigation-progress"
 import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader, SiteHeaderSkeleton } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
+import { MaintenancePage } from "@is-pinoy-dev/ui/components/maintenance-page"
+import { isMaintenanceMode } from "@is-pinoy-dev/ui/lib/maintenance"
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -116,6 +118,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const maintenance = isMaintenanceMode(process.env.MAINTENANCE_MODE)
+
   return (
     // `data-scroll-behavior` tells the router that the smooth scrolling the design
     // system sets on `html` is intentional, so it can suppress it for the jump to
@@ -124,15 +128,21 @@ export default function RootLayout({
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          <NavigationProgress />
+          {maintenance ? (
+            <MaintenancePage />
+          ) : (
+            <>
+              <NavigationProgress />
 
-          <Suspense fallback={<SiteHeaderSkeleton />}>
-            <SiteHeader />
-          </Suspense>
+              <Suspense fallback={<SiteHeaderSkeleton />}>
+                <SiteHeader />
+              </Suspense>
 
-          {children}
+              {children}
 
-          <SiteFooter />
+              <SiteFooter />
+            </>
+          )}
         </ThemeProvider>
       </body>
     </html>

@@ -1,6 +1,8 @@
 import { RootProvider } from "fumadocs-ui/provider/next"
 import "./global.css"
 import type { Metadata, Viewport } from "next"
+import { MaintenancePage } from "@is-pinoy-dev/ui/components/maintenance-page"
+import { isMaintenanceMode } from "@is-pinoy-dev/ui/lib/maintenance"
 
 export const viewport: Viewport = {
   themeColor: "#FAF9F5",
@@ -60,6 +62,8 @@ const websiteSchema = {
 }
 
 export default function Layout({ children }: LayoutProps<"/">) {
+  const maintenance = isMaintenanceMode(process.env.MAINTENANCE_MODE)
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
@@ -67,7 +71,13 @@ export default function Layout({ children }: LayoutProps<"/">) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
-        <RootProvider>{children}</RootProvider>
+        <RootProvider>
+          {maintenance ? (
+            <MaintenancePage service="The is-pinoy.dev documentation" />
+          ) : (
+            children
+          )}
+        </RootProvider>
       </body>
     </html>
   )

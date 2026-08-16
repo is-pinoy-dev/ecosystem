@@ -20,10 +20,15 @@ ROOT_DOMAIN = "is-pinoy.dev"
 RENDERER_HOST = "portfolio.is-pinoy.dev"
 
 # PORTFOLIO_PROXY_SECRET is a secret, not a var — the same value held by
-# tools-portfolio-proxy and the renderer's Vercel environment:
+# tools-portfolio-proxy and the renderer's Vercel environment. Provisioned by
+# .github/workflows/deploy-site-audit.yml from the repository secret of the same
+# name, so rotating it is a GitHub secret edit plus a re-run of that workflow.
+# Setting it by hand works too, and is how a fresh account gets started:
 #   wrangler secret put PORTFOLIO_PROXY_SECRET -c worker/wrangler.toml
 # Unset, /audit-proxy falls back to fetching the target's public address, which
-# is correct for the apex and for external sites but 525s on a portfolio.
+# is correct for the apex and for external sites but 525s on a portfolio. The
+# vars above ship with every deploy; this does not, so it is the one that goes
+# missing — and it goes missing quietly, as a 525 attributed to the portfolio.
 
 [[routes]]
 pattern = "is-pinoy.dev/_tools/site-audit*"

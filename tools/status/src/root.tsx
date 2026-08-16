@@ -5,7 +5,10 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "react-router"
+import { MaintenancePage } from "@is-pinoy-dev/ui/components/maintenance-page"
+import { isMaintenanceMode } from "@is-pinoy-dev/ui/lib/maintenance"
 import type { Route } from "./+types/root"
 import "./app.css"
 
@@ -46,6 +49,12 @@ export function meta() {
   ]
 }
 
+export function loader({ context }: Route.LoaderArgs) {
+  return {
+    maintenance: isMaintenanceMode(context.cloudflare.env.MAINTENANCE_MODE),
+  }
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -66,7 +75,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />
+  const { maintenance } = useLoaderData<typeof loader>()
+  return maintenance ? (
+    <MaintenancePage service="The is-pinoy.dev status page" />
+  ) : (
+    <Outlet />
+  )
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

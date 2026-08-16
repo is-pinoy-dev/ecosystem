@@ -8,6 +8,11 @@ on:
       - "tools/site-audit/**"
       - "packages/ui/**"
       - "packages/schemas/**"
+      # This file too: the deploy provisions the Worker's secret, so a change
+      # to how it does that has to be able to reach the Worker on its own.
+      # Without this, editing the workflow leaves the fix merged and unapplied
+      # until somebody remembers to dispatch it by hand.
+      - ".github/workflows/deploy-site-audit.yml"
   workflow_dispatch:
 
 jobs:
@@ -43,3 +48,41 @@ jobs:
         run: pnpm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
+
+      # This Worker holds the same secret as tools-portfolio-proxy, because
+      # /audit-proxy has to reach a hosted portfolio the same way the proxy
+      # does. A Worker's fetch to its own zone does not re-run that zone's
+      # Workers routes, so scanning `<label>.is-pinoy.dev` through the edge
+      # bypasses tools-portfolio-proxy and meets the origin under a hostname its
+      # certificate does not cover — HTTP 525 for a page that serves fine to a
+      # browser. Addressing the renderer directly and carrying the label in a
+      # header avoids that, and the renderer only honours the header on a secret
+      # match.
+      #
+      # Unset, tools/site-audit/src/routes/audit-proxy.tsx falls back to
+      # fetching the target's public address: right for the apex and for
+      # external sites, a 525 on every hosted portfolio. That fallback is why
+      # this step is not optional — the scan does not fail loudly without it,
+      # it reports the handshake error as the portfolio's own.
+      #
+      # Same mechanics as deploy-portfolio-proxy.yml, for the same reasons:
+      # after the deploy because `secret put` needs the script to already exist;
+      # `printf` because a trailing newline fails the renderer's constant-time
+      # comparison on a value that looks right in both dashboards; and the
+      # "is it set?" guard inside the script because `secrets` is not an
+      # available context in a step-level `if:` — referencing it there is
+      # rejected at parse time and fails the whole run.
+      - name: Sync PORTFOLIO_PROXY_SECRET
+        working-directory: tools/site-audit
+        run: |
+          if [ -z "$PORTFOLIO_PROXY_SECRET" ]; then
+            echo "PORTFOLIO_PROXY_SECRET is not set — skipping. The tool is"
+            echo "deployed, but scans of hosted portfolios will report HTTP 525"
+            echo "until it has the secret."
+            exit 0
+          fi
+          printf '%s' "$PORTFOLIO_PROXY_SECRET" \
+            | pnpm exec wrangler secret put PORTFOLIO_PROXY_SECRET -c worker/wrangler.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
+          PORTFOLIO_PROXY_SECRET: ${{ secrets.PORTFOLIO_PROXY_SECRET }}
