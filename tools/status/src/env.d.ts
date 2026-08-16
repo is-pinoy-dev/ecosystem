@@ -6,6 +6,7 @@ declare module "react-router" {
       env: {
         STATUS_DB: D1Database;
         ASSETS: unknown;
+        MAINTENANCE_MODE?: string;
       };
       ctx: { waitUntil(promise: Promise<unknown>): void };
     };
