@@ -33,6 +33,7 @@
         "PORTFOLIO_SPIKE_SUBDOMAIN",
         "PORTFOLIO_SPIKE_LOGIN",
         "NEXT_PUBLIC_PORTFOLIO_URL",
+        "MAINTENANCE_MODE",
         "FLAGS",
         "FLAGS_SECRET"
       ]

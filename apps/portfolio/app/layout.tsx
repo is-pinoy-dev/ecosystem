@@ -5,6 +5,8 @@ import "./globals.css"
 import "./themes.css"
 import "./designer-themes.css"
 import { SITE_NAME, backgroundFor } from "@/lib/seo"
+import { MaintenancePage } from "@is-pinoy-dev/ui/components/maintenance-page"
+import { isMaintenanceMode } from "@is-pinoy-dev/ui/lib/maintenance"
 
 // Defaults only. app/page.tsx exports `generateViewport`, which replaces these
 // with the colors of the template about to paint; what is left here is what a
@@ -44,6 +46,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const maintenance = isMaintenanceMode(process.env.MAINTENANCE_MODE)
+
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
@@ -58,7 +62,13 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://raw.githubusercontent.com" />
         <link rel="dns-prefetch" href="https://img.shields.io" />
       </head>
-      <body>{children}</body>
+      <body>
+        {maintenance ? (
+          <MaintenancePage service="is-pinoy.dev portfolios" />
+        ) : (
+          children
+        )}
+      </body>
     </html>
   )
 }

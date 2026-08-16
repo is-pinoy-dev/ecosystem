@@ -10,6 +10,7 @@ import type { SslStatus } from "./types";
 export interface Env {
   STATUS_DB: D1Database;
   ASSETS: Fetcher;
+  MAINTENANCE_MODE?: string;
 }
 
 const handleRequest = createRequestHandler({

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next"
 import "@is-pinoy-dev/ui/globals.css"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { MaintenancePage } from "@is-pinoy-dev/ui/components/maintenance-page"
+import { isMaintenanceMode } from "@is-pinoy-dev/ui/lib/maintenance"
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -86,10 +88,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const maintenance = isMaintenanceMode(process.env.MAINTENANCE_MODE)
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {maintenance ? (
+            <MaintenancePage service="The is-pinoy.dev dashboard" />
+          ) : (
+            children
+          )}
+        </ThemeProvider>
       </body>
     </html>
   )
