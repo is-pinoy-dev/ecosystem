@@ -166,7 +166,7 @@ function ShowcaseCard({
             </span>
             {/* Visits ride this row rather than the owner strip below. Both
                 rows are tight in a three-column grid on a narrow window, but
-                only this one can afford it: a kind label is one of three short
+                only this one can afford it: a kind label is one of two short
                 fixed phrases, while a handle can run to thirty-nine characters
                 and is the credit on somebody's work — the wrong thing to spend
                 on a statistic. */}

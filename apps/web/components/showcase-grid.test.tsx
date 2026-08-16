@@ -221,7 +221,7 @@ describe("ShowcaseHighlights", () => {
     expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
   })
 
-  it("labels each card by what the subdomain actually points at", async () => {
+  it("labels each card by who built what the subdomain points at", async () => {
     getRegisteredSubdomains.mockResolvedValue([
       entry("alpha", "one", { portfolio: { template: "terminal" } }),
       entry("bravo", "two", {
@@ -234,10 +234,10 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseGrid())
 
-    expect(html).toContain("Hosted portfolio")
-    expect(html).toContain("GitHub Pages")
-    // The third is somebody's own site on a host the showcase does not name.
-    expect(html).toContain("Portfolio<")
+    expect(html).toContain("GitHub Profile")
+    // The other two are sites their owners built, on hosts the showcase does
+    // not name — both read the same.
+    expect(html.match(/Portfolio</g)).toHaveLength(2)
   })
 
   it("shows each card's visit total on both surfaces", async () => {
