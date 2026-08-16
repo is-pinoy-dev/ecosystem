@@ -44,8 +44,13 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic"
 
-export default async function ShowcasePage() {
-  const flags = await resolveFlagSet()
+export default async function ShowcasePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string | string[] }>
+}) {
+  const [flags, params] = await Promise.all([resolveFlagSet(), searchParams])
+  const sort = params.sort === "visits" ? "visits" : "newest"
 
   return (
     <>
@@ -64,7 +69,7 @@ export default async function ShowcasePage() {
             </SectionHeader>
 
             <Suspense fallback={<ShowcaseGridSkeleton />}>
-              <ShowcaseGrid />
+              <ShowcaseGrid sort={sort} />
             </Suspense>
 
             <ShowcaseCTA />

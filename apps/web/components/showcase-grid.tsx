@@ -47,6 +47,8 @@ interface SubdomainEntry extends RegisteredSubdomain {
   visits: ShowcaseVisitSummary | null
 }
 
+export type ShowcaseSort = "newest" | "visits"
+
 async function fetchAllSubdomains(): Promise<SubdomainEntry[]> {
   // The registry remains the source of truth for entries and ownership. The
   // Worker manifest is read-only metadata and can never trigger a capture, and
@@ -239,9 +241,73 @@ export function ShowcaseGridSkeleton({ limit = 6 }: { limit?: number }) {
 
 // ─── Grid (async, streamed) ───────────────────────────────────────────────────
 
-export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
+function sortShowcaseEntries(
+  entries: SubdomainEntry[],
+  sort: ShowcaseSort
+): SubdomainEntry[] {
+  return [...entries].sort((a, b) => {
+    if (sort === "visits") {
+      return (b.visits?.total ?? -1) - (a.visits?.total ?? -1)
+    }
+
+    const parsedA = a.createdOn ? Date.parse(a.createdOn) : Number.NaN
+    const parsedB = b.createdOn ? Date.parse(b.createdOn) : Number.NaN
+    const aCreated = Number.isNaN(parsedA) ? 0 : parsedA
+    const bCreated = Number.isNaN(parsedB) ? 0 : parsedB
+    return bCreated - aCreated
+  })
+}
+
+function ShowcaseSortLinks({ sort }: { sort: ShowcaseSort }) {
+  const linkClass =
+    "-mb-px flex min-h-11 items-center border-b-2 px-3 text-sm font-medium no-underline transition-colors duration-[140ms] outline-none first:pl-0 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+
+  return (
+    <nav
+      aria-label="Sort showcase"
+      className="flex items-center gap-3 max-sm:w-full max-sm:justify-between"
+    >
+      <span className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
+        Sort by
+      </span>
+      <div className="flex">
+        <Link
+          href="/showcase"
+          aria-current={sort === "newest" ? "page" : undefined}
+          className={`${linkClass} ${
+            sort === "newest"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground"
+          }`}
+        >
+          Newest
+        </Link>
+        <Link
+          href="/showcase?sort=visits"
+          aria-current={sort === "visits" ? "page" : undefined}
+          className={`${linkClass} ${
+            sort === "visits"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground"
+          }`}
+        >
+          Most visited
+        </Link>
+      </div>
+    </nav>
+  )
+}
+
+export async function ShowcaseGrid({
+  limit,
+  sort = "newest",
+}: {
+  limit?: number
+  sort?: ShowcaseSort
+} = {}) {
   const all = await fetchAllSubdomains()
-  const entries = limit ? all.slice(0, limit) : all
+  const sorted = sortShowcaseEntries(all, sort)
+  const entries = limit ? sorted.slice(0, limit) : sorted
 
   // The window the cards' figures cover, taken from a card rather than from the
   // constant so the note and the numbers under it cannot drift apart. Absent
@@ -250,18 +316,21 @@ export async function ShowcaseGrid({ limit }: { limit?: number } = {}) {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="border border-border bg-muted px-3 py-1.5 font-mono text-xs font-medium text-muted-foreground">
-          {entries.length} SITE{entries.length !== 1 ? "S" : ""}
-        </span>
-        {visitWindow ? (
-          // Said once for the grid instead of on every card. A card here is a
-          // third of a row and cannot spare the characters, and a total with no
-          // window attached invites reading it as all-time.
-          <span className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
-            Visits · last {visitWindow.windowDays} days
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3 max-sm:pb-0">
+          <span className="border border-border bg-muted px-3 py-1.5 font-mono text-xs font-medium text-muted-foreground">
+            {entries.length} SITE{entries.length !== 1 ? "S" : ""}
           </span>
-        ) : null}
+          {visitWindow ? (
+            // Said once for the grid instead of on every card. A card here is a
+            // third of a row and cannot spare the characters, and a total with no
+            // window attached invites reading it as all-time.
+            <span className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
+              Visits · last {visitWindow.windowDays} days
+            </span>
+          ) : null}
+        </div>
+        <ShowcaseSortLinks sort={sort} />
       </div>
 
       {entries.length > 0 ? (
