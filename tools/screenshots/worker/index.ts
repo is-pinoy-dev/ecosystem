@@ -4,7 +4,7 @@ import {
   isPortfolioScreenshotJob,
   retryDelayForFailureCount,
 } from "./src/processor"
-import { D1ScreenshotRepository } from "./src/repository"
+import { D1ScreenshotRepository, failedRetryBackoffMs } from "./src/repository"
 import { isValidPortfolioId } from "./src/security"
 import { publicScreenshotUrl, R2ScreenshotStorage } from "./src/storage"
 import {
@@ -18,7 +18,13 @@ const MAX_TRIGGER_BATCH = 25
 const DEFAULT_REFRESH_DAYS = 30
 const DEFAULT_MANUAL_COOLDOWN_HOURS = 24
 const STALE_PROCESSING_MS = 60 * 60 * 1000
-const RETRY_QUEUE_RECOVERY_MS = 7 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000
+/**
+ * How many portfolios without a picture the sweep names in its log. The
+ * registry is a table of tens, so this prints the whole backlog rather than a
+ * sample — the point is to be able to read why each one is stuck.
+ */
+const UNCAPTURED_LOG_LIMIT = 50
 
 function numericSetting(value: string | undefined, fallback: number): number {
   const parsed = Number(value)
@@ -86,6 +92,28 @@ function structuredLog(event: string, fields: Record<string, unknown>): void {
   console.log(JSON.stringify({ event, ...fields }))
 }
 
+/**
+ * Run a read that exists only to be logged, surviving its failure.
+ *
+ * Diagnostics must never be able to stop the work they describe: a sweep that
+ * skipped every portfolio because a count query failed would be a far worse bug
+ * than the blind spot the count was added to close.
+ */
+async function observed<T>(
+  query: string,
+  read: () => Promise<T>
+): Promise<T | null> {
+  try {
+    return await read()
+  } catch (error) {
+    structuredLog("screenshot.sweep.diagnostic_failed", {
+      query,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    })
+    return null
+  }
+}
+
 async function enqueueRequestedJobs(
   jobs: RequestedJob[],
   env: Env
@@ -118,6 +146,13 @@ async function enqueueRequestedJobs(
       cooldownMs
     )
     if (!result.accepted) {
+      // A refused job leaves no other trace. Unlogged, a portfolio the registry
+      // has stopped calling `synced` simply stops appearing anywhere.
+      structuredLog("screenshot.job.rejected", {
+        portfolioId: requested.portfolioId,
+        reason: requested.reason,
+        rejectedBecause: result.reason ?? "unknown",
+      })
       results.push({ portfolioId: requested.portfolioId, ...result })
       continue
     }
@@ -149,21 +184,51 @@ async function enqueueRequestedJobs(
   return results
 }
 
-async function scheduleRefreshBatch(env: Env): Promise<number> {
+/**
+ * The daily sweep, and the one place the whole showcase can be seen at once.
+ *
+ * It logs what it found before it logs what it did: a sweep that enqueues
+ * nothing is indistinguishable from a sweep that never ran unless the backlog
+ * it was looking at is on the record beside it.
+ */
+async function scheduleRefreshBatch(env: Env): Promise<void> {
   const repository = new D1ScreenshotRepository(env.SCREENSHOT_DB)
-  const now = Date.now()
+  const startedAt = Date.now()
   const refreshDays = numericSetting(
     env.PORTFOLIO_SCREENSHOT_REFRESH_DAYS,
     DEFAULT_REFRESH_DAYS
   )
-  const eligible = await repository.listRefreshEligible(
-    now - refreshDays * 24 * 60 * 60 * 1000,
-    now - STALE_PROCESSING_MS,
-    now - RETRY_QUEUE_RECOVERY_MS,
-    MAX_TRIGGER_BATCH
-  )
+
+  const health = await observed("health", () => repository.screenshotHealth())
+  const eligible = await repository.listRefreshEligible({
+    now: startedAt,
+    refreshAfterMs: refreshDays * DAY_MS,
+    staleProcessingMs: STALE_PROCESSING_MS,
+    limit: MAX_TRIGGER_BATCH,
+  })
   const results = await enqueueRequestedJobs(eligible, env)
-  return results.filter((result) => result.accepted).length
+
+  structuredLog("screenshot.sweep.completed", {
+    durationMs: Date.now() - startedAt,
+    limit: MAX_TRIGGER_BATCH,
+    eligible: eligible.length,
+    enqueued: results.filter((result) => result.accepted).length,
+    rejected: results.filter((result) => !result.accepted).length,
+    // The sweep filled its batch, so there is more waiting than one run can
+    // take. Several days of this in a row is the backlog outrunning the cron.
+    saturated: eligible.length >= MAX_TRIGGER_BATCH,
+    ...(health ?? {}),
+  })
+
+  const uncaptured = await observed("uncaptured", () =>
+    repository.listUncaptured(UNCAPTURED_LOG_LIMIT)
+  )
+  if (uncaptured && uncaptured.length > 0) {
+    structuredLog("screenshot.sweep.uncaptured", {
+      count: uncaptured.length,
+      portfolios: uncaptured,
+    })
+  }
 }
 
 export default {
@@ -238,7 +303,18 @@ export default {
         })
         if (result.outcome === "failed") {
           const delaySeconds = retryDelayForFailureCount(result.retryCount)
-          if (delaySeconds !== null) {
+          if (delaySeconds === null) {
+            // The fast ladder is spent. This used to be where a portfolio left
+            // the showcase permanently and without a word; it now falls back to
+            // the daily sweep, so say so and say when.
+            structuredLog("screenshot.job.ladder_exhausted", {
+              portfolioId: message.body.portfolioId,
+              reason: message.body.reason,
+              attempt: result.retryCount,
+              errorCode: result.errorCode,
+              nextSweepAfterMs: failedRetryBackoffMs(result.retryCount ?? 0),
+            })
+          } else {
             const requestedAt = Date.now()
             const retryJob: PortfolioScreenshotJob = {
               version: 1,

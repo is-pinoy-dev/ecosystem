@@ -38,7 +38,16 @@ export interface ClaimedScreenshotJob {
 export interface CaptureResult {
   bytes: Uint8Array
   contentType: "image/jpeg"
+  /**
+   * Whether the page went quiet before we photographed it. False means it never
+   * stopped making requests and we took the picture anyway — worth knowing,
+   * because that case used to be recorded as an outright failure.
+   */
+  settled: boolean
 }
+
+/** The half of a capture that gets stored. How it went is not R2's business. */
+export type StoredCapture = Pick<CaptureResult, "bytes" | "contentType">
 
 export interface ScreenshotManifestEntry {
   portfolioId: string

@@ -38,6 +38,17 @@ export interface ClassifiedScreenshotError {
   ownerMessage: string
 }
 
+/**
+ * Did this throw because we ran out of patience, rather than because the page
+ * broke? The capture treats the two differently: a page that loaded and then
+ * kept chattering still gets photographed, while one that never arrived cannot.
+ */
+export function isNavigationTimeout(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const description = `${error.name} ${error.message}`.toLowerCase()
+  return description.includes("timeout") || description.includes("timed out")
+}
+
 export function classifyScreenshotError(
   error: unknown
 ): ClassifiedScreenshotError {

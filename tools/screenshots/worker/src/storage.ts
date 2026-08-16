@@ -1,11 +1,11 @@
 import { ScreenshotError } from "./errors"
-import type { CaptureResult } from "./types"
+import type { StoredCapture } from "./types"
 
 export interface ScreenshotStorage {
   put(
     portfolioId: string,
     version: number,
-    capture: CaptureResult
+    capture: StoredCapture
   ): Promise<{ key: string; url: string }>
 }
 
@@ -29,7 +29,7 @@ export class R2ScreenshotStorage implements ScreenshotStorage {
   async put(
     portfolioId: string,
     version: number,
-    capture: CaptureResult
+    capture: StoredCapture
   ): Promise<{ key: string; url: string }> {
     const key = screenshotObjectKey(portfolioId, version)
     try {

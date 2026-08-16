@@ -1,6 +1,6 @@
 import puppeteer from "@cloudflare/puppeteer"
 
-import { ScreenshotError } from "./errors"
+import { isNavigationTimeout, ScreenshotError } from "./errors"
 import {
   assertCanonicalPortfolioUrl,
   assertPublicDns,
@@ -11,6 +11,17 @@ import type { CaptureResult } from "./types"
 export interface ScreenshotBrowser {
   capture(url: URL, portfolioId: string): Promise<CaptureResult>
 }
+
+/**
+ * How long to let a portfolio load, and how quiet it has to go first.
+ *
+ * `networkidle2` rather than `networkidle0`: a real portfolio keeps a couple of
+ * connections open more or less forever — an analytics beacon, an embedded map,
+ * a font service — and demanding total silence means waiting for something that
+ * never comes.
+ */
+const NAVIGATION_WAIT = "networkidle2" as const
+const NAVIGATION_TIMEOUT_MS = 45_000
 
 const PRESENTATION_CSS = `
 html {
@@ -66,18 +77,42 @@ export class CloudflareBrowser implements ScreenshotBrowser {
         }
       })
 
-      let response
+      // Kept aside so a navigation that arrives but never settles can still be
+      // judged on the response it did get.
+      let mainResponse: Awaited<ReturnType<typeof page.goto>> = null
+      page.on("response", (received) => {
+        const request = received.request()
+        if (
+          request.isNavigationRequest() &&
+          request.frame() === page.mainFrame()
+        ) {
+          mainResponse = received
+        }
+      })
+
+      let response: Awaited<ReturnType<typeof page.goto>> = null
+      let settled = true
       try {
         response = await page.goto(url.href, {
-          waitUntil: "networkidle0",
-          timeout: 45_000,
+          waitUntil: NAVIGATION_WAIT,
+          timeout: NAVIGATION_TIMEOUT_MS,
         })
       } catch (error) {
         if (blockedNavigationError) throw blockedNavigationError
-        throw error
+        if (!isNavigationTimeout(error)) throw error
+        // Running out of patience is not the same as failing to load. A page
+        // that rendered and then kept chattering is still worth photographing,
+        // and the usability check below is what decides whether it rendered.
+        settled = false
       }
-      if (!response) throw new ScreenshotError("dns_connection_failure")
-      if (response.status() >= 400) throw new ScreenshotError("http_error")
+
+      const landed = response ?? mainResponse
+      if (!landed) {
+        throw new ScreenshotError(
+          settled ? "dns_connection_failure" : "timeout"
+        )
+      }
+      if (landed.status() >= 400) throw new ScreenshotError("http_error")
       assertCanonicalPortfolioUrl(page.url(), portfolioId)
 
       await new Promise((resolve) => setTimeout(resolve, 2_500))
@@ -123,7 +158,7 @@ export class CloudflareBrowser implements ScreenshotBrowser {
       if (bytes.byteLength < 4_096) {
         throw new ScreenshotError("blank_result")
       }
-      return { bytes, contentType: "image/jpeg" }
+      return { bytes, contentType: "image/jpeg", settled }
     } finally {
       await browser.close()
     }

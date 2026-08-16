@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 
+import { isNavigationTimeout } from "../errors"
 import {
   isPortfolioScreenshotJob,
   processScreenshotJob,
@@ -105,6 +106,7 @@ const successfulBrowser: ScreenshotBrowser = {
     return {
       bytes: new Uint8Array([1, 2, 3]),
       contentType: "image/jpeg",
+      settled: true,
     }
   },
 }
@@ -178,6 +180,43 @@ describe("screenshot job processing", () => {
     expect(retryDelayForFailureCount(2)).toBe(1_800)
     expect(retryDelayForFailureCount(3)).toBe(21_600)
     expect(retryDelayForFailureCount(4)).toBeNull()
+  })
+
+  it("records whether the page ever went quiet", async () => {
+    const repository = new FakeRepository()
+    const restless: ScreenshotBrowser = {
+      async capture() {
+        return {
+          bytes: new Uint8Array([1, 2, 3]),
+          contentType: "image/jpeg",
+          settled: false,
+        }
+      },
+    }
+
+    const result = await processScreenshotJob(JOB, {
+      repository,
+      browser: restless,
+      storage,
+    })
+
+    // A page that never stopped making requests is still a page. Before, the
+    // wait for total silence timed out and the portfolio got no picture at all.
+    expect(result).toEqual({ outcome: "ready", version: 1 })
+    expect(repository.row?.screenshotStatus).toBe("ready")
+  })
+
+  it("separates running out of patience from failing to load", () => {
+    expect(
+      isNavigationTimeout(new Error("Navigation timeout of 45000 ms"))
+    ).toBe(true)
+    const named = new Error("waiting failed")
+    named.name = "TimeoutError"
+    expect(isNavigationTimeout(named)).toBe(true)
+    expect(isNavigationTimeout(new Error("net::ERR_NAME_NOT_RESOLVED"))).toBe(
+      false
+    )
+    expect(isNavigationTimeout("timeout")).toBe(false)
   })
 
   it("rejects queue payloads containing a client-supplied URL", () => {
