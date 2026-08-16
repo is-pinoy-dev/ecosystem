@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useId, useRef, useState } from "react"
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ArrowRight, ArrowUpRight } from "lucide-react"
 import {
@@ -12,6 +11,7 @@ import {
 } from "@is-pinoy-dev/ui/components/accordion"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { DiscordIcon, GitHubIcon } from "@/components/icons"
+import { ProgressLink } from "@/components/progress-link"
 import {
   COMMUNITY_LINKS,
   NAV_LINKS,
@@ -72,9 +72,9 @@ function MobileNavItem({
       {content}
     </a>
   ) : (
-    <Link href={item.href} onClick={onNavigate} className={className}>
+    <ProgressLink href={item.href} onClick={onNavigate} className={className}>
       {content}
-    </Link>
+    </ProgressLink>
   )
 }
 
@@ -207,14 +207,14 @@ export function MobileNav({
 
         <div className="flex flex-col divide-y divide-border border-b border-border">
           {NAV_LINKS.map((link) => (
-            <Link
+            <ProgressLink
               key={link.href}
               href={link.href}
               onClick={onClose}
               className="flex min-h-14 items-center py-4 text-sm font-semibold text-foreground no-underline transition-colors duration-[140ms] active:text-accent"
             >
               {link.label}
-            </Link>
+            </ProgressLink>
           ))}
         </div>
 
@@ -248,10 +248,10 @@ export function MobileNav({
 
       <div className="border-t border-border bg-card px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <Button asChild size="lg" className="h-12 w-full gap-2">
-          <Link href="/#claim" onClick={onClose}>
+          <ProgressLink href="/#claim" onClick={onClose}>
             Claim a domain
             <ArrowRight className="size-4" aria-hidden="true" />
-          </Link>
+          </ProgressLink>
         </Button>
       </div>
     </div>

@@ -431,3 +431,73 @@ describe("ShowcaseHighlights", () => {
     )
   })
 })
+
+describe("owner avatars", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getRegisteredSubdomains.mockResolvedValue(REGISTRY)
+    getScreenshotManifest.mockResolvedValue(
+      captures(...REGISTRY.map((e) => e.subdomain))
+    )
+    getCapturedSubdomains.mockResolvedValue(null)
+    getShowcaseVisits.mockResolvedValue(null)
+  })
+
+  /** Every `<img>` on a surface, as raw tag text. */
+  function imagesOf(html: string): string[] {
+    return [...html.matchAll(/<img[^>]*>/g)].map((match) => match[0])
+  }
+
+  function avatarsOf(html: string): string[] {
+    return imagesOf(html).filter((tag) =>
+      tag.includes("avatars.githubusercontent.com")
+    )
+  }
+
+  it("keeps every avatar off the initial request queue", async () => {
+    const html = await render(ShowcaseGrid())
+    const avatars = avatarsOf(html)
+
+    expect(avatars).toHaveLength(REGISTRY.length)
+    for (const avatar of avatars) {
+      expect(avatar).toContain('loading="lazy"')
+      expect(avatar).toContain('decoding="async"')
+    }
+  })
+
+  it("states the source's real dimensions so the box is never guessed at", async () => {
+    const avatars = avatarsOf(await render(ShowcaseGrid()))
+
+    for (const avatar of avatars) {
+      expect(avatar).toContain('width="32"')
+      expect(avatar).toContain('height="32"')
+    }
+  })
+
+  it("hides avatars from assistive technology — the handle beside them is the label", async () => {
+    const avatars = avatarsOf(await render(ShowcaseGrid()))
+
+    for (const avatar of avatars) {
+      expect(avatar).toContain('aria-hidden="true"')
+      expect(avatar).toContain('alt=""')
+    }
+  })
+
+  it("escapes the owner handle it builds the avatar URL from", async () => {
+    getRegisteredSubdomains.mockResolvedValue([entry("alpha", "a b/c")])
+    getScreenshotManifest.mockResolvedValue(captures("alpha"))
+
+    const [avatar] = avatarsOf(await render(ShowcaseGrid()))
+
+    expect(avatar).toContain("a%20b%2Fc?size=32")
+  })
+
+  it("lazy-loads the highlight avatars too", async () => {
+    const avatars = avatarsOf(await render(ShowcaseHighlights()))
+
+    expect(avatars.length).toBeGreaterThan(0)
+    for (const avatar of avatars) {
+      expect(avatar).toContain('loading="lazy"')
+    }
+  })
+})

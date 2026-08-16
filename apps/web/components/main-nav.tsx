@@ -1,8 +1,6 @@
 "use client"
 
 import { useCallback, useRef, useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
 import { ArrowRight, ArrowUpRight, Menu, X } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { AnimatedThemeToggler } from "@is-pinoy-dev/ui/components/animated-theme-toggler"
@@ -15,8 +13,10 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@is-pinoy-dev/ui/components/navigation-menu"
+import { BrandLink } from "@/components/brand-link"
 import { GitHubStars } from "@/components/github-stars"
 import { MobileNav } from "@/components/mobile-nav"
+import { ProgressLink } from "@/components/progress-link"
 import { FLAGS_OFF, type FlagSet } from "@/lib/flags"
 import {
   NAV_LINKS,
@@ -24,33 +24,6 @@ import {
   type NavItem,
   type NavSection,
 } from "@/lib/navigation"
-
-function BrandLink() {
-  return (
-    <Link
-      href="/"
-      className="flex max-w-[220px] min-w-0 shrink-0 items-center gap-2.5 no-underline"
-      aria-label="is-pinoy.dev home"
-    >
-      <Image
-        src="/logo.png"
-        alt=""
-        width={32}
-        height={32}
-        className="size-8 shrink-0 object-contain object-left [image-rendering:pixelated]"
-      />
-      <Image
-        src="/banner.gif"
-        alt="is-pinoy.dev"
-        width={200}
-        height={26}
-        unoptimized
-        priority
-        className="h-6 w-auto max-w-[150px] object-contain object-left"
-      />
-    </Link>
-  )
-}
 
 function MegaMenuItem({ item }: { item: NavItem }) {
   const Icon = item.icon
@@ -100,9 +73,9 @@ function MegaMenuItem({ item }: { item: NavItem }) {
           {content}
         </a>
       ) : (
-        <Link href={item.href} className={className}>
+        <ProgressLink href={item.href} className={className}>
           {content}
-        </Link>
+        </ProgressLink>
       )}
     </NavigationMenuLink>
   )
@@ -165,13 +138,13 @@ function DesktopNav({ sections }: { sections: NavSection[] }) {
                           <ArrowRight className="size-3.5" aria-hidden="true" />
                         </a>
                       ) : (
-                        <Link
+                        <ProgressLink
                           href={section.feature.href}
                           className="inline-flex flex-row items-center gap-1.5 self-start text-xs font-semibold text-accent no-underline hover:underline"
                         >
                           {section.feature.cta}
                           <ArrowRight className="size-3.5" aria-hidden="true" />
-                        </Link>
+                        </ProgressLink>
                       )}
                     </NavigationMenuLink>
                   </div>
@@ -184,12 +157,12 @@ function DesktopNav({ sections }: { sections: NavSection[] }) {
         {NAV_LINKS.map((link) => (
           <NavigationMenuItem key={link.href}>
             <NavigationMenuLink asChild>
-              <Link
+              <ProgressLink
                 href={link.href}
                 className="inline-flex h-9 flex-row items-center px-2 text-[13px] font-medium text-foreground/85 no-underline transition-colors duration-[140ms] hover:text-accent focus-visible:text-accent"
               >
                 {link.label}
-              </Link>
+              </ProgressLink>
             </NavigationMenuLink>
           </NavigationMenuItem>
         ))}
@@ -226,10 +199,10 @@ export function MainNav({ flags = FLAGS_OFF }: { flags?: FlagSet }) {
             asChild
             className="hidden h-10 min-w-[132px] shrink-0 gap-2 px-4 text-[13px] lg:inline-flex"
           >
-            <Link href="/#claim">
+            <ProgressLink href="/#claim">
               Claim a domain
               <ArrowRight className="size-[15px]" aria-hidden="true" />
-            </Link>
+            </ProgressLink>
           </Button>
 
           <button

@@ -1,8 +1,8 @@
-import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Badge } from "@is-pinoy-dev/ui/components/badge"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
+import { ProgressLink } from "@/components/progress-link"
 import { getRegisteredSubdomains } from "@/lib/subdomains"
 
 const ROW_COUNT = 3
@@ -185,13 +185,13 @@ export async function RecentlyClaimed() {
             <StatusIndicator tone="brand" className="size-[7px]" />
             Recently claimed
           </h2>
-          <Link
+          <ProgressLink
             href="/showcase"
             className="inline-flex shrink-0 items-center gap-1.5 text-[12px] font-semibold text-accent no-underline transition-colors duration-[140ms] hover:underline sm:text-[13px]"
           >
             View showcase
             <ArrowRight className="size-3.5" aria-hidden="true" />
-          </Link>
+          </ProgressLink>
         </div>
 
         {rows.length > 0 ? (

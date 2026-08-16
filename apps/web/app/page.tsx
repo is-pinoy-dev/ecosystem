@@ -1,6 +1,5 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
-import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
@@ -10,7 +9,6 @@ import {
   SectionHeader,
   SectionTitle,
 } from "@is-pinoy-dev/ui/components/section-header"
-import { MainNav } from "@/components/main-nav"
 import { HeroSection } from "@/components/hero-section"
 import { SubdomainChecker } from "@/components/subdomain-checker"
 import {
@@ -23,7 +21,7 @@ import { ThemeMarketplace } from "@/components/theme-marketplace"
 import { ProviderGuides } from "@/components/provider-guides"
 import { CommunitySection } from "@/components/cta-section"
 import { ReportAbuseSection } from "@/components/report-abuse-section"
-import { SiteFooter } from "@/components/site-footer"
+import { ProgressLink } from "@/components/progress-link"
 import {
   ShowcaseHighlights,
   ShowcaseHighlightsSkeleton,
@@ -56,84 +54,77 @@ export const metadata: Metadata = {
   },
 }
 
-export const dynamic = "force-dynamic"
-
 export default async function Page() {
-  // Resolved once here, on the server, so only the booleans cross into the
-  // client nav — never the remote config behind a decision.
+  // The header resolves its own flags in the root layout; this reads them for the
+  // two sections below, which are gated by the same `claims` flag as the nav
+  // entries pointing at them.
   const flags = await resolveFlagSet()
 
   return (
-    <>
-      <MainNav flags={flags} />
+    <main className="min-h-screen">
+      <HeroSection />
 
-      <main className="min-h-screen">
-        <HeroSection />
+      <section
+        id="claim"
+        className="scroll-mt-16 border-b border-border bg-card py-10 md:py-12"
+      >
+        <Container className="flex justify-center">
+          <SubdomainChecker />
+        </Container>
+      </section>
 
-        <section
-          id="claim"
-          className="scroll-mt-16 border-b border-border bg-card py-10 md:py-12"
-        >
-          <Container className="flex justify-center">
-            <SubdomainChecker />
-          </Container>
-        </section>
-
-        <Suspense fallback={<RecentlyClaimedSkeleton />}>
-          <RecentlyClaimed />
-        </Suspense>
-        <HowClaimingWorks />
-        {/* Both sections lead to the dashboard's claim flow, which is behind
+      <Suspense fallback={<RecentlyClaimedSkeleton />}>
+        <RecentlyClaimed />
+      </Suspense>
+      <HowClaimingWorks />
+      {/* Both sections lead to the dashboard's claim flow, which is behind
             the same flag — while it is off there is nothing to send people to. */}
-        {flags.claims ? (
-          <>
-            <PortfolioFeature />
-            <ThemeMarketplace />
-          </>
-        ) : null}
+      {flags.claims ? (
+        <>
+          <PortfolioFeature />
+          <ThemeMarketplace />
+        </>
+      ) : null}
 
-        <section
-          className="border-b border-border bg-surface-subtle py-12 sm:py-14 lg:py-20"
-          aria-labelledby="showcase-title"
-        >
-          <Container>
-            <div className="mb-8 grid gap-6 border-b border-border pb-8 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.48fr)] md:items-end lg:mb-10 lg:pb-10">
-              <SectionHeader>
-                <SectionEyebrow>Community showcase</SectionEyebrow>
-                <SectionTitle
-                  id="showcase-title"
-                  className="max-w-[560px] lg:text-[40px] lg:leading-[1.1]"
-                >
-                  Built by Pinoy developers, shared with the world.
-                </SectionTitle>
-              </SectionHeader>
+      <section
+        className="border-b border-border bg-surface-subtle py-12 sm:py-14 lg:py-20"
+        aria-labelledby="showcase-title"
+      >
+        <Container>
+          <div className="mb-8 grid gap-6 border-b border-border pb-8 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.48fr)] md:items-end lg:mb-10 lg:pb-10">
+            <SectionHeader>
+              <SectionEyebrow>Community showcase</SectionEyebrow>
+              <SectionTitle
+                id="showcase-title"
+                className="max-w-[560px] lg:text-[40px] lg:leading-[1.1]"
+              >
+                Built by Pinoy developers, shared with the world.
+              </SectionTitle>
+            </SectionHeader>
 
-              <div className="flex flex-col items-start gap-5 md:items-end">
-                <SectionDescription className="md:max-w-[390px] md:text-right">
-                  Explore portfolios, experiments, and ideas from developers
-                  across the Filipino community.
-                </SectionDescription>
-                <Button asChild variant="outline" className="bg-card">
-                  <Link href="/showcase">
-                    View the full showcase
-                    <ArrowRight aria-hidden="true" />
-                  </Link>
-                </Button>
-              </div>
+            <div className="flex flex-col items-start gap-5 md:items-end">
+              <SectionDescription className="md:max-w-[390px] md:text-right">
+                Explore portfolios, experiments, and ideas from developers
+                across the Filipino community.
+              </SectionDescription>
+              <Button asChild variant="outline" className="bg-card">
+                <ProgressLink href="/showcase">
+                  View the full showcase
+                  <ArrowRight aria-hidden="true" />
+                </ProgressLink>
+              </Button>
             </div>
+          </div>
 
-            <Suspense fallback={<ShowcaseHighlightsSkeleton />}>
-              <ShowcaseHighlights />
-            </Suspense>
-          </Container>
-        </section>
+          <Suspense fallback={<ShowcaseHighlightsSkeleton />}>
+            <ShowcaseHighlights />
+          </Suspense>
+        </Container>
+      </section>
 
-        <ProviderGuides />
-        <CommunitySection />
-        <ReportAbuseSection />
-      </main>
-
-      <SiteFooter />
-    </>
+      <ProviderGuides />
+      <CommunitySection />
+      <ReportAbuseSection />
+    </main>
   )
 }

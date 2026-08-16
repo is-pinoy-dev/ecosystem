@@ -1,12 +1,20 @@
-import Link from "next/link"
+import dynamic from "next/dynamic"
 import { FileCode2, Palette, Rocket } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { GitHubIcon } from "@/components/icons"
-import {
-  PortfolioPreview,
-  type PortfolioDesign,
-} from "@/components/portfolio-preview"
+import { ProgressLink } from "@/components/progress-link"
+import type { PortfolioDesign } from "@/components/portfolio-preview"
+
+/**
+ * The design picker is the heaviest interactive piece on the landing page and
+ * sits well below the fold, so it gets its own chunk rather than riding along
+ * with the client code above it. It still renders on the server — the point is
+ * to split the JavaScript, not to hide the content.
+ */
+const PortfolioPreview = dynamic(() =>
+  import("@/components/portfolio-preview").then((m) => m.PortfolioPreview)
+)
 
 const DASHBOARD_CLAIM_URL = "https://dashboard.is-pinoy.dev/claim"
 
@@ -145,7 +153,7 @@ export function PortfolioFeature() {
             variant="outline"
             className="h-[42px] border-accent text-accent hover:border-accent hover:bg-secondary"
           >
-            <Link href="/showcase">See live portfolios</Link>
+            <ProgressLink href="/showcase">See live portfolios</ProgressLink>
           </Button>
         </div>
       </Container>

@@ -3,6 +3,7 @@ import { ArrowRight, Code2, Users } from "lucide-react"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { PhilippinesNetwork } from "@/components/philippines-network"
+import { ProgressLink } from "@/components/progress-link"
 import { getRegisteredSubdomainProfiles } from "@/lib/subdomains"
 
 const NETWORK_PROFILE_LIMIT = 16
@@ -54,7 +55,7 @@ export async function HeroSection() {
               size="lg"
               className="h-12 min-w-[174px] border-accent/35 text-accent hover:border-accent hover:bg-secondary"
             >
-              <Link href="/showcase">Explore community</Link>
+              <ProgressLink href="/showcase">Explore community</ProgressLink>
             </Button>
           </div>
 

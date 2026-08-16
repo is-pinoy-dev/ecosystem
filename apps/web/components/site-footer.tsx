@@ -1,7 +1,7 @@
 import Image from "next/image"
-import Link from "next/link"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import { PhilippineFlagIcon } from "@/components/icons"
+import { ProgressLink } from "@/components/progress-link"
 
 const RESOURCE_LINKS = [
   { label: "Docs", href: "https://docs.is-pinoy.dev", external: true },
@@ -45,9 +45,9 @@ function FooterLink({
       {label}
     </a>
   ) : (
-    <Link href={href} className={className}>
+    <ProgressLink href={href} className={className}>
       {label}
-    </Link>
+    </ProgressLink>
   )
 }
 
@@ -85,7 +85,7 @@ export function SiteFooter() {
     <footer className="bg-background">
       <Container className="grid gap-8 py-8 md:grid-cols-[1.6fr_0.75fr_0.85fr] lg:grid-cols-[1.6fr_0.75fr_0.85fr_0.75fr_0.8fr] lg:gap-10 lg:py-6 xl:py-8">
         <div className="md:col-span-3 lg:col-span-1">
-          <Link
+          <ProgressLink
             href="/"
             className="flex items-center gap-2 no-underline"
             aria-label="is-pinoy.dev home"
@@ -105,7 +105,7 @@ export function SiteFooter() {
               unoptimized
               className="h-[21px] w-auto object-contain object-left"
             />
-          </Link>
+          </ProgressLink>
           <p className="m-0 mt-2 text-xs text-muted-foreground">
             Free forever, built by the community.
           </p>
