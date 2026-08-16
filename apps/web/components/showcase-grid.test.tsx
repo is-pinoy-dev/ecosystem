@@ -66,6 +66,7 @@ const REGISTRY = [
   entry("bravo", "two"),
   entry("charlie", "three"),
   entry("delta", "four"),
+  entry("echo", "five"),
 ]
 
 /** Manifest holding a ready capture for each named subdomain. */
@@ -86,7 +87,7 @@ function visits(
 }
 
 /**
- * A Monday whose rotation window starts at the head of a four-entry pool. The
+ * A Monday whose rotation window starts at the head of a five-entry pool. The
  * section rotates weekly, so every expectation here is anchored to a fixed
  * clock rather than to whenever the suite happens to run.
  */
@@ -117,17 +118,17 @@ describe("ShowcaseHighlights", () => {
   it("shows the newest captured entries in registry order", async () => {
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie"])
+    expect(orderOf(html)).toEqual(["bravo", "charlie", "delta", "echo"])
   })
 
-  it("shows only entries that have a screenshot", async () => {
+  it("fills remaining slots from the registry after captured entries", async () => {
     // `bravo` and `charlie` have no capture, so the landing page would present
     // them through a generated OG card rather than the site itself.
     getScreenshotManifest.mockResolvedValue(captures("alpha", "delta"))
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["alpha", "delta"])
+    expect(orderOf(html)).toEqual(["alpha", "delta", "bravo", "charlie"])
   })
 
   it("does not float a captured entry ahead of an older captured one", async () => {
@@ -139,7 +140,7 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["alpha", "charlie", "delta"])
+    expect(orderOf(html)).toEqual(["alpha", "charlie", "delta", "bravo"])
   })
 
   it("counts a capture the og worker knows about but the manifest does not", async () => {
@@ -151,7 +152,7 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["bravo", "charlie"])
+    expect(orderOf(html)).toEqual(["bravo", "charlie", "alpha", "delta"])
   })
 
   it("shows the newest entries when neither source can answer", async () => {
@@ -162,7 +163,7 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie"])
+    expect(orderOf(html)).toEqual(["bravo", "charlie", "delta", "echo"])
   })
 
   it("keeps filtering on the manifest when the og worker cannot answer", async () => {
@@ -171,7 +172,7 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["delta"])
+    expect(orderOf(html)).toEqual(["delta", "alpha", "bravo", "charlie"])
   })
 
   it("holds the same entries for the rest of the week", async () => {
@@ -187,19 +188,22 @@ describe("ShowcaseHighlights", () => {
     vi.setSystemTime(WEEK_TWO)
     const second = orderOf(await render(ShowcaseHighlights()))
 
-    expect(first).toEqual(["alpha", "bravo", "charlie"])
-    expect(second).toEqual(["delta", "alpha", "bravo"])
+    expect(first).toEqual(["bravo", "charlie", "delta", "echo"])
+    expect(second).toEqual(["alpha", "bravo", "charlie", "delta"])
   })
 
-  it("rotates only through entries that have a screenshot", async () => {
-    // `bravo` is uncaptured, so no week may feature it.
+  it("keeps captured entries ahead of the OG-preview fill", async () => {
+    // `bravo` is uncaptured, so it can only complete the fourth slot after
+    // the capture-backed entries.
     getScreenshotManifest.mockResolvedValue(
       captures("alpha", "charlie", "delta")
     )
 
     for (const week of [WEEK_ONE, WEEK_TWO]) {
       vi.setSystemTime(week)
-      expect(orderOf(await render(ShowcaseHighlights()))).not.toContain("bravo")
+      expect(
+        orderOf(await render(ShowcaseHighlights())).slice(0, 3)
+      ).not.toContain("bravo")
     }
   })
 
@@ -218,7 +222,13 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseGrid())
 
-    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
+    expect(orderOf(html)).toEqual([
+      "alpha",
+      "bravo",
+      "charlie",
+      "delta",
+      "echo",
+    ])
   })
 
   it("labels each card by what the subdomain actually points at", async () => {
@@ -241,7 +251,7 @@ describe("ShowcaseHighlights", () => {
   })
 
   it("shows each card's visit total on both surfaces", async () => {
-    getShowcaseVisits.mockResolvedValue(visits({ alpha: 1240 }))
+    getShowcaseVisits.mockResolvedValue(visits({ bravo: 1240 }))
 
     const [grid, highlights] = await Promise.all([
       render(ShowcaseGrid()),
@@ -260,7 +270,7 @@ describe("ShowcaseHighlights", () => {
   })
 
   it("states the window it covers on every surface that shows a figure", async () => {
-    getShowcaseVisits.mockResolvedValue(visits({ alpha: 1240 }))
+    getShowcaseVisits.mockResolvedValue(visits({ bravo: 1240 }))
 
     const [grid, highlights] = await Promise.all([
       render(ShowcaseGrid()),
@@ -297,7 +307,7 @@ describe("ShowcaseHighlights", () => {
     const html = await render(ShowcaseGrid())
 
     expect(html).not.toContain("0 visits")
-    expect(html).not.toMatch(/visits/i)
+    expect(html).not.toMatch(/\d(?:[\d,.K])* visits/)
   })
 
   it("renders cards unchanged when the totals cannot be read", async () => {
@@ -307,18 +317,57 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseGrid())
 
-    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
-    expect(html).not.toMatch(/visits/i)
+    expect(orderOf(html)).toEqual([
+      "alpha",
+      "bravo",
+      "charlie",
+      "delta",
+      "echo",
+    ])
+    expect(html).not.toMatch(/\d(?:[\d,.K])* visits/)
   })
 
-  it("does not let visit totals reorder or filter the showcase", async () => {
-    // The grid is the registry, in registry order. A busy subdomain does not
-    // buy a better slot and a quiet one does not lose its place.
+  it("defaults to newest even when visit totals are available", async () => {
     getShowcaseVisits.mockResolvedValue(visits({ delta: 90_000, bravo: 12 }))
 
     const html = await render(ShowcaseGrid())
 
-    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
+    expect(orderOf(html)).toEqual([
+      "alpha",
+      "bravo",
+      "charlie",
+      "delta",
+      "echo",
+    ])
+  })
+
+  it("sorts measured sites by visits and leaves unmeasured sites afterward", async () => {
+    getShowcaseVisits.mockResolvedValue(
+      visits({ alpha: 1_200, bravo: 400, delta: 90_000 })
+    )
+
+    const html = await render(ShowcaseGrid({ sort: "visits" }))
+
+    expect(orderOf(html)).toEqual([
+      "delta",
+      "alpha",
+      "bravo",
+      "charlie",
+      "echo",
+    ])
+  })
+
+  it("labels the sort choices clearly and marks the active choice", async () => {
+    const newest = await render(ShowcaseGrid())
+    const mostVisited = await render(ShowcaseGrid({ sort: "visits" }))
+
+    expect(newest).toContain("Sort by")
+    expect(newest).toContain("Newest")
+    expect(newest).toContain("Most visited")
+    expect(newest).toMatch(/<a aria-current="page"[^>]*href="\/showcase"/)
+    expect(mostVisited).toMatch(
+      /<a aria-current="page"[^>]*href="\/showcase\?sort=visits"/
+    )
   })
 
   it("keeps the shared preview ratio when the bento stacks", async () => {
@@ -340,8 +389,8 @@ describe("ShowcaseHighlights", () => {
     const html = await render(ShowcaseHighlights())
     const frames = html.match(/aspect-\[1200\/630\]/g)
 
-    expect(frames).toHaveLength(3)
-    expect(html).toContain("sm:col-span-2")
+    expect(frames).toHaveLength(4)
+    expect(html).toContain("lg:col-span-3")
     expect(html).toContain("Featured this week")
   })
 
@@ -355,24 +404,21 @@ describe("ShowcaseHighlights", () => {
     expect(orderOf(html)).toEqual([])
   })
 
-  it("points at the showcase when entries are registered but uncaptured", async () => {
-    // Inviting the first claim would be wrong copy for a registry that already
-    // has entries waiting on the screenshot worker.
+  it("uses OG previews when entries are registered but uncaptured", async () => {
     getScreenshotManifest.mockResolvedValue(new Map())
 
     const html = await render(ShowcaseHighlights())
 
-    expect(html).toContain("Previews on the way")
-    expect(html).not.toContain("No sites yet")
-    expect(orderOf(html)).toEqual([])
+    expect(html).toContain("/_tools/og/preview?subdomain=bravo")
+    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
   })
 
-  it("shows what there is when fewer than three are captured", async () => {
+  it("fills all four slots when fewer than four entries are captured", async () => {
     getScreenshotManifest.mockResolvedValue(captures("alpha", "bravo"))
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["alpha", "bravo"])
+    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
   })
 
   it("passes a stored capture through to the card that shows it", async () => {
