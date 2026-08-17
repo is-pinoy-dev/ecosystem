@@ -1,4 +1,5 @@
 import { NavLink } from "react-router"
+import { AnimatedThemeToggler } from "@is-pinoy-dev/ui/components/animated-theme-toggler"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import pkg from "../../package.json"
 
@@ -67,16 +68,19 @@ export function NavBar({ auditedAt }: NavBarProps) {
           ))}
         </div>
 
-        {auditedAt && (
-          <div className="ml-auto hidden shrink-0 flex-col items-end sm:flex">
-            <span className="font-mono text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-              Last scan
-            </span>
-            <span className="font-mono text-[13px] text-foreground">
-              {formatTimestamp(auditedAt)}
-            </span>
-          </div>
-        )}
+        <div className="ml-auto flex shrink-0 items-center gap-4">
+          {auditedAt && (
+            <div className="hidden flex-col items-end sm:flex">
+              <span className="font-mono text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                Last scan
+              </span>
+              <span className="font-mono text-[13px] text-foreground">
+                {formatTimestamp(auditedAt)}
+              </span>
+            </div>
+          )}
+          <AnimatedThemeToggler className="-mr-2.5" />
+        </div>
       </Container>
     </nav>
   )

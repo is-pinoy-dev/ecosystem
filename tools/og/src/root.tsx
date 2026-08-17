@@ -7,6 +7,8 @@ import {
   ScrollRestoration,
 } from "react-router"
 
+import { ThemeProvider } from "@is-pinoy-dev/ui/components/theme-provider"
+
 import type { Route } from "./+types/root"
 import "./app.css"
 
@@ -37,16 +39,25 @@ export const links: Route.LinksFunction = () => [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#fdfcfa" />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: light)"
+          content="#fdfcfa"
+        />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: dark)"
+          content="#0b0d12"
+        />
         <Meta />
         <Links />
       </head>
       <body>
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
         <ScrollRestoration />
         <Scripts />
       </body>
