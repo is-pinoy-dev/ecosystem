@@ -6,11 +6,13 @@ import { DomainDetailHeader } from "@/components/domain-detail-header"
 import { DomainsManager } from "@/components/domains-manager"
 import { PortfolioStylePanel } from "@/components/portfolio-style-panel"
 import { getVisitsForSubdomains } from "@/lib/analytics"
+import { hasDatabase } from "@/lib/db"
 import { toDomainView, type PendingPRView } from "@/lib/domain-view"
 import { getSubdomainsForOwner } from "@/lib/domains"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { getPortfolioStyle } from "@/lib/portfolio-config"
 import { getPendingProxyPRs } from "@/lib/proxy-pr"
+import { hasScreenshotWorker } from "@/lib/screenshots/client"
 
 interface Props {
   params: Promise<{ subdomain: string }>
@@ -45,6 +47,10 @@ export default async function DomainDetailPage({ params }: Props) {
 
   const domain = toDomainView(record)
   const hosted = domain.provider?.id === "portfolio"
+  // The refresh action needs both the registry read model (to check ownership
+  // and the cooldown) and the screenshot Worker. Where either is absent the
+  // control can only ever fail, so the block is not offered at all.
+  const canRefreshPreview = hosted && hasDatabase() && hasScreenshotWorker()
 
   const [token, visits, style] = await Promise.all([
     getGitHubAccessToken(),
@@ -73,6 +79,7 @@ export default async function DomainDetailPage({ params }: Props) {
       <DomainDetailHeader
         domain={domain}
         pendingPR={pending[record.subdomain] ?? null}
+        canRefreshPreview={canRefreshPreview}
       />
       {style ? (
         <PortfolioStylePanel

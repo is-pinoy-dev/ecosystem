@@ -46,6 +46,17 @@ function workerConfig(): { url: string; secret: string } {
   return { url: url.replace(/\/+$/, ""), secret }
 }
 
+/**
+ * Whether a refresh can reach the Worker at all. Server components use this to
+ * decide whether to offer the control, so an unconfigured deployment stays
+ * quiet instead of handing out a button whose only outcome is an error.
+ */
+export function hasScreenshotWorker(): boolean {
+  return Boolean(
+    process.env.SCREENSHOT_WORKER_URL && process.env.SCREENSHOT_WORKER_SECRET
+  )
+}
+
 export async function enqueueScreenshotJobs(
   jobs: ScreenshotJobRequest[]
 ): Promise<WorkerJobResult[]> {
