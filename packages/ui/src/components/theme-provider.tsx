@@ -7,8 +7,9 @@ import { ThemeProvider as NextThemesProvider } from "next-themes"
 // no framework-level provider of their own. Same wiring as the website and the
 // dashboard so AnimatedThemeToggler behaves identically everywhere.
 //
-// Banig Grid v2 is light-first: dark stays available as a preference via the
-// toggler, but the brand presentation defaults to the light theme.
+// Defaults to dark, matching the website — a visitor arriving at a tool from
+// is-pinoy.dev lands on the same presentation. Light stays a click away on the
+// toggler, and the choice persists per origin.
 //
 // The host must set `suppressHydrationWarning` on <html> — next-themes writes
 // the class on the document before React hydrates.
@@ -19,7 +20,7 @@ function ThemeProvider({
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="light"
+      defaultTheme="dark"
       enableSystem={false}
       disableTransitionOnChange
       {...props}
