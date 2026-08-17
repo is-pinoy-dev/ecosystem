@@ -10,12 +10,13 @@ import { validateDomain } from "@is-pinoy-dev/validate"
 import { auth } from "@/auth"
 import { claimsEnabled } from "@/lib/flags-server"
 import { getGitHubAccessToken } from "@/lib/github-token"
-import { getSubdomainsForOwner, type OwnerIdentity } from "@/lib/domains"
+import { type OwnerIdentity } from "@/lib/domains"
 import { portfolioSubdomainFor } from "@/lib/portfolio-subdomain"
+import { claimBlockMessage } from "@/lib/portfolio-claim-block"
+import { getClaimBlock } from "@/lib/portfolio-claim-status"
 import {
   buildDomainRecord,
   openPortfolioPR,
-  CNAME_TARGET,
   type ClaimResult,
 } from "@/lib/claim-portfolio"
 
@@ -33,51 +34,6 @@ const claimInput = z.object({
 })
 
 export type ClaimInput = z.infer<typeof claimInput>
-
-/** Is this subdomain already claimed? Backed by the git-tracked JSON files. */
-async function isTaken(subdomain: string): Promise<boolean> {
-  const res = await fetch(
-    `https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains/${subdomain}.json`,
-    { cache: "no-store" },
-  )
-  return res.ok
-}
-
-/**
- * A hosted portfolio a user already holds, or null.
- *
- * Matched through `isOwnedBy`, so it finds the portfolio someone claimed under
- * a previous GitHub username. That is the only way to reach a second portfolio
- * now that the address is the login: rename the account, come back, and claim
- * again. Without this check a rename quietly resets the quota.
- *
- * Hosted portfolios are the records pointed at the portfolio renderer. The
- * registry's own marker is the `portfolio` block (see `portfolioRoutePattern`
- * in @is-pinoy-dev/registry), which the dashboard's read model doesn't carry —
- * the CNAME target is the same set in practice, and the authoritative check
- * runs in CI on the pull request this action opens.
- */
-async function existingPortfolio(
-  owner: OwnerIdentity,
-): Promise<string | null> {
-  try {
-    const { owned } = await getSubdomainsForOwner(owner)
-    const held = owned.find((domain) => {
-      const cname = domain.records?.CNAME
-      const entries = Array.isArray(cname) ? cname : [cname]
-      return entries.some(
-        (entry) =>
-          typeof (entry as { value?: string })?.value === "string" &&
-          (entry as { value: string }).value.toLowerCase() === CNAME_TARGET,
-      )
-    })
-    return held?.subdomain ?? null
-  } catch {
-    // The registry read is a courtesy check that saves the user a doomed pull
-    // request. If it fails, let the claim proceed — CI still counts.
-    return null
-  }
-}
 
 export async function claimPortfolio(input: ClaimInput): Promise<ClaimResult> {
   const session = await auth()
@@ -122,22 +78,18 @@ export async function claimPortfolio(input: ClaimInput): Promise<ClaimResult> {
     return { ok: false, error: validation.errors[0] ?? "Invalid record." }
   }
 
-  if (await isTaken(subdomain)) {
-    return { ok: false, error: `${subdomain}.is-pinoy.dev is already claimed.` }
-  }
-
-  // One hosted portfolio per person. Worth naming the address they already
-  // hold: after a GitHub rename it won't be the one they expect, and "you
-  // already have a portfolio" on its own would read as a bug.
-  const held = await existingPortfolio(owner)
-  if (held) {
-    return {
-      ok: false,
-      error:
-        held === subdomain
-          ? `You already have a hosted portfolio at ${held}.is-pinoy.dev.`
-          : `You already have a hosted portfolio at ${held}.is-pinoy.dev, claimed under a previous GitHub username. One portfolio per account — ask a maintainer to move it to ${subdomain}.is-pinoy.dev.`,
-    }
+  // The name is already spoken for, or this person already has a portfolio —
+  // the same check the claim page ran to decide whether to offer the button at
+  // all, re-run here because that answer was a snapshot and the page cannot be
+  // trusted to have obeyed it.
+  //
+  // `checkPending: false`: an open claim pull request is not a reason to refuse
+  // here. openPortfolioPR resets the branch and upserts the file so that
+  // resubmitting revises the claim in place, which is the only way to change a
+  // template before a maintainer merges it.
+  const block = await getClaimBlock(owner, subdomain, { checkPending: false })
+  if (block) {
+    return { ok: false, error: claimBlockMessage(block) }
   }
 
   const token = await getGitHubAccessToken()

@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import Link from "next/link"
 import {
   CheckCircle2,
   ExternalLink,
   Eye,
+  GitPullRequest,
   Loader2,
   Lock,
   XCircle,
@@ -28,9 +30,17 @@ import {
   type PortfolioTemplate,
   type PortfolioTheme,
 } from "@/lib/portfolio-style"
+import {
+  claimBlockLink,
+  claimBlockMessage,
+  type ClaimBlock,
+} from "@/lib/portfolio-claim-block"
 import { claimPortfolio } from "./actions"
 
 type Result = { ok: true; prUrl: string } | { ok: false; error: string } | null
+
+/** Ties the disabled button to its explanation for assistive technology. */
+const BLOCKED_REASON_ID = "claim-blocked-reason"
 
 /**
  * `subdomain` is the claimant's GitHub username, derived server-side. It is
@@ -38,13 +48,20 @@ type Result = { ok: true; prUrl: string } | { ok: false; error: string } | null
  * address is a consequence of who is signed in rather than a choice. The
  * server action derives it from the session too — this prop only spares the
  * page a round trip to display it.
+ *
+ * `blocked` is why this claim cannot go ahead, worked out when the page
+ * rendered. It disables the submit button rather than hiding the form: the
+ * style pickers and the preview link are worth keeping usable even for someone
+ * who has nothing left to claim.
  */
 export function ClaimForm({
   login,
   subdomain,
+  blocked,
 }: {
   login: string
   subdomain: string
+  blocked: ClaimBlock | null
 }) {
   const [template, setTemplate] = useState<PortfolioTemplate>(DEFAULT_TEMPLATE)
   const [theme, setTheme] = useState<PortfolioTheme>(DEFAULT_THEME)
@@ -58,7 +75,9 @@ export function ClaimForm({
   const previewUrl = portfolioPreviewUrl(login, template, theme)
 
   function onSubmit() {
-    if (pending) return
+    // The disabled button already stops the ordinary path; this covers the
+    // implicit submit a keyboard Enter can still produce.
+    if (pending || blocked) return
     setResult(null)
     startTransition(async () => {
       const response = await claimPortfolio({
@@ -209,7 +228,8 @@ export function ClaimForm({
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={pending}
+                disabled={pending || blocked !== null}
+                aria-describedby={blocked ? BLOCKED_REASON_ID : undefined}
               >
                 {pending ? (
                   <>
@@ -232,10 +252,14 @@ export function ClaimForm({
               </Button>
             </div>
 
-            <p className="m-0 text-xs leading-5 text-muted-foreground">
-              Claiming opens a pull request. Your address goes live after a
-              maintainer reviews and merges it.
-            </p>
+            {blocked ? (
+              <BlockedReason blocked={blocked} />
+            ) : (
+              <p className="m-0 text-xs leading-5 text-muted-foreground">
+                Claiming opens a pull request. Your address goes live after a
+                maintainer reviews and merges it.
+              </p>
+            )}
           </div>
         </div>
 
@@ -271,6 +295,55 @@ export function ClaimForm({
         ) : null}
       </aside>
     </form>
+  )
+}
+
+/**
+ * Why the submit button is off, and where to go instead.
+ *
+ * Takes the place of the "claiming opens a pull request" note rather than
+ * stacking on top of it: that sentence describes an action that is no longer
+ * available here, so leaving it alongside a disabled button would contradict
+ * the button. Styled like the pending-change note on the domain settings panel,
+ * because it reports the same class of fact.
+ */
+function BlockedReason({ blocked }: { blocked: ClaimBlock }) {
+  const link = claimBlockLink(blocked)
+  const Icon =
+    blocked.kind === "hosted"
+      ? CheckCircle2
+      : blocked.kind === "pending"
+        ? GitPullRequest
+        : Lock
+
+  return (
+    <div
+      id={BLOCKED_REASON_ID}
+      className="flex flex-col gap-2 border border-border bg-muted/40 px-3 py-2.5"
+    >
+      <p className="m-0 flex gap-2 text-[11px]/relaxed text-foreground">
+        <Icon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+        <span>{claimBlockMessage(blocked)}</span>
+      </p>
+      {link.external ? (
+        <a
+          href={link.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 self-start pl-[22px] text-[11px] font-medium text-accent underline"
+        >
+          {link.label}
+          <ExternalLink className="size-3" aria-hidden="true" />
+        </a>
+      ) : (
+        <Link
+          href={link.href}
+          className="self-start pl-[22px] text-[11px] font-medium text-accent underline"
+        >
+          {link.label}
+        </Link>
+      )}
+    </div>
   )
 }
 
