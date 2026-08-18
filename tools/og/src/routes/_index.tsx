@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useLoaderData } from "react-router"
 import type { LoaderFunctionArgs, MetaFunction } from "react-router"
 import { Check, Copy } from "lucide-react"
+import { AnimatedThemeToggler } from "@is-pinoy-dev/ui/components/animated-theme-toggler"
 import { Button } from "@is-pinoy-dev/ui/components/button"
 import { Container } from "@is-pinoy-dev/ui/components/container"
 import {
@@ -59,17 +60,22 @@ export default function Index() {
 
   return (
     <Container className="flex min-h-screen max-w-[900px] flex-col gap-12 py-14">
-      <SectionHeader>
-        <SectionEyebrow>Open Graph</SectionEyebrow>
-        <SectionTitle>
-          {subdomain ? `${subdomain}.is-pinoy.dev` : "OG image generator"}
-        </SectionTitle>
-        <SectionDescription>
-          {subdomain
-            ? "A share preview image generated for your subdomain, ready to drop into your site's meta tags."
-            : "Every registered is-pinoy.dev subdomain gets its own share preview image. Open this tool from your subdomain to see yours."}
-        </SectionDescription>
-      </SectionHeader>
+      {/* The tool has no nav bar, so the theme toggle rides alongside the
+          page header, aligned to the container's right edge. */}
+      <div className="flex items-start justify-between gap-6">
+        <SectionHeader>
+          <SectionEyebrow>Open Graph</SectionEyebrow>
+          <SectionTitle>
+            {subdomain ? `${subdomain}.is-pinoy.dev` : "OG image generator"}
+          </SectionTitle>
+          <SectionDescription>
+            {subdomain
+              ? "A share preview image generated for your subdomain, ready to drop into your site's meta tags."
+              : "Every registered is-pinoy.dev subdomain gets its own share preview image. Open this tool from your subdomain to see yours."}
+          </SectionDescription>
+        </SectionHeader>
+        <AnimatedThemeToggler className="-mt-1.5 -mr-2.5" />
+      </div>
 
       {subdomain ? (
         <>
