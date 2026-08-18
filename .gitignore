@@ -42,3 +42,6 @@ tools/site-audit/.env
 .wrangler-dry-run
 .react-router
 .test
+
+# Superpowers working docs (specs, plans) — kept locally, not tracked
+docs/superpowers/
