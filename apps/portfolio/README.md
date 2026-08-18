@@ -6,8 +6,6 @@ The hosted-portfolio renderer. A subdomain whose
 GitHub **profile README** (`github.com/<user>/<user>`) plus their public profile
 metadata in the template they chose. No site of their own required.
 
-Design spec: [`docs/superpowers/specs/2026-07-22-portfolio-renderer-design.md`](../../docs/superpowers/specs/2026-07-22-portfolio-renderer-design.md).
-
 ## Stack
 
 - Next.js App Router, one dynamic route, ISR-cached upstream fetches (1h)

@@ -39,6 +39,16 @@ export type ClaimResult =
   | { ok: true; prUrl: string }
   | { ok: false; error: string }
 
+/**
+ * Branch a portfolio claim is opened from — one per subdomain, reused across
+ * resubmits. Exported because the claim page looks a claim's pull request up by
+ * this head label; a private copy of the name there would silently stop
+ * matching the day this one changed.
+ */
+export function claimBranch(subdomain: string): string {
+  return `claim/portfolio-${subdomain}`
+}
+
 function headers(token: string): HeadersInit {
   return {
     Authorization: `Bearer ${token}`,
@@ -204,7 +214,7 @@ export async function openPortfolioPR(
     return { ok: false, error: `Could not read the domains repo's ${upstreamBase} branch.` }
   }
 
-  const branch = `claim/portfolio-${subdomain}`
+  const branch = claimBranch(subdomain)
   const createBranch = (sha: string) =>
     fetch(`${API}/repos/${login}/${UPSTREAM_REPO}/git/refs`, {
       method: "POST",
