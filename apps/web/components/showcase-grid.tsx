@@ -443,41 +443,44 @@ function claimedBefore(
 /**
  * The entries the landing section features this week.
  *
- * Two tiers, each rotated on its own: captured sites have first claim on the
- * slots, and any left over are filled from the rest of the registry, which the
- * cards present through the OG-preview endpoint. Rotating the tiers separately
- * is what keeps the section moving while the screenshot worker catches up. One
- * combined pool cannot do both jobs — it either freezes the whole section
- * whenever four or fewer sites have been photographed, or, once more have,
- * rotates uncaptured entries into the lead ahead of real captures.
+ * Which four is a question the calendar answers on its own, from the registry
+ * as it stood when the week opened. Nothing that happens between two Mondays
+ * moves the set: not a claim, not the screenshot worker finishing a capture,
+ * not one of the capture sources timing out.
+ *
+ * Captures deliberately play no part in that decision. Gating eligibility on
+ * them handed the rotation to a worker running on its own schedule — a
+ * Wednesday retry swapped a site in and another out, and a week with four or
+ * fewer photographed sites had no pool to rotate through at all, so the
+ * section simply stopped moving. They still order the week's four, so the wide
+ * featured slot shows a real screenshot whenever one of them has one, and the
+ * rest are presented through the OG-preview endpoint as uncaptured entries on
+ * this surface always have been.
  *
  * `capturedPool` is null when neither source could say which sites have been
  * photographed. That is a fact about our infrastructure rather than about the
- * community, so the rotation simply runs over the whole registry instead.
+ * community; the week's four are already settled, so they simply keep their
+ * rotation order.
  */
 function weeklyHighlights(
   entries: SubdomainEntry[],
   capturedPool: SubdomainEntry[] | null,
   now: Date
 ): SubdomainEntry[] {
-  const ordered = rotationOrder(claimedBefore(entries, weekStart(now)))
-  if (capturedPool === null) return rotateWeekly(ordered, HIGHLIGHT_COUNT, now)
-
-  const isCaptured = new Set(capturedPool.map((entry) => entry.subdomain))
-  const leading = rotateWeekly(
-    ordered.filter((entry) => isCaptured.has(entry.subdomain)),
+  const featured = rotateWeekly(
+    rotationOrder(claimedBefore(entries, weekStart(now))),
     HIGHLIGHT_COUNT,
     now
   )
-  if (leading.length >= HIGHLIGHT_COUNT) return leading
+  if (capturedPool === null) return featured
 
+  const isCaptured = new Set(capturedPool.map((entry) => entry.subdomain))
+  // Stable partition rather than a sort: entries keep their rotation order
+  // within each side, so a capture landing mid-week can lift a card into the
+  // featured slot but can never reshuffle the four around it.
   return [
-    ...leading,
-    ...rotateWeekly(
-      ordered.filter((entry) => !isCaptured.has(entry.subdomain)),
-      HIGHLIGHT_COUNT - leading.length,
-      now
-    ),
+    ...featured.filter((entry) => isCaptured.has(entry.subdomain)),
+    ...featured.filter((entry) => !isCaptured.has(entry.subdomain)),
   ]
 }
 

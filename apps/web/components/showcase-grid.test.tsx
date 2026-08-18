@@ -121,27 +121,28 @@ describe("ShowcaseHighlights", () => {
     expect(orderOf(html)).toEqual(["bravo", "charlie", "delta", "echo"])
   })
 
-  it("fills remaining slots from the registry after captured entries", async () => {
-    // `bravo` and `charlie` have no capture, so the landing page would present
-    // them through a generated OG card rather than the site itself.
+  it("leads with the captures among the week's entries, not outside them", async () => {
+    // `alpha` is captured but is not one of this week's four, and a capture is
+    // not a way into the section — the calendar decides who is featured. Of
+    // the four it did choose, `delta` is the one with a real screenshot, so it
+    // leads; the rest are presented through a generated OG card.
     getScreenshotManifest.mockResolvedValue(captures("alpha", "delta"))
 
     const html = await render(ShowcaseHighlights())
 
-    // The two captures lead; the fill takes this week's turn of the rest.
-    expect(orderOf(html)).toEqual(["alpha", "delta", "charlie", "echo"])
+    expect(orderOf(html)).toEqual(["delta", "bravo", "charlie", "echo"])
   })
 
   it("does not float a captured entry ahead of an older captured one", async () => {
-    // Filtering decides which entries qualify and rotation decides when their
-    // turn comes; neither reshuffles registry order within a week's window.
+    // Captures lead the week's four, but among themselves they hold their
+    // rotation order — being photographed is not a way to jump the queue.
     getScreenshotManifest.mockResolvedValue(
       captures("charlie", "delta", "alpha")
     )
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["alpha", "charlie", "delta", "bravo"])
+    expect(orderOf(html)).toEqual(["charlie", "delta", "bravo", "echo"])
   })
 
   it("counts a capture the og worker knows about but the manifest does not", async () => {
@@ -173,7 +174,8 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["delta", "alpha", "bravo", "charlie"])
+    // `delta` still leads on the manifest's word alone.
+    expect(orderOf(html)).toEqual(["delta", "bravo", "charlie", "echo"])
   })
 
   it("holds the same entries for the rest of the week", async () => {
@@ -227,18 +229,53 @@ describe("ShowcaseHighlights", () => {
     expect(orderOf(await render(ShowcaseHighlights()))).toEqual(before)
   })
 
-  it("keeps captured entries ahead of the OG-preview fill", async () => {
-    // `bravo` is uncaptured, so it can only complete the fourth slot after
-    // the capture-backed entries.
+  it("does not change the week's entries when the worker captures a site", async () => {
+    // The screenshot worker runs on its own schedule, not the calendar. While
+    // a capture decided who was eligible, a Wednesday retry swapped one site
+    // out of the section and another in — so the set is settled without it.
+    getScreenshotManifest.mockResolvedValue(captures("alpha", "bravo"))
+    const before = orderOf(await render(ShowcaseHighlights()))
+
+    vi.setSystemTime(new Date("2026-01-21T12:00:00Z"))
     getScreenshotManifest.mockResolvedValue(
-      captures("alpha", "charlie", "delta")
+      captures("alpha", "bravo", "charlie")
     )
+    const after = orderOf(await render(ShowcaseHighlights()))
+
+    expect([...after].sort()).toEqual([...before].sort())
+    // Newly photographed, `charlie` may move up among the same four — what it
+    // cannot do is displace one of them.
+    expect(after).toContain("charlie")
+  })
+
+  it("does not change the week's entries when a capture source goes down", async () => {
+    getScreenshotManifest.mockResolvedValue(captures("alpha", "bravo"))
+    const before = orderOf(await render(ShowcaseHighlights()))
+
+    // Both sources unreachable mid-week: an outage of ours is not a reason to
+    // hand the visitor a different set of sites.
+    vi.setSystemTime(new Date("2026-01-22T09:00:00Z"))
+    getScreenshotManifest.mockResolvedValue(new Map())
+    getCapturedSubdomains.mockResolvedValue(null)
+
+    expect([...orderOf(await render(ShowcaseHighlights()))].sort()).toEqual(
+      [...before].sort()
+    )
+  })
+
+  it("keeps captured entries ahead of the OG-preview cards every week", async () => {
+    // Whichever four the calendar picks, the ones with a real screenshot lead
+    // them — so the wide featured slot shows a site rather than a generated
+    // card whenever the week has one to show.
+    const capturedNames = ["alpha", "charlie", "delta"]
+    getScreenshotManifest.mockResolvedValue(captures(...capturedNames))
 
     for (const week of [WEEK_ONE, WEEK_TWO]) {
       vi.setSystemTime(week)
-      expect(
-        orderOf(await render(ShowcaseHighlights())).slice(0, 3)
-      ).not.toContain("bravo")
+      const shown = orderOf(await render(ShowcaseHighlights()))
+      const withCapture = shown.filter((name) => capturedNames.includes(name))
+
+      expect(shown.slice(0, withCapture.length)).toEqual(withCapture)
     }
   })
 
@@ -453,16 +490,17 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["alpha", "bravo", "delta", "echo"])
+    expect(orderOf(html)).toEqual(["bravo", "charlie", "delta", "echo"])
   })
 
   it("passes a stored capture through to the card that shows it", async () => {
-    getScreenshotManifest.mockResolvedValue(captures("alpha"))
+    // One of the four this week features, so the card has somewhere to put it.
+    getScreenshotManifest.mockResolvedValue(captures("delta"))
 
     const html = await render(ShowcaseHighlights())
 
     expect(html).toContain(
-      "https://cdn.is-pinoy.dev/showcase/alpha/preview-v1.jpeg"
+      "https://cdn.is-pinoy.dev/showcase/delta/preview-v1.jpeg"
     )
   })
 })
