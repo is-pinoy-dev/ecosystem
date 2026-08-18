@@ -192,6 +192,9 @@
             },
             "og": {
               "type": "boolean"
+            },
+            "contact-form": {
+              "type": "boolean"
             }
           },
           "additionalProperties": false

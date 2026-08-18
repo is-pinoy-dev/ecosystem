@@ -755,6 +755,12 @@ function PlatformPanel({
             // nothing is happening either way while the platform is off.
             const blocked = !proxyOn && !feature.optOut
             const dormant = !proxyOn && feature.optOut
+            // A prerequisite outside the platform switch itself — currently
+            // only Contact Form's verified-email requirement (see
+            // lib/domain-view.ts's contactFormBlockReason). Disables the
+            // switch the same way `blocked` does, but is reported with its
+            // own explanation rather than the platform-off copy.
+            const prerequisiteBlocked = feature.blockedReason !== null
             return (
               <li
                 key={feature.id}
@@ -777,7 +783,9 @@ function PlatformPanel({
                       ? "Needs platform features switched on."
                       : dormant
                         ? "Nothing is collected while the platform is off — this is your preference for when it is on."
-                        : feature.description}
+                        : prerequisiteBlocked
+                          ? feature.blockedReason
+                          : feature.description}
                   </span>
                 </span>
                 <span className="flex flex-wrap items-center justify-end gap-2 self-end sm:self-auto">
@@ -788,8 +796,13 @@ function PlatformPanel({
                   <Switch
                     checked={on && !blocked}
                     onCheckedChange={(next) => onSetEdit(fKey, next)}
-                    disabled={blocked || readOnly}
+                    disabled={blocked || prerequisiteBlocked || readOnly}
                     aria-label={`${on ? "Disable" : "Enable"} ${feature.name} for ${subdomain}.is-pinoy.dev`}
+                    title={
+                      prerequisiteBlocked
+                        ? (feature.blockedReason ?? undefined)
+                        : undefined
+                    }
                   />
                 </span>
               </li>

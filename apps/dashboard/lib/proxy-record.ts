@@ -12,7 +12,11 @@
 // Kept free of server-only imports so the shape handling can be unit tested;
 // lib/proxy-pr.ts holds the GitHub I/O that consumes it.
 
-import { domainSchema, type PortfolioConfig } from "@is-pinoy-dev/schemas"
+import {
+  domainSchema,
+  type Domain,
+  type PortfolioConfig,
+} from "@is-pinoy-dev/schemas"
 import { validateDomain } from "@is-pinoy-dev/validate"
 
 import { findFeature, setFeatureEnabled } from "@/lib/features"
@@ -202,18 +206,21 @@ export function subdomainFromHeadLabel(
 
 /**
  * One pending edit: the master proxy switch on a record type, one platform
- * tool's flag, or the hosted portfolio's style. All three live in the same
- * record file, so a batch of them belongs in a single commit.
+ * tool's flag, the hosted portfolio's style, or the owner's contact email.
+ * All four live in the same record file, so a batch of them belongs in a
+ * single commit.
  */
 export type RecordChange =
   | { kind: "proxy"; type: ProxyableType; enabled: boolean }
   | { kind: "feature"; feature: string; enabled: boolean }
   | { kind: "portfolio"; template: PortfolioTemplate; theme?: PortfolioTheme }
+  | { kind: "owner-email"; email: string }
 
 export type PortfolioChange = Extract<RecordChange, { kind: "portfolio" }>
+export type OwnerEmailChange = Extract<RecordChange, { kind: "owner-email" }>
 
 /** The switch-shaped changes — the ones that read as on/off. */
-type ToggleChange = Exclude<RecordChange, PortfolioChange>
+type ToggleChange = Exclude<RecordChange, PortfolioChange | OwnerEmailChange>
 
 function portfolioChangeOf(
   changes: RecordChange[]
@@ -221,6 +228,14 @@ function portfolioChangeOf(
   // Last wins, matching how the same switch appearing twice is deduped upstream.
   return changes
     .filter((c): c is PortfolioChange => c.kind === "portfolio")
+    .at(-1)
+}
+
+function ownerEmailChangeOf(
+  changes: RecordChange[]
+): OwnerEmailChange | undefined {
+  return changes
+    .filter((c): c is OwnerEmailChange => c.kind === "owner-email")
     .at(-1)
 }
 
@@ -296,12 +311,30 @@ export function buildToggledFile(
     ) as NonNullable<PortfolioConfig>
   }
 
+  const emailChange = ownerEmailChangeOf(changes)
+  let nextOwner: Domain["owner"] | undefined
+  if (emailChange) {
+    const current = file.owner
+    const base: Partial<Domain["owner"]> =
+      current && typeof current === "object" && !Array.isArray(current)
+        ? (current as Partial<Domain["owner"]>)
+        : {}
+    if (base.email === emailChange.email) {
+      return { error: "That is already this subdomain's contact email." }
+    }
+    if (!base.github) {
+      return { error: "The record file has no owner block." }
+    }
+    nextOwner = { ...base, github: base.github, email: emailChange.email }
+  }
+
   const updated = {
     ...file,
     records: nextRecords,
     // Written in place: spreading `file` first keeps the block where it already
     // sits in the file, so the pull request diffs as one edited block.
     ...(nextPortfolio ? { portfolio: nextPortfolio } : {}),
+    ...(nextOwner ? { owner: nextOwner } : {}),
     // Only introduce a features block when a feature was actually edited, so a
     // pure proxy change leaves the rest of the file byte-identical.
     ...(featureChanges.length > 0
@@ -362,6 +395,10 @@ function toggleBullet(change: ToggleChange): string {
     : `- \`features.${change.feature}\` → \`${change.enabled}\``
 }
 
+function ownerEmailBullets(change: OwnerEmailChange): string[] {
+  return [`- \`owner.email\` → \`${change.email}\``]
+}
+
 /**
  * Title, commit message, and body copy for a batch, written from what the batch
  * actually contains. All-on or all-off reads better as "enable"/"disable"; a
@@ -373,11 +410,13 @@ export function summarizeChanges(
   changes: RecordChange[]
 ): ChangeSummary {
   const style = portfolioChangeOf(changes)
+  const emailChange = ownerEmailChangeOf(changes)
   const toggles = changes.filter(
-    (change): change is ToggleChange => change.kind !== "portfolio"
+    (change): change is ToggleChange =>
+      change.kind !== "portfolio" && change.kind !== "owner-email"
   )
 
-  if (style && toggles.length === 0) {
+  if (style && toggles.length === 0 && !emailChange) {
     return {
       title: `Update portfolio style: ${subdomain}`,
       commitMessage: `chore: update portfolio style for ${subdomain}`,
@@ -386,20 +425,32 @@ export function summarizeChanges(
     }
   }
 
-  const allOn = toggles.every((change) => change.enabled)
-  const allOff = toggles.every((change) => !change.enabled)
-  const action = style
-    ? "Update"
-    : allOn
-      ? "Enable"
-      : allOff
-        ? "Disable"
-        : "Update"
-  const subject = style
-    ? "settings"
-    : toggles.length === 1 && toggles[0]!.kind === "proxy"
-      ? "Cloudflare proxy"
-      : "platform settings"
+  if (emailChange && toggles.length === 0 && !style) {
+    return {
+      title: `Update contact email: ${subdomain}`,
+      commitMessage: `chore: update contact email for ${subdomain}`,
+      lead: `Updates the contact email on file for \`${subdomain}.is-pinoy.dev\`.`,
+      bullets: ownerEmailBullets(emailChange),
+    }
+  }
+
+  const allOn = toggles.length > 0 && toggles.every((change) => change.enabled)
+  const allOff =
+    toggles.length > 0 && toggles.every((change) => !change.enabled)
+  const action =
+    style || emailChange
+      ? "Update"
+      : allOn
+        ? "Enable"
+        : allOff
+          ? "Disable"
+          : "Update"
+  const subject =
+    style || emailChange
+      ? "settings"
+      : toggles.length === 1 && toggles[0]!.kind === "proxy"
+        ? "Cloudflare proxy"
+        : "platform settings"
 
   return {
     title: `${action} ${subject}: ${subdomain}`,
@@ -408,6 +459,7 @@ export function summarizeChanges(
     bullets: [
       ...toggles.map(toggleBullet),
       ...(style ? portfolioBullets(style) : []),
+      ...(emailChange ? ownerEmailBullets(emailChange) : []),
     ],
   }
 }

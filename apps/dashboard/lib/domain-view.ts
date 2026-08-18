@@ -5,6 +5,7 @@
 // matching, date formatting — happens once, server-side, and the interactive
 // listing stays a dumb renderer of what it is given.
 
+import type { DestinationAddressStatus } from "@/lib/cloudflare-email"
 import type { RegistrySubdomain } from "@/lib/domains"
 import {
   providerForRecords,
@@ -63,6 +64,13 @@ export interface FeatureView {
    * still meaningful.
    */
   optOut: boolean
+  /**
+   * Non-null when a prerequisite outside the platform switch keeps this
+   * feature from being turned on — currently only Contact Form, gated on a
+   * verified destination email (see components/contact-form-panel.tsx). The
+   * switch renders disabled with this as its explanation.
+   */
+  blockedReason: string | null
 }
 
 /** A feature that comes with the platform and has nothing to switch. */
@@ -179,7 +187,22 @@ function formatDate(date: Date | null | undefined): string | null {
   })
 }
 
-export function toDomainView(domain: RegistrySubdomain): DomainView {
+export interface DomainViewOptions {
+  /**
+   * Verification status of `domain.owner.email` as a Cloudflare Email
+   * Routing destination, for gating the Contact Form switch. Omitted (rather
+   * than checked and found "absent") whenever the caller has not resolved
+   * it — the listing page, or a deployment with Cloudflare Email Routing
+   * unconfigured — and is treated the same as "not verified": there is no
+   * confirmed place to deliver mail, so the switch stays disabled either way.
+   */
+  contactFormEmailStatus?: DestinationAddressStatus
+}
+
+export function toDomainView(
+  domain: RegistrySubdomain,
+  options: DomainViewOptions = {}
+): DomainView {
   const fqdn = `${domain.subdomain}.is-pinoy.dev`
   const records: RecordRowView[] = Object.entries(domain.records).map(
     ([type, value]) => {
@@ -209,7 +232,7 @@ export function toDomainView(domain: RegistrySubdomain): DomainView {
     subdomain: domain.subdomain,
     fqdn,
     siteUrl: `https://${fqdn}`,
-    platform: toPlatformView(domain),
+    platform: toPlatformView(domain, options),
     recordUrl: recordFileUrl(domain.subdomain),
     recordEditUrl: recordEditUrl(domain.subdomain),
     syncStatus: domain.syncStatus,
@@ -231,7 +254,26 @@ export function providerForRow(row: RecordRowView): Provider | null {
  * one — that is the record whose target decides whether proxying is even
  * allowed — and falls back to the A record otherwise.
  */
-function toPlatformView(domain: RegistrySubdomain): PlatformView | null {
+/**
+ * Why the Contact Form switch cannot be turned on yet, or null when it can.
+ * Anything short of a confirmed "verified" blocks it — including "pending"
+ * and the unresolved/unconfigured case — because there is no other signal
+ * that Cloudflare will actually deliver mail to this address yet.
+ */
+function contactFormBlockReason(
+  status: DestinationAddressStatus | undefined
+): string | null {
+  if (status === "verified") return null
+  if (status === "pending") {
+    return "Verification pending — check the inbox for the address below, or use Recheck once you've confirmed it."
+  }
+  return "Add and verify a contact email below before turning this on."
+}
+
+function toPlatformView(
+  domain: RegistrySubdomain,
+  options: DomainViewOptions
+): PlatformView | null {
   const type = PROXYABLE_TYPES.find(
     (candidate) => readProxyState(domain.records, candidate) !== null
   )
@@ -287,6 +329,10 @@ function toPlatformView(domain: RegistrySubdomain): PlatformView | null {
         links,
         enabled: isFeatureEnabled(domain.features, feature),
         optOut: feature.defaultEnabled,
+        blockedReason:
+          feature.id === "contact-form"
+            ? contactFormBlockReason(options.contactFormEmailStatus)
+            : null,
       }
     }),
     builtins: BUILTIN_FEATURES.map((feature) => {

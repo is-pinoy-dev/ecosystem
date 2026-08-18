@@ -33,6 +33,10 @@ service = "tools-og"
 binding = "SITE_AUDIT"
 service = "tools-site-audit"
 
+[[services]]
+binding = "CONTACT_FORM"
+service = "tools-contact-form"
+
 [observability]
 enabled = true
 head_sampling_rate = 1

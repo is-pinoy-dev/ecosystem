@@ -14,6 +14,7 @@ export const domainFeaturesSchema = z
       .object({
         "site-audit": z.boolean(),
         og: z.boolean(),
+        "contact-form": z.boolean(),
       })
       .partial()
       .optional(),
@@ -80,39 +81,48 @@ export const portfolioSchema = z
   })
   .optional()
 
-export const domainSchema = z.object({
-  subdomain: z
-    .string()
-    .min(3, "Subdomain must be at least 3 characters")
-    .max(63)
-    .regex(/^[a-z0-9-]+$/),
-  owner: z.object({
-    github: z.string(),
-    // GitHub's numeric account ID. A login can be renamed and then claimed by
-    // somebody else; this cannot — it is issued once per account and never
-    // reused. Ownership is matched on it wherever it is present, so a rename
-    // no longer detaches someone from their own subdomains.
-    //
-    // Optional because every record written before this field existed lacks
-    // it, and backfilling means asking GitHub for 45 logins. Records minted by
-    // the dashboard carry it from the claim onward.
-    id: z.number().int().positive().optional(),
-    email: z.email().optional(),
-  }),
-  records: z
-    .object({
-      A: singleOrArray(aRecord).optional(),
-      CNAME: singleOrArray(cnameRecord).optional(),
-      TXT: singleOrArray(txtRecord).optional(),
-    })
-    .refine(
-      (r) => Object.keys(r).length > 0,
-      "At least one record type required"
-    ),
-  features: domainFeaturesSchema,
-  portfolio: portfolioSchema,
-  destroy: z.boolean().optional(),
-})
+export const domainSchema = z
+  .object({
+    subdomain: z
+      .string()
+      .min(3, "Subdomain must be at least 3 characters")
+      .max(63)
+      .regex(/^[a-z0-9-]+$/),
+    owner: z.object({
+      github: z.string(),
+      // GitHub's numeric account ID. A login can be renamed and then claimed by
+      // somebody else; this cannot — it is issued once per account and never
+      // reused. Ownership is matched on it wherever it is present, so a rename
+      // no longer detaches someone from their own subdomains.
+      //
+      // Optional because every record written before this field existed lacks
+      // it, and backfilling means asking GitHub for 45 logins. Records minted by
+      // the dashboard carry it from the claim onward.
+      id: z.number().int().positive().optional(),
+      email: z.email().optional(),
+    }),
+    records: z
+      .object({
+        A: singleOrArray(aRecord).optional(),
+        CNAME: singleOrArray(cnameRecord).optional(),
+        TXT: singleOrArray(txtRecord).optional(),
+      })
+      .refine(
+        (r) => Object.keys(r).length > 0,
+        "At least one record type required"
+      ),
+    features: domainFeaturesSchema,
+    portfolio: portfolioSchema,
+    destroy: z.boolean().optional(),
+  })
+  .refine(
+    (d) => !d.features?.tools?.["contact-form"] || Boolean(d.owner.email),
+    {
+      message:
+        'owner.email is required when features.tools["contact-form"] is enabled',
+      path: ["owner", "email"],
+    }
+  )
 
 export const resolvedDomainSchema = domainSchema.extend({
   file: z.string(),

@@ -50,7 +50,10 @@ export default async function DomainsPage() {
       />
 
       {owned.length > 0 ? (
-        <DomainsOverview domains={owned.map(toDomainView)} pending={pending} />
+        <DomainsOverview
+          domains={owned.map((domain) => toDomainView(domain))}
+          pending={pending}
+        />
       ) : (
         <NoDomains login={login} />
       )}

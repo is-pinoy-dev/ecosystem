@@ -14,6 +14,13 @@
 //
 // Routes are created one per claimed portfolio by `is-pinoy registry sync`
 // (see packages/registry/src/core/routes.ts), never `*.is-pinoy.dev/*`.
+//
+// Also appends the Contact Form widget's loader script to every HTML response
+// before returning it (see injectContactFormWidget below). Self-hosted
+// subdomains — a CNAME to something other than this renderer — never reach
+// this Worker at all, so they get no automatic injection; a manual
+// `<script src="https://<subdomain>.is-pinoy.dev/_tools/contact-form/widget.js" defer>`
+// snippet is the fast-follow for those.
 export interface Env {
   ROOT_DOMAIN: string
   RENDERER_HOST: string
@@ -21,6 +28,7 @@ export interface Env {
   PORTFOLIO_PROXY_SECRET: string
   OG: Fetcher
   SITE_AUDIT: Fetcher
+  CONTACT_FORM: Fetcher
 }
 
 const SUBDOMAIN_HEADER = "x-portfolio-subdomain"
@@ -56,6 +64,9 @@ export default {
     if (url.pathname.startsWith("/_tools/site-audit")) {
       return env.SITE_AUDIT.fetch(request)
     }
+    if (url.pathname.startsWith("/_tools/contact-form")) {
+      return env.CONTACT_FORM.fetch(request)
+    }
 
     const upstream = new URL(url)
     upstream.hostname = env.RENDERER_HOST
@@ -69,7 +80,7 @@ export default {
     headers.set(SUBDOMAIN_HEADER, label)
     headers.set(SECRET_HEADER, env.PORTFOLIO_PROXY_SECRET)
 
-    return fetch(
+    const response = await fetch(
       new Request(upstream, {
         method: request.method,
         headers,
@@ -77,7 +88,39 @@ export default {
         // The renderer's redirects are the visitor's to follow, on the
         // visitor's hostname — not ours to resolve against the renderer host.
         redirect: "manual",
-      }),
+      })
     )
+
+    return injectContactFormWidget(response)
   },
+}
+
+const WIDGET_SCRIPT_TAG =
+  '<script src="/_tools/contact-form/widget.js" defer></script>'
+
+/**
+ * Append the contact-form widget's loader script to every hosted portfolio
+ * page. The widget itself decides whether to render anything — it asks
+ * `GET /_tools/contact-form/config` and stays inert unless the subdomain has
+ * both the feature switched on and a verified owner email — so it is safe to
+ * inject unconditionally here rather than plumbing the flag through this
+ * Worker.
+ *
+ * Only ever applied to a successful, actually-HTML response: a non-2xx page,
+ * a redirect, or a JSON/asset response has no `<body>` this belongs in, and
+ * `HTMLRewriter` would either do nothing useful or (worse) mangle a body that
+ * was never markup to begin with.
+ */
+function injectContactFormWidget(response: Response): Response {
+  if (!response.ok) return response
+  const contentType = response.headers.get("content-type") ?? ""
+  if (!contentType.includes("text/html")) return response
+
+  return new HTMLRewriter()
+    .on("body", {
+      element(el) {
+        el.append(WIDGET_SCRIPT_TAG, { html: true })
+      },
+    })
+    .transform(response)
 }

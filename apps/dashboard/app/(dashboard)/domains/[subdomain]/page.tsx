@@ -2,15 +2,22 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 
 import { auth } from "@/auth"
+import { ContactFormEmailPanel } from "@/components/contact-form-email-panel"
 import { DomainDetailHeader } from "@/components/domain-detail-header"
 import { DomainsManager } from "@/components/domains-manager"
 import { PortfolioStylePanel } from "@/components/portfolio-style-panel"
 import { getVisitsForSubdomains } from "@/lib/analytics"
+import {
+  getDestinationAddressStatus,
+  hasEmailRouting,
+  type DestinationAddressStatus,
+} from "@/lib/cloudflare-email"
 import { hasDatabase } from "@/lib/db"
 import { toDomainView, type PendingPRView } from "@/lib/domain-view"
 import { getSubdomainsForOwner } from "@/lib/domains"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { getPortfolioStyle } from "@/lib/portfolio-config"
+import { providerForRecords } from "@/lib/providers"
 import { getPendingProxyPRs } from "@/lib/proxy-pr"
 import { hasScreenshotWorker } from "@/lib/screenshots/client"
 
@@ -45,14 +52,13 @@ export default async function DomainDetailPage({ params }: Props) {
   const record = owned.find((domain) => domain.subdomain === normalized)
   if (!record) notFound()
 
-  const domain = toDomainView(record)
-  const hosted = domain.provider?.id === "portfolio"
+  const hosted = providerForRecords(record.records)?.id === "portfolio"
   // The refresh action needs both the registry read model (to check ownership
   // and the cooldown) and the screenshot Worker. Where either is absent the
   // control can only ever fail, so the block is not offered at all.
   const canRefreshPreview = hosted && hasDatabase() && hasScreenshotWorker()
 
-  const [token, visits, style] = await Promise.all([
+  const [token, visits, style, contactFormEmailStatus] = await Promise.all([
     getGitHubAccessToken(),
     getVisitsForSubdomains([record.subdomain]).catch((error) => {
       console.error("[domain] visit totals unavailable", error)
@@ -62,7 +68,18 @@ export default async function DomainDetailPage({ params }: Props) {
     // carry the portfolio block. Only worth a request for a record actually
     // pointed at our renderer.
     hosted ? getPortfolioStyle(record.subdomain) : null,
+    // "absent" (rather than throwing, or reading as "verified") whenever
+    // there's no email yet or Email Routing isn't configured on this
+    // deployment — both mean there is no confirmed place to deliver mail,
+    // which is exactly what blocks the Contact Form switch below.
+    record.owner.email && hasEmailRouting()
+      ? getDestinationAddressStatus(record.owner.email).catch((error) => {
+          console.error("[domain] contact-form email status unavailable", error)
+          return "absent" as const
+        })
+      : Promise.resolve<DestinationAddressStatus>("absent"),
   ])
+  const domain = toDomainView(record, { contactFormEmailStatus })
   const pendingMap = await getPendingProxyPRs(
     session.user.login,
     token ?? undefined
@@ -89,6 +106,12 @@ export default async function DomainDetailPage({ params }: Props) {
           pendingPR={pending[record.subdomain] ?? null}
         />
       ) : null}
+      <ContactFormEmailPanel
+        subdomain={record.subdomain}
+        initialEmail={record.owner.email ?? session.user.email ?? ""}
+        initialStatus={contactFormEmailStatus}
+        pendingPR={pending[record.subdomain] ?? null}
+      />
       <DomainsManager
         domains={[domain]}
         pending={pending}
