@@ -17,6 +17,7 @@ import {
   isFeatureEnabled,
   TOGGLEABLE_FEATURES,
 } from "@/lib/features"
+import { contactFormEnabled } from "@/lib/flags-server"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { providerForRecords } from "@/lib/providers"
 import { getPendingProxyPRs, openProxyTogglePR } from "@/lib/proxy-pr"
@@ -206,11 +207,17 @@ export async function saveSettings(
         continue
       }
       // The dashboard disables Contact Form's switch until the owner's email
-      // shows as verified (lib/domain-view.ts's contactFormBlockReason), but
-      // that is a UI convenience, not the only guard — re-checked here the
-      // same way the proxy prerequisite above is, since the client controls
-      // neither.
+      // shows as verified (lib/domain-view.ts's contactFormBlockReason), and
+      // hides it altogether while the "contact-form" release flag is off
+      // (lib/flags.ts) — but both are UI conveniences, not the only guard.
+      // Re-checked here the same way the proxy prerequisite above is, since
+      // the client controls none of them, and a flag flip is meant to hide
+      // the feature without a deploy, not merely to hide its button.
       if (change.feature === "contact-form" && change.enabled) {
+        if (!(await contactFormEnabled())) {
+          rejection = "Contact Form is not available yet."
+          continue
+        }
         const email = domain.owner.email
         const status: DestinationAddressStatus | null = email
           ? await getDestinationAddressStatus(email).catch(() => null)
@@ -393,6 +400,18 @@ export async function verifyContactFormEmail(
   }
   const login = session.user.login
 
+  // A server action stays reachable by its own ID once deployed, whatever
+  // the page does — the flag has to be checked here too, not only on the
+  // panel that calls it (see app/(dashboard)/claim/actions.ts for the same
+  // reasoning against the "claims" flag).
+  if (!(await contactFormEnabled())) {
+    return {
+      ok: false,
+      status: "absent",
+      error: "Contact Form is not available yet.",
+    }
+  }
+
   const parsed = verifyEmailInput.safeParse(input)
   if (!parsed.success) {
     return { ok: false, status: "absent", error: "Invalid email address." }
@@ -476,6 +495,13 @@ export async function checkContactFormEmailStatus(
   const session = await auth()
   if (!session?.user?.login) {
     return { error: "You must be signed in." }
+  }
+
+  // Same reasoning as verifyContactFormEmail above: this action is reachable
+  // on its own regardless of whether the panel that normally calls it is
+  // rendered.
+  if (!(await contactFormEnabled())) {
+    return { error: "Contact Form is not available yet." }
   }
 
   const parsed = recheckInput.safeParse(input)

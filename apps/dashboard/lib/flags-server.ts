@@ -96,6 +96,9 @@ export async function isFlagOn(id: FlagId): Promise<boolean> {
 /** The Claim tab and /claim route. */
 export const claimsEnabled = () => isFlagOn("claims")
 
+/** The Contact Form platform feature and its settings panel. */
+export const contactFormEnabled = () => isFlagOn("contact-form")
+
 /**
  * Resolve every flag for this request, for handing to client components as
  * plain booleans.

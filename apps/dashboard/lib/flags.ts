@@ -24,6 +24,13 @@ export const FLAGS = {
     description:
       "The Claim tab and /claim route — the portfolio subdomain claim flow.",
   },
+  "contact-form": {
+    description:
+      "The Contact Form platform feature: its switch in the platform panel and " +
+      "the Contact email settings panel. Depends on Cloudflare Email Routing " +
+      "and a Turnstile site being provisioned first (see apps/dashboard/.env.example) " +
+      "— keep this off until those are in place.",
+  },
 } as const satisfies Record<string, FlagDefinition>
 
 export type FlagId = keyof typeof FLAGS

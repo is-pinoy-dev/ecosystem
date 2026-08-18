@@ -7,6 +7,7 @@ import { DomainsOverview } from "@/components/domains-overview"
 import { PageHeader } from "@/components/page-header"
 import { toDomainView, type PendingPRView } from "@/lib/domain-view"
 import { getSubdomainsForOwner } from "@/lib/domains"
+import { contactFormEnabled } from "@/lib/flags-server"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { getPendingProxyPRs } from "@/lib/proxy-pr"
 
@@ -24,7 +25,10 @@ export default async function DomainsPage() {
   if (!session?.user) redirect("/login")
 
   const { login, githubId } = session.user
-  const { owned } = await getSubdomainsForOwner({ login, githubId })
+  const [{ owned }, contactFormFlagEnabled] = await Promise.all([
+    getSubdomainsForOwner({ login, githubId }),
+    contactFormEnabled(),
+  ])
 
   // One listing call covers every row, so the pending-change state costs a
   // single request no matter how many domains the user owns.
@@ -51,7 +55,9 @@ export default async function DomainsPage() {
 
       {owned.length > 0 ? (
         <DomainsOverview
-          domains={owned.map((domain) => toDomainView(domain))}
+          domains={owned.map((domain) =>
+            toDomainView(domain, { contactFormFlagEnabled })
+          )}
           pending={pending}
         />
       ) : (

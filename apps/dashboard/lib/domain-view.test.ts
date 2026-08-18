@@ -97,7 +97,7 @@ describe("Contact Form gating", () => {
   }
 
   it("blocks the switch when the caller has not resolved a status", () => {
-    const view = toDomainView(record)
+    const view = toDomainView(record, { contactFormFlagEnabled: true })
     const contactForm = view.platform?.features.find(
       (feature) => feature.id === "contact-form"
     )
@@ -105,7 +105,10 @@ describe("Contact Form gating", () => {
   })
 
   it("blocks with a distinct message while verification is pending", () => {
-    const view = toDomainView(record, { contactFormEmailStatus: "pending" })
+    const view = toDomainView(record, {
+      contactFormFlagEnabled: true,
+      contactFormEmailStatus: "pending",
+    })
     const contactForm = view.platform?.features.find(
       (feature) => feature.id === "contact-form"
     )
@@ -113,7 +116,10 @@ describe("Contact Form gating", () => {
   })
 
   it("unblocks once the status is verified", () => {
-    const view = toDomainView(record, { contactFormEmailStatus: "verified" })
+    const view = toDomainView(record, {
+      contactFormFlagEnabled: true,
+      contactFormEmailStatus: "verified",
+    })
     const contactForm = view.platform?.features.find(
       (feature) => feature.id === "contact-form"
     )
@@ -121,10 +127,29 @@ describe("Contact Form gating", () => {
   })
 
   it("leaves every other feature unblocked", () => {
-    const view = toDomainView(record)
+    const view = toDomainView(record, { contactFormFlagEnabled: true })
     const siteAudit = view.platform?.features.find(
       (feature) => feature.id === "site-audit"
     )
     expect(siteAudit?.blockedReason).toBeNull()
+  })
+
+  it("hides the feature entirely while its release flag is off", () => {
+    const view = toDomainView(record, { contactFormEmailStatus: "verified" })
+    const contactForm = view.platform?.features.find(
+      (feature) => feature.id === "contact-form"
+    )
+    expect(contactForm).toBeUndefined()
+  })
+
+  it("shows the feature once the release flag is on", () => {
+    const view = toDomainView(record, {
+      contactFormFlagEnabled: true,
+      contactFormEmailStatus: "verified",
+    })
+    const contactForm = view.platform?.features.find(
+      (feature) => feature.id === "contact-form"
+    )
+    expect(contactForm).toBeDefined()
   })
 })
