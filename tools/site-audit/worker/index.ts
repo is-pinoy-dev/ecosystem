@@ -1,6 +1,7 @@
 import { createRequestHandler } from "@react-router/cloudflare"
 // @ts-ignore - build/server is generated at compile time and won't exist during typecheck
 import * as build from "../build/server"
+import { lookupSubdomain, isToolEnabled } from "../src/lib/domains"
 
 const handleRequest = createRequestHandler({
   build,
@@ -16,65 +17,41 @@ const handleRequest = createRequestHandler({
 })
 
 const PREFIX = "/_tools/site-audit"
-const DOMAINS_RAW_BASE =
-  "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains"
-const FEATURE_CACHE_TTL = 300 // 5 minutes
 
 export interface Env {
   ASSETS: Fetcher
 }
 
+/**
+ * Whether site-audit is switched on for this subdomain.
+ *
+ * Fails *open* when the domains repo cannot be reached. The alternative is
+ * what shipped before: a single hiccup from raw.githubusercontent.com and an
+ * owner who did enable the tool is handed a page telling them to add a flag
+ * that is already in their record. Opting out is a fact stated in the file, so
+ * only a file we actually read is allowed to withhold the tool.
+ */
 async function isSiteAuditEnabled(
   subdomain: string,
   ctx: ExecutionContext
 ): Promise<boolean> {
-  const cacheKey = `https://feature-cache.internal/domains/${subdomain}.json`
+  const lookup = await lookupSubdomain(subdomain, ctx)
 
-  if (typeof caches !== "undefined") {
-    const cached = await caches.default.match(cacheKey)
-    if (cached) {
-      const data = await cached.json<{
-        features?: { tools?: { "site-audit"?: boolean } }
-      }>()
-      const enabled = data.features?.tools?.["site-audit"] === true
-      console.log(
-        `[site-audit] feature check subdomain=${subdomain} source=cache enabled=${enabled}`
-      )
-      return enabled
-    }
-  }
-
-  const fetchUrl = `${DOMAINS_RAW_BASE}/${subdomain}.json`
-  console.log(
-    `[site-audit] fetching config subdomain=${subdomain} url=${fetchUrl}`
-  )
-  const res = await fetch(fetchUrl)
-  if (!res.ok) {
+  if (lookup.status === "unavailable") {
     console.warn(
-      `[site-audit] config fetch failed subdomain=${subdomain} status=${res.status}`
+      `[site-audit] domains repo unreachable subdomain=${subdomain} — allowing`
     )
+    return true
+  }
+  if (lookup.status === "unclaimed") {
+    console.warn(`[site-audit] no record subdomain=${subdomain}`)
     return false
   }
 
-  const data = await res.json<{
-    features?: { tools?: { "site-audit"?: boolean } }
-  }>()
-  const enabled = data.features?.tools?.["site-audit"] === true
+  const enabled = isToolEnabled(lookup.record, "site-audit")
   console.log(
-    `[site-audit] feature check subdomain=${subdomain} source=fetch enabled=${enabled}`
+    `[site-audit] feature check subdomain=${subdomain} enabled=${enabled}`
   )
-
-  if (typeof caches !== "undefined") {
-    ctx.waitUntil(
-      caches.default.put(
-        cacheKey,
-        new Response(JSON.stringify(data), {
-          headers: { "Cache-Control": `max-age=${FEATURE_CACHE_TTL}` },
-        })
-      )
-    )
-  }
-
   return enabled
 }
 

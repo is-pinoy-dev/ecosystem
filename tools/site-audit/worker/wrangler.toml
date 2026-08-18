@@ -14,6 +14,12 @@ binding = "ASSETS"
 # serves fine to a browser. These let /audit-proxy address the renderer directly
 # and carry the label itself, exactly as the proxy Worker does.
 #
+# Only for a *hosted* portfolio. Most subdomains CNAME to their owner's own
+# host, and rewriting one of those onto the renderer asks an unrelated origin
+# for a portfolio nobody claimed — a 404 charged to a site that serves 200. So
+# src/lib/upstream.ts resolves the target's `portfolio` block first and rewrites
+# only when there is one; see src/lib/domains.ts.
+#
 # Must stay in step with tools/portfolio-proxy/worker/wrangler.toml.
 [vars]
 ROOT_DOMAIN = "is-pinoy.dev"
@@ -26,7 +32,8 @@ RENDERER_HOST = "portfolio.is-pinoy.dev"
 # Setting it by hand works too, and is how a fresh account gets started:
 #   wrangler secret put PORTFOLIO_PROXY_SECRET -c worker/wrangler.toml
 # Unset, /audit-proxy falls back to fetching the target's public address, which
-# is correct for the apex and for external sites but 525s on a portfolio. The
+# is correct for the apex, for external sites and for a subdomain pointing at
+# its owner's own host, but 525s on a hosted portfolio. The
 # vars above ship with every deploy; this does not, so it is the one that goes
 # missing — and it goes missing quietly, as a 525 attributed to the portfolio.
 

@@ -33,8 +33,15 @@ type ProxyResponse = {
  * What a hosted portfolio's own routing verdict means, when the fetch came
  * back unusable. `x-portfolio-route` is set by apps/portfolio/proxy.ts on every
  * response; these are the values that explain a page that didn't render.
+ *
+ * `worker` is the healthy verdict and still belongs here. Printed bare it reads
+ * like a fault code — it was the whole of the message the first time a
+ * self-hosted subdomain was wrongly scanned as a portfolio — when what it
+ * actually rules out is the entire routing half of the problem.
  */
 const ROUTE_DIAGNOSIS: Record<string, string> = {
+  worker:
+    "Routing itself worked — the renderer received this subdomain and answered for it, so the failure is about what it had to serve rather than how the request arrived. Check that the subdomain's record still carries a portfolio block and that the GitHub profile it names is reachable.",
   unlabelled:
     "The renderer saw no subdomain on this request, so it had no portfolio to render. Check that a Worker route exists for this subdomain.",
   "no-secret":
