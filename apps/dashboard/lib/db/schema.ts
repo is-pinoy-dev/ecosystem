@@ -38,6 +38,18 @@ export const subdomains = sqliteTable(
     features: text("features", { mode: "json" }).$type<
       Record<string, unknown>
     >(),
+    // Dashboard-owned overrides, layered on top of the git-derived columns
+    // above. Unlike `features`/`records`, these are never written by the sync
+    // workflow — only by a dashboard save — and stay `null` until someone
+    // edits a setting from here instead of by pull request. A `null` value
+    // means "no override yet"; readers fall back to the git-derived value.
+    featuresOverride: text("features_override", { mode: "json" }).$type<
+      Record<string, unknown>
+    >(),
+    portfolioOverride: text("portfolio_override", { mode: "json" }).$type<{
+      template: string
+      theme?: string
+    }>(),
     syncStatus: text("sync_status", { enum: SYNC_STATUSES })
       .notNull()
       .default("pending"),
