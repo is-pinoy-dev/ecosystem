@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { rotateWeekly, weekIndex } from "./showcase-rotation"
+import { rotateWeekly, weekIndex, weekStart } from "./showcase-rotation"
 
 const POOL = ["alpha", "bravo", "charlie", "delta", "echo"]
 
@@ -18,6 +18,18 @@ describe("weekIndex", () => {
 
   it("advances by one at Monday 00:00 UTC", () => {
     expect(weekIndex(NEXT_MONDAY)).toBe(weekIndex(MONDAY) + 1)
+  })
+})
+
+describe("weekStart", () => {
+  it("names the Monday that opens the week, from any moment inside it", () => {
+    expect(weekStart(MONDAY)).toEqual(MONDAY)
+    expect(weekStart(new Date("2026-01-25T23:59:59.999Z"))).toEqual(MONDAY)
+    expect(weekStart(NEXT_MONDAY)).toEqual(NEXT_MONDAY)
+  })
+
+  it("lands on a Monday for dates before the epoch", () => {
+    expect(weekStart(new Date("1969-07-20T20:17:00Z")).getUTCDay()).toBe(1)
   })
 })
 

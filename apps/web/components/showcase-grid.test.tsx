@@ -128,7 +128,8 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["alpha", "delta", "bravo", "charlie"])
+    // The two captures lead; the fill takes this week's turn of the rest.
+    expect(orderOf(html)).toEqual(["alpha", "delta", "charlie", "echo"])
   })
 
   it("does not float a captured entry ahead of an older captured one", async () => {
@@ -152,7 +153,7 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["bravo", "charlie", "alpha", "delta"])
+    expect(orderOf(html)).toEqual(["bravo", "charlie", "delta", "echo"])
   })
 
   it("shows the newest entries when neither source can answer", async () => {
@@ -190,6 +191,40 @@ describe("ShowcaseHighlights", () => {
 
     expect(first).toEqual(["bravo", "charlie", "delta", "echo"])
     expect(second).toEqual(["alpha", "bravo", "charlie", "delta"])
+  })
+
+  it("still turns over on a week when four or fewer sites are captured", async () => {
+    // The regression this guards: rotating only the captures and then padding
+    // with a fixed slice of the registry left the whole section frozen for as
+    // long as the screenshot worker was behind — four captures is not enough
+    // to rotate, and the pad never moved. Both tiers advance now.
+    getScreenshotManifest.mockResolvedValue(captures("alpha", "bravo"))
+
+    const first = orderOf(await render(ShowcaseHighlights()))
+    vi.setSystemTime(WEEK_TWO)
+    const second = orderOf(await render(ShowcaseHighlights()))
+
+    expect(second).not.toEqual(first)
+    // The two captures still lead both weeks; it is the fill that turned over.
+    expect(second.slice(0, 2)).toEqual(["alpha", "bravo"])
+  })
+
+  it("does not reshuffle the week's entries when somebody claims a subdomain", async () => {
+    // Rotation advances by index, so it needs a running order that only grows
+    // at the end. The registry is sorted newest-first, and rotating over that
+    // put every entry one place along the moment a claim landed — turning the
+    // section over mid-week, on a registration rather than on the calendar.
+    const before = orderOf(await render(ShowcaseHighlights()))
+
+    getRegisteredSubdomains.mockResolvedValue([
+      entry("foxtrot", "six", { createdOn: "2026-06-01T00:00:00Z" }),
+      ...REGISTRY,
+    ])
+    getScreenshotManifest.mockResolvedValue(
+      captures("foxtrot", ...REGISTRY.map((e) => e.subdomain))
+    )
+
+    expect(orderOf(await render(ShowcaseHighlights()))).toEqual(before)
   })
 
   it("keeps captured entries ahead of the OG-preview fill", async () => {
@@ -410,7 +445,7 @@ describe("ShowcaseHighlights", () => {
     const html = await render(ShowcaseHighlights())
 
     expect(html).toContain("/_tools/og/preview?subdomain=bravo")
-    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
+    expect(orderOf(html)).toEqual(["bravo", "charlie", "delta", "echo"])
   })
 
   it("fills all four slots when fewer than four entries are captured", async () => {
@@ -418,7 +453,7 @@ describe("ShowcaseHighlights", () => {
 
     const html = await render(ShowcaseHighlights())
 
-    expect(orderOf(html)).toEqual(["alpha", "bravo", "charlie", "delta"])
+    expect(orderOf(html)).toEqual(["alpha", "bravo", "delta", "echo"])
   })
 
   it("passes a stored capture through to the card that shows it", async () => {

@@ -13,6 +13,18 @@ export function weekIndex(now: Date): number {
 }
 
 /**
+ * The Monday 00:00 UTC that opens the week containing `now`.
+ *
+ * Callers use this to decide which entries are in play for the week. A window
+ * that advances by index only means "this week's sites" while the list under it
+ * holds still, so the pool has to be settled at the boundary rather than read
+ * live.
+ */
+export function weekStart(now: Date): Date {
+  return new Date(weekIndex(now) * WEEK_MS + MONDAY_OFFSET_MS)
+}
+
+/**
  * A window of `count` entries that advances by `count` each week and wraps at
  * the end, so consecutive weeks feature disjoint entries and every entry comes
  * round in turn. Derived from the calendar rather than from randomness: the
