@@ -36,11 +36,26 @@ jobs:
       # No build step and no D1 migrations: the worker is a single TypeScript
       # module that wrangler bundles itself, and this tool keeps no database
       # of its own — submissions are emailed straight through, never stored.
+      #
+      # TURNSTILE_SITE_KEY is public (it's served back to visitors from
+      # GET /config), but supplied here rather than committed to
+      # wrangler.toml so rotating the Turnstile site is a GitHub Actions
+      # *variable* edit plus a re-run, never a commit — set it under
+      # Settings > Secrets and variables > Actions > Variables. Left unset,
+      # the worker deploys with wrangler.toml's empty default and the widget
+      # stays inert (its `/config` response has no site key to render
+      # against) rather than failing the deploy.
       - name: Deploy
         working-directory: tools/contact-form
-        run: pnpm run deploy
+        run: |
+          if [ -z "$TURNSTILE_SITE_KEY" ]; then
+            pnpm run deploy
+          else
+            pnpm run deploy -- --var "TURNSTILE_SITE_KEY:$TURNSTILE_SITE_KEY"
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
+          TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
 
       # TURNSTILE_SECRET_KEY authenticates the Worker's own call to Cloudflare's
       # siteverify endpoint (worker/turnstile.ts) — without it every submission

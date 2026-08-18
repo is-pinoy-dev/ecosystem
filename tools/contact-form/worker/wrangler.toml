@@ -7,9 +7,16 @@ preview_urls = false
 
 [vars]
 # Public Turnstile site key — safe to ship in the client-visible /config
-# response, unlike TURNSTILE_SECRET_KEY below. Create the Turnstile widget
-# (managed/non-interactive/invisible mode) in the Cloudflare dashboard, add
-# *.is-pinoy.dev as an allowed hostname, and put its site key here.
+# response, unlike TURNSTILE_SECRET_KEY below. Left empty here on purpose:
+# the real value is supplied at deploy time via `wrangler deploy --var
+# TURNSTILE_SITE_KEY:...` from the TURNSTILE_SITE_KEY repository *variable*
+# (Settings > Secrets and variables > Actions > Variables tab — not
+# Secrets, since this value isn't sensitive), the same way
+# TURNSTILE_SECRET_KEY below is supplied from a repository secret. Rotating
+# the Turnstile site is then a GitHub Actions variable edit plus a workflow
+# re-run, never a commit. Create the Turnstile widget itself
+# (managed/non-interactive/invisible mode) in the Cloudflare dashboard, and
+# add *.is-pinoy.dev as an allowed hostname.
 TURNSTILE_SITE_KEY = ""
 
 # TURNSTILE_SECRET_KEY is a secret, not a var — set with:
