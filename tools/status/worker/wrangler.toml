@@ -16,7 +16,9 @@ database_id = "384c9b0f-1fd3-4018-91c3-9e50fcc573d5"
 migrations_dir = "migrations"
 
 [triggers]
-crons = ["*/5 * * * *"]
+# Temporarily disable scheduled status checks. Keep this explicit so the next
+# deploy removes the existing Cloudflare Cron Trigger.
+crons = []
 
 [[routes]]
 pattern = "status.is-pinoy.dev/*"
