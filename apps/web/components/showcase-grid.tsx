@@ -15,7 +15,7 @@ import {
   previewStatusFor,
   type ShowcasePreviewStatus,
 } from "@/lib/showcase-preview"
-import { rotateWeekly } from "@/lib/showcase-rotation"
+import { rotateWeekly, weekStart } from "@/lib/showcase-rotation"
 import { showcaseKindLabel } from "@/lib/showcase-kind"
 import { getShowcaseVisits } from "@/lib/visits"
 import {
@@ -385,6 +385,105 @@ export async function ShowcaseGrid({
 /** One feature and three supporting entries in the landing section. */
 const HIGHLIGHT_COUNT = 4
 
+/**
+ * The rotation pool's running order, which only ever grows at the end.
+ *
+ * `getRegisteredSubdomains` sorts newest-first, which is what a list people
+ * read wants but the wrong basis for a window that advances by index: every new
+ * claim lands at position 0 and shifts every entry along behind it, so the
+ * week's four sites would turn over the moment somebody registered rather than
+ * on the calendar. Oldest-first gives each entry a position it keeps for good,
+ * with the subdomain breaking ties so entries claimed in the same commit — and
+ * entries whose date we never resolved, which sort last — still have one fixed
+ * order rather than whatever the fetches happened to settle in.
+ */
+function rotationOrder(entries: SubdomainEntry[]): SubdomainEntry[] {
+  const claimedAt = (entry: SubdomainEntry) => {
+    const parsed = entry.createdOn ? Date.parse(entry.createdOn) : Number.NaN
+    return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed
+  }
+
+  return [...entries].sort((a, b) => {
+    const ta = claimedAt(a)
+    const tb = claimedAt(b)
+    // Compared rather than subtracted: both sides are Infinity for two entries
+    // with no date, and Infinity - Infinity is NaN, which sorts nothing.
+    if (ta !== tb) return ta < tb ? -1 : 1
+    return a.subdomain.localeCompare(b.subdomain)
+  })
+}
+
+/**
+ * The entries in play for the week that opened at `boundary`.
+ *
+ * The window advances by index, so a pool that grows underneath it moves: one
+ * claim landing on a Thursday changes how long the list is, which moves the
+ * window's start, which changes the four sites on show — a turnover driven by a
+ * registration rather than by the calendar. Settling the pool at the week
+ * boundary is what makes "featured this week" name one fixed set of sites for
+ * the whole week; anything claimed since joins on Monday, and shows up on the
+ * landing page's recently-claimed row in the meantime.
+ *
+ * Entries whose claim date never resolved are kept rather than held back. We
+ * cannot show they are new, and the cost of guessing wrong is somebody's site
+ * sitting out a week it was entitled to.
+ */
+function claimedBefore(
+  entries: SubdomainEntry[],
+  boundary: Date
+): SubdomainEntry[] {
+  const settled = entries.filter((entry) => {
+    const parsed = entry.createdOn ? Date.parse(entry.createdOn) : Number.NaN
+    return Number.isNaN(parsed) || parsed < boundary.getTime()
+  })
+  // A registry where every entry is new is a new registry, not an empty one.
+  return settled.length > 0 ? settled : entries
+}
+
+/**
+ * The entries the landing section features this week.
+ *
+ * Which four is a question the calendar answers on its own, from the registry
+ * as it stood when the week opened. Nothing that happens between two Mondays
+ * moves the set: not a claim, not the screenshot worker finishing a capture,
+ * not one of the capture sources timing out.
+ *
+ * Captures deliberately play no part in that decision. Gating eligibility on
+ * them handed the rotation to a worker running on its own schedule — a
+ * Wednesday retry swapped a site in and another out, and a week with four or
+ * fewer photographed sites had no pool to rotate through at all, so the
+ * section simply stopped moving. They still order the week's four, so the wide
+ * featured slot shows a real screenshot whenever one of them has one, and the
+ * rest are presented through the OG-preview endpoint as uncaptured entries on
+ * this surface always have been.
+ *
+ * `capturedPool` is null when neither source could say which sites have been
+ * photographed. That is a fact about our infrastructure rather than about the
+ * community; the week's four are already settled, so they simply keep their
+ * rotation order.
+ */
+function weeklyHighlights(
+  entries: SubdomainEntry[],
+  capturedPool: SubdomainEntry[] | null,
+  now: Date
+): SubdomainEntry[] {
+  const featured = rotateWeekly(
+    rotationOrder(claimedBefore(entries, weekStart(now))),
+    HIGHLIGHT_COUNT,
+    now
+  )
+  if (capturedPool === null) return featured
+
+  const isCaptured = new Set(capturedPool.map((entry) => entry.subdomain))
+  // Stable partition rather than a sort: entries keep their rotation order
+  // within each side, so a capture landing mid-week can lift a card into the
+  // featured slot but can never reshuffle the four around it.
+  return [
+    ...featured.filter((entry) => isCaptured.has(entry.subdomain)),
+    ...featured.filter((entry) => !isCaptured.has(entry.subdomain)),
+  ]
+}
+
 function HighlightMeta({
   entry,
   featured = false,
@@ -545,33 +644,17 @@ export function ShowcaseHighlightsSkeleton() {
 }
 
 export async function ShowcaseHighlights() {
-  // Captured sites lead the landing page, then the newest registered entries
-  // fill any remaining slots through the OG-preview endpoint. This preserves a
-  // full 1+3 showcase while still giving real captures first claim on a slot.
+  // Captured sites lead the landing page, then the rest of the registry fills
+  // any remaining slots through the OG-preview endpoint. This preserves a full
+  // 1+3 showcase while still giving real captures first claim on a slot — and
+  // both tiers turn over on the calendar, so a week with few captures is still
+  // a week the section moves.
   const entries = await fetchAllSubdomains()
-  const pool = await captured(entries)
-  // Nothing could tell us which entries are captured. Showing the newest few —
-  // previews and all — beats an empty section reporting an outage of ours as
-  // news about the community.
-  const capturedHighlights = rotateWeekly(
-    pool ?? entries,
-    HIGHLIGHT_COUNT,
+  const highlights = weeklyHighlights(
+    entries,
+    await captured(entries),
     new Date()
   )
-  const highlights =
-    pool !== null && capturedHighlights.length < HIGHLIGHT_COUNT
-      ? [
-          ...capturedHighlights,
-          ...entries
-            .filter(
-              (entry) =>
-                !capturedHighlights.some(
-                  (highlight) => highlight.subdomain === entry.subdomain
-                )
-            )
-            .slice(0, HIGHLIGHT_COUNT - capturedHighlights.length),
-        ]
-      : capturedHighlights
 
   if (highlights.length === 0) {
     // Nothing registered and nothing captured yet are different situations, and
