@@ -10,6 +10,7 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
     PORTFOLIO_PROXY_SECRET: SECRET,
     OG: { fetch: vi.fn(async () => new Response("og")) },
     SITE_AUDIT: { fetch: vi.fn(async () => new Response("audit")) },
+    CONTACT_FORM: { fetch: vi.fn(async () => new Response("contact-form")) },
     ...overrides,
   } as unknown as Env
 }
@@ -86,6 +87,12 @@ describe("portfolio proxy", () => {
     )
     expect(await audit.text()).toBe("audit")
 
+    const contactForm = await worker.fetch(
+      new Request("https://juan.is-pinoy.dev/_tools/contact-form/widget.js"),
+      env
+    )
+    expect(await contactForm.text()).toBe("contact-form")
+
     // Neither may reach the renderer — page.tsx's OG card depends on it.
     expect(upstream).not.toHaveBeenCalled()
   })
@@ -122,5 +129,61 @@ describe("portfolio proxy", () => {
     await worker.fetch(new Request("https://ju_an.is-pinoy.dev/"), makeEnv())
     const sent = sentRequest()
     expect(sent.headers.get("x-portfolio-subdomain")).toBeNull()
+  })
+})
+
+describe("contact-form widget injection", () => {
+  const SCRIPT_TAG =
+    '<script src="/_tools/contact-form/widget.js" defer></script>'
+
+  it("appends the widget script before </body> on a successful HTML response", async () => {
+    upstream.mockResolvedValueOnce(
+      new Response("<html><body><h1>Hi</h1></body></html>", {
+        headers: { "content-type": "text/html; charset=UTF-8" },
+      })
+    )
+
+    const res = await worker.fetch(
+      new Request("https://juan.is-pinoy.dev/"),
+      makeEnv()
+    )
+    const body = await res.text()
+
+    expect(body).toContain(SCRIPT_TAG)
+    // Appended as the last child of <body>, not merely present anywhere.
+    expect(body.indexOf(SCRIPT_TAG)).toBeLessThan(body.indexOf("</body>"))
+  })
+
+  it("leaves a non-HTML response untouched", async () => {
+    upstream.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true }), {
+        headers: { "content-type": "application/json" },
+      })
+    )
+
+    const res = await worker.fetch(
+      new Request("https://juan.is-pinoy.dev/api/whatever"),
+      makeEnv()
+    )
+    const body = await res.text()
+
+    expect(body).not.toContain(SCRIPT_TAG)
+  })
+
+  it("leaves a non-ok HTML response untouched", async () => {
+    upstream.mockResolvedValueOnce(
+      new Response("<html><body>Not found</body></html>", {
+        status: 404,
+        headers: { "content-type": "text/html; charset=UTF-8" },
+      })
+    )
+
+    const res = await worker.fetch(
+      new Request("https://juan.is-pinoy.dev/missing"),
+      makeEnv()
+    )
+    const body = await res.text()
+
+    expect(body).not.toContain(SCRIPT_TAG)
   })
 })

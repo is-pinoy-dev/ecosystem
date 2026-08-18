@@ -1,0 +1,77 @@
+name: Deploy contact-form
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/contact-form/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare Workers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # No build step and no D1 migrations: the worker is a single TypeScript
+      # module that wrangler bundles itself, and this tool keeps no database
+      # of its own — submissions are emailed straight through, never stored.
+      - name: Deploy
+        working-directory: tools/contact-form
+        run: pnpm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
+
+      # TURNSTILE_SECRET_KEY authenticates the Worker's own call to Cloudflare's
+      # siteverify endpoint (worker/turnstile.ts) — without it every submission
+      # fails verification. Kept here rather than a manual `wrangler secret put`
+      # so rotating it is a GitHub secret edit plus a re-run of this workflow,
+      # the same arrangement deploy-portfolio-proxy.yml and deploy-site-audit.yml
+      # use for PORTFOLIO_PROXY_SECRET.
+      #
+      # Runs after the deploy: `secret put` needs the script to already exist,
+      # which matters on a first deploy into a fresh account. Secrets outlive
+      # deploys, so re-running with the value unchanged is a no-op.
+      #
+      # `printf` rather than `echo` — a trailing newline would travel into the
+      # POST body sent to Cloudflare's siteverify endpoint and could fail
+      # verification on a secret that looks correct in the dashboard.
+      #
+      # The "is it set?" guard lives in the script rather than a step-level
+      # `if:`. `secrets` is not an available context there, and referencing it
+      # is rejected when the workflow file is parsed — which fails the whole
+      # run before any job starts, rather than just skipping the step.
+      - name: Sync TURNSTILE_SECRET_KEY
+        working-directory: tools/contact-form
+        run: |
+          if [ -z "$TURNSTILE_SECRET_KEY" ]; then
+            echo "TURNSTILE_SECRET_KEY is not set — skipping. The worker is"
+            echo "deployed, but every submission will fail Turnstile verification"
+            echo "until this secret is configured."
+            exit 0
+          fi
+          printf '%s' "$TURNSTILE_SECRET_KEY" \
+            | pnpm exec wrangler secret put TURNSTILE_SECRET_KEY -c worker/wrangler.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKER_DEPLOY_TOKEN }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}

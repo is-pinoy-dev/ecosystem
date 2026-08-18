@@ -69,6 +69,16 @@ export const FEATURES: PlatformFeature[] = [
     flagPath: ["analytics"],
     defaultEnabled: true,
   },
+  {
+    id: "contact-form",
+    name: "Contact Form",
+    description:
+      "A popup contact form on your hosted portfolio, protected by Cloudflare Turnstile. Messages are emailed straight to you — nothing is stored on our servers.",
+    docsUrl: "https://docs.is-pinoy.dev/tools/contact-form",
+    kind: "toggle",
+    flagPath: ["tools", "contact-form"],
+    defaultEnabled: false,
+  },
 ]
 
 /** Features rendered with a switch. */

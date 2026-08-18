@@ -13,6 +13,7 @@ import {
 const siteAudit = findFeature("site-audit")!
 const analytics = findFeature("analytics")!
 const og = findFeature("og")!
+const contactForm = findFeature("contact-form")!
 
 describe("feature registry", () => {
   it("splits switchable features from built-ins", () => {
@@ -36,6 +37,12 @@ describe("feature registry", () => {
     expect(og.kind).toBe("builtin")
     expect(og.flagPath).toEqual([])
     expect(TOGGLEABLE_FEATURES.map((f) => f.id)).not.toContain("og")
+  })
+
+  it("treats Contact Form as opt-in, nested under tools like Site Audit", () => {
+    expect(contactForm.kind).toBe("toggle")
+    expect(contactForm.defaultEnabled).toBe(false)
+    expect(contactForm.flagPath).toEqual(["tools", "contact-form"])
   })
 
   it("gives every feature docs to link to", () => {

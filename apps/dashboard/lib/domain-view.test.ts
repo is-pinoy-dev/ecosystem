@@ -87,3 +87,44 @@ describe("toDomainView", () => {
     ])
   })
 })
+
+describe("Contact Form gating", () => {
+  const record = {
+    subdomain: "juan",
+    owner: { github: "juandelacruz", email: "juan@example.com" },
+    records: { CNAME: { value: "cname.vercel-dns.com", proxied: true } },
+    features: { tools: { "contact-form": true } },
+  }
+
+  it("blocks the switch when the caller has not resolved a status", () => {
+    const view = toDomainView(record)
+    const contactForm = view.platform?.features.find(
+      (feature) => feature.id === "contact-form"
+    )
+    expect(contactForm?.blockedReason).toMatch(/verify a contact email/i)
+  })
+
+  it("blocks with a distinct message while verification is pending", () => {
+    const view = toDomainView(record, { contactFormEmailStatus: "pending" })
+    const contactForm = view.platform?.features.find(
+      (feature) => feature.id === "contact-form"
+    )
+    expect(contactForm?.blockedReason).toMatch(/pending/i)
+  })
+
+  it("unblocks once the status is verified", () => {
+    const view = toDomainView(record, { contactFormEmailStatus: "verified" })
+    const contactForm = view.platform?.features.find(
+      (feature) => feature.id === "contact-form"
+    )
+    expect(contactForm?.blockedReason).toBeNull()
+  })
+
+  it("leaves every other feature unblocked", () => {
+    const view = toDomainView(record)
+    const siteAudit = view.platform?.features.find(
+      (feature) => feature.id === "site-audit"
+    )
+    expect(siteAudit?.blockedReason).toBeNull()
+  })
+})
