@@ -197,6 +197,16 @@ export interface DomainViewOptions {
    * confirmed place to deliver mail, so the switch stays disabled either way.
    */
   contactFormEmailStatus?: DestinationAddressStatus
+  /**
+   * The `contact-form` release flag (see lib/flags.ts) — separate from the
+   * email-verification gate above. This one hides the feature from the
+   * platform panel entirely, for rolling it out gradually or turning it off
+   * without a deploy while its Cloudflare Email Routing/Turnstile
+   * prerequisites are still being set up. Defaults to off, same as every
+   * other release flag here, so a caller that forgets to resolve it hides
+   * the feature rather than exposing an unlaunched one.
+   */
+  contactFormFlagEnabled?: boolean
 }
 
 export function toDomainView(
@@ -294,7 +304,10 @@ function toPlatformView(
     // The host wants a value this record does not have — actionable, not locked.
     correctionNote:
       policy.pinnedTo !== null && lockedReason === null ? policy.note : null,
-    features: TOGGLEABLE_FEATURES.map((feature) => {
+    features: TOGGLEABLE_FEATURES.filter(
+      (feature) =>
+        feature.id !== "contact-form" || options.contactFormFlagEnabled
+    ).map((feature) => {
       const links: ToolLinkView[] =
         feature.id === "site-audit"
           ? [

@@ -12,6 +12,10 @@ describe("flag registry", () => {
     expect(FLAG_IDS).toContain("claims")
   })
 
+  it("gates the Contact Form feature behind a flag named for its dashboard key", () => {
+    expect(FLAG_IDS).toContain("contact-form")
+  })
+
   it("describes every flag, so a stale one can be recognised", () => {
     expect(FLAG_IDS.every((id) => FLAGS[id].description.length > 0)).toBe(true)
   })

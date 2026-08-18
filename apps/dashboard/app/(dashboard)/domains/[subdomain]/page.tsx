@@ -15,6 +15,7 @@ import {
 import { hasDatabase } from "@/lib/db"
 import { toDomainView, type PendingPRView } from "@/lib/domain-view"
 import { getSubdomainsForOwner } from "@/lib/domains"
+import { contactFormEnabled } from "@/lib/flags-server"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { getPortfolioStyle } from "@/lib/portfolio-config"
 import { providerForRecords } from "@/lib/providers"
@@ -58,28 +59,36 @@ export default async function DomainDetailPage({ params }: Props) {
   // control can only ever fail, so the block is not offered at all.
   const canRefreshPreview = hosted && hasDatabase() && hasScreenshotWorker()
 
-  const [token, visits, style, contactFormEmailStatus] = await Promise.all([
-    getGitHubAccessToken(),
-    getVisitsForSubdomains([record.subdomain]).catch((error) => {
-      console.error("[domain] visit totals unavailable", error)
-      return null
-    }),
-    // Read straight from the domains repo — the registry read model does not
-    // carry the portfolio block. Only worth a request for a record actually
-    // pointed at our renderer.
-    hosted ? getPortfolioStyle(record.subdomain) : null,
-    // "absent" (rather than throwing, or reading as "verified") whenever
-    // there's no email yet or Email Routing isn't configured on this
-    // deployment — both mean there is no confirmed place to deliver mail,
-    // which is exactly what blocks the Contact Form switch below.
-    record.owner.email && hasEmailRouting()
-      ? getDestinationAddressStatus(record.owner.email).catch((error) => {
-          console.error("[domain] contact-form email status unavailable", error)
-          return "absent" as const
-        })
-      : Promise.resolve<DestinationAddressStatus>("absent"),
-  ])
-  const domain = toDomainView(record, { contactFormEmailStatus })
+  const [token, visits, style, contactFormEmailStatus, contactFormFlagEnabled] =
+    await Promise.all([
+      getGitHubAccessToken(),
+      getVisitsForSubdomains([record.subdomain]).catch((error) => {
+        console.error("[domain] visit totals unavailable", error)
+        return null
+      }),
+      // Read straight from the domains repo — the registry read model does not
+      // carry the portfolio block. Only worth a request for a record actually
+      // pointed at our renderer.
+      hosted ? getPortfolioStyle(record.subdomain) : null,
+      // "absent" (rather than throwing, or reading as "verified") whenever
+      // there's no email yet or Email Routing isn't configured on this
+      // deployment — both mean there is no confirmed place to deliver mail,
+      // which is exactly what blocks the Contact Form switch below.
+      record.owner.email && hasEmailRouting()
+        ? getDestinationAddressStatus(record.owner.email).catch((error) => {
+            console.error(
+              "[domain] contact-form email status unavailable",
+              error
+            )
+            return "absent" as const
+          })
+        : Promise.resolve<DestinationAddressStatus>("absent"),
+      contactFormEnabled(),
+    ])
+  const domain = toDomainView(record, {
+    contactFormEmailStatus,
+    contactFormFlagEnabled,
+  })
   const pendingMap = await getPendingProxyPRs(
     session.user.login,
     token ?? undefined
@@ -106,12 +115,14 @@ export default async function DomainDetailPage({ params }: Props) {
           pendingPR={pending[record.subdomain] ?? null}
         />
       ) : null}
-      <ContactFormEmailPanel
-        subdomain={record.subdomain}
-        initialEmail={record.owner.email ?? session.user.email ?? ""}
-        initialStatus={contactFormEmailStatus}
-        pendingPR={pending[record.subdomain] ?? null}
-      />
+      {contactFormFlagEnabled ? (
+        <ContactFormEmailPanel
+          subdomain={record.subdomain}
+          initialEmail={record.owner.email ?? session.user.email ?? ""}
+          initialStatus={contactFormEmailStatus}
+          pendingPR={pending[record.subdomain] ?? null}
+        />
+      ) : null}
       <DomainsManager
         domains={[domain]}
         pending={pending}
