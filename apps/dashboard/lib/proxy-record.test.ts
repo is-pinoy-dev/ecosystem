@@ -275,28 +275,6 @@ describe("buildToggledFile", () => {
     expect(parsed.records.CNAME.proxied).toBe(false)
   })
 
-  it("enables a tool, creating the features block when absent", () => {
-    const result = buildToggledFile(
-      file({ CNAME: { value: "juan.example.com", proxied: true } }),
-      [{ kind: "feature", feature: "site-audit", enabled: true }]
-    )
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.features).toEqual({ tools: { "site-audit": true } })
-  })
-
-  it("applies a proxy flip and a tool flag in one commit", () => {
-    const result = buildToggledFile(
-      file({ CNAME: { value: "juan.example.com", proxied: false } }),
-      [
-        { kind: "proxy", type: "CNAME", enabled: true },
-        { kind: "feature", feature: "site-audit", enabled: true },
-      ]
-    )
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.records.CNAME.proxied).toBe(true)
-    expect(parsed.features.tools["site-audit"]).toBe(true)
-  })
-
   it("leaves the file without a features block when only the proxy changed", () => {
     const result = buildToggledFile(
       file({ CNAME: { value: "juan.example.com", proxied: false } }),
@@ -342,116 +320,18 @@ describe("buildToggledFile — owner email", () => {
     })
   })
 
-  it("combines with a feature flag in one commit", () => {
-    const result = buildToggledFile(
-      file({ CNAME: { value: "juan.example.com", proxied: true } }),
-      [
-        { kind: "owner-email", email: "juan@example.com" },
-        { kind: "feature", feature: "contact-form", enabled: true },
-      ]
-    )
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.owner.email).toBe("juan@example.com")
-    expect(parsed.features.tools["contact-form"]).toBe(true)
-  })
-})
-
-/**
- * A hosted portfolio record: CNAMEd at the renderer, carrying a style. Its
- * subdomain is the owner's login because the repo's own validation requires
- * exactly that of a record with a portfolio block.
- */
-function portfolioFile(portfolio: Record<string, unknown>) {
-  return {
-    subdomain: "juandelacruz",
-    owner: { github: "juandelacruz" },
-    records: { CNAME: { value: "portfolio.is-pinoy.dev", proxied: true } },
-    portfolio,
-  }
-}
-
-describe("buildToggledFile — portfolio style", () => {
-  it("rewrites the template and palette of a layout", () => {
-    const result = buildToggledFile(
-      portfolioFile({ template: "terminal", theme: "gold-dark" }),
-      [{ kind: "portfolio", template: "minimal", theme: "mono" }]
-    )
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.portfolio).toEqual({ template: "minimal", theme: "mono" })
-  })
-
-  it("drops the palette when moving to a designer design", () => {
-    const result = buildToggledFile(
-      portfolioFile({ template: "terminal", theme: "matrix" }),
-      [{ kind: "portfolio", template: "noir", theme: "matrix" }]
-    )
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.portfolio).toEqual({ template: "noir" })
-  })
-
-  it("keeps unrelated portfolio keys such as sections", () => {
-    const result = buildToggledFile(
-      portfolioFile({
-        template: "terminal",
-        theme: "gold-dark",
-        sections: ["about", "projects"],
-      }),
-      [{ kind: "portfolio", template: "grid" }]
-    )
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.portfolio).toEqual({
-      template: "grid",
-      sections: ["about", "projects"],
-    })
-  })
-
-  it("leaves the DNS records untouched", () => {
-    const source = portfolioFile({ template: "terminal", theme: "gold-dark" })
+  it("rejects setting the email to what it already is even alongside a proxy change", () => {
+    const source = {
+      ...file({ CNAME: { value: "juan.example.com", proxied: true } }),
+      owner: { github: "juandelacruz", email: "juan@example.com" },
+    }
     const result = buildToggledFile(source, [
-      { kind: "portfolio", template: "bento" },
+      { kind: "proxy", type: "CNAME", enabled: false },
+      { kind: "owner-email", email: "juan@example.com" },
     ])
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.records).toEqual(source.records)
-  })
-
-  it("rejects a style that is already the saved one", () => {
-    const result = buildToggledFile(
-      portfolioFile({ template: "terminal", theme: "gold-dark" }),
-      [{ kind: "portfolio", template: "terminal", theme: "gold-dark" }]
-    )
-    expect(result).toEqual({ error: "That is already this portfolio's style." })
-  })
-
-  it("treats a palette on a designer design as no change at all", () => {
-    // `theme` is not written for a designer template, so switching it is a
-    // request to rewrite the file with identical contents.
-    const result = buildToggledFile(portfolioFile({ template: "noir" }), [
-      { kind: "portfolio", template: "noir", theme: "crimson" },
-    ])
-    expect(result).toEqual({ error: "That is already this portfolio's style." })
-  })
-
-  it("rejects a record with no portfolio block", () => {
-    const result = buildToggledFile(
-      file({ CNAME: { value: "juan.github.io" } }),
-      [{ kind: "portfolio", template: "grid" }]
-    )
     expect(result).toEqual({
-      error: "This subdomain is not a hosted portfolio, so it has no style.",
+      error: "That is already this subdomain's contact email.",
     })
-  })
-
-  it("applies a style change and a tool flag in one commit", () => {
-    const result = buildToggledFile(
-      portfolioFile({ template: "terminal", theme: "gold-dark" }),
-      [
-        { kind: "portfolio", template: "solar" },
-        { kind: "feature", feature: "site-audit", enabled: true },
-      ]
-    )
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.portfolio).toEqual({ template: "solar" })
-    expect(parsed.features.tools["site-audit"]).toBe(true)
   })
 })
 
@@ -467,42 +347,12 @@ describe("summarizeChanges", () => {
     expect(summary.bullets).toEqual(["- `records.CNAME.proxied` → `true`"])
   })
 
-  it("describes a mixed batch as an update", () => {
+  it("describes a mixed batch of proxy flips as an update", () => {
     const summary = summarizeChanges("juan", [
       { kind: "proxy", type: "CNAME", enabled: true },
-      { kind: "feature", feature: "og", enabled: false },
+      { kind: "proxy", type: "A", enabled: false },
     ])
-    expect(summary.title).toBe("Update platform settings: juan")
-  })
-
-  it("titles a style-only batch as a portfolio style change", () => {
-    const summary = summarizeChanges("juan", [
-      { kind: "portfolio", template: "minimal", theme: "mono" },
-    ])
-    expect(summary.title).toBe("Update portfolio style: juan")
-    expect(summary.commitMessage).toBe("chore: update portfolio style for juan")
-    expect(summary.bullets).toEqual([
-      "- `portfolio.template` → `minimal`",
-      "- `portfolio.theme` → `mono`",
-    ])
-  })
-
-  it("says so when a design leaves no palette to write", () => {
-    const summary = summarizeChanges("juan", [
-      { kind: "portfolio", template: "noir", theme: "mono" },
-    ])
-    expect(summary.bullets[1]).toBe(
-      "- `portfolio.theme` removed — this design brings its own palette"
-    )
-  })
-
-  it("falls back to plain settings when a style rides along with a toggle", () => {
-    const summary = summarizeChanges("juan", [
-      { kind: "feature", feature: "og", enabled: true },
-      { kind: "portfolio", template: "minimal", theme: "mono" },
-    ])
-    expect(summary.title).toBe("Update settings: juan")
-    expect(summary.bullets).toHaveLength(3)
+    expect(summary.title).toBe("Update Cloudflare proxy: juan")
   })
 
   it("titles an email-only batch as a contact email change", () => {
@@ -514,10 +364,10 @@ describe("summarizeChanges", () => {
     expect(summary.bullets).toEqual(["- `owner.email` → `juan@example.com`"])
   })
 
-  it("falls back to plain settings when an email change rides along with a toggle", () => {
+  it("falls back to plain settings when an email change rides along with a proxy toggle", () => {
     const summary = summarizeChanges("juan", [
       { kind: "owner-email", email: "juan@example.com" },
-      { kind: "feature", feature: "contact-form", enabled: true },
+      { kind: "proxy", type: "CNAME", enabled: true },
     ])
     expect(summary.title).toBe("Update settings: juan")
     expect(summary.bullets).toHaveLength(2)

@@ -112,7 +112,6 @@ export default async function DomainDetailPage({ params }: Props) {
           subdomain={record.subdomain}
           login={session.user.login}
           style={style}
-          pendingPR={pending[record.subdomain] ?? null}
         />
       ) : null}
       {contactFormFlagEnabled ? (

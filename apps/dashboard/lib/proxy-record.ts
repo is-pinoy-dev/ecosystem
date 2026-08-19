@@ -1,32 +1,25 @@
-// Reading and rewriting a domains-repo record file: the `proxied` flag, the
-// opt-in tool flags, and the hosted portfolio's style.
+// Reading and rewriting a domains-repo record file: the `proxied` flag and
+// the owner's contact email.
 //
-// Git stays the source of truth: the dashboard never writes to Cloudflare. It
+// Git stays the source of truth for both: the dashboard never writes to
+// Cloudflare, and email is what a submission is ultimately addressed to. This
 // reads the current flag out of the record JSON for display, and produces an
-// edited copy of that JSON for a pull request. The sync workflow does the rest —
-// `diff.ts` already emits an UPDATE when only `proxied` differs, so a merged
-// flip propagates to Cloudflare with no registry changes. A portfolio-style
-// edit needs even less: the block is inert to sync, and apps/portfolio reads it
-// from git on the next request.
+// edited copy of that JSON for a pull request. The sync workflow does the
+// rest — `diff.ts` already emits an UPDATE when only `proxied` differs, so a
+// merged flip propagates to Cloudflare with no registry changes.
+//
+// Platform feature flags and the hosted portfolio's style used to live here
+// too, both PR-gated the same way `proxied` still is. They no longer are —
+// both write straight to their D1 override instead (see
+// lib/db/settings.ts) — so this file only ever handles `proxy` and
+// `owner-email` changes now.
 //
 // Kept free of server-only imports so the shape handling can be unit tested;
 // lib/proxy-pr.ts holds the GitHub I/O that consumes it.
 
-import {
-  domainSchema,
-  type Domain,
-  type PortfolioConfig,
-} from "@is-pinoy-dev/schemas"
+import { domainSchema, type Domain } from "@is-pinoy-dev/schemas"
 import { validateDomain } from "@is-pinoy-dev/validate"
 
-import { findFeature, setFeatureEnabled } from "@/lib/features"
-import {
-  effectiveTheme,
-  sameStyle,
-  type PortfolioStyle,
-  type PortfolioTemplate,
-  type PortfolioTheme,
-} from "@/lib/portfolio-style"
 import { providerForRecords } from "@/lib/providers"
 
 /**
@@ -205,31 +198,18 @@ export function subdomainFromHeadLabel(
 }
 
 /**
- * One pending edit: the master proxy switch on a record type, one platform
- * tool's flag, the hosted portfolio's style, or the owner's contact email.
- * All four live in the same record file, so a batch of them belongs in a
- * single commit.
+ * One pending edit: the master proxy switch on a record type, or the owner's
+ * contact email. Both live in the same record file, so a batch of them
+ * belongs in a single commit.
  */
 export type RecordChange =
   | { kind: "proxy"; type: ProxyableType; enabled: boolean }
-  | { kind: "feature"; feature: string; enabled: boolean }
-  | { kind: "portfolio"; template: PortfolioTemplate; theme?: PortfolioTheme }
   | { kind: "owner-email"; email: string }
 
-export type PortfolioChange = Extract<RecordChange, { kind: "portfolio" }>
 export type OwnerEmailChange = Extract<RecordChange, { kind: "owner-email" }>
 
 /** The switch-shaped changes — the ones that read as on/off. */
-type ToggleChange = Exclude<RecordChange, PortfolioChange | OwnerEmailChange>
-
-function portfolioChangeOf(
-  changes: RecordChange[]
-): PortfolioChange | undefined {
-  // Last wins, matching how the same switch appearing twice is deduped upstream.
-  return changes
-    .filter((c): c is PortfolioChange => c.kind === "portfolio")
-    .at(-1)
-}
+type ToggleChange = Exclude<RecordChange, OwnerEmailChange>
 
 function ownerEmailChangeOf(
   changes: RecordChange[]
@@ -240,35 +220,12 @@ function ownerEmailChangeOf(
 }
 
 /**
- * Rewrite the portfolio block to a new style, preserving everything else on it
- * (`sections`, and any key a later schema version adds).
- *
- * `theme` is written only when the template will actually render with one, so
- * moving from a layout to a designer template drops the now-meaningless palette
- * rather than leaving it behind to confuse the next reader of the file.
- */
-function setPortfolioStyle(
-  current: Record<string, unknown>,
-  change: PortfolioChange
-): Record<string, unknown> {
-  const { template: _template, theme: _theme, ...rest } = current
-  const theme = effectiveTheme(change.template, change.theme)
-  return {
-    template: change.template,
-    ...(theme ? { theme } : {}),
-    ...rest,
-  }
-}
-
-/**
  * Apply every pending edit to a parsed record file and validate the result
  * against the same schema and rules the repo's CI check enforces, so the
  * dashboard never opens a pull request that would fail validation.
  *
  * Takes the changes as a batch because one subdomain can have its proxy switch
- * and several tool flags edited before saving, and those belong in one commit.
- * A portfolio-style edit is its own panel and arrives on its own, but goes
- * through the same path — one record file, one validated rewrite.
+ * and its contact email edited before saving, and those belong in one commit.
  */
 export function buildToggledFile(
   file: Record<string, unknown>,
@@ -288,28 +245,6 @@ export function buildToggledFile(
       (acc, change) => setProxied(acc, change.type, change.enabled),
       records as Record<string, unknown>
     )
-
-  const featureChanges = changes.filter((change) => change.kind === "feature")
-
-  const styleChange = portfolioChangeOf(changes)
-  let nextPortfolio: NonNullable<PortfolioConfig> | undefined
-  if (styleChange) {
-    const current = file.portfolio
-    if (!current || typeof current !== "object" || Array.isArray(current)) {
-      return {
-        error: "This subdomain is not a hosted portfolio, so it has no style.",
-      }
-    }
-    if (sameStyle(current as unknown as PortfolioStyle, styleChange)) {
-      return { error: "That is already this portfolio's style." }
-    }
-    // Shape-checked immediately below by domainSchema, which is what decides
-    // whether the rewrite is legal — the cast only carries it that far.
-    nextPortfolio = setPortfolioStyle(
-      current as Record<string, unknown>,
-      styleChange
-    ) as NonNullable<PortfolioConfig>
-  }
 
   const emailChange = ownerEmailChangeOf(changes)
   let nextOwner: Domain["owner"] | undefined
@@ -333,23 +268,7 @@ export function buildToggledFile(
     records: nextRecords,
     // Written in place: spreading `file` first keeps the block where it already
     // sits in the file, so the pull request diffs as one edited block.
-    ...(nextPortfolio ? { portfolio: nextPortfolio } : {}),
     ...(nextOwner ? { owner: nextOwner } : {}),
-    // Only introduce a features block when a feature was actually edited, so a
-    // pure proxy change leaves the rest of the file byte-identical.
-    ...(featureChanges.length > 0
-      ? {
-          features: featureChanges.reduce(
-            (acc, change) => {
-              const feature = findFeature(change.feature)
-              return feature
-                ? setFeatureEnabled(acc, feature, change.enabled)
-                : acc
-            },
-            (file.features ?? undefined) as Record<string, unknown> | undefined
-          ),
-        }
-      : {}),
   }
 
   const parsed = domainSchema.safeParse(updated)
@@ -379,20 +298,8 @@ export interface ChangeSummary {
   bullets: string[]
 }
 
-function portfolioBullets(change: PortfolioChange): string[] {
-  const theme = effectiveTheme(change.template, change.theme)
-  return [
-    `- \`portfolio.template\` → \`${change.template}\``,
-    theme
-      ? `- \`portfolio.theme\` → \`${theme}\``
-      : "- `portfolio.theme` removed — this design brings its own palette",
-  ]
-}
-
 function toggleBullet(change: ToggleChange): string {
-  return change.kind === "proxy"
-    ? `- \`records.${change.type}.proxied\` → \`${change.enabled}\``
-    : `- \`features.${change.feature}\` → \`${change.enabled}\``
+  return `- \`records.${change.type}.proxied\` → \`${change.enabled}\``
 }
 
 function ownerEmailBullets(change: OwnerEmailChange): string[] {
@@ -402,30 +309,19 @@ function ownerEmailBullets(change: OwnerEmailChange): string[] {
 /**
  * Title, commit message, and body copy for a batch, written from what the batch
  * actually contains. All-on or all-off reads better as "enable"/"disable"; a
- * mix of those, or anything alongside a style change, only honestly summarises
- * as "update".
+ * mix of those, or anything alongside the contact email, only honestly
+ * summarises as "update".
  */
 export function summarizeChanges(
   subdomain: string,
   changes: RecordChange[]
 ): ChangeSummary {
-  const style = portfolioChangeOf(changes)
   const emailChange = ownerEmailChangeOf(changes)
   const toggles = changes.filter(
-    (change): change is ToggleChange =>
-      change.kind !== "portfolio" && change.kind !== "owner-email"
+    (change): change is ToggleChange => change.kind !== "owner-email"
   )
 
-  if (style && toggles.length === 0 && !emailChange) {
-    return {
-      title: `Update portfolio style: ${subdomain}`,
-      commitMessage: `chore: update portfolio style for ${subdomain}`,
-      lead: `Updates the hosted portfolio style for \`${subdomain}.is-pinoy.dev\`.`,
-      bullets: portfolioBullets(style),
-    }
-  }
-
-  if (emailChange && toggles.length === 0 && !style) {
+  if (emailChange && toggles.length === 0) {
     return {
       title: `Update contact email: ${subdomain}`,
       commitMessage: `chore: update contact email for ${subdomain}`,
@@ -437,20 +333,14 @@ export function summarizeChanges(
   const allOn = toggles.length > 0 && toggles.every((change) => change.enabled)
   const allOff =
     toggles.length > 0 && toggles.every((change) => !change.enabled)
-  const action =
-    style || emailChange
-      ? "Update"
-      : allOn
-        ? "Enable"
-        : allOff
-          ? "Disable"
-          : "Update"
-  const subject =
-    style || emailChange
-      ? "settings"
-      : toggles.length === 1 && toggles[0]!.kind === "proxy"
-        ? "Cloudflare proxy"
-        : "platform settings"
+  const action = emailChange
+    ? "Update"
+    : allOn
+      ? "Enable"
+      : allOff
+        ? "Disable"
+        : "Update"
+  const subject = emailChange ? "settings" : "Cloudflare proxy"
 
   return {
     title: `${action} ${subject}: ${subdomain}`,
@@ -458,7 +348,6 @@ export function summarizeChanges(
     lead: `${action}s ${subject} for \`${subdomain}.is-pinoy.dev\`.`,
     bullets: [
       ...toggles.map(toggleBullet),
-      ...(style ? portfolioBullets(style) : []),
       ...(emailChange ? ownerEmailBullets(emailChange) : []),
     ],
   }
