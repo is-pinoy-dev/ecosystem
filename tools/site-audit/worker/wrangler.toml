@@ -10,15 +10,12 @@ binding = "ASSETS"
 # Read-only access to the dashboard's registry database, for the
 # `featuresOverride` a dashboard save writes directly (see
 # apps/dashboard/lib/db/settings.ts and apps/dashboard/lib/db/schema.ts).
-# `database_id` must be filled in with the same D1 database the dashboard
-# points at via its CLOUDFLARE_D1_DATABASE_ID env var before this deploys —
-# left as a placeholder here since that ID is environment-specific and not
-# committed to the repo. `wrangler deploy` fails closed on a bad ID, which is
-# the point: better a failed deploy than a binding to the wrong database.
+# Same database as the dashboard's own CLOUDFLARE_D1_DATABASE_ID env var —
+# keep this in step if that database is ever recreated or migrated.
 [[d1_databases]]
 binding = "SUBDOMAINS_DB"
-database_name = "REPLACE_WITH_DASHBOARD_D1_DATABASE_NAME"
-database_id = "REPLACE_WITH_DASHBOARD_D1_DATABASE_ID"
+database_name = "dashboard-db"
+database_id = "58109557-f2e5-4dd3-8722-5fbea0e20dfc"
 
 # How the audit reaches a hosted portfolio. A Worker's fetch to its own zone
 # does not re-run that zone's Workers routes, so scanning `<label>.is-pinoy.dev`
