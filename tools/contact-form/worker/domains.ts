@@ -14,7 +14,12 @@ const CACHE_TTL_SECONDS = 300
 
 /** Only the fields this tool reads. The file carries more. */
 export interface DomainRecord {
-  contactForm?: { email?: string }
+  // Who owns this subdomain — used to look up the delivery address in
+  // CONTACT_EMAILS_DB (see db.ts), never the address itself. `id` is
+  // preferred over `login` for the same reason the dashboard's read model
+  // prefers it (lib/db/schema.ts): a GitHub login can be renamed and then
+  // claimed by somebody else, the numeric id cannot.
+  owner?: { github?: string; id?: number }
   features?: { tools?: Record<string, boolean | undefined> }
 }
 

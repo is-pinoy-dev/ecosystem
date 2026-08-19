@@ -312,48 +312,6 @@ describe("buildToggledFile", () => {
   })
 })
 
-describe("buildToggledFile — contact form email", () => {
-  it("sets contactForm.email, preserving the rest of the contactForm block", () => {
-    const source = {
-      ...file({ CNAME: { value: "juan.example.com" } }),
-      contactForm: { email: "old@example.com" },
-    }
-    const result = buildToggledFile(source, [
-      { kind: "contact-email", email: "juan@example.com" },
-    ])
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.contactForm).toEqual({
-      email: "juan@example.com",
-    })
-  })
-
-  it("rejects setting the email to what it already is", () => {
-    const source = {
-      ...file({ CNAME: { value: "juan.example.com" } }),
-      contactForm: { email: "juan@example.com" },
-    }
-    const result = buildToggledFile(source, [
-      { kind: "contact-email", email: "juan@example.com" },
-    ])
-    expect(result).toEqual({
-      error: "That is already this subdomain's contact email.",
-    })
-  })
-
-  it("combines with a feature flag in one commit", () => {
-    const result = buildToggledFile(
-      file({ CNAME: { value: "juan.example.com", proxied: true } }),
-      [
-        { kind: "contact-email", email: "juan@example.com" },
-        { kind: "feature", feature: "contact-form", enabled: true },
-      ]
-    )
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.contactForm.email).toBe("juan@example.com")
-    expect(parsed.features.tools["contact-form"]).toBe(true)
-  })
-})
-
 /**
  * A hosted portfolio record: CNAMEd at the renderer, carrying a style. Its
  * subdomain is the owner's login because the repo's own validation requires
@@ -503,27 +461,6 @@ describe("summarizeChanges", () => {
     expect(summary.bullets).toHaveLength(3)
   })
 
-  it("titles an email-only batch as a contact form email change", () => {
-    const summary = summarizeChanges("juan", [
-      { kind: "contact-email", email: "juan@example.com" },
-    ])
-    expect(summary.title).toBe("Update Contact Form email: juan")
-    expect(summary.commitMessage).toBe(
-      "chore: update contact form email for juan"
-    )
-    expect(summary.bullets).toEqual([
-      "- `contactForm.email` → `juan@example.com`",
-    ])
-  })
-
-  it("falls back to plain settings when an email change rides along with a toggle", () => {
-    const summary = summarizeChanges("juan", [
-      { kind: "contact-email", email: "juan@example.com" },
-      { kind: "feature", feature: "contact-form", enabled: true },
-    ])
-    expect(summary.title).toBe("Update settings: juan")
-    expect(summary.bullets).toHaveLength(2)
-  })
 })
 
 describe("branch naming", () => {

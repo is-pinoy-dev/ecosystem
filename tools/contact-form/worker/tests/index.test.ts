@@ -21,19 +21,41 @@ function ctx(): ExecutionContext {
   return { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as unknown as ExecutionContext
 }
 
-function env() {
+/** A minimal fake CONTACT_EMAILS_DB — enough of the D1 prepare/bind/first chain. */
+function mockContactEmailsDb(
+  rows: { githubId?: number; githubLogin?: string; email: string }[] = [],
+): D1Database {
+  return {
+    prepare: (sql: string) => ({
+      bind: (...args: unknown[]) => ({
+        first: async () => {
+          if (sql.includes("github_id")) {
+            return rows.find((r) => r.githubId === args[0]) ?? null
+          }
+          if (sql.includes("github_login")) {
+            return rows.find((r) => r.githubLogin === args[0]) ?? null
+          }
+          return null
+        },
+      }),
+    }),
+  } as unknown as D1Database
+}
+
+function env(emails: { githubId?: number; githubLogin?: string; email: string }[] = []) {
   return {
     EMAIL: { send: vi.fn() },
     TURNSTILE_SITE_KEY: "site-key",
     TURNSTILE_SECRET_KEY: "secret-key",
+    CONTACT_EMAILS_DB: mockContactEmailsDb(emails),
   }
 }
 
 const ENABLED_RECORD = {
-  owner: { github: "juan" },
-  contactForm: { email: "juan@example.com" },
+  owner: { github: "juan", id: 1 },
   features: { tools: { "contact-form": true } },
 }
+const JUAN_EMAIL = { githubId: 1, githubLogin: "juan", email: "juan@example.com" }
 
 beforeEach(() => {
   vi.mocked(lookupSubdomain).mockReset()
@@ -66,7 +88,7 @@ describe("GET /_tools/contact-form/config", () => {
 
     const res = await worker.fetch(
       new Request("https://juan.is-pinoy.dev/_tools/contact-form/config"),
-      env(),
+      env([JUAN_EMAIL]),
       ctx(),
     )
     const body = (await res.json()) as { enabled: boolean; turnstileSiteKey: string }
@@ -74,15 +96,12 @@ describe("GET /_tools/contact-form/config", () => {
     expect(body.turnstileSiteKey).toBe("site-key")
   })
 
-  it("reports disabled when the record has no contact form email, even if the flag is on", async () => {
-    vi.mocked(lookupSubdomain).mockResolvedValue({
-      status: "found",
-      record: { features: { tools: { "contact-form": true } } },
-    })
+  it("reports disabled when the owner has no registered contact email, even if the flag is on", async () => {
+    vi.mocked(lookupSubdomain).mockResolvedValue({ status: "found", record: ENABLED_RECORD })
 
     const res = await worker.fetch(
       new Request("https://juan.is-pinoy.dev/_tools/contact-form/config"),
-      env(),
+      env([]),
       ctx(),
     )
     expect(((await res.json()) as { enabled: boolean }).enabled).toBe(false)
@@ -132,10 +151,29 @@ describe("POST /_tools/contact-form/submit", () => {
     vi.mocked(verifyTurnstile).mockResolvedValue({ success: true })
     vi.mocked(sendSubmission).mockResolvedValue({ ok: true })
 
-    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env(), ctx())
+    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env([JUAN_EMAIL]), ctx())
 
     expect(res.status).toBe(200)
     expect(sendSubmission).toHaveBeenCalledTimes(1)
+    const [, destinationEmail] = vi.mocked(sendSubmission).mock.calls[0]!
+    expect(destinationEmail).toBe("juan@example.com")
+  })
+
+  it("looks the address up by login when the record has no owner id", async () => {
+    vi.mocked(lookupSubdomain).mockResolvedValue({
+      status: "found",
+      record: { owner: { github: "juan" }, features: { tools: { "contact-form": true } } },
+    })
+    vi.mocked(verifyTurnstile).mockResolvedValue({ success: true })
+    vi.mocked(sendSubmission).mockResolvedValue({ ok: true })
+
+    const res = await worker.fetch(
+      submitRequest(VALID_SUBMISSION),
+      env([{ githubLogin: "juan", email: "juan@example.com" }]),
+      ctx(),
+    )
+
+    expect(res.status).toBe(200)
     const [, destinationEmail] = vi.mocked(sendSubmission).mock.calls[0]!
     expect(destinationEmail).toBe("juan@example.com")
   })
@@ -153,22 +191,29 @@ describe("POST /_tools/contact-form/submit", () => {
   it("re-checks enablement server-side rather than trusting the client", async () => {
     vi.mocked(lookupSubdomain).mockResolvedValue({
       status: "found",
-      record: { features: { tools: { "contact-form": false } } },
+      record: { owner: { github: "juan", id: 1 }, features: { tools: { "contact-form": false } } },
     })
 
-    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env(), ctx())
+    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env([JUAN_EMAIL]), ctx())
 
     expect(res.status).toBe(403)
     expect(verifyTurnstile).not.toHaveBeenCalled()
   })
 
-  it("rejects when the record has no contact form email even though the flag is on", async () => {
+  it("rejects when the owner has no registered contact email even though the flag is on", async () => {
+    vi.mocked(lookupSubdomain).mockResolvedValue({ status: "found", record: ENABLED_RECORD })
+
+    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env([]), ctx())
+    expect(res.status).toBe(403)
+  })
+
+  it("rejects when the record carries no owner to look an email up for", async () => {
     vi.mocked(lookupSubdomain).mockResolvedValue({
       status: "found",
       record: { features: { tools: { "contact-form": true } } },
     })
 
-    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env(), ctx())
+    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env([JUAN_EMAIL]), ctx())
     expect(res.status).toBe(403)
   })
 
@@ -176,7 +221,7 @@ describe("POST /_tools/contact-form/submit", () => {
     vi.mocked(lookupSubdomain).mockResolvedValue({ status: "found", record: ENABLED_RECORD })
     vi.mocked(verifyTurnstile).mockResolvedValue({ success: false })
 
-    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env(), ctx())
+    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env([JUAN_EMAIL]), ctx())
 
     expect(res.status).toBe(400)
     expect(sendSubmission).not.toHaveBeenCalled()
@@ -187,7 +232,7 @@ describe("POST /_tools/contact-form/submit", () => {
     vi.mocked(verifyTurnstile).mockResolvedValue({ success: true })
     vi.mocked(sendSubmission).mockResolvedValue({ ok: false, error: "internal cf detail" })
 
-    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env(), ctx())
+    const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env([JUAN_EMAIL]), ctx())
 
     expect(res.status).toBe(502)
     const body = (await res.json()) as { error: string }
@@ -201,7 +246,7 @@ describe("POST /_tools/contact-form/submit", () => {
 
     const request = submitRequest(VALID_SUBMISSION)
     request.headers.set("cf-connecting-ip", "203.0.113.9")
-    await worker.fetch(request, env(), ctx())
+    await worker.fetch(request, env([JUAN_EMAIL]), ctx())
 
     expect(verifyTurnstile).toHaveBeenCalledWith(
       "turnstile-token",

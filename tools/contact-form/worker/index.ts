@@ -1,3 +1,4 @@
+import { lookupContactEmail } from "./db"
 import { lookupSubdomain, isToolEnabled, type DomainRecord } from "./domains"
 import { verifyTurnstile } from "./turnstile"
 import { sendSubmission } from "./mail"
@@ -10,6 +11,8 @@ export interface Env {
   TURNSTILE_SITE_KEY: string
   /** Secret. Set via `wrangler secret put TURNSTILE_SECRET_KEY`. */
   TURNSTILE_SECRET_KEY: string
+  /** The dashboard D1, read-only here — see wrangler.toml. */
+  CONTACT_EMAILS_DB: D1Database
 }
 
 const PREFIX = "/_tools/contact-form"
@@ -69,15 +72,17 @@ function parseSubmitBody(value: unknown): SubmitBody | null {
  * trust what `GET /config` told the widget, since that response is fully
  * visible and replayable by anyone.
  *
- * Unlike tools/site-audit, this fails *closed* when the domains repo cannot
- * be reached. Site Audit fails open because the worst case is a page that
- * runs anyway; here the worst case would be accepting a submission with no
- * verified place to route it — the domains repo is the only source for
- * `contactForm.email`, so "unavailable" and "no address to send to" are the
- * same situation from this endpoint's point of view.
+ * Unlike tools/site-audit, this fails *closed* when the domains repo or the
+ * CONTACT_EMAILS_DB lookup cannot be reached. Site Audit fails open because
+ * the worst case is a page that runs anyway; here the worst case would be
+ * accepting a submission with no verified place to route it — the git
+ * record supplies who owns the subdomain and whether the tool is on, and
+ * CONTACT_EMAILS_DB supplies the address for that owner (see db.ts), so a
+ * failure on either side collapses to the same "no address to send to".
  */
 async function resolveEnabled(
   subdomain: string,
+  env: Env,
   ctx: ExecutionContext,
 ): Promise<
   | { ok: true; record: DomainRecord; destinationEmail: string }
@@ -90,7 +95,13 @@ async function resolveEnabled(
   if (!isToolEnabled(lookup.record, "contact-form")) {
     return { ok: false, reason: "not-enabled" }
   }
-  const destinationEmail = lookup.record.contactForm?.email
+  const destinationEmail = await lookupContactEmail(
+    env.CONTACT_EMAILS_DB,
+    lookup.record.owner ?? {},
+  ).catch((error) => {
+    console.warn(`[contact-form] contact email lookup threw subdomain=${subdomain}`, error)
+    return null
+  })
   if (!destinationEmail) {
     return { ok: false, reason: "no-email" }
   }
@@ -102,7 +113,7 @@ async function handleConfig(
   env: Env,
   ctx: ExecutionContext,
 ): Promise<Response> {
-  const resolved = await resolveEnabled(subdomain, ctx)
+  const resolved = await resolveEnabled(subdomain, env, ctx)
   return json({
     enabled: resolved.ok,
     turnstileSiteKey: env.TURNSTILE_SITE_KEY,
@@ -130,7 +141,7 @@ async function handleSubmit(
   // Re-checked here rather than trusted from /config — enablement and the
   // contact form's destination email are both facts about the record that
   // could have changed, or been spoofed, since the widget last asked.
-  const resolved = await resolveEnabled(subdomain, ctx)
+  const resolved = await resolveEnabled(subdomain, env, ctx)
   if (!resolved.ok) {
     console.warn(
       `[contact-form] submit blocked subdomain=${subdomain} reason=${resolved.reason}`,

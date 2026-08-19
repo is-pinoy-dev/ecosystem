@@ -4,7 +4,6 @@ import { useState, useTransition } from "react"
 import {
   CheckCircle2,
   ChevronRight,
-  GitPullRequest,
   Loader2,
   MailCheck,
   RefreshCw,
@@ -21,11 +20,10 @@ import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
 import { cn } from "@is-pinoy-dev/ui/lib/utils"
 
 import {
-  checkContactFormEmailStatus,
-  verifyContactFormEmail,
-} from "@/app/(dashboard)/domains/actions"
+  checkContactEmailStatus,
+  verifyContactEmail,
+} from "@/app/(dashboard)/account/actions"
 import type { DestinationAddressStatus } from "@/lib/cloudflare-email"
-import type { PendingPRView } from "@/lib/domain-view"
 
 function statusTone(status: DestinationAddressStatus): "success" | "warning" {
   return status === "verified" ? "success" : "warning"
@@ -39,53 +37,47 @@ function statusLabel(status: DestinationAddressStatus): string {
 
 /**
  * The Contact Form feature's email prerequisite: shows the signed-in
- * owner's own GitHub account email, the "Verify email" action that commits
- * it to `contactForm.email` and registers it with Cloudflare Email Routing,
- * and the verification status that gates the feature's switch in the
- * platform panel below (see lib/domain-view.ts's contactFormBlockReason).
+ * account's GitHub email, the "Verify email" action that registers it as a
+ * Cloudflare Email Routing destination for this account, and the
+ * verification status that gates the feature's switch on every subdomain
+ * this account owns (see lib/domain-view.ts's contactFormBlockReason).
  *
- * There is deliberately no editable email field here — `verifyContactFormEmail`
+ * Account-scoped, not subdomain-scoped: Cloudflare Email Routing's own
+ * destination-address list is account-wide, so there is exactly one address
+ * to verify no matter how many subdomains this account owns. The address is
+ * stored in the dashboard's `contact_emails` D1 table (lib/contact-email.ts)
+ * — never git, and never a per-subdomain field.
+ *
+ * There is deliberately no editable email field here — `verifyContactEmail`
  * always uses the caller's own `session.user.email`, never a client-supplied
  * string. An earlier version of this panel let the owner type any address,
  * which is how a stale, unrelated field ended up registered in production
  * instead of the signed-in owner's actual GitHub email. Locking this to the
  * OAuth session is what fixes that: the address here is never anything other
  * than "whatever GitHub currently reports for this account."
- *
- * Deliberately its own panel rather than living inside the generic feature
- * switch — richer than an on/off toggle, the same way portfolio style earned
- * its own panel instead of being one more row in the platform list.
  */
-export function ContactFormEmailPanel({
-  subdomain,
+export function ContactEmailPanel({
   githubEmail,
   initialStatus,
-  pendingPR,
 }: {
-  subdomain: string
-  /** The signed-in owner's current GitHub account email, or "" if GitHub has none on file. */
+  /** The signed-in account's current GitHub email, or "" if GitHub has none on file. */
   githubEmail: string
   initialStatus: DestinationAddressStatus
-  pendingPR: PendingPRView | null
 }) {
   const [status, setStatus] = useState<DestinationAddressStatus>(initialStatus)
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [prUrl, setPrUrl] = useState<string | null>(null)
   const [verifying, startVerifying] = useTransition()
   const [rechecking, startRechecking] = useTransition()
 
-  const readOnly = pendingPR !== null
   const hasGithubEmail = githubEmail.length > 0
 
   function onVerify() {
-    if (!hasGithubEmail || readOnly) return
+    if (!hasGithubEmail) return
     setError(null)
-    setPrUrl(null)
     startVerifying(async () => {
-      const result = await verifyContactFormEmail({ subdomain })
+      const result = await verifyContactEmail()
       setStatus(result.status)
-      if (result.prUrl) setPrUrl(result.prUrl)
       if (!result.ok) setError(result.error ?? "Could not verify this email.")
     })
   }
@@ -93,7 +85,7 @@ export function ContactFormEmailPanel({
   function onRecheck() {
     setError(null)
     startRechecking(async () => {
-      const result = await checkContactFormEmailStatus({ subdomain })
+      const result = await checkContactEmailStatus()
       if ("error" in result) {
         setError(result.error)
         return
@@ -113,7 +105,7 @@ export function ContactFormEmailPanel({
           <button
             type="button"
             className="flex min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-3 pl-4 text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring focus-visible:outline-solid"
-            aria-label={`${open ? "Collapse" : "Expand"} contact email settings for ${subdomain}.is-pinoy.dev`}
+            aria-label={`${open ? "Collapse" : "Expand"} contact email settings`}
           >
             <ChevronRight
               className={cn(
@@ -132,7 +124,7 @@ export function ContactFormEmailPanel({
               </span>
               <span className="truncate text-[11px]/relaxed text-muted-foreground">
                 {open
-                  ? "Required before the Contact Form tool can be switched on."
+                  ? "Required before the Contact Form tool can be switched on for any subdomain."
                   : githubEmail || "No GitHub email on file"}
               </span>
             </span>
@@ -146,25 +138,6 @@ export function ContactFormEmailPanel({
 
       <CollapsibleContent>
         <div className="flex flex-col gap-4 border-t border-border p-4">
-          {readOnly ? (
-            <p className="m-0 flex flex-wrap items-center gap-x-1.5 gap-y-1 border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
-              <GitPullRequest
-                className="size-3.5 shrink-0"
-                aria-hidden="true"
-              />
-              A change for this domain is waiting in{" "}
-              <a
-                href={pendingPR.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent underline"
-              >
-                pull request #{pendingPR.number}
-              </a>
-              . Merge or close it before editing the email on file.
-            </p>
-          ) : null}
-
           <div className="flex flex-col gap-1.5 text-[13px] font-medium text-foreground">
             GitHub account email
             {hasGithubEmail ? (
@@ -184,16 +157,16 @@ export function ContactFormEmailPanel({
             This is always your current GitHub account email — there is no
             separate address to type or edit here. We&rsquo;ll register it as
             a verified destination in Cloudflare&rsquo;s Email Routing, so
-            messages submitted through your contact form go straight to your
-            inbox — nothing is stored on our servers. You&rsquo;ll get a
-            one-time confirmation email from Cloudflare to complete this.
+            messages submitted through any contact form on a subdomain you own
+            go straight to your inbox. It is never published, committed to
+            the public domains repository, or shown to visitors.
           </p>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               onClick={onVerify}
-              disabled={!hasGithubEmail || readOnly || verifying}
+              disabled={!hasGithubEmail || verifying}
             >
               {verifying ? (
                 <>
@@ -242,28 +215,8 @@ export function ContactFormEmailPanel({
                 aria-hidden="true"
               />
               <span>
-                Verified — the Contact Form tool can be switched on below.
-              </span>
-            </p>
-          ) : null}
-
-          {prUrl ? (
-            <p className="m-0 flex items-start gap-2.5 border border-border p-3 text-xs/relaxed">
-              <CheckCircle2
-                className="mt-0.5 size-4 shrink-0 text-success"
-                aria-hidden="true"
-              />
-              <span>
-                Pull request opened updating the email on file —{" "}
-                <a
-                  href={prUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent underline"
-                >
-                  review it on GitHub
-                </a>
-                .
+                Verified — the Contact Form tool can be switched on for any
+                subdomain you own.
               </span>
             </p>
           ) : null}
