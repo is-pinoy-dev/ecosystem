@@ -1,4 +1,10 @@
-import { lookupSubdomain, isToolEnabled, type DomainRecord } from "./domains"
+import type { D1Database } from "@cloudflare/workers-types"
+import {
+  lookupSubdomain,
+  isToolEnabled,
+  readFeaturesOverride,
+  type DomainRecord,
+} from "./domains"
 import { verifyTurnstile } from "./turnstile"
 import { sendSubmission } from "./mail"
 import { WIDGET_SCRIPT } from "./widget"
@@ -10,6 +16,12 @@ export interface Env {
   TURNSTILE_SITE_KEY: string
   /** Secret. Set via `wrangler secret put TURNSTILE_SECRET_KEY`. */
   TURNSTILE_SECRET_KEY: string
+  /**
+   * The dashboard's registry database (see apps/dashboard/lib/db/schema.ts),
+   * read-only from here — only for the `featuresOverride` a dashboard save
+   * writes directly, never for anything the sync workflow owns.
+   */
+  SUBDOMAINS_DB: D1Database
 }
 
 const PREFIX = "/_tools/contact-form"
@@ -78,6 +90,7 @@ function parseSubmitBody(value: unknown): SubmitBody | null {
  */
 async function resolveEnabled(
   subdomain: string,
+  env: Env,
   ctx: ExecutionContext,
 ): Promise<
   | { ok: true; record: DomainRecord; ownerEmail: string }
@@ -87,14 +100,21 @@ async function resolveEnabled(
   if (lookup.status !== "found") {
     return { ok: false, reason: lookup.status }
   }
-  if (!isToolEnabled(lookup.record, "contact-form")) {
+  // A dashboard-saved override wins over whatever the git file says — it is
+  // never touched by the sync workflow, so it only exists once someone has
+  // edited this from the dashboard instead of by pull request.
+  const override = await readFeaturesOverride(env.SUBDOMAINS_DB, subdomain)
+  const record: DomainRecord = override
+    ? { ...lookup.record, features: override as DomainRecord["features"] }
+    : lookup.record
+  if (!isToolEnabled(record, "contact-form")) {
     return { ok: false, reason: "not-enabled" }
   }
-  const ownerEmail = lookup.record.owner?.email
+  const ownerEmail = record.owner?.email
   if (!ownerEmail) {
     return { ok: false, reason: "no-email" }
   }
-  return { ok: true, record: lookup.record, ownerEmail }
+  return { ok: true, record, ownerEmail }
 }
 
 async function handleConfig(
@@ -102,7 +122,7 @@ async function handleConfig(
   env: Env,
   ctx: ExecutionContext,
 ): Promise<Response> {
-  const resolved = await resolveEnabled(subdomain, ctx)
+  const resolved = await resolveEnabled(subdomain, env, ctx)
   return json({
     enabled: resolved.ok,
     turnstileSiteKey: env.TURNSTILE_SITE_KEY,
@@ -130,7 +150,7 @@ async function handleSubmit(
   // Re-checked here rather than trusted from /config — enablement and the
   // owner's email are both facts about the record that could have changed, or
   // been spoofed, since the widget last asked.
-  const resolved = await resolveEnabled(subdomain, ctx)
+  const resolved = await resolveEnabled(subdomain, env, ctx)
   if (!resolved.ok) {
     console.warn(
       `[contact-form] submit blocked subdomain=${subdomain} reason=${resolved.reason}`,

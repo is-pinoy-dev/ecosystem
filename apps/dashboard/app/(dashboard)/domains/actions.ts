@@ -11,16 +11,22 @@ import {
   getDestinationAddressStatus,
   type DestinationAddressStatus,
 } from "@/lib/cloudflare-email"
+import { writeFeaturesOverride, writePortfolioOverride } from "@/lib/db/settings"
 import { getSubdomainsForOwner } from "@/lib/domains"
 import {
   findFeature,
   isFeatureEnabled,
+  setFeatureEnabled,
   TOGGLEABLE_FEATURES,
 } from "@/lib/features"
 import { contactFormEnabled } from "@/lib/flags-server"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { providerForRecords } from "@/lib/providers"
-import { getPendingProxyPRs, openProxyTogglePR } from "@/lib/proxy-pr"
+import {
+  getPendingProxyPRs,
+  openProxyTogglePR,
+  type PendingProxyPR,
+} from "@/lib/proxy-pr"
 import {
   PROXYABLE_TYPES,
   proxyPolicy,
@@ -61,8 +67,9 @@ const saveInput = z.array(changeInput).min(1).max(50)
 
 // The style edit is its own action rather than a member of `changeInput`: it is
 // a separate panel with its own submit, and its payload is a pair of enums
-// rather than a switch. `theme` is accepted for any template and discarded
-// downstream when the template is a designer design — see buildToggledFile.
+// rather than a switch. `theme` is accepted for any template — the caller
+// (components/portfolio-style-panel.tsx) already drops it for a designer
+// template, since that design ignores `theme` entirely.
 const portfolioStyleInput = z.object({
   subdomain: subdomainField,
   template: z.enum(PORTFOLIO_TEMPLATES),
@@ -77,8 +84,11 @@ export type SettingChangeInput = z.infer<typeof changeInput>
 export interface SubdomainSaveResult {
   subdomain: string
   ok: boolean
-  /** Present when ok — the pull request now carrying the change. */
+  /** Present when ok and a proxy change opened one — the pull request carrying it. */
   prUrl?: string
+  /** Set when ok and at least one change (a feature or the portfolio style) took
+   * effect immediately, with no pull request to wait on. */
+  instant?: boolean
   /** Present when not ok — why this subdomain was skipped. */
   error?: string
 }
@@ -91,11 +101,23 @@ function failure(subdomain: string, error: string): SaveSettingsResult {
   return { results: [{ subdomain, ok: false, error }] }
 }
 
+/** Two error strings, joined for a subdomain whose feature write and proxy PR
+ * were not both attempted, or not both successful. */
+function combineErrors(a: string | undefined, b: string): string {
+  return a ? `${a} ${b}` : b
+}
+
 /**
- * Open pull requests for a batch of pending settings edits — one per subdomain,
- * since the branch name and the "one change in flight" rule are both keyed by
- * subdomain. Each subdomain succeeds or fails independently so one rejected
- * record does not lose the rest of the user's work.
+ * Apply a batch of pending settings edits, one subdomain at a time so one
+ * rejected record does not lose the rest of the user's work.
+ *
+ * The two kinds of change take different paths: a feature flag writes straight
+ * to its D1 override and is live immediately (see lib/db/settings.ts) — no
+ * pull request, no sync to wait on. A proxy flag still opens a pull request,
+ * because the master switch is a Cloudflare setting the registry sync applies,
+ * not something the dashboard can flip on its own. A batch touching both kinds
+ * for one subdomain does both: the feature write and the PR open independently,
+ * and either can fail without rolling back the other.
  *
  * Ownership, the provider's proxy policy, the proxy prerequisite for opt-in
  * tools, and the no-op case are all re-checked here: the client controls none
@@ -114,7 +136,7 @@ export async function saveSettings(
   const parsed = saveInput.safeParse(input)
   if (!parsed.success) return failure("", "Invalid request.")
 
-  // Group by subdomain — one pull request per record file.
+  // Group by subdomain — at most one pull request per record file.
   const bySubdomain = new Map<string, SettingChangeInput[]>()
   for (const change of parsed.data) {
     const existing = bySubdomain.get(change.subdomain) ?? []
@@ -130,8 +152,14 @@ export async function saveSettings(
   }
 
   const { owned } = await getSubdomainsForOwner({ login, githubId })
-  const token = await getGitHubAccessToken()
-  if (!token) {
+
+  // A GitHub token and the pending-PR check are only needed for a batch that
+  // actually touches the proxy switch — a features-only save never opens git.
+  const needsGitHub = [...bySubdomain.values()].some((changes) =>
+    changes.some((c) => c.kind === "proxy")
+  )
+  const token = needsGitHub ? await getGitHubAccessToken() : null
+  if (needsGitHub && !token) {
     return {
       results: [...bySubdomain.keys()].map((subdomain) => ({
         subdomain,
@@ -141,8 +169,10 @@ export async function saveSettings(
       })),
     }
   }
+  const pending = token
+    ? await getPendingProxyPRs(login, token)
+    : new Map<string, PendingProxyPR>()
 
-  const pending = await getPendingProxyPRs(login, token)
   const results: SubdomainSaveResult[] = []
 
   for (const [subdomain, changes] of bySubdomain) {
@@ -156,16 +186,6 @@ export async function saveSettings(
       continue
     }
 
-    const open = pending.get(subdomain)
-    if (open) {
-      results.push({
-        subdomain,
-        ok: false,
-        error: `A change is already open as pull request #${open.number}. Merge or close it first.`,
-      })
-      continue
-    }
-
     // The proxy value this save leaves the record at — a tool flag is only
     // meaningful if the record ends up proxied, whether it already was or this
     // same batch turns it on.
@@ -175,7 +195,8 @@ export async function saveSettings(
     )
     const willBeProxied = proxyChange ? proxyChange.enabled : currentlyProxied
 
-    const applicable: RecordChange[] = []
+    const proxyApplicable: RecordChange[] = []
+    const featureApplicable: { feature: string; enabled: boolean }[] = []
     let rejection: string | null = null
 
     for (const change of changes) {
@@ -188,7 +209,7 @@ export async function saveSettings(
         const state = readProxyState(domain.records, change.type)
         if (!state) continue
         if (!state.mixed && state.proxied === change.enabled) continue
-        applicable.push({
+        proxyApplicable.push({
           kind: "proxy",
           type: change.type,
           enabled: change.enabled,
@@ -230,14 +251,13 @@ export async function saveSettings(
       }
       if (isFeatureEnabled(domain.features, feature) === change.enabled)
         continue
-      applicable.push({
-        kind: "feature",
+      featureApplicable.push({
         feature: change.feature,
         enabled: change.enabled,
       })
     }
 
-    if (applicable.length === 0) {
+    if (proxyApplicable.length === 0 && featureApplicable.length === 0) {
       results.push({
         subdomain,
         ok: false,
@@ -246,16 +266,58 @@ export async function saveSettings(
       continue
     }
 
-    const result = await openProxyTogglePR(token, {
-      login,
-      subdomain,
-      changes: applicable,
-    })
-    results.push(
-      result.ok
-        ? { subdomain, ok: true, prUrl: result.prUrl }
-        : { subdomain, ok: false, error: result.error }
-    )
+    let ok = true
+    let error: string | undefined
+    let prUrl: string | undefined
+    let instant = false
+
+    if (featureApplicable.length > 0) {
+      const nextFeatures = featureApplicable.reduce<Record<string, unknown>>(
+        (acc, change) => {
+          const feature = findFeature(change.feature)
+          return feature ? setFeatureEnabled(acc, feature, change.enabled) : acc
+        },
+        domain.features ?? {}
+      )
+      const write = await writeFeaturesOverride(subdomain, nextFeatures)
+      if (write.ok) {
+        instant = true
+      } else {
+        ok = false
+        error = write.error
+      }
+    }
+
+    if (proxyApplicable.length > 0) {
+      const open = pending.get(subdomain)
+      if (open) {
+        ok = false
+        error = combineErrors(
+          error,
+          `A change is already open as pull request #${open.number}. Merge or close it first.`
+        )
+      } else if (!token) {
+        ok = false
+        error = combineErrors(
+          error,
+          "Your GitHub authorization is missing the required access."
+        )
+      } else {
+        const result = await openProxyTogglePR(token, {
+          login,
+          subdomain,
+          changes: proxyApplicable,
+        })
+        if (result.ok) {
+          prUrl = result.prUrl
+        } else {
+          ok = false
+          error = combineErrors(error, result.error)
+        }
+      }
+    }
+
+    results.push({ subdomain, ok, ...(prUrl && { prUrl }), instant, error })
   }
 
   const saved = results.filter((result) => result.ok)
@@ -269,12 +331,12 @@ export async function saveSettings(
 }
 
 /**
- * Open a pull request restyling a hosted portfolio.
- *
- * Same route as every other settings edit — the style lives in the record file,
- * so changing it is a commit against the domains repo, not a write to anything
- * we control. Ownership, the hosted-portfolio requirement, and the one-change-
- * in-flight rule are all re-checked here; the client controls none of them.
+ * Restyle a hosted portfolio — a direct write to its D1 override, live as soon
+ * as this returns. No pull request: the renderer checks the override before
+ * falling back to git (lib/portfolio-config.ts), so there is nothing for a PR
+ * to accomplish here that the write does not already do. Ownership and the
+ * hosted-portfolio requirement are re-checked here; the client controls
+ * neither.
  *
  * Not gated on the claims flag: that flag governs handing out new subdomains,
  * and this only touches a record its owner already holds.
@@ -312,8 +374,6 @@ export async function savePortfolioStyle(
   }
 
   // A style only means something on a record pointed at our own renderer.
-  // Checked before touching GitHub so a nonsense request costs one lookup
-  // rather than a fork, a branch, and a file read.
   if (providerForRecords(domain.records)?.id !== "portfolio") {
     return {
       subdomain,
@@ -322,38 +382,17 @@ export async function savePortfolioStyle(
     }
   }
 
-  const token = await getGitHubAccessToken()
-  if (!token) {
-    return {
-      subdomain,
-      ok: false,
-      error:
-        "Your GitHub authorization is missing the required access. Sign out and sign in again to grant it.",
-    }
-  }
-
-  const pending = await getPendingProxyPRs(login, token)
-  const open = pending.get(subdomain)
-  if (open) {
-    return {
-      subdomain,
-      ok: false,
-      error: `A change is already open as pull request #${open.number}. Merge or close it first.`,
-    }
-  }
-
-  const result = await openProxyTogglePR(token, {
-    login,
-    subdomain,
-    changes: [{ kind: "portfolio", template, ...(theme ? { theme } : {}) }],
+  const write = await writePortfolioOverride(subdomain, {
+    template,
+    ...(theme ? { theme } : {}),
   })
-  if (!result.ok) {
-    return { subdomain, ok: false, error: result.error }
+  if (!write.ok) {
+    return { subdomain, ok: false, error: write.error }
   }
 
   revalidatePath("/domains")
   revalidatePath(`/domains/${subdomain}`)
-  return { subdomain, ok: true, prUrl: result.prUrl }
+  return { subdomain, ok: true, instant: true }
 }
 
 const verifyEmailInput = z.object({

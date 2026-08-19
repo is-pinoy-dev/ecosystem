@@ -1,7 +1,9 @@
+import type { D1Database } from "@cloudflare/workers-types"
 import { createRequestHandler } from "@react-router/cloudflare"
 // @ts-ignore - build/server is generated at compile time and won't exist during typecheck
 import * as build from "../build/server"
-import { lookupSubdomain, isToolEnabled } from "../src/lib/domains"
+import { lookupSubdomain, isToolEnabled, type DomainRecord } from "../src/lib/domains"
+import { readFeaturesOverride } from "./subdomains-db"
 
 const handleRequest = createRequestHandler({
   build,
@@ -20,6 +22,13 @@ const PREFIX = "/_tools/site-audit"
 
 export interface Env {
   ASSETS: Fetcher
+  /**
+   * The dashboard's registry database (see
+   * apps/dashboard/lib/db/schema.ts), read-only from here — only for the
+   * `featuresOverride` a dashboard save writes directly, never for anything
+   * the sync workflow owns.
+   */
+  SUBDOMAINS_DB: D1Database
 }
 
 /**
@@ -33,6 +42,7 @@ export interface Env {
  */
 async function isSiteAuditEnabled(
   subdomain: string,
+  env: Env,
   ctx: ExecutionContext
 ): Promise<boolean> {
   const lookup = await lookupSubdomain(subdomain, ctx)
@@ -48,7 +58,15 @@ async function isSiteAuditEnabled(
     return false
   }
 
-  const enabled = isToolEnabled(lookup.record, "site-audit")
+  // A dashboard-saved override wins over whatever the git file says — it is
+  // never touched by the sync workflow, so it only exists once someone has
+  // edited this from the dashboard instead of by pull request.
+  const override = await readFeaturesOverride(env.SUBDOMAINS_DB, subdomain)
+  const record: DomainRecord = override
+    ? { ...lookup.record, features: override as DomainRecord["features"] }
+    : lookup.record
+
+  const enabled = isToolEnabled(record, "site-audit")
   console.log(
     `[site-audit] feature check subdomain=${subdomain} enabled=${enabled}`
   )
@@ -214,7 +232,7 @@ export default {
 
     if (hostParts.length > 2) {
       const subdomain = hostParts.slice(0, hostParts.length - 2).join(".")
-      const enabled = await isSiteAuditEnabled(subdomain, ctx)
+      const enabled = await isSiteAuditEnabled(subdomain, env, ctx)
       if (!enabled) {
         console.warn(
           `[site-audit] blocked subdomain=${subdomain} reason=not-enabled`

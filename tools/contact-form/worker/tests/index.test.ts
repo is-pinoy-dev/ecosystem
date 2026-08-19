@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 
 vi.mock("../domains", () => ({
   lookupSubdomain: vi.fn(),
+  readFeaturesOverride: vi.fn().mockResolvedValue(null),
   isToolEnabled: (record: { features?: { tools?: Record<string, boolean> } }, tool: string) =>
     record.features?.tools?.[tool] === true,
 }))
@@ -13,7 +14,7 @@ vi.mock("../mail", () => ({
 }))
 
 const worker = (await import("../index")).default
-const { lookupSubdomain } = await import("../domains")
+const { lookupSubdomain, readFeaturesOverride } = await import("../domains")
 const { verifyTurnstile } = await import("../turnstile")
 const { sendSubmission } = await import("../mail")
 
@@ -26,6 +27,9 @@ function env() {
     EMAIL: { send: vi.fn() },
     TURNSTILE_SITE_KEY: "site-key",
     TURNSTILE_SECRET_KEY: "secret-key",
+    // Never touched directly — readFeaturesOverride is mocked above, so the
+    // real D1Database surface is never exercised.
+    SUBDOMAINS_DB: {} as unknown as import("@cloudflare/workers-types").D1Database,
   }
 }
 
@@ -36,6 +40,7 @@ const ENABLED_RECORD = {
 
 beforeEach(() => {
   vi.mocked(lookupSubdomain).mockReset()
+  vi.mocked(readFeaturesOverride).mockReset().mockResolvedValue(null)
   vi.mocked(verifyTurnstile).mockReset()
   vi.mocked(sendSubmission).mockReset()
 })
@@ -100,6 +105,33 @@ describe("GET /_tools/contact-form/config", () => {
 
   it("reports disabled when the domains repo is unreachable — fails closed, unlike site-audit", async () => {
     vi.mocked(lookupSubdomain).mockResolvedValue({ status: "unavailable" })
+
+    const res = await worker.fetch(
+      new Request("https://juan.is-pinoy.dev/_tools/contact-form/config"),
+      env(),
+      ctx(),
+    )
+    expect(((await res.json()) as { enabled: boolean }).enabled).toBe(false)
+  })
+
+  it("prefers a dashboard-saved override that enables the tool over a git file that has it off", async () => {
+    vi.mocked(lookupSubdomain).mockResolvedValue({
+      status: "found",
+      record: { owner: { github: "juan", email: "juan@example.com" }, features: {} },
+    })
+    vi.mocked(readFeaturesOverride).mockResolvedValue({ tools: { "contact-form": true } })
+
+    const res = await worker.fetch(
+      new Request("https://juan.is-pinoy.dev/_tools/contact-form/config"),
+      env(),
+      ctx(),
+    )
+    expect(((await res.json()) as { enabled: boolean }).enabled).toBe(true)
+  })
+
+  it("prefers a dashboard-saved override that disables the tool over a git file that has it on", async () => {
+    vi.mocked(lookupSubdomain).mockResolvedValue({ status: "found", record: ENABLED_RECORD })
+    vi.mocked(readFeaturesOverride).mockResolvedValue({ tools: { "contact-form": false } })
 
     const res = await worker.fetch(
       new Request("https://juan.is-pinoy.dev/_tools/contact-form/config"),
