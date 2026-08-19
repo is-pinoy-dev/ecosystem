@@ -11,6 +11,7 @@ import {
   getDestinationAddressStatus,
   type DestinationAddressStatus,
 } from "@/lib/cloudflare-email"
+import { getContactFormEmail } from "@/lib/contact-form-config"
 import { getSubdomainsForOwner } from "@/lib/domains"
 import {
   findFeature,
@@ -35,8 +36,6 @@ const subdomainField = z
   .min(3)
   .max(63)
   .regex(/^[a-z0-9-]+$/)
-
-const emailField = z.string().trim().pipe(z.email())
 
 const changeInput = z.discriminatedUnion("kind", [
   z.object({
@@ -218,7 +217,7 @@ export async function saveSettings(
           rejection = "Contact Form is not available yet."
           continue
         }
-        const email = domain.owner.email
+        const email = await getContactFormEmail(subdomain)
         const status: DestinationAddressStatus | null = email
           ? await getDestinationAddressStatus(email).catch(() => null)
           : "absent"
@@ -358,13 +357,12 @@ export async function savePortfolioStyle(
 
 const verifyEmailInput = z.object({
   subdomain: subdomainField,
-  email: emailField,
 })
 
 export interface VerifyEmailResult {
   ok: boolean
   status: DestinationAddressStatus
-  /** Present when this call also opened a pull request updating owner.email. */
+  /** Present when this call also opened a pull request updating contactForm.email. */
   prUrl?: string
   error?: string
 }
@@ -372,12 +370,24 @@ export interface VerifyEmailResult {
 /**
  * "Verify email" — the only action that registers an address with
  * Cloudflare Email Routing, separate from (and a prerequisite for) switching
- * Contact Form on. Two things happen, in order:
+ * Contact Form on.
  *
- *  1. If the email differs from what git currently has for this subdomain,
- *     open a pull request writing it to `owner.email` — the same PR-per-edit
- *     path every other setting goes through, so git stays the source of
- *     truth for the address a submission is ultimately addressed to.
+ * The address is always the caller's own GitHub account email
+ * (`session.user.email`), never a client-supplied string — there is no
+ * free-text email field anywhere in this flow. That is a deliberate
+ * decision, not an oversight: this field previously accepted whatever the
+ * browser sent, which is how a stale, unrelated `owner.email` value ended up
+ * registered in production instead of the signed-in owner's actual GitHub
+ * address. Locking it to the OAuth session's own email is what "the GitHub-
+ * configured email address" in the original feature request actually meant.
+ *
+ * Two things happen, in order:
+ *
+ *  1. If the GitHub email differs from what git currently has for this
+ *     subdomain, open a pull request writing it to `contactForm.email` — the
+ *     same PR-per-edit path every other setting goes through, so git stays
+ *     the source of truth for the address a submission is ultimately
+ *     addressed to.
  *  2. Register the address as a Cloudflare Email Routing destination. This
  *     is what actually triggers Cloudflare's one-time confirmation email —
  *     it runs whether or not step 1 did anything, since re-clicking "Verify
@@ -400,6 +410,16 @@ export async function verifyContactFormEmail(
   }
   const login = session.user.login
 
+  const email = session.user.email
+  if (!email) {
+    return {
+      ok: false,
+      status: "absent",
+      error:
+        "Your GitHub account has no email address available. Make sure your GitHub account has a public or primary email set, then sign out and back in.",
+    }
+  }
+
   // A server action stays reachable by its own ID once deployed, whatever
   // the page does — the flag has to be checked here too, not only on the
   // panel that calls it (see app/(dashboard)/claim/actions.ts for the same
@@ -414,9 +434,9 @@ export async function verifyContactFormEmail(
 
   const parsed = verifyEmailInput.safeParse(input)
   if (!parsed.success) {
-    return { ok: false, status: "absent", error: "Invalid email address." }
+    return { ok: false, status: "absent", error: "Invalid request." }
   }
-  const { subdomain, email } = parsed.data
+  const { subdomain } = parsed.data
 
   const { owned } = await getSubdomainsForOwner({
     login,
@@ -432,7 +452,8 @@ export async function verifyContactFormEmail(
   }
 
   let prUrl: string | undefined
-  if (domain.owner.email !== email) {
+  const currentContactFormEmail = await getContactFormEmail(subdomain)
+  if (currentContactFormEmail !== email) {
     const token = await getGitHubAccessToken()
     if (!token) {
       return {
@@ -456,7 +477,7 @@ export async function verifyContactFormEmail(
     const result = await openProxyTogglePR(token, {
       login,
       subdomain,
-      changes: [{ kind: "owner-email", email }],
+      changes: [{ kind: "contact-email", email }],
     })
     if (!result.ok) {
       return { ok: false, status: "absent", error: result.error }
@@ -477,17 +498,20 @@ export async function verifyContactFormEmail(
   return { ok: true, status, prUrl }
 }
 
-const recheckInput = z.object({ subdomain: subdomainField, email: emailField })
+const recheckInput = z.object({ subdomain: subdomainField })
 
 /**
- * Re-read an email's verification status from Cloudflare — backs the
- * "Recheck" button, since there is no way for Cloudflare to push the result
- * of the owner clicking its confirmation link.
+ * Re-read the currently committed `contactForm.email`'s verification status
+ * from Cloudflare — backs the "Recheck" button, since there is no way for
+ * Cloudflare to push the result of the owner clicking its confirmation link.
  *
- * Ownership is checked the same as every other action here, even though this
- * one is read-only against Cloudflare: without it, a signed-in user could
- * use this as a general oracle for whether an arbitrary address is a
- * verified destination on the platform's account.
+ * Reads the address from git via `getContactFormEmail`, never from client
+ * input — same reasoning as `verifyContactFormEmail`: accepting an
+ * arbitrary email here would make this a general oracle for whether any
+ * address is a verified destination on the platform's account, for any
+ * signed-in user willing to guess a subdomain they don't own. Ownership is
+ * still checked below on top of that, since even "is my own committed
+ * address verified" should only be answerable by the owner.
  */
 export async function checkContactFormEmailStatus(
   input: z.infer<typeof recheckInput>
@@ -506,7 +530,7 @@ export async function checkContactFormEmailStatus(
 
   const parsed = recheckInput.safeParse(input)
   if (!parsed.success) return { error: "Invalid request." }
-  const { subdomain, email } = parsed.data
+  const { subdomain } = parsed.data
 
   const { owned } = await getSubdomainsForOwner({
     login: session.user.login,
@@ -515,6 +539,9 @@ export async function checkContactFormEmailStatus(
   if (!owned.some((d) => d.subdomain === subdomain)) {
     return { error: `You do not own ${subdomain}.is-pinoy.dev.` }
   }
+
+  const email = await getContactFormEmail(subdomain)
+  if (!email) return { status: "absent" }
 
   try {
     return { status: await getDestinationAddressStatus(email) }

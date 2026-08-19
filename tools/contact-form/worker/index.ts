@@ -73,14 +73,14 @@ function parseSubmitBody(value: unknown): SubmitBody | null {
  * be reached. Site Audit fails open because the worst case is a page that
  * runs anyway; here the worst case would be accepting a submission with no
  * verified place to route it — the domains repo is the only source for
- * `owner.email`, so "unavailable" and "no address to send to" are the same
- * situation from this endpoint's point of view.
+ * `contactForm.email`, so "unavailable" and "no address to send to" are the
+ * same situation from this endpoint's point of view.
  */
 async function resolveEnabled(
   subdomain: string,
   ctx: ExecutionContext,
 ): Promise<
-  | { ok: true; record: DomainRecord; ownerEmail: string }
+  | { ok: true; record: DomainRecord; destinationEmail: string }
   | { ok: false; reason: "unclaimed" | "unavailable" | "not-enabled" | "no-email" }
 > {
   const lookup = await lookupSubdomain(subdomain, ctx)
@@ -90,11 +90,11 @@ async function resolveEnabled(
   if (!isToolEnabled(lookup.record, "contact-form")) {
     return { ok: false, reason: "not-enabled" }
   }
-  const ownerEmail = lookup.record.owner?.email
-  if (!ownerEmail) {
+  const destinationEmail = lookup.record.contactForm?.email
+  if (!destinationEmail) {
     return { ok: false, reason: "no-email" }
   }
-  return { ok: true, record: lookup.record, ownerEmail }
+  return { ok: true, record: lookup.record, destinationEmail }
 }
 
 async function handleConfig(
@@ -128,8 +128,8 @@ async function handleSubmit(
   }
 
   // Re-checked here rather than trusted from /config — enablement and the
-  // owner's email are both facts about the record that could have changed, or
-  // been spoofed, since the widget last asked.
+  // contact form's destination email are both facts about the record that
+  // could have changed, or been spoofed, since the widget last asked.
   const resolved = await resolveEnabled(subdomain, ctx)
   if (!resolved.ok) {
     console.warn(
@@ -144,7 +144,7 @@ async function handleSubmit(
     return json({ error: "Verification failed. Please try again." }, 400)
   }
 
-  const result = await sendSubmission(env.EMAIL, resolved.ownerEmail, {
+  const result = await sendSubmission(env.EMAIL, resolved.destinationEmail, {
     name: body.name,
     email: body.email,
     message: body.message,

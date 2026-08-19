@@ -16,6 +16,7 @@ import { hasDatabase } from "@/lib/db"
 import { toDomainView, type PendingPRView } from "@/lib/domain-view"
 import { getSubdomainsForOwner } from "@/lib/domains"
 import { contactFormEnabled } from "@/lib/flags-server"
+import { getContactFormEmail } from "@/lib/contact-form-config"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { getPortfolioStyle } from "@/lib/portfolio-config"
 import { providerForRecords } from "@/lib/providers"
@@ -66,23 +67,25 @@ export default async function DomainDetailPage({ params }: Props) {
         console.error("[domain] visit totals unavailable", error)
         return null
       }),
-      // Read straight from the domains repo — the registry read model does not
-      // carry the portfolio block. Only worth a request for a record actually
-      // pointed at our renderer.
+      // Only worth a request for a record actually pointed at our renderer.
       hosted ? getPortfolioStyle(record.subdomain) : null,
+      // Read straight from the domains repo — the registry read model does
+      // not carry the `contactForm` block, same as `portfolio` above.
       // "absent" (rather than throwing, or reading as "verified") whenever
       // there's no email yet or Email Routing isn't configured on this
       // deployment — both mean there is no confirmed place to deliver mail,
       // which is exactly what blocks the Contact Form switch below.
-      record.owner.email && hasEmailRouting()
-        ? getDestinationAddressStatus(record.owner.email).catch((error) => {
-            console.error(
-              "[domain] contact-form email status unavailable",
-              error
-            )
-            return "absent" as const
-          })
-        : Promise.resolve<DestinationAddressStatus>("absent"),
+      getContactFormEmail(record.subdomain).then((email) =>
+        email && hasEmailRouting()
+          ? getDestinationAddressStatus(email).catch((error) => {
+              console.error(
+                "[domain] contact-form email status unavailable",
+                error
+              )
+              return "absent" as const
+            })
+          : Promise.resolve<DestinationAddressStatus>("absent")
+      ),
       contactFormEnabled(),
     ])
   const domain = toDomainView(record, {
@@ -118,7 +121,7 @@ export default async function DomainDetailPage({ params }: Props) {
       {contactFormFlagEnabled ? (
         <ContactFormEmailPanel
           subdomain={record.subdomain}
-          initialEmail={record.owner.email ?? session.user.email ?? ""}
+          githubEmail={session.user.email ?? ""}
           initialStatus={contactFormEmailStatus}
           pendingPR={pending[record.subdomain] ?? null}
         />

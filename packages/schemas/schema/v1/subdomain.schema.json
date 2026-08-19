@@ -248,6 +248,20 @@
       ],
       "additionalProperties": false
     },
+    "contactForm": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        }
+      },
+      "required": [
+        "email"
+      ],
+      "additionalProperties": false
+    },
     "destroy": {
       "type": "boolean"
     }

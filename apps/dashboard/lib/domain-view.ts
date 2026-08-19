@@ -189,8 +189,9 @@ function formatDate(date: Date | null | undefined): string | null {
 
 export interface DomainViewOptions {
   /**
-   * Verification status of `domain.owner.email` as a Cloudflare Email
-   * Routing destination, for gating the Contact Form switch. Omitted (rather
+   * Verification status of the record's Contact Form email
+   * (`contactForm.email`) as a Cloudflare Email Routing destination, for
+   * gating the Contact Form switch. Omitted (rather
    * than checked and found "absent") whenever the caller has not resolved
    * it — the listing page, or a deployment with Cloudflare Email Routing
    * unconfigured — and is treated the same as "not verified": there is no

@@ -30,7 +30,8 @@ function env() {
 }
 
 const ENABLED_RECORD = {
-  owner: { github: "juan", email: "juan@example.com" },
+  owner: { github: "juan" },
+  contactForm: { email: "juan@example.com" },
   features: { tools: { "contact-form": true } },
 }
 
@@ -73,10 +74,10 @@ describe("GET /_tools/contact-form/config", () => {
     expect(body.turnstileSiteKey).toBe("site-key")
   })
 
-  it("reports disabled when the record has no owner email, even if the flag is on", async () => {
+  it("reports disabled when the record has no contact form email, even if the flag is on", async () => {
     vi.mocked(lookupSubdomain).mockResolvedValue({
       status: "found",
-      record: { owner: { github: "juan" }, features: { tools: { "contact-form": true } } },
+      record: { features: { tools: { "contact-form": true } } },
     })
 
     const res = await worker.fetch(
@@ -135,8 +136,8 @@ describe("POST /_tools/contact-form/submit", () => {
 
     expect(res.status).toBe(200)
     expect(sendSubmission).toHaveBeenCalledTimes(1)
-    const [, ownerEmail] = vi.mocked(sendSubmission).mock.calls[0]!
-    expect(ownerEmail).toBe("juan@example.com")
+    const [, destinationEmail] = vi.mocked(sendSubmission).mock.calls[0]!
+    expect(destinationEmail).toBe("juan@example.com")
   })
 
   it("rejects a malformed body without looking anything up", async () => {
@@ -152,7 +153,7 @@ describe("POST /_tools/contact-form/submit", () => {
   it("re-checks enablement server-side rather than trusting the client", async () => {
     vi.mocked(lookupSubdomain).mockResolvedValue({
       status: "found",
-      record: { owner: { github: "juan" }, features: { tools: { "contact-form": false } } },
+      record: { features: { tools: { "contact-form": false } } },
     })
 
     const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env(), ctx())
@@ -161,10 +162,10 @@ describe("POST /_tools/contact-form/submit", () => {
     expect(verifyTurnstile).not.toHaveBeenCalled()
   })
 
-  it("rejects when the record has no owner email even though the flag is on", async () => {
+  it("rejects when the record has no contact form email even though the flag is on", async () => {
     vi.mocked(lookupSubdomain).mockResolvedValue({
       status: "found",
-      record: { owner: { github: "juan" }, features: { tools: { "contact-form": true } } },
+      record: { features: { tools: { "contact-form": true } } },
     })
 
     const res = await worker.fetch(submitRequest(VALID_SUBMISSION), env(), ctx())

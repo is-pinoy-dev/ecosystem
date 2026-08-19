@@ -14,7 +14,7 @@ const CACHE_TTL_SECONDS = 300
 
 /** Only the fields this tool reads. The file carries more. */
 export interface DomainRecord {
-  owner?: { github?: string; email?: string }
+  contactForm?: { email?: string }
   features?: { tools?: Record<string, boolean | undefined> }
 }
 

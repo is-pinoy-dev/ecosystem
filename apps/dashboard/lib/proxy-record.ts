@@ -14,7 +14,7 @@
 
 import {
   domainSchema,
-  type Domain,
+  type ContactFormConfig,
   type PortfolioConfig,
 } from "@is-pinoy-dev/schemas"
 import { validateDomain } from "@is-pinoy-dev/validate"
@@ -206,21 +206,24 @@ export function subdomainFromHeadLabel(
 
 /**
  * One pending edit: the master proxy switch on a record type, one platform
- * tool's flag, the hosted portfolio's style, or the owner's contact email.
- * All four live in the same record file, so a batch of them belongs in a
- * single commit.
+ * tool's flag, the hosted portfolio's style, or the Contact Form feature's
+ * delivery email. All four live in the same record file, so a batch of them
+ * belongs in a single commit.
  */
 export type RecordChange =
   | { kind: "proxy"; type: ProxyableType; enabled: boolean }
   | { kind: "feature"; feature: string; enabled: boolean }
   | { kind: "portfolio"; template: PortfolioTemplate; theme?: PortfolioTheme }
-  | { kind: "owner-email"; email: string }
+  | { kind: "contact-email"; email: string }
 
 export type PortfolioChange = Extract<RecordChange, { kind: "portfolio" }>
-export type OwnerEmailChange = Extract<RecordChange, { kind: "owner-email" }>
+export type ContactEmailChange = Extract<
+  RecordChange,
+  { kind: "contact-email" }
+>
 
 /** The switch-shaped changes — the ones that read as on/off. */
-type ToggleChange = Exclude<RecordChange, PortfolioChange | OwnerEmailChange>
+type ToggleChange = Exclude<RecordChange, PortfolioChange | ContactEmailChange>
 
 function portfolioChangeOf(
   changes: RecordChange[]
@@ -231,11 +234,11 @@ function portfolioChangeOf(
     .at(-1)
 }
 
-function ownerEmailChangeOf(
+function contactEmailChangeOf(
   changes: RecordChange[]
-): OwnerEmailChange | undefined {
+): ContactEmailChange | undefined {
   return changes
-    .filter((c): c is OwnerEmailChange => c.kind === "owner-email")
+    .filter((c): c is ContactEmailChange => c.kind === "contact-email")
     .at(-1)
 }
 
@@ -311,21 +314,18 @@ export function buildToggledFile(
     ) as NonNullable<PortfolioConfig>
   }
 
-  const emailChange = ownerEmailChangeOf(changes)
-  let nextOwner: Domain["owner"] | undefined
+  const emailChange = contactEmailChangeOf(changes)
+  let nextContactForm: NonNullable<ContactFormConfig> | undefined
   if (emailChange) {
-    const current = file.owner
-    const base: Partial<Domain["owner"]> =
+    const current = file.contactForm
+    const base: Partial<NonNullable<ContactFormConfig>> =
       current && typeof current === "object" && !Array.isArray(current)
-        ? (current as Partial<Domain["owner"]>)
+        ? (current as Partial<NonNullable<ContactFormConfig>>)
         : {}
     if (base.email === emailChange.email) {
       return { error: "That is already this subdomain's contact email." }
     }
-    if (!base.github) {
-      return { error: "The record file has no owner block." }
-    }
-    nextOwner = { ...base, github: base.github, email: emailChange.email }
+    nextContactForm = { ...base, email: emailChange.email }
   }
 
   const updated = {
@@ -334,7 +334,7 @@ export function buildToggledFile(
     // Written in place: spreading `file` first keeps the block where it already
     // sits in the file, so the pull request diffs as one edited block.
     ...(nextPortfolio ? { portfolio: nextPortfolio } : {}),
-    ...(nextOwner ? { owner: nextOwner } : {}),
+    ...(nextContactForm ? { contactForm: nextContactForm } : {}),
     // Only introduce a features block when a feature was actually edited, so a
     // pure proxy change leaves the rest of the file byte-identical.
     ...(featureChanges.length > 0
@@ -395,8 +395,8 @@ function toggleBullet(change: ToggleChange): string {
     : `- \`features.${change.feature}\` → \`${change.enabled}\``
 }
 
-function ownerEmailBullets(change: OwnerEmailChange): string[] {
-  return [`- \`owner.email\` → \`${change.email}\``]
+function contactEmailBullets(change: ContactEmailChange): string[] {
+  return [`- \`contactForm.email\` → \`${change.email}\``]
 }
 
 /**
@@ -410,10 +410,10 @@ export function summarizeChanges(
   changes: RecordChange[]
 ): ChangeSummary {
   const style = portfolioChangeOf(changes)
-  const emailChange = ownerEmailChangeOf(changes)
+  const emailChange = contactEmailChangeOf(changes)
   const toggles = changes.filter(
     (change): change is ToggleChange =>
-      change.kind !== "portfolio" && change.kind !== "owner-email"
+      change.kind !== "portfolio" && change.kind !== "contact-email"
   )
 
   if (style && toggles.length === 0 && !emailChange) {
@@ -427,10 +427,10 @@ export function summarizeChanges(
 
   if (emailChange && toggles.length === 0 && !style) {
     return {
-      title: `Update contact email: ${subdomain}`,
-      commitMessage: `chore: update contact email for ${subdomain}`,
-      lead: `Updates the contact email on file for \`${subdomain}.is-pinoy.dev\`.`,
-      bullets: ownerEmailBullets(emailChange),
+      title: `Update Contact Form email: ${subdomain}`,
+      commitMessage: `chore: update contact form email for ${subdomain}`,
+      lead: `Updates the Contact Form delivery address for \`${subdomain}.is-pinoy.dev\`.`,
+      bullets: contactEmailBullets(emailChange),
     }
   }
 
@@ -459,7 +459,7 @@ export function summarizeChanges(
     bullets: [
       ...toggles.map(toggleBullet),
       ...(style ? portfolioBullets(style) : []),
-      ...(emailChange ? ownerEmailBullets(emailChange) : []),
+      ...(emailChange ? contactEmailBullets(emailChange) : []),
     ],
   }
 }

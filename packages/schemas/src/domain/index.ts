@@ -81,6 +81,18 @@ export const portfolioSchema = z
   })
   .optional()
 
+// Opt-in Contact Form feature. When present, this is the verified Cloudflare
+// Email Routing destination that visitor submissions are delivered to.
+// Deliberately separate from the general-purpose, maintainer-contact
+// `owner.email` field above — that field predates Contact Form, has its own
+// documented meaning ("used by maintainers to contact you if there's an issue
+// with your subdomain"), and must never be read or written by this feature.
+export const contactFormSchema = z
+  .object({
+    email: z.email(),
+  })
+  .optional()
+
 export const domainSchema = z
   .object({
     subdomain: z
@@ -113,14 +125,16 @@ export const domainSchema = z
       ),
     features: domainFeaturesSchema,
     portfolio: portfolioSchema,
+    contactForm: contactFormSchema,
     destroy: z.boolean().optional(),
   })
   .refine(
-    (d) => !d.features?.tools?.["contact-form"] || Boolean(d.owner.email),
+    (d) =>
+      !d.features?.tools?.["contact-form"] || Boolean(d.contactForm?.email),
     {
       message:
-        'owner.email is required when features.tools["contact-form"] is enabled',
-      path: ["owner", "email"],
+        'contactForm.email is required when features.tools["contact-form"] is enabled',
+      path: ["contactForm", "email"],
     }
   )
 
@@ -135,6 +149,7 @@ export type ResolvedDomains = z.infer<typeof ResolvedDomainsSchema>
 export type Domain = z.infer<typeof domainSchema>
 export type DomainFeatures = z.infer<typeof domainFeaturesSchema>
 export type PortfolioConfig = z.infer<typeof portfolioSchema>
+export type ContactFormConfig = z.infer<typeof contactFormSchema>
 export type DNSRecord = z.infer<typeof dnsRecordSchema>
 
 export * from "./records.js"
