@@ -5,8 +5,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@is-pinoy-dev/ui/*": ["../../packages/ui/src/*"],
-      "@is-pinoy-dev/schemas": ["../../packages/schemas/src/index.ts"]
+      "@is-pinoy-dev/ui/*": ["../../packages/ui/src/*"]
     },
     "plugins": [{ "name": "next" }],
     "types": ["node", "react", "react-dom"]
