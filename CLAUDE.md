@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **is-pinoy.dev** — free subdomain service for Filipino developers. Packages expose a CLI + registry that manages DNS records via Cloudflare. The web app and docs site present the public interface using the Banig Grid v2 design system (see `DESIGN.md`).
 
+This file covers monorepo-wide conventions. Each app and package under
+`apps/` and `packages/` also has its own `CLAUDE.md` with directory-specific
+commands, structure, and gotchas — read it alongside this one when working
+inside that directory; it doesn't repeat what's already covered here.
+
 ## Common Commands
 
 ```bash
@@ -23,7 +28,7 @@ pnpm typecheck
 pnpm lint
 pnpm format
 
-# Tests (only cli and registry packages have tests)
+# Tests (cli, registry, validate, badge-kit, web, dashboard, portfolio have tests)
 pnpm test
 
 # Single package
