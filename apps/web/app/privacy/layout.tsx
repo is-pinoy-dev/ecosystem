@@ -35,7 +35,7 @@ export default function PrivacyLayout({
   children: React.ReactNode
 }) {
   return (
-    <DocLayout title="Privacy Policy" effectiveDate="August 11, 2026">
+    <DocLayout title="Privacy Policy" effectiveDate="August 20, 2026">
       {children}
     </DocLayout>
   )
