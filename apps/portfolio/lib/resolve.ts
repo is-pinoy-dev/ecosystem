@@ -1,5 +1,6 @@
 import type { PortfolioConfig } from "@is-pinoy-dev/schemas"
 import { logMiss, logUpstream, type MissReason } from "./diagnostics"
+import { getPortfolioOverride } from "./portfolio-override"
 
 // Portfolio subdomains are ordinary `subdomains/<name>.json` files in the
 // is-pinoy-dev/domains repo whose CNAME points at portfolio.is-pinoy.dev and
@@ -52,9 +53,25 @@ export async function resolveSubdomain(subdomain: string): Promise<Resolution> {
 
   if (!file.owner?.github) return { ok: false, reason: "registry-unreadable" }
   if (!file.portfolio) return { ok: false, reason: "no-portfolio-block" }
+
+  // A dashboard-saved override wins over whatever the git file says — it is
+  // never touched by the sync workflow, so it only exists once someone has
+  // edited this from the dashboard instead of by pull request. Only the
+  // style (template/theme) is overridable; `sections` and anything else on
+  // the block always come from git.
+  const override = await getPortfolioOverride(subdomain)
+  const { template: _template, theme: _theme, ...rest } = file.portfolio
+  const portfolio: NonNullable<PortfolioConfig> = override
+    ? {
+        template: override.template,
+        ...(override.theme ? { theme: override.theme } : {}),
+        ...rest,
+      }
+    : file.portfolio
+
   return {
     ok: true,
-    value: { github: file.owner.github, portfolio: file.portfolio },
+    value: { github: file.owner.github, portfolio },
   }
 }
 

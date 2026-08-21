@@ -101,6 +101,66 @@ describe("getRegistrySubdomains", () => {
     expect(result.map((r) => r.subdomain)).toEqual(["juan"])
     expect(fetchSpy).not.toHaveBeenCalled()
   })
+
+  it("prefers the dashboard's feature override over the git-synced value", async () => {
+    configured.mockReturnValue(true)
+    db.mockReturnValue({
+      select: () => ({
+        from: () => ({
+          orderBy: () =>
+            Promise.resolve([
+              {
+                name: "juan",
+                ownerGithub: "juandelacruz",
+                ownerEmail: null,
+                records: { CNAME: "juandelacruz.github.io" },
+                features: { analytics: true },
+                featuresOverride: { analytics: false },
+                syncStatus: "synced",
+                lastError: null,
+                lastSyncedAt: null,
+                createdAt: null,
+                updatedAt: null,
+              },
+            ]),
+        }),
+      }),
+    } as unknown as ReturnType<typeof getDb>)
+
+    const [result] = await getRegistrySubdomains()
+
+    expect(result?.features).toEqual({ analytics: false })
+  })
+
+  it("falls back to the git-synced feature value when there is no override", async () => {
+    configured.mockReturnValue(true)
+    db.mockReturnValue({
+      select: () => ({
+        from: () => ({
+          orderBy: () =>
+            Promise.resolve([
+              {
+                name: "juan",
+                ownerGithub: "juandelacruz",
+                ownerEmail: null,
+                records: { CNAME: "juandelacruz.github.io" },
+                features: { analytics: true },
+                featuresOverride: null,
+                syncStatus: "synced",
+                lastError: null,
+                lastSyncedAt: null,
+                createdAt: null,
+                updatedAt: null,
+              },
+            ]),
+        }),
+      }),
+    } as unknown as ReturnType<typeof getDb>)
+
+    const [result] = await getRegistrySubdomains()
+
+    expect(result?.features).toEqual({ analytics: true })
+  })
 })
 
 const { isOwnedBy } = await import("./domains")

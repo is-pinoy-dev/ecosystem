@@ -7,6 +7,16 @@ compatibility_flags = ["nodejs_compat"]
 directory = "../build/client"
 binding = "ASSETS"
 
+# Read-only access to the dashboard's registry database, for the
+# `featuresOverride` a dashboard save writes directly (see
+# apps/dashboard/lib/db/settings.ts and apps/dashboard/lib/db/schema.ts).
+# Same database as the dashboard's own CLOUDFLARE_D1_DATABASE_ID env var —
+# keep this in step if that database is ever recreated or migrated.
+[[d1_databases]]
+binding = "SUBDOMAINS_DB"
+database_name = "dashboard-db"
+database_id = "58109557-f2e5-4dd3-8722-5fbea0e20dfc"
+
 # How the audit reaches a hosted portfolio. A Worker's fetch to its own zone
 # does not re-run that zone's Workers routes, so scanning `<label>.is-pinoy.dev`
 # would bypass tools-portfolio-proxy, reach the origin under a hostname its

@@ -41,6 +41,16 @@ TURNSTILE_SITE_KEY = ""
 [[send_email]]
 name = "EMAIL"
 
+# Read-only access to the dashboard's registry database, for the
+# `featuresOverride` a dashboard save writes directly (see
+# apps/dashboard/lib/db/settings.ts and apps/dashboard/lib/db/schema.ts).
+# Same database as the dashboard's own CLOUDFLARE_D1_DATABASE_ID env var —
+# keep this in step if that database is ever recreated or migrated.
+[[d1_databases]]
+binding = "SUBDOMAINS_DB"
+database_name = "dashboard-db"
+database_id = "58109557-f2e5-4dd3-8722-5fbea0e20dfc"
+
 [[routes]]
 pattern = "*.is-pinoy.dev/_tools/contact-form*"
 zone_name = "is-pinoy.dev"

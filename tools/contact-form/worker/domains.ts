@@ -7,6 +7,8 @@
  * with `@cloudflare/workers-types` here.
  */
 
+import type { D1Database } from "@cloudflare/workers-types"
+
 const DOMAINS_RAW_BASE =
   "https://raw.githubusercontent.com/is-pinoy-dev/domains/main/subdomains"
 
@@ -132,4 +134,35 @@ function parseRecord(body: string): DomainRecord | null {
 /** Whether a named tool is switched on for this record. */
 export function isToolEnabled(record: DomainRecord, tool: string): boolean {
   return record.features?.tools?.[tool] === true
+}
+
+interface OverrideRow {
+  features_override: string | null
+}
+
+/**
+ * A dashboard-saved feature override for this subdomain — the direct-D1 write
+ * from apps/dashboard/lib/db/settings.ts, checked here instead of the git
+ * file's `features` block whenever it exists. `null` covers "no override
+ * yet" and "the query failed" alike: either way the caller falls back to
+ * `record.features` from the git read, same as before this existed.
+ */
+export async function readFeaturesOverride(
+  db: D1Database,
+  subdomain: string,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const row = await db
+      .prepare("SELECT features_override FROM subdomains WHERE name = ?")
+      .bind(subdomain)
+      .first<OverrideRow>()
+    if (!row?.features_override) return null
+    return JSON.parse(row.features_override) as Record<string, unknown>
+  } catch (error) {
+    console.warn(
+      `[contact-form] features override lookup failed subdomain=${subdomain}`,
+      error,
+    )
+    return null
+  }
 }

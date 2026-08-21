@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react"
 import {
+  Check,
   CheckCircle2,
   ChevronRight,
   ExternalLink,
   Eye,
-  GitPullRequest,
   Loader2,
   XCircle,
 } from "lucide-react"
@@ -38,26 +38,21 @@ import {
   type PortfolioTemplate,
   type PortfolioTheme,
 } from "@/lib/portfolio-style"
-import type { PendingPRView } from "@/lib/domain-view"
 
 /**
- * Restyle a hosted portfolio.
- *
- * Same contract as the platform switches: choosing a style changes nothing on
- * its own, and saving opens a pull request against the record file. While one
- * is open the panel is read-only, because git — not this page — decides what
- * the renderer serves.
+ * Restyle a hosted portfolio — a direct save, live as soon as it returns. No
+ * pull request: the renderer checks the dashboard's saved override before it
+ * ever reads git (see lib/portfolio-config.ts), so there is nothing here for
+ * a PR to gate.
  */
 export function PortfolioStylePanel({
   subdomain,
   login,
   style,
-  pendingPR,
 }: {
   subdomain: string
   login: string
   style: PortfolioStyle
-  pendingPR: PendingPRView | null
 }) {
   const [template, setTemplate] = useState<PortfolioTemplate>(style.template)
   // A designer design saves no palette, so there is none to restore when the
@@ -70,7 +65,6 @@ export function PortfolioStylePanel({
   const [result, setResult] = useState<SubdomainSaveResult | null>(null)
   const [saving, startSaving] = useTransition()
 
-  const readOnly = pendingPR !== null
   const dirty = !sameStyle(style, { template, theme })
   const current = styleOption(style.template)
   const staged = styleOption(template)
@@ -84,7 +78,7 @@ export function PortfolioStylePanel({
     .join(" · ")
 
   function onSave() {
-    if (!dirty || readOnly) return
+    if (!dirty) return
     setResult(null)
     startSaving(async () => {
       setResult(
@@ -128,7 +122,7 @@ export function PortfolioStylePanel({
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
                 Portfolio style
-                {dirty && !readOnly ? (
+                {dirty ? (
                   <span className="text-[11px] font-medium text-primary">
                     Unsaved
                   </span>
@@ -147,37 +141,18 @@ export function PortfolioStylePanel({
 
       <CollapsibleContent>
         <div className="flex flex-col gap-6 border-t border-border p-4">
-          {readOnly ? (
-            <p className="m-0 flex flex-wrap items-center gap-x-1.5 gap-y-1 border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
-              <GitPullRequest
-                className="size-3.5 shrink-0"
-                aria-hidden="true"
-              />
-              A change for this domain is waiting in{" "}
-              <a
-                href={pendingPR.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent underline"
-              >
-                pull request #{pendingPR.number}
-              </a>
-              . Merge or close it before restyling.
-            </p>
-          ) : null}
-
           <PortfolioStyleFields
             template={template}
             theme={theme}
             onTemplateChange={setTemplate}
             onThemeChange={setTheme}
-            disabled={readOnly || saving}
+            disabled={saving}
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
             <p className="m-0 max-w-md text-[11px]/relaxed text-muted-foreground">
               {dirty
-                ? `Saving opens a pull request switching ${subdomain}.is-pinoy.dev to ${staged.label}. It goes live once a maintainer merges it.`
+                ? `Saving switches ${subdomain}.is-pinoy.dev to ${staged.label} immediately.`
                 : "This is the style your portfolio is serving now."}
             </p>
             <span className="flex flex-wrap items-center gap-2">
@@ -192,20 +167,16 @@ export function PortfolioStylePanel({
                   <ExternalLink className="size-3.5" aria-hidden="true" />
                 </a>
               </Button>
-              <Button
-                size="sm"
-                onClick={onSave}
-                disabled={!dirty || readOnly || saving}
-              >
+              <Button size="sm" onClick={onSave} disabled={!dirty || saving}>
                 {saving ? (
                   <>
                     <Loader2 className="animate-spin" aria-hidden="true" />
-                    Opening…
+                    Saving…
                   </>
                 ) : (
                   <>
-                    <GitPullRequest aria-hidden="true" />
-                    Open pull request
+                    <Check aria-hidden="true" />
+                    Save
                   </>
                 )}
               </Button>
@@ -218,18 +189,7 @@ export function PortfolioStylePanel({
                 className="mt-0.5 size-4 shrink-0 text-success"
                 aria-hidden="true"
               />
-              <span>
-                Pull request opened —{" "}
-                <a
-                  href={result.prUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent underline"
-                >
-                  review it on GitHub
-                </a>
-                . Your portfolio keeps its current look until it is merged.
-              </span>
+              <span>Saved — your portfolio now uses this style.</span>
             </p>
           ) : null}
 

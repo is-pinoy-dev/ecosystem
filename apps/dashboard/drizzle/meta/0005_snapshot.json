@@ -1,9 +1,47 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "65d8f746-1fdb-4992-a543-2954f48bf061",
-  "prevId": "06206e1f-2506-4a60-b373-3cf6b3c4e04c",
+  "id": "5b937ea6-7f6b-4549-a30d-6a937a653313",
+  "prevId": "65d8f746-1fdb-4992-a543-2954f48bf061",
   "tables": {
+    "contact_emails": {
+      "name": "contact_emails",
+      "columns": {
+        "github_id": {
+          "name": "github_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "github_login": {
+          "name": "github_login",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "subdomains": {
       "name": "subdomains",
       "columns": {

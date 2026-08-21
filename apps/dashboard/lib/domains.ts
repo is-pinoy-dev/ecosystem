@@ -61,7 +61,9 @@ async function getSubdomainsFromDb(): Promise<RegistrySubdomain[]> {
       email: row.ownerEmail ?? undefined,
     },
     records: row.records,
-    features: row.features,
+    // The dashboard's own override wins when one has been saved; otherwise
+    // this falls back to the value the sync workflow last mirrored from git.
+    features: row.featuresOverride ?? row.features,
     syncStatus: row.syncStatus,
     lastError: row.lastError,
     lastSyncedAt: row.lastSyncedAt,

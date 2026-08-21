@@ -250,23 +250,48 @@ function ConfirmView({
   onCancel: () => void
   onConfirm: () => void
 }) {
-  const prCount = affected.length
+  const proxyChanges = changes.filter((c) => c.kind === "proxy")
+  const featureChanges = changes.filter((c) => c.kind === "feature")
+  const hasProxy = proxyChanges.length > 0
+  const hasFeature = featureChanges.length > 0
+  const proxyDomainCount = new Set(proxyChanges.map((c) => c.subdomain)).size
 
   return (
     <>
       <DialogHeader>
         <DialogTitle>
-          Open {prCount} pull request{prCount === 1 ? "" : "s"}?
+          Save {affected.length} setting{affected.length === 1 ? "" : "s"}?
         </DialogTitle>
         <DialogDescription>
-          Your settings live in git, so the dashboard does not change them
-          directly. Saving opens{" "}
-          {prCount === 1 ? "a pull request" : `${prCount} pull requests`}{" "}
-          against the{" "}
-          <span className="font-mono text-foreground">
-            is-pinoy-dev/domains
-          </span>{" "}
-          repository — one per domain — on your behalf.
+          {hasFeature && !hasProxy
+            ? "Feature switches apply immediately — no pull request needed."
+            : !hasFeature && hasProxy
+              ? <>
+                  The platform proxy switch is a Cloudflare setting, so saving
+                  opens{" "}
+                  {proxyDomainCount === 1
+                    ? "a pull request"
+                    : `${proxyDomainCount} pull requests`}{" "}
+                  against{" "}
+                  <span className="font-mono text-foreground">
+                    is-pinoy-dev/domains
+                  </span>{" "}
+                  on your behalf. Nothing changes until it is merged and the
+                  next sync applies it.
+                </>
+              : <>
+                  Feature switches apply immediately. The platform proxy
+                  switch still opens{" "}
+                  {proxyDomainCount === 1
+                    ? "a pull request"
+                    : `${proxyDomainCount} pull requests`}{" "}
+                  against{" "}
+                  <span className="font-mono text-foreground">
+                    is-pinoy-dev/domains
+                  </span>
+                  , since Cloudflare only picks that up through the registry
+                  sync.
+                </>}
         </DialogDescription>
       </DialogHeader>
 
@@ -299,17 +324,19 @@ function ConfirmView({
         })}
       </ul>
 
-      <p className="m-0 flex items-start gap-2.5 border border-border bg-muted/40 p-3 text-xs/relaxed text-muted-foreground">
-        <AlertTriangle
-          className="mt-0.5 size-4 shrink-0 text-warning"
-          aria-hidden="true"
-        />
-        <span>
-          Nothing takes effect until the pull request is merged and the next
-          sync applies it. Until then your domain keeps its current settings,
-          and its switches here are read-only.
-        </span>
-      </p>
+      {hasProxy ? (
+        <p className="m-0 flex items-start gap-2.5 border border-border bg-muted/40 p-3 text-xs/relaxed text-muted-foreground">
+          <AlertTriangle
+            className="mt-0.5 size-4 shrink-0 text-warning"
+            aria-hidden="true"
+          />
+          <span>
+            The proxy switch takes no effect until its pull request is merged
+            and the next sync applies it — until then that domain keeps its
+            current setting there, and its switch is read-only.
+          </span>
+        </p>
+      ) : null}
 
       <DialogFooter>
         <Button variant="outline" onClick={onCancel} disabled={saving}>
@@ -319,12 +346,17 @@ function ConfirmView({
           {saving ? (
             <>
               <Loader2 className="animate-spin" aria-hidden="true" />
-              Opening…
+              Saving…
+            </>
+          ) : hasProxy ? (
+            <>
+              <GitPullRequest aria-hidden="true" />
+              Save settings
             </>
           ) : (
             <>
-              <GitPullRequest aria-hidden="true" />
-              Open pull request{prCount === 1 ? "" : "s"}
+              <Check aria-hidden="true" />
+              Save settings
             </>
           )}
         </Button>
@@ -340,26 +372,27 @@ function ResultsView({
   results: SubdomainSaveResult[]
   onClose: () => void
 }) {
-  const opened = results.filter((r) => r.ok)
+  const succeeded = results.filter((r) => r.ok)
   const failed = results.filter((r) => !r.ok)
+  const prCount = succeeded.filter((r) => r.prUrl).length
 
   return (
     <>
       <DialogHeader>
         <DialogTitle>
-          {opened.length > 0
-            ? `Opened ${opened.length} pull request${opened.length === 1 ? "" : "s"}`
-            : "Nothing was opened"}
+          {succeeded.length > 0 ? "Settings saved" : "Nothing was saved"}
         </DialogTitle>
         <DialogDescription>
-          {opened.length > 0
-            ? "Your domains keep their current settings until these are merged and the next sync runs."
-            : "No pull request was created."}
+          {prCount > 0
+            ? `Feature switches are live now. The proxy pull request${prCount === 1 ? "" : "s"} still need${prCount === 1 ? "s" : ""} a merge and a sync before that setting changes.`
+            : succeeded.length > 0
+              ? "All changes are live now."
+              : "No setting was changed."}
         </DialogDescription>
       </DialogHeader>
 
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
-        {opened.map((result) => (
+        {succeeded.map((result) => (
           <li
             key={result.subdomain}
             className="flex items-start gap-2.5 border border-border p-3 text-xs/relaxed"
@@ -373,14 +406,21 @@ function ResultsView({
                 {result.subdomain}.is-pinoy.dev
               </span>{" "}
               —{" "}
-              <a
-                href={result.prUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent underline"
-              >
-                view pull request
-              </a>
+              {result.prUrl ? (
+                <a
+                  href={result.prUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent underline"
+                >
+                  view pull request
+                </a>
+              ) : (
+                "applied instantly"
+              )}
+              {result.prUrl && result.instant
+                ? " — other changes applied instantly"
+                : null}
             </span>
           </li>
         ))}

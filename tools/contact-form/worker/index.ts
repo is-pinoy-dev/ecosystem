@@ -1,5 +1,11 @@
+import type { D1Database } from "@cloudflare/workers-types"
 import { lookupContactEmail } from "./db"
-import { lookupSubdomain, isToolEnabled, type DomainRecord } from "./domains"
+import {
+  lookupSubdomain,
+  isToolEnabled,
+  readFeaturesOverride,
+  type DomainRecord,
+} from "./domains"
 import { verifyTurnstile } from "./turnstile"
 import { sendSubmission } from "./mail"
 import { WIDGET_SCRIPT } from "./widget"
@@ -11,7 +17,17 @@ export interface Env {
   TURNSTILE_SITE_KEY: string
   /** Secret. Set via `wrangler secret put TURNSTILE_SECRET_KEY`. */
   TURNSTILE_SECRET_KEY: string
-  /** The dashboard D1, read-only here — see wrangler.toml. */
+  /**
+   * The dashboard's registry database (see apps/dashboard/lib/db/schema.ts),
+   * read-only from here — only for the `featuresOverride` a dashboard save
+   * writes directly, never for anything the sync workflow owns.
+   */
+  SUBDOMAINS_DB: D1Database
+  /**
+   * Same physical database, read-only, for the `contact_emails` table — the
+   * account-scoped delivery address a dashboard "Verify email" writes
+   * directly (see apps/dashboard/lib/contact-email.ts). Never git.
+   */
   CONTACT_EMAILS_DB: D1Database
 }
 
@@ -67,18 +83,19 @@ function parseSubmitBody(value: unknown): SubmitBody | null {
 }
 
 /**
- * Whether the tool is enabled for this subdomain AND the record actually has
- * somewhere to deliver mail. Both checks happen here, server-side — never
- * trust what `GET /config` told the widget, since that response is fully
- * visible and replayable by anyone.
+ * Whether the tool is enabled for this subdomain AND its owner has somewhere
+ * to deliver mail. Both checks happen here, server-side — never trust what
+ * `GET /config` told the widget, since that response is fully visible and
+ * replayable by anyone.
  *
- * Unlike tools/site-audit, this fails *closed* when the domains repo or the
- * CONTACT_EMAILS_DB lookup cannot be reached. Site Audit fails open because
- * the worst case is a page that runs anyway; here the worst case would be
+ * Unlike tools/site-audit, this fails *closed* when the domains repo or
+ * either D1 lookup cannot be reached. Site Audit fails open because the
+ * worst case is a page that runs anyway; here the worst case would be
  * accepting a submission with no verified place to route it — the git
- * record supplies who owns the subdomain and whether the tool is on, and
- * CONTACT_EMAILS_DB supplies the address for that owner (see db.ts), so a
- * failure on either side collapses to the same "no address to send to".
+ * record (or its dashboard-saved override) supplies who owns the subdomain
+ * and whether the tool is on, and CONTACT_EMAILS_DB supplies the address for
+ * that owner (see db.ts), so a failure on any side collapses to the same
+ * "no address to send to".
  */
 async function resolveEnabled(
   subdomain: string,
@@ -92,12 +109,19 @@ async function resolveEnabled(
   if (lookup.status !== "found") {
     return { ok: false, reason: lookup.status }
   }
-  if (!isToolEnabled(lookup.record, "contact-form")) {
+  // A dashboard-saved override wins over whatever the git file says — it is
+  // never touched by the sync workflow, so it only exists once someone has
+  // edited this from the dashboard instead of by pull request.
+  const override = await readFeaturesOverride(env.SUBDOMAINS_DB, subdomain)
+  const record: DomainRecord = override
+    ? { ...lookup.record, features: override as DomainRecord["features"] }
+    : lookup.record
+  if (!isToolEnabled(record, "contact-form")) {
     return { ok: false, reason: "not-enabled" }
   }
   const destinationEmail = await lookupContactEmail(
     env.CONTACT_EMAILS_DB,
-    lookup.record.owner ?? {},
+    record.owner ?? {},
   ).catch((error) => {
     console.warn(`[contact-form] contact email lookup threw subdomain=${subdomain}`, error)
     return null
@@ -105,7 +129,7 @@ async function resolveEnabled(
   if (!destinationEmail) {
     return { ok: false, reason: "no-email" }
   }
-  return { ok: true, record: lookup.record, destinationEmail }
+  return { ok: true, record, destinationEmail }
 }
 
 async function handleConfig(
