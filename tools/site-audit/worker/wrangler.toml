@@ -47,6 +47,14 @@ RENDERER_HOST = "portfolio.is-pinoy.dev"
 # vars above ship with every deploy; this does not, so it is the one that goes
 # missing — and it goes missing quietly, as a 525 attributed to the portfolio.
 
+# PAGESPEED_API_KEY is a secret, not a var — optional, but without it
+# /psi-proxy calls Google's PageSpeed Insights API on its low, unauthenticated
+# per-IP quota, which a handful of concurrent audits can exhaust. Get a key
+# from https://developers.google.com/speed/docs/insights/v5/get-started and:
+#   wrangler secret put PAGESPEED_API_KEY -c worker/wrangler.toml
+# Unset, the Performance tab still works — it just rate-limits sooner and
+# surfaces Google's 429 as the error message.
+
 [[routes]]
 pattern = "is-pinoy.dev/_tools/site-audit*"
 zone_name = "is-pinoy.dev"

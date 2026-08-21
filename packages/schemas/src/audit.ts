@@ -85,3 +85,42 @@ export const auditResultSchema = z.object({
   details: seoDetailsSchema,
 })
 export type AuditResult = z.infer<typeof auditResultSchema>
+
+export const psiStrategySchema = z.enum(["mobile", "desktop"])
+export type PsiStrategy = z.infer<typeof psiStrategySchema>
+
+export const psiCategoryScoreSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  score: z.number().min(0).max(100).nullable(),
+})
+export type PsiCategoryScore = z.infer<typeof psiCategoryScoreSchema>
+
+export const coreWebVitalSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  displayValue: z.string().nullable(),
+  score: z.number().min(0).max(1).nullable(),
+  status: auditStatusSchema,
+})
+export type CoreWebVital = z.infer<typeof coreWebVitalSchema>
+
+export const psiOpportunitySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  displayValue: z.string().nullable(),
+  score: z.number().min(0).max(1).nullable(),
+})
+export type PsiOpportunity = z.infer<typeof psiOpportunitySchema>
+
+/** Result of one PageSpeed Insights (Lighthouse) run against a single URL. */
+export const psiResultSchema = z.object({
+  url: z.string(),
+  strategy: psiStrategySchema,
+  fetchedAt: z.string(),
+  categories: z.array(psiCategoryScoreSchema),
+  vitals: z.array(coreWebVitalSchema),
+  opportunities: z.array(psiOpportunitySchema),
+})
+export type PsiResult = z.infer<typeof psiResultSchema>

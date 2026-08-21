@@ -12,6 +12,7 @@ interface NavBarProps {
 const TABS = [
   { to: "/", label: "Overview", end: true },
   { to: "/seo", label: "SEO", end: false },
+  { to: "/performance", label: "Performance", end: false },
 ]
 
 function formatTimestamp(iso: string): string {

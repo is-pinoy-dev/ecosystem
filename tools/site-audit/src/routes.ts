@@ -4,6 +4,8 @@ export default [
   layout("routes/layout.tsx", [
     index("routes/overview.tsx"),
     route("/seo", "routes/seo.tsx"),
+    route("/performance", "routes/performance.tsx"),
   ]),
   route("/audit-proxy", "routes/audit-proxy.tsx"),
+  route("/psi-proxy", "routes/psi-proxy.tsx"),
 ] satisfies RouteConfig;
