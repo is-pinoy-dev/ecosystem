@@ -43,7 +43,7 @@ export function DashboardTabs({ flags }: { flags: FlagSet }) {
     <div className="border-b border-border bg-background">
       <nav
         aria-label="Dashboard"
-        className="mx-auto flex w-full max-w-[1180px] overflow-x-auto px-5 sm:px-8"
+        className="mx-auto flex w-full max-w-[1180px] overflow-x-auto overflow-y-hidden px-5 sm:px-8"
       >
         {items.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href)
