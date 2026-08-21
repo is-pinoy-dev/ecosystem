@@ -13,6 +13,10 @@ jobs:
   migrate:
     name: Apply D1 migrations
     runs-on: ubuntu-latest
+    # CLOUDFLARE_D1_API_TOKEN lives in this GitHub Environment, not as a
+    # plain repo secret — without this key the job can't see it and
+    # db:migrate fails with an empty token.
+    environment: "Production – is-pinoy-dev-dashboard"
     permissions:
       contents: read
     steps:
@@ -53,5 +57,5 @@ jobs:
         run: pnpm db:migrate
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+          CLOUDFLARE_D1_DATABASE_ID: ${{ vars.CLOUDFLARE_D1_DATABASE_ID }}
           CLOUDFLARE_D1_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_API_TOKEN }}
