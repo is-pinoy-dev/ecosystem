@@ -7,12 +7,7 @@ import type { AuditContext } from "./layout"
 import { ErrorState, ScanningState } from "../components/audit-states"
 import { PsiScoreCard } from "../components/psi-score-card"
 import { StatusBadge } from "../components/status-badge"
-
-type PsiState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "result"; data: PsiResult }
-  | { status: "error"; message: string }
+import { Meter } from "../components/meter"
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
@@ -30,9 +25,12 @@ export function meta() {
 }
 
 export default function Performance() {
-  const { state: seoState } = useOutletContext<AuditContext>()
+  const {
+    state: seoState,
+    psiState: psi,
+    runPsi,
+  } = useOutletContext<AuditContext>()
   const [strategy, setStrategy] = useState<PsiStrategy>("mobile")
-  const [psi, setPsi] = useState<PsiState>({ status: "idle" })
 
   if (seoState.status === "loading") return <ScanningState />
 
@@ -46,27 +44,7 @@ export default function Performance() {
   }
 
   const target = seoState.data.url
-
-  async function run() {
-    setPsi({ status: "loading" })
-    try {
-      const res = await fetch(
-        `/_tools/site-audit/psi-proxy?url=${encodeURIComponent(target)}&strategy=${strategy}`
-      )
-      if (!res.ok) {
-        throw new Error(
-          (await res.text()).trim() || `PageSpeed error: ${res.status}`
-        )
-      }
-      const data = (await res.json()) as PsiResult
-      setPsi({ status: "result", data })
-    } catch (err) {
-      setPsi({
-        status: "error",
-        message: err instanceof Error ? err.message : "Unknown error",
-      })
-    }
-  }
+  const run = () => runPsi(strategy)
 
   return (
     <div className="flex flex-col gap-6">
@@ -127,9 +105,13 @@ function PsiResults({ data }: { data: PsiResult }) {
             {data.vitals.map((vital) => (
               <div
                 key={vital.id}
-                className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-2.5"
+                className="grid grid-cols-[1fr_120px_auto_auto] items-center gap-4 px-4 py-2.5"
               >
                 <p className="m-0 text-sm text-foreground">{vital.title}</p>
+                <Meter
+                  value={vital.score !== null ? vital.score * 100 : 0}
+                  level={vital.status}
+                />
                 <p className="m-0 font-mono text-[13px] text-muted-foreground">
                   {vital.displayValue ?? "—"}
                 </p>
