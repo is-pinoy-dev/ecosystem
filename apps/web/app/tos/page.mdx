@@ -63,6 +63,17 @@ By enabling a built-in tool, you acknowledge and agree that:
 - **Tools are provided as-is.** Results are informational and we make no guarantee of accuracy, completeness, or fitness for any purpose.
 - **You can opt out at any time** by removing the `features` block from your subdomain JSON and opening a pull request.
 
+## 7a. Contact Form Tool
+
+If you enable **Contact Form**, a popup contact widget is added to your hosted portfolio, protected by Cloudflare Turnstile. By enabling it, you acknowledge and agree that:
+
+- **Visitor messages are relayed, not stored.** A message a visitor submits is emailed directly to your registered delivery address via Cloudflare Email Routing and is never stored by is-pinoy.dev.
+- **Your delivery address comes from your GitHub account and is kept private.** Unlike `owner.email` and other optional fields in your subdomain record, this address is never committed to the public [is-pinoy-dev/domains](https://github.com/is-pinoy-dev/domains) repository. It is stored in our private database and must be verified with Cloudflare before the tool activates. You verify it once, in the [dashboard](https://dashboard.is-pinoy.dev/account) — it applies to every subdomain you own, not just one.
+- **You are responsible for the address you verify.** Verifying an email registers it as a delivery destination with Cloudflare on our account. You must have the right to receive mail at the address you verify.
+- **You can opt out at any time** by disabling the feature in the dashboard.
+
+See our [Privacy Policy](/privacy) for full details on what this tool collects and how it is handled.
+
 ## 8. Ownership and Intellectual Property
 
 is-pinoy.dev retains all rights, title, and interest in the `is-pinoy.dev` domain and associated infrastructure.
@@ -82,6 +93,8 @@ We do not collect or process personal data beyond what is necessary to operate t
 Registration data stored in the [is-pinoy-dev/domains](https://github.com/is-pinoy-dev/domains) repository is **publicly visible** by nature of it being an open source repository. This includes your subdomain name, GitHub username, DNS records, and any optional fields you choose to include.
 
 The `owner.email` field is **optional**. If you include it, your email address will be publicly visible in the repository. It is used solely so maintainers can contact you about your subdomain if needed. You may omit it or remove it at any time via a pull request.
+
+The Contact Form tool's delivery address is different and is **not** published to the repository — see Section 7a and our [Privacy Policy](/privacy) for details.
 
 For privacy-related inquiries, open an issue at [github.com/is-pinoy-dev](https://github.com/is-pinoy-dev).
 

@@ -76,12 +76,12 @@ export type SendResult = { ok: true } | { ok: false; error: string }
  */
 export async function sendSubmission(
   email: SendEmail,
-  ownerEmail: string,
+  destinationEmail: string,
   submission: ContactSubmission,
 ): Promise<SendResult> {
   try {
-    const raw = buildMessage(ownerEmail, submission)
-    const message = new EmailMessage(SENDER_ADDRESS, ownerEmail, raw)
+    const raw = buildMessage(destinationEmail, submission)
+    const message = new EmailMessage(SENDER_ADDRESS, destinationEmail, raw)
     await email.send(message)
     return { ok: true }
   } catch (error) {

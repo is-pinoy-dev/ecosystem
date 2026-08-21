@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 // declares `force-dynamic` for every route beneath it.
 export default function TosLayout({ children }: { children: React.ReactNode }) {
   return (
-    <DocLayout title="Terms of Service" effectiveDate="May 28, 2026">
+    <DocLayout title="Terms of Service" effectiveDate="August 20, 2026">
       {children}
     </DocLayout>
   )

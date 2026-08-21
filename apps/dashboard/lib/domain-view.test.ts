@@ -101,7 +101,7 @@ describe("Contact Form gating", () => {
     const contactForm = view.platform?.features.find(
       (feature) => feature.id === "contact-form"
     )
-    expect(contactForm?.blockedReason).toMatch(/verify a contact email/i)
+    expect(contactForm?.blockedReason).toMatch(/verify your contact email/i)
   })
 
   it("blocks with a distinct message while verification is pending", () => {

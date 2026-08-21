@@ -1,4 +1,5 @@
 import type { D1Database } from "@cloudflare/workers-types"
+import { lookupContactEmail } from "./db"
 import {
   lookupSubdomain,
   isToolEnabled,
@@ -22,6 +23,12 @@ export interface Env {
    * writes directly, never for anything the sync workflow owns.
    */
   SUBDOMAINS_DB: D1Database
+  /**
+   * Same physical database, read-only, for the `contact_emails` table — the
+   * account-scoped delivery address a dashboard "Verify email" writes
+   * directly (see apps/dashboard/lib/contact-email.ts). Never git.
+   */
+  CONTACT_EMAILS_DB: D1Database
 }
 
 const PREFIX = "/_tools/contact-form"
@@ -76,24 +83,26 @@ function parseSubmitBody(value: unknown): SubmitBody | null {
 }
 
 /**
- * Whether the tool is enabled for this subdomain AND the record actually has
- * somewhere to deliver mail. Both checks happen here, server-side — never
- * trust what `GET /config` told the widget, since that response is fully
- * visible and replayable by anyone.
+ * Whether the tool is enabled for this subdomain AND its owner has somewhere
+ * to deliver mail. Both checks happen here, server-side — never trust what
+ * `GET /config` told the widget, since that response is fully visible and
+ * replayable by anyone.
  *
- * Unlike tools/site-audit, this fails *closed* when the domains repo cannot
- * be reached. Site Audit fails open because the worst case is a page that
- * runs anyway; here the worst case would be accepting a submission with no
- * verified place to route it — the domains repo is the only source for
- * `owner.email`, so "unavailable" and "no address to send to" are the same
- * situation from this endpoint's point of view.
+ * Unlike tools/site-audit, this fails *closed* when the domains repo or
+ * either D1 lookup cannot be reached. Site Audit fails open because the
+ * worst case is a page that runs anyway; here the worst case would be
+ * accepting a submission with no verified place to route it — the git
+ * record (or its dashboard-saved override) supplies who owns the subdomain
+ * and whether the tool is on, and CONTACT_EMAILS_DB supplies the address for
+ * that owner (see db.ts), so a failure on any side collapses to the same
+ * "no address to send to".
  */
 async function resolveEnabled(
   subdomain: string,
   env: Env,
   ctx: ExecutionContext,
 ): Promise<
-  | { ok: true; record: DomainRecord; ownerEmail: string }
+  | { ok: true; record: DomainRecord; destinationEmail: string }
   | { ok: false; reason: "unclaimed" | "unavailable" | "not-enabled" | "no-email" }
 > {
   const lookup = await lookupSubdomain(subdomain, ctx)
@@ -110,11 +119,17 @@ async function resolveEnabled(
   if (!isToolEnabled(record, "contact-form")) {
     return { ok: false, reason: "not-enabled" }
   }
-  const ownerEmail = record.owner?.email
-  if (!ownerEmail) {
+  const destinationEmail = await lookupContactEmail(
+    env.CONTACT_EMAILS_DB,
+    record.owner ?? {},
+  ).catch((error) => {
+    console.warn(`[contact-form] contact email lookup threw subdomain=${subdomain}`, error)
+    return null
+  })
+  if (!destinationEmail) {
     return { ok: false, reason: "no-email" }
   }
-  return { ok: true, record, ownerEmail }
+  return { ok: true, record, destinationEmail }
 }
 
 async function handleConfig(
@@ -148,8 +163,8 @@ async function handleSubmit(
   }
 
   // Re-checked here rather than trusted from /config — enablement and the
-  // owner's email are both facts about the record that could have changed, or
-  // been spoofed, since the widget last asked.
+  // contact form's destination email are both facts about the record that
+  // could have changed, or been spoofed, since the widget last asked.
   const resolved = await resolveEnabled(subdomain, env, ctx)
   if (!resolved.ok) {
     console.warn(
@@ -164,7 +179,7 @@ async function handleSubmit(
     return json({ error: "Verification failed. Please try again." }, 400)
   }
 
-  const result = await sendSubmission(env.EMAIL, resolved.ownerEmail, {
+  const result = await sendSubmission(env.EMAIL, resolved.destinationEmail, {
     name: body.name,
     email: body.email,
     message: body.message,

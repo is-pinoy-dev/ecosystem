@@ -7,10 +7,10 @@ import { PORTFOLIO_TEMPLATES, PORTFOLIO_THEMES } from "@is-pinoy-dev/schemas"
 
 import { auth } from "@/auth"
 import {
-  createDestinationAddress,
   getDestinationAddressStatus,
   type DestinationAddressStatus,
 } from "@/lib/cloudflare-email"
+import { getContactEmail } from "@/lib/contact-email"
 import { writeFeaturesOverride, writePortfolioOverride } from "@/lib/db/settings"
 import { getSubdomainsForOwner } from "@/lib/domains"
 import {
@@ -41,8 +41,6 @@ const subdomainField = z
   .min(3)
   .max(63)
   .regex(/^[a-z0-9-]+$/)
-
-const emailField = z.string().trim().pipe(z.email())
 
 const changeInput = z.discriminatedUnion("kind", [
   z.object({
@@ -234,12 +232,18 @@ export async function saveSettings(
       // Re-checked here the same way the proxy prerequisite above is, since
       // the client controls none of them, and a flag flip is meant to hide
       // the feature without a deploy, not merely to hide its button.
+      //
+      // The email itself is looked up for the signed-in user, not the
+      // subdomain: Cloudflare Email Routing's destination-address list is
+      // account-wide, and only the owner can toggle their own subdomain's
+      // settings anyway, so "my own contact email" is the only one that can
+      // ever be relevant here.
       if (change.feature === "contact-form" && change.enabled) {
         if (!(await contactFormEnabled())) {
           rejection = "Contact Form is not available yet."
           continue
         }
-        const email = domain.owner.email
+        const email = githubId ? await getContactEmail(githubId) : null
         const status: DestinationAddressStatus | null = email
           ? await getDestinationAddressStatus(email).catch(() => null)
           : "absent"
@@ -393,171 +397,4 @@ export async function savePortfolioStyle(
   revalidatePath("/domains")
   revalidatePath(`/domains/${subdomain}`)
   return { subdomain, ok: true, instant: true }
-}
-
-const verifyEmailInput = z.object({
-  subdomain: subdomainField,
-  email: emailField,
-})
-
-export interface VerifyEmailResult {
-  ok: boolean
-  status: DestinationAddressStatus
-  /** Present when this call also opened a pull request updating owner.email. */
-  prUrl?: string
-  error?: string
-}
-
-/**
- * "Verify email" — the only action that registers an address with
- * Cloudflare Email Routing, separate from (and a prerequisite for) switching
- * Contact Form on. Two things happen, in order:
- *
- *  1. If the email differs from what git currently has for this subdomain,
- *     open a pull request writing it to `owner.email` — the same PR-per-edit
- *     path every other setting goes through, so git stays the source of
- *     truth for the address a submission is ultimately addressed to.
- *  2. Register the address as a Cloudflare Email Routing destination. This
- *     is what actually triggers Cloudflare's one-time confirmation email —
- *     it runs whether or not step 1 did anything, since re-clicking "Verify
- *     email" while a confirmation is still pending is an expected retry, not
- *     an error.
- *
- * Never touches `features.tools["contact-form"]` — turning the feature on is
- * `saveSettings`'s job, once this reports "verified".
- */
-export async function verifyContactFormEmail(
-  input: z.infer<typeof verifyEmailInput>
-): Promise<VerifyEmailResult> {
-  const session = await auth()
-  if (!session?.user?.login) {
-    return {
-      ok: false,
-      status: "absent",
-      error: "You must be signed in to verify an email.",
-    }
-  }
-  const login = session.user.login
-
-  // A server action stays reachable by its own ID once deployed, whatever
-  // the page does — the flag has to be checked here too, not only on the
-  // panel that calls it (see app/(dashboard)/claim/actions.ts for the same
-  // reasoning against the "claims" flag).
-  if (!(await contactFormEnabled())) {
-    return {
-      ok: false,
-      status: "absent",
-      error: "Contact Form is not available yet.",
-    }
-  }
-
-  const parsed = verifyEmailInput.safeParse(input)
-  if (!parsed.success) {
-    return { ok: false, status: "absent", error: "Invalid email address." }
-  }
-  const { subdomain, email } = parsed.data
-
-  const { owned } = await getSubdomainsForOwner({
-    login,
-    githubId: session.user.githubId,
-  })
-  const domain = owned.find((d) => d.subdomain === subdomain)
-  if (!domain) {
-    return {
-      ok: false,
-      status: "absent",
-      error: `You do not own ${subdomain}.is-pinoy.dev.`,
-    }
-  }
-
-  let prUrl: string | undefined
-  if (domain.owner.email !== email) {
-    const token = await getGitHubAccessToken()
-    if (!token) {
-      return {
-        ok: false,
-        status: "absent",
-        error:
-          "Your GitHub authorization is missing the required access. Sign out and sign in again to grant it.",
-      }
-    }
-
-    const pending = await getPendingProxyPRs(login, token)
-    const open = pending.get(subdomain)
-    if (open) {
-      return {
-        ok: false,
-        status: "absent",
-        error: `A change is already open as pull request #${open.number}. Merge or close it first.`,
-      }
-    }
-
-    const result = await openProxyTogglePR(token, {
-      login,
-      subdomain,
-      changes: [{ kind: "owner-email", email }],
-    })
-    if (!result.ok) {
-      return { ok: false, status: "absent", error: result.error }
-    }
-    prUrl = result.prUrl
-    revalidatePath("/domains")
-    revalidatePath(`/domains/${subdomain}`)
-  }
-
-  const registered = await createDestinationAddress(email)
-  if (!registered.ok) {
-    return { ok: false, status: "absent", error: registered.error, prUrl }
-  }
-
-  const status = await getDestinationAddressStatus(email).catch(
-    (): DestinationAddressStatus => "pending"
-  )
-  return { ok: true, status, prUrl }
-}
-
-const recheckInput = z.object({ subdomain: subdomainField, email: emailField })
-
-/**
- * Re-read an email's verification status from Cloudflare — backs the
- * "Recheck" button, since there is no way for Cloudflare to push the result
- * of the owner clicking its confirmation link.
- *
- * Ownership is checked the same as every other action here, even though this
- * one is read-only against Cloudflare: without it, a signed-in user could
- * use this as a general oracle for whether an arbitrary address is a
- * verified destination on the platform's account.
- */
-export async function checkContactFormEmailStatus(
-  input: z.infer<typeof recheckInput>
-): Promise<{ status: DestinationAddressStatus } | { error: string }> {
-  const session = await auth()
-  if (!session?.user?.login) {
-    return { error: "You must be signed in." }
-  }
-
-  // Same reasoning as verifyContactFormEmail above: this action is reachable
-  // on its own regardless of whether the panel that normally calls it is
-  // rendered.
-  if (!(await contactFormEnabled())) {
-    return { error: "Contact Form is not available yet." }
-  }
-
-  const parsed = recheckInput.safeParse(input)
-  if (!parsed.success) return { error: "Invalid request." }
-  const { subdomain, email } = parsed.data
-
-  const { owned } = await getSubdomainsForOwner({
-    login: session.user.login,
-    githubId: session.user.githubId,
-  })
-  if (!owned.some((d) => d.subdomain === subdomain)) {
-    return { error: `You do not own ${subdomain}.is-pinoy.dev.` }
-  }
-
-  try {
-    return { status: await getDestinationAddressStatus(email) }
-  } catch {
-    return { error: "Could not reach Cloudflare. Please try again." }
-  }
 }

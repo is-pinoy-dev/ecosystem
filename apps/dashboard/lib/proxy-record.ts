@@ -1,23 +1,25 @@
-// Reading and rewriting a domains-repo record file: the `proxied` flag and
-// the owner's contact email.
+// Reading and rewriting a domains-repo record file's `proxied` flag.
 //
-// Git stays the source of truth for both: the dashboard never writes to
-// Cloudflare, and email is what a submission is ultimately addressed to. This
-// reads the current flag out of the record JSON for display, and produces an
-// edited copy of that JSON for a pull request. The sync workflow does the
-// rest — `diff.ts` already emits an UPDATE when only `proxied` differs, so a
-// merged flip propagates to Cloudflare with no registry changes.
+// Git stays the source of truth for it: the dashboard never writes to
+// Cloudflare directly, and the master switch is a Cloudflare setting the
+// registry sync applies, not something the dashboard can flip on its own.
+// This reads the current flag out of the record JSON for display, and
+// produces an edited copy of that JSON for a pull request. The sync workflow
+// does the rest — `diff.ts` already emits an UPDATE when only `proxied`
+// differs, so a merged flip propagates to Cloudflare with no registry
+// changes.
 //
-// Platform feature flags and the hosted portfolio's style used to live here
-// too, both PR-gated the same way `proxied` still is. They no longer are —
-// both write straight to their D1 override instead (see
-// lib/db/settings.ts) — so this file only ever handles `proxy` and
-// `owner-email` changes now.
+// Everything else that used to go through a pull request from here —
+// platform feature flags, the hosted portfolio's style
+// (lib/db/settings.ts), and the Contact Form delivery email
+// (lib/contact-email.ts, account-scoped, never per-subdomain) — now writes
+// straight to D1 instead, live immediately with nothing for a PR to
+// accomplish. This file only ever handles `proxy` changes now.
 //
 // Kept free of server-only imports so the shape handling can be unit tested;
 // lib/proxy-pr.ts holds the GitHub I/O that consumes it.
 
-import { domainSchema, type Domain } from "@is-pinoy-dev/schemas"
+import { domainSchema } from "@is-pinoy-dev/schemas"
 import { validateDomain } from "@is-pinoy-dev/validate"
 
 import { providerForRecords } from "@/lib/providers"
@@ -198,25 +200,14 @@ export function subdomainFromHeadLabel(
 }
 
 /**
- * One pending edit: the master proxy switch on a record type, or the owner's
- * contact email. Both live in the same record file, so a batch of them
- * belongs in a single commit.
+ * One pending edit: the master proxy switch on a record type. The only kind
+ * left here — see the file header for where feature flags, portfolio style,
+ * and the Contact Form email moved to.
  */
-export type RecordChange =
-  | { kind: "proxy"; type: ProxyableType; enabled: boolean }
-  | { kind: "owner-email"; email: string }
-
-export type OwnerEmailChange = Extract<RecordChange, { kind: "owner-email" }>
-
-/** The switch-shaped changes — the ones that read as on/off. */
-type ToggleChange = Exclude<RecordChange, OwnerEmailChange>
-
-function ownerEmailChangeOf(
-  changes: RecordChange[]
-): OwnerEmailChange | undefined {
-  return changes
-    .filter((c): c is OwnerEmailChange => c.kind === "owner-email")
-    .at(-1)
+export type RecordChange = {
+  kind: "proxy"
+  type: ProxyableType
+  enabled: boolean
 }
 
 /**
@@ -224,8 +215,8 @@ function ownerEmailChangeOf(
  * against the same schema and rules the repo's CI check enforces, so the
  * dashboard never opens a pull request that would fail validation.
  *
- * Takes the changes as a batch because one subdomain can have its proxy switch
- * and its contact email edited before saving, and those belong in one commit.
+ * Takes the changes as a batch because a save can touch more than one
+ * proxyable record type at once, and those belong in one commit.
  */
 export function buildToggledFile(
   file: Record<string, unknown>,
@@ -239,36 +230,14 @@ export function buildToggledFile(
     return { error: "No changes to apply." }
   }
 
-  const nextRecords = changes
-    .filter((change) => change.kind === "proxy")
-    .reduce(
-      (acc, change) => setProxied(acc, change.type, change.enabled),
-      records as Record<string, unknown>
-    )
-
-  const emailChange = ownerEmailChangeOf(changes)
-  let nextOwner: Domain["owner"] | undefined
-  if (emailChange) {
-    const current = file.owner
-    const base: Partial<Domain["owner"]> =
-      current && typeof current === "object" && !Array.isArray(current)
-        ? (current as Partial<Domain["owner"]>)
-        : {}
-    if (base.email === emailChange.email) {
-      return { error: "That is already this subdomain's contact email." }
-    }
-    if (!base.github) {
-      return { error: "The record file has no owner block." }
-    }
-    nextOwner = { ...base, github: base.github, email: emailChange.email }
-  }
+  const nextRecords = changes.reduce(
+    (acc, change) => setProxied(acc, change.type, change.enabled),
+    records as Record<string, unknown>
+  )
 
   const updated = {
     ...file,
     records: nextRecords,
-    // Written in place: spreading `file` first keeps the block where it already
-    // sits in the file, so the pull request diffs as one edited block.
-    ...(nextOwner ? { owner: nextOwner } : {}),
   }
 
   const parsed = domainSchema.safeParse(updated)
@@ -298,57 +267,29 @@ export interface ChangeSummary {
   bullets: string[]
 }
 
-function toggleBullet(change: ToggleChange): string {
+function toggleBullet(change: RecordChange): string {
   return `- \`records.${change.type}.proxied\` → \`${change.enabled}\``
 }
 
-function ownerEmailBullets(change: OwnerEmailChange): string[] {
-  return [`- \`owner.email\` → \`${change.email}\``]
-}
-
 /**
- * Title, commit message, and body copy for a batch, written from what the batch
- * actually contains. All-on or all-off reads better as "enable"/"disable"; a
- * mix of those, or anything alongside the contact email, only honestly
- * summarises as "update".
+ * Title, commit message, and body copy for a batch, written from what the
+ * batch actually contains. All-on or all-off reads better as
+ * "enable"/"disable"; a mix of those only honestly summarises as "update".
  */
 export function summarizeChanges(
   subdomain: string,
   changes: RecordChange[]
 ): ChangeSummary {
-  const emailChange = ownerEmailChangeOf(changes)
-  const toggles = changes.filter(
-    (change): change is ToggleChange => change.kind !== "owner-email"
-  )
-
-  if (emailChange && toggles.length === 0) {
-    return {
-      title: `Update contact email: ${subdomain}`,
-      commitMessage: `chore: update contact email for ${subdomain}`,
-      lead: `Updates the contact email on file for \`${subdomain}.is-pinoy.dev\`.`,
-      bullets: ownerEmailBullets(emailChange),
-    }
-  }
-
-  const allOn = toggles.length > 0 && toggles.every((change) => change.enabled)
+  const allOn = changes.length > 0 && changes.every((change) => change.enabled)
   const allOff =
-    toggles.length > 0 && toggles.every((change) => !change.enabled)
-  const action = emailChange
-    ? "Update"
-    : allOn
-      ? "Enable"
-      : allOff
-        ? "Disable"
-        : "Update"
-  const subject = emailChange ? "settings" : "Cloudflare proxy"
+    changes.length > 0 && changes.every((change) => !change.enabled)
+  const action = allOn ? "Enable" : allOff ? "Disable" : "Update"
+  const subject = "Cloudflare proxy"
 
   return {
     title: `${action} ${subject}: ${subdomain}`,
     commitMessage: `chore: ${action.toLowerCase()} ${subject} for ${subdomain}`,
     lead: `${action}s ${subject} for \`${subdomain}.is-pinoy.dev\`.`,
-    bullets: [
-      ...toggles.map(toggleBullet),
-      ...(emailChange ? ownerEmailBullets(emailChange) : []),
-    ],
+    bullets: changes.map(toggleBullet),
   }
 }

@@ -96,3 +96,20 @@ export const subdomains = sqliteTable(
 )
 
 export type SubdomainRow = typeof subdomains.$inferSelect
+
+// Directly-written source of truth for the Contact Form feature's delivery
+// address — NOT a git-derived read model like `subdomains` above. One row
+// per GitHub account (never per subdomain), written only by the "Verify
+// email" action on /account, because Cloudflare Email Routing's own
+// destination-address list is account-wide too: a user who owns several
+// subdomains has exactly one address to verify, not one per subdomain.
+export const contactEmails = sqliteTable("contact_emails", {
+  githubId: integer("github_id").primaryKey(),
+  githubLogin: text("github_login").notNull(),
+  email: text("email").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
+export type ContactEmailRow = typeof contactEmails.$inferSelect

@@ -115,14 +115,6 @@ export const domainSchema = z
     portfolio: portfolioSchema,
     destroy: z.boolean().optional(),
   })
-  .refine(
-    (d) => !d.features?.tools?.["contact-form"] || Boolean(d.owner.email),
-    {
-      message:
-        'owner.email is required when features.tools["contact-form"] is enabled',
-      path: ["owner", "email"],
-    }
-  )
 
 export const resolvedDomainSchema = domainSchema.extend({
   file: z.string(),

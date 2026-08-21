@@ -55,6 +55,16 @@ database_id = "58109557-f2e5-4dd3-8722-5fbea0e20dfc"
 pattern = "*.is-pinoy.dev/_tools/contact-form*"
 zone_name = "is-pinoy.dev"
 
+# Read-only here: the dashboard's "Verify email" action on /account owns
+# every write to this table (apps/dashboard/lib/contact-email.ts). This
+# binding only answers "what's the verified delivery address for this
+# subdomain's owner" — the same read-only D1-into-dashboard-db pattern
+# tools/og/worker/wrangler.toml uses for SCREENSHOT_DB.
+[[d1_databases]]
+binding = "CONTACT_EMAILS_DB"
+database_name = "dashboard-db"
+database_id = "58109557-f2e5-4dd3-8722-5fbea0e20dfc"
+
 [observability]
 enabled = true
 head_sampling_rate = 1

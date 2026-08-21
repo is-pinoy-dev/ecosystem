@@ -290,51 +290,6 @@ describe("buildToggledFile", () => {
   })
 })
 
-describe("buildToggledFile — owner email", () => {
-  it("sets owner.email, preserving the rest of the owner block", () => {
-    const source = {
-      ...file({ CNAME: { value: "juan.example.com" } }),
-      owner: { github: "juandelacruz", id: 42 },
-    }
-    const result = buildToggledFile(source, [
-      { kind: "owner-email", email: "juan@example.com" },
-    ])
-    const parsed = JSON.parse((result as { content: string }).content)
-    expect(parsed.owner).toEqual({
-      github: "juandelacruz",
-      id: 42,
-      email: "juan@example.com",
-    })
-  })
-
-  it("rejects setting the email to what it already is", () => {
-    const source = {
-      ...file({ CNAME: { value: "juan.example.com" } }),
-      owner: { github: "juandelacruz", email: "juan@example.com" },
-    }
-    const result = buildToggledFile(source, [
-      { kind: "owner-email", email: "juan@example.com" },
-    ])
-    expect(result).toEqual({
-      error: "That is already this subdomain's contact email.",
-    })
-  })
-
-  it("rejects setting the email to what it already is even alongside a proxy change", () => {
-    const source = {
-      ...file({ CNAME: { value: "juan.example.com", proxied: true } }),
-      owner: { github: "juandelacruz", email: "juan@example.com" },
-    }
-    const result = buildToggledFile(source, [
-      { kind: "proxy", type: "CNAME", enabled: false },
-      { kind: "owner-email", email: "juan@example.com" },
-    ])
-    expect(result).toEqual({
-      error: "That is already this subdomain's contact email.",
-    })
-  })
-})
-
 describe("summarizeChanges", () => {
   it("describes a lone proxy flip as enabling the proxy", () => {
     const summary = summarizeChanges("juan", [
@@ -353,24 +308,6 @@ describe("summarizeChanges", () => {
       { kind: "proxy", type: "A", enabled: false },
     ])
     expect(summary.title).toBe("Update Cloudflare proxy: juan")
-  })
-
-  it("titles an email-only batch as a contact email change", () => {
-    const summary = summarizeChanges("juan", [
-      { kind: "owner-email", email: "juan@example.com" },
-    ])
-    expect(summary.title).toBe("Update contact email: juan")
-    expect(summary.commitMessage).toBe("chore: update contact email for juan")
-    expect(summary.bullets).toEqual(["- `owner.email` → `juan@example.com`"])
-  })
-
-  it("falls back to plain settings when an email change rides along with a proxy toggle", () => {
-    const summary = summarizeChanges("juan", [
-      { kind: "owner-email", email: "juan@example.com" },
-      { kind: "proxy", type: "CNAME", enabled: true },
-    ])
-    expect(summary.title).toBe("Update settings: juan")
-    expect(summary.bullets).toHaveLength(2)
   })
 })
 

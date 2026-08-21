@@ -189,10 +189,12 @@ function formatDate(date: Date | null | undefined): string | null {
 
 export interface DomainViewOptions {
   /**
-   * Verification status of `domain.owner.email` as a Cloudflare Email
-   * Routing destination, for gating the Contact Form switch. Omitted (rather
-   * than checked and found "absent") whenever the caller has not resolved
-   * it — the listing page, or a deployment with Cloudflare Email Routing
+   * Verification status of the signed-in owner's Contact Form email (stored
+   * account-wide in the `contact_emails` D1 table, see lib/contact-email.ts
+   * — never a per-record git field) as a Cloudflare Email Routing
+   * destination, for gating the Contact Form switch. Omitted (rather than
+   * checked and found "absent") whenever the caller has not resolved it —
+   * the listing page, or a deployment with Cloudflare Email Routing
    * unconfigured — and is treated the same as "not verified": there is no
    * confirmed place to deliver mail, so the switch stays disabled either way.
    */
@@ -268,16 +270,18 @@ export function providerForRow(row: RecordRowView): Provider | null {
  * Why the Contact Form switch cannot be turned on yet, or null when it can.
  * Anything short of a confirmed "verified" blocks it — including "pending"
  * and the unresolved/unconfigured case — because there is no other signal
- * that Cloudflare will actually deliver mail to this address yet.
+ * that Cloudflare will actually deliver mail to this address yet. The email
+ * itself is verified on the account-scoped /account page, not here — this
+ * panel only reflects the status of that one shared address.
  */
 function contactFormBlockReason(
   status: DestinationAddressStatus | undefined
 ): string | null {
   if (status === "verified") return null
   if (status === "pending") {
-    return "Verification pending — check the inbox for the address below, or use Recheck once you've confirmed it."
+    return "Verification pending — check your inbox on your Account page, or use Recheck once you've confirmed it."
   }
-  return "Add and verify a contact email below before turning this on."
+  return "Verify your contact email on your Account page before turning this on."
 }
 
 function toPlatformView(

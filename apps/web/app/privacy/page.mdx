@@ -14,7 +14,9 @@ When you register a subdomain, we collect only the information you voluntarily s
 - The **date** of your registration
 - Your **email address** *(optional — only if you choose to provide it; if included, it will be **publicly visible** in the repository)*
 
-We do not collect passwords, payment information, or any other personal data beyond what is visible in your GitHub pull request.
+If you enable the **Contact Form** tool (see Section 5b), we additionally store your **GitHub account email** as the delivery address for messages visitors submit — this is kept **privately** in our database and is never published to the repository, unlike the optional `owner.email` field above.
+
+We do not collect passwords, payment information, or any other personal data beyond what is described in this policy.
 
 ## 3. How We Use Your Information
 
@@ -36,7 +38,7 @@ All subdomain registrations are made via pull requests to a **public GitHub repo
 The service relies on the following third-party platforms, each governed by their own privacy policies:
 
 - **GitHub** — pull request and repository hosting ([github.com/privacy](https://github.com/privacy))
-- **Cloudflare** — DNS record hosting, traffic proxying (when `"proxied": true` is set on your record), Worker infrastructure for built-in tools, and the aggregate traffic analytics we read for platform visit metrics ([cloudflare.com/privacypolicy](https://www.cloudflare.com/privacypolicy/))
+- **Cloudflare** — DNS record hosting, traffic proxying (when `"proxied": true` is set on your record), Worker infrastructure for built-in tools, the aggregate traffic analytics we read for platform visit metrics, Turnstile bot verification and Email Routing for the Contact Form tool (see Section 5b) ([cloudflare.com/privacypolicy](https://www.cloudflare.com/privacypolicy/))
 
 When your DNS record is proxied through Cloudflare, visitor traffic to your subdomain passes through Cloudflare's network. This is subject to Cloudflare's privacy policy, not ours.
 
@@ -45,6 +47,16 @@ When your DNS record is proxied through Cloudflare, visitor traffic to your subd
 If you opt in to built-in tools (such as Site Audit), our infrastructure will make server-side HTTP requests to your subdomain to retrieve and analyze its content (HTML, metadata, and response headers). By enabling a tool, you consent to this. No data from your site's responses is stored beyond what is necessary to display results within the tool session.
 
 We have no control over the data practices of third-party platforms listed above.
+
+## 5b. Contact Form Tool
+
+If you opt in to the Contact Form tool, a popup widget is added to your hosted portfolio. Visitors can submit their name, email address, and a message.
+
+**Bot protection.** Submissions are verified with Cloudflare Turnstile before being accepted. Turnstile may process signals about the visitor's browser and device to distinguish humans from bots — see [Cloudflare's privacy policy](https://www.cloudflare.com/privacypolicy/) for what it collects.
+
+**Messages are relayed, never stored.** A verified submission is emailed directly to your registered delivery address via Cloudflare Email Routing, with the visitor's own address set as the reply-to so you can respond directly. is-pinoy.dev does not store the message, the visitor's name, or the visitor's email address at any point — nothing about a submission persists on our side after delivery.
+
+**Your delivery address.** To use this tool, you verify a delivery address in the [dashboard](https://dashboard.is-pinoy.dev/account). This address is your GitHub account's email. It is stored privately in our database (Cloudflare D1) and — unlike other optional subdomain fields — is **never** committed to the public [is-pinoy-dev/domains](https://github.com/is-pinoy-dev/domains) repository. It applies to every subdomain you own; you verify it once, not once per subdomain. Cloudflare requires you to confirm the address via a one-time email before it will deliver anything to it.
 
 ## 6. Platform Analytics
 
@@ -82,6 +94,8 @@ Visit totals are stored in our own database (**Cloudflare D1**), and the underly
 ## 7. Data Retention
 
 Your subdomain record is retained for as long as your subdomain remains active. If your subdomain is removed — by your request or by the maintainers — your DNS record will be deleted from the active configuration. Historical git commits in the public repository may still reference your username as part of the immutable repository history.
+
+If you enabled the Contact Form tool, your verified delivery address is retained until you request its removal (open an issue at [github.com/is-pinoy-dev](https://github.com/is-pinoy-dev)) or it is erased under Section 8. Visitor-submitted message content is never retained in the first place, so there is nothing to delete on that side.
 
 ## 8. Your Rights
 
