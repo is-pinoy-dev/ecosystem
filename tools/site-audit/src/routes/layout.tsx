@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Outlet } from "react-router"
-import type { AuditResult } from "@is-pinoy-dev/schemas"
+import type { AuditResult, PsiResult, PsiStrategy } from "@is-pinoy-dev/schemas"
 import { parseAudit } from "../lib/parse-audit"
 import { NavBar } from "../components/nav-bar"
 import { Button } from "@is-pinoy-dev/ui/components/button"
@@ -12,9 +12,18 @@ export type AuditState =
   | { status: "result"; data: AuditResult }
   | { status: "error"; message: string }
 
+export type PsiState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "result"; data: PsiResult }
+  | { status: "error"; message: string }
+
 export type AuditContext = {
   state: AuditState
   runAudit: () => void
+  psiState: PsiState
+  /** Owned here, not by the Performance route, so Overview's radar can read the same result. */
+  runPsi: (strategy: PsiStrategy) => void
 }
 
 /** What /audit-proxy hands back about the fetch, alongside the bytes. */
@@ -135,11 +144,41 @@ function getHost(): string {
 
 export default function Layout() {
   const [state, setState] = useState<AuditState>({ status: "loading" })
+  const [psiState, setPsiState] = useState<PsiState>({ status: "idle" })
   const [inputValue, setInputValue] = useState("/")
   const pathRef = useRef("/")
 
+  const runPsi = useCallback(
+    async (strategy: PsiStrategy) => {
+      if (state.status !== "result") return
+      const target = state.data.url
+      setPsiState({ status: "loading" })
+      try {
+        const res = await fetch(
+          `/_tools/site-audit/psi-proxy?url=${encodeURIComponent(target)}&strategy=${strategy}`
+        )
+        if (!res.ok) {
+          throw new Error(
+            (await res.text()).trim() || `PageSpeed error: ${res.status}`
+          )
+        }
+        const data = (await res.json()) as PsiResult
+        setPsiState({ status: "result", data })
+      } catch (err) {
+        setPsiState({
+          status: "error",
+          message: err instanceof Error ? err.message : "Unknown error",
+        })
+      }
+    },
+    [state]
+  )
+
   const runAudit = useCallback(async (signal?: AbortSignal) => {
     setState({ status: "loading" })
+    // A fresh scan may target a different path than the last PageSpeed run —
+    // don't let its result linger and look like it describes this one.
+    setPsiState({ status: "idle" })
     const target =
       getOrigin() +
       (pathRef.current.startsWith("/")
@@ -227,7 +266,9 @@ export default function Layout() {
         </Container>
       </div>
       <Container className="max-w-[960px] py-8">
-        <Outlet context={{ state, runAudit } satisfies AuditContext} />
+        <Outlet
+          context={{ state, runAudit, psiState, runPsi } satisfies AuditContext}
+        />
       </Container>
     </div>
   )
