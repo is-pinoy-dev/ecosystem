@@ -53,6 +53,8 @@ interface Props {
   pending: Record<string, PendingPRView>
   /** Null when the analytics database is not configured for this deployment. */
   visits: VisitsReport | null
+  /** Configured, but the totals could not be read — say so rather than hide. */
+  visitsUnavailable?: boolean
   /** Detail pages already render the domain identity and primary actions. */
   detail?: boolean
 }
@@ -91,6 +93,7 @@ export function DomainsManager({
   domains,
   pending,
   visits,
+  visitsUnavailable = false,
   detail = false,
 }: Props) {
   const [edits, setEdits] = useState<Record<string, boolean>>({})
@@ -179,6 +182,7 @@ export function DomainsManager({
             domain={domain}
             pendingPR={pending[domain.subdomain] ?? null}
             visits={visits}
+            visitsUnavailable={visitsUnavailable}
             edits={edits}
             onSetEdit={setEdit}
             showIdentity={!detail}
@@ -496,6 +500,7 @@ function DomainCard({
   domain,
   pendingPR,
   visits,
+  visitsUnavailable,
   edits,
   onSetEdit,
   showIdentity,
@@ -503,6 +508,7 @@ function DomainCard({
   domain: DomainView
   pendingPR: PendingPRView | null
   visits: VisitsReport | null
+  visitsUnavailable: boolean
   edits: Record<string, boolean>
   onSetEdit: (key: string, value: boolean) => void
   showIdentity: boolean
@@ -659,6 +665,7 @@ function DomainCard({
       {domain.platform ? (
         <VisitsPanel
           visits={visits?.bySubdomain[domain.subdomain] ?? null}
+          unavailable={visitsUnavailable}
           through={visits?.through ?? null}
           windowDays={visits?.windowDays ?? 0}
           proxied={domain.platform.enabled}

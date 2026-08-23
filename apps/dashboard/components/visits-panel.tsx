@@ -23,6 +23,12 @@ const TOP_COUNTRIES = 5
 interface Props {
   /** Null when the analytics database is not configured for this deployment. */
   visits: SubdomainVisits | null
+  /**
+   * Configured, but the read failed. Rendered as a stated outage rather than
+   * as the silent nothing an unconfigured deployment gets: the totals exist,
+   * so an empty panel here would misreport a broken credential as "no data".
+   */
+  unavailable?: boolean
   /** Newest day collected platform-wide; null when nothing has been collected. */
   through: string | null
   windowDays: number
@@ -51,6 +57,7 @@ function Note({ children }: { children: React.ReactNode }) {
 
 export function VisitsPanel({
   visits,
+  unavailable = false,
   through,
   windowDays,
   proxied,
@@ -79,6 +86,21 @@ export function VisitsPanel({
           Collection is off for this subdomain. Cloudflare still measures
           proxied traffic at its edge, but nothing is stored for it here and
           nothing is backfilled if you switch it back on.
+        </Note>
+      </Frame>
+    )
+  }
+
+  // Configured and collecting, but this read failed. Stated plainly, and
+  // separated from the record's own settings above so nobody goes looking for
+  // a switch to fix it — nothing here is the owner's to change.
+  if (unavailable) {
+    return (
+      <Frame>
+        <Note>
+          Visit totals are temporarily unavailable. Collection is unaffected —
+          nothing has been lost, and the numbers reappear once the connection
+          to the analytics database recovers.
         </Note>
       </Frame>
     )
