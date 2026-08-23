@@ -224,3 +224,40 @@ export async function getVisitsForSubdomains(
 
   return { through, windowDays, bySubdomain }
 }
+
+/**
+ * What a caller can actually render for visit totals.
+ *
+ * Separates the two ways there is nothing to show, which look identical on the
+ * page but mean opposite things: the feature is not configured for this
+ * deployment at all ("absent" — render nothing, it is not part of this
+ * install), versus it is configured and the read failed ("unavailable" — say
+ * so, because the numbers do exist and something is wrong).
+ *
+ * Collapsing the two is what made an expired `CLOUDFLARE_D1_API_TOKEN`
+ * indistinguishable from a deployment without analytics: every chart simply
+ * vanished, with the only evidence in a server log.
+ */
+export type VisitsLoad =
+  | { status: "ok"; report: VisitsReport }
+  | { status: "absent" }
+  | { status: "unavailable" }
+
+/**
+ * `getVisitsForSubdomains` with its failure modes made explicit, so a page can
+ * render the difference instead of catching the error into the same null the
+ * unconfigured case returns. Logging lives here rather than at each call site,
+ * so every caller reports a failure the same way.
+ */
+export async function loadVisitsForSubdomains(
+  subdomains: string[],
+  windowDays: number = DEFAULT_WINDOW_DAYS
+): Promise<VisitsLoad> {
+  try {
+    const report = await getVisitsForSubdomains(subdomains, windowDays)
+    return report ? { status: "ok", report } : { status: "absent" }
+  } catch (error) {
+    console.error("[analytics] visit totals unavailable", error)
+    return { status: "unavailable" }
+  }
+}

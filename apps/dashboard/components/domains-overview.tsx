@@ -19,6 +19,13 @@ interface Props {
   pending: Record<string, PendingPRView>
   /** Null when the analytics database isn't configured for this deployment. */
   visits: VisitsReport | null
+  /**
+   * The totals are configured but could not be read. Distinct from `visits`
+   * being null for a deployment without analytics: there the feature is simply
+   * absent, here the numbers exist and the card should say why it can't show
+   * them rather than silently dropping the chart.
+   */
+  visitsUnavailable?: boolean
 }
 
 function syncTone(
@@ -57,7 +64,12 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
   )
 }
 
-export function DomainsOverview({ domains, pending, visits }: Props) {
+export function DomainsOverview({
+  domains,
+  pending,
+  visits,
+  visitsUnavailable = false,
+}: Props) {
   const active = domains.filter(
     (domain) =>
       domain.syncStatus !== "failed" && domain.syncStatus !== "pending"
@@ -98,12 +110,16 @@ export function DomainsOverview({ domains, pending, visits }: Props) {
             domain.platform?.features.find(
               (feature) => feature.id === "analytics"
             )?.enabled ?? false
+          // Collecting for this record — the only state in which visit totals
+          // are something this card is expected to show at all.
+          const collecting = Boolean(domain.platform?.enabled && analyticsEnabled)
           const showVisits = Boolean(
-            visits?.through &&
-              domain.platform?.enabled &&
-              analyticsEnabled &&
-              subdomainVisits
+            visits?.through && collecting && subdomainVisits
           )
+          // Only where a chart was actually due: a DNS-only record has nothing
+          // to report either way, and saying "unavailable" there would invent a
+          // problem the owner does not have.
+          const showUnavailable = visitsUnavailable && collecting
 
           return (
             <li
@@ -196,6 +212,17 @@ export function DomainsOverview({ domains, pending, visits }: Props) {
                     points={subdomainVisits.series.map((point) => point.visits)}
                     className="shrink-0 text-foreground/70"
                   />
+                </div>
+              ) : null}
+
+              {showUnavailable ? (
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-border px-4 py-3">
+                  <span className="font-mono text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                    Visits · 7d
+                  </span>
+                  <span className="text-[13px] text-muted-foreground">
+                    Temporarily unavailable — collection is unaffected.
+                  </span>
                 </div>
               ) : null}
 

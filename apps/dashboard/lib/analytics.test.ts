@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { getVisitsForSubdomains, hasAnalyticsDatabase } from "./analytics"
+import {
+  getVisitsForSubdomains,
+  hasAnalyticsDatabase,
+  loadVisitsForSubdomains,
+} from "./analytics"
 
 // Every query goes through d1Query, so stubbing it lets the tests drive the
 // shape of the rows D1 would return without a network or a database.
@@ -148,5 +152,40 @@ describe("getVisitsForSubdomains", () => {
     const report = await getVisitsForSubdomains(["juan"], 1)
     expect(report!.bySubdomain.juan!.total).toBe(7)
     expect(report!.bySubdomain.juan!.countries[0]!.visits).toBe(7)
+  })
+})
+
+// The distinction this whole type exists for: a deployment without analytics
+// and a deployment whose D1 credential has expired both produce no numbers,
+// and reporting them identically hides a real outage behind an empty panel.
+describe("loadVisitsForSubdomains", () => {
+  it("reports the totals when the read succeeds", async () => {
+    respond({
+      freshness: [{ date: "2026-08-05" }],
+      daily: [{ subdomain: "juan", date: "2026-08-05", visits: 9 }],
+    })
+    const load = await loadVisitsForSubdomains(["juan"], 1)
+    expect(load.status).toBe("ok")
+    expect(load.status === "ok" && load.report.bySubdomain.juan!.total).toBe(9)
+  })
+
+  it("reports absent when the database is not configured", async () => {
+    delete process.env.CLOUDFLARE_ACCOUNT_ID
+    await expect(loadVisitsForSubdomains(["juan"])).resolves.toEqual({
+      status: "absent",
+    })
+  })
+
+  // An expired CLOUDFLARE_D1_API_TOKEN surfaces exactly here.
+  it("reports unavailable when the query fails", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {})
+    query.mockRejectedValue(new Error("D1 query failed: Authentication error"))
+
+    await expect(loadVisitsForSubdomains(["juan"])).resolves.toEqual({
+      status: "unavailable",
+    })
+    // Still logged, so a failure is diagnosable from the server side too.
+    expect(logged).toHaveBeenCalled()
+    logged.mockRestore()
   })
 })

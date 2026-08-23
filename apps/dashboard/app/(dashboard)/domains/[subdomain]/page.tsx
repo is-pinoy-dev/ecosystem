@@ -5,7 +5,7 @@ import { auth } from "@/auth"
 import { DomainDetailHeader } from "@/components/domain-detail-header"
 import { DomainsManager } from "@/components/domains-manager"
 import { PortfolioStylePanel } from "@/components/portfolio-style-panel"
-import { getVisitsForSubdomains } from "@/lib/analytics"
+import { loadVisitsForSubdomains } from "@/lib/analytics"
 import {
   getDestinationAddressStatus,
   hasEmailRouting,
@@ -68,17 +68,14 @@ export default async function DomainDetailPage({ params }: Props) {
 
   const [
     token,
-    visits,
+    visitsLoad,
     style,
     contactFormEmailStatus,
     contactFormFlagEnabled,
     siteAudit,
   ] = await Promise.all([
     getGitHubAccessToken(),
-    getVisitsForSubdomains([record.subdomain]).catch((error) => {
-      console.error("[domain] visit totals unavailable", error)
-      return null
-    }),
+    loadVisitsForSubdomains([record.subdomain]),
     // Only worth a request for a record actually pointed at our renderer.
     hosted ? getPortfolioStyle(record.subdomain) : null,
     // The signed-in user's own contact email — Cloudflare Email Routing's
@@ -141,7 +138,8 @@ export default async function DomainDetailPage({ params }: Props) {
       <DomainsManager
         domains={[domain]}
         pending={pending}
-        visits={visits}
+        visits={visitsLoad.status === "ok" ? visitsLoad.report : null}
+        visitsUnavailable={visitsLoad.status === "unavailable"}
         detail
       />
     </div>

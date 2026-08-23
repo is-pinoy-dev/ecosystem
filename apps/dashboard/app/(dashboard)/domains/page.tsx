@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { auth } from "@/auth"
-import { getVisitsForSubdomains, type VisitsReport } from "@/lib/analytics"
+import { loadVisitsForSubdomains, type VisitsLoad } from "@/lib/analytics"
 import { NoDomains } from "@/components/domain-list"
 import { DomainsOverview } from "@/components/domains-overview"
 import { PageHeader } from "@/components/page-header"
@@ -37,19 +37,16 @@ export default async function DomainsPage() {
   // One listing call covers every row, so the pending-change state costs a
   // single request no matter how many domains the user owns.
   const token = await getGitHubAccessToken()
-  const [pendingMap, visits] = await Promise.all([
+  const [pendingMap, visitsLoad] = await Promise.all([
     owned.length > 0
       ? getPendingProxyPRs(login, token ?? undefined)
       : Promise.resolve(new Map()),
     owned.length > 0
-      ? getVisitsForSubdomains(
+      ? loadVisitsForSubdomains(
           owned.map((domain) => domain.subdomain),
           CARD_VISITS_WINDOW_DAYS
-        ).catch((error: unknown) => {
-          console.error("[domains] visit totals unavailable", error)
-          return null as VisitsReport | null
-        })
-      : Promise.resolve(null),
+        )
+      : Promise.resolve<VisitsLoad>({ status: "absent" }),
   ])
   const pending: Record<string, PendingPRView> = {}
   const ownedNames = new Set(owned.map((domain) => domain.subdomain))
@@ -73,7 +70,8 @@ export default async function DomainsPage() {
             toDomainView(domain, { contactFormFlagEnabled })
           )}
           pending={pending}
-          visits={visits}
+          visits={visitsLoad.status === "ok" ? visitsLoad.report : null}
+          visitsUnavailable={visitsLoad.status === "unavailable"}
         />
       ) : (
         <NoDomains login={login} />
