@@ -6,6 +6,8 @@ import { Button } from "@is-pinoy-dev/ui/components/button"
 import { StatusIndicator } from "@is-pinoy-dev/ui/components/status-indicator"
 
 import { ProviderMark } from "@/components/provider-mark"
+import { VisitsSparkline } from "@/components/visits-sparkline"
+import type { VisitsReport } from "@/lib/analytics"
 import {
   primaryRouteFor,
   type DomainView,
@@ -15,6 +17,8 @@ import {
 interface Props {
   domains: DomainView[]
   pending: Record<string, PendingPRView>
+  /** Null when the analytics database isn't configured for this deployment. */
+  visits: VisitsReport | null
 }
 
 function syncTone(
@@ -53,7 +57,7 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
   )
 }
 
-export function DomainsOverview({ domains, pending }: Props) {
+export function DomainsOverview({ domains, pending, visits }: Props) {
   const active = domains.filter(
     (domain) =>
       domain.syncStatus !== "failed" && domain.syncStatus !== "pending"
@@ -89,6 +93,17 @@ export function DomainsOverview({ domains, pending }: Props) {
         {domains.map((domain) => {
           const route = primaryRouteFor(domain)
           const openPR = pending[domain.subdomain]
+          const subdomainVisits = visits?.bySubdomain[domain.subdomain]
+          const analyticsEnabled =
+            domain.platform?.features.find(
+              (feature) => feature.id === "analytics"
+            )?.enabled ?? false
+          const showVisits = Boolean(
+            visits?.through &&
+              domain.platform?.enabled &&
+              analyticsEnabled &&
+              subdomainVisits
+          )
 
           return (
             <li
@@ -165,6 +180,24 @@ export function DomainsOverview({ domains, pending }: Props) {
                   </Button>
                 </div>
               </div>
+
+              {showVisits && subdomainVisits ? (
+                <div className="flex items-center justify-between gap-4 border-t border-border px-4 py-3">
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-mono text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                      Visits · 7d
+                    </span>
+                    <span className="text-lg font-semibold tracking-[-0.02em] text-foreground">
+                      {subdomainVisits.total.toLocaleString("en-US")}
+                    </span>
+                  </div>
+                  <VisitsSparkline
+                    id={domain.subdomain}
+                    points={subdomainVisits.series.map((point) => point.visits)}
+                    className="shrink-0 text-foreground/70"
+                  />
+                </div>
+              ) : null}
 
               {openPR ? (
                 <a

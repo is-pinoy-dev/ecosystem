@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { auth } from "@/auth"
+import { getVisitsForSubdomains, type VisitsReport } from "@/lib/analytics"
 import { NoDomains } from "@/components/domain-list"
 import { DomainsOverview } from "@/components/domains-overview"
 import { PageHeader } from "@/components/page-header"
@@ -10,6 +11,9 @@ import { getSubdomainsForOwner } from "@/lib/domains"
 import { contactFormEnabled } from "@/lib/flags-server"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { getPendingProxyPRs } from "@/lib/proxy-pr"
+
+/** Sparkline window for the per-card visits chart on this listing. */
+const CARD_VISITS_WINDOW_DAYS = 7
 
 export const metadata: Metadata = {
   title: "Domains",
@@ -33,10 +37,20 @@ export default async function DomainsPage() {
   // One listing call covers every row, so the pending-change state costs a
   // single request no matter how many domains the user owns.
   const token = await getGitHubAccessToken()
-  const pendingMap =
+  const [pendingMap, visits] = await Promise.all([
     owned.length > 0
-      ? await getPendingProxyPRs(login, token ?? undefined)
-      : new Map()
+      ? getPendingProxyPRs(login, token ?? undefined)
+      : Promise.resolve(new Map()),
+    owned.length > 0
+      ? getVisitsForSubdomains(
+          owned.map((domain) => domain.subdomain),
+          CARD_VISITS_WINDOW_DAYS
+        ).catch((error: unknown) => {
+          console.error("[domains] visit totals unavailable", error)
+          return null as VisitsReport | null
+        })
+      : Promise.resolve(null),
+  ])
   const pending: Record<string, PendingPRView> = {}
   const ownedNames = new Set(owned.map((domain) => domain.subdomain))
   for (const [subdomain, pr] of pendingMap) {
@@ -59,6 +73,7 @@ export default async function DomainsPage() {
             toDomainView(domain, { contactFormFlagEnabled })
           )}
           pending={pending}
+          visits={visits}
         />
       ) : (
         <NoDomains login={login} />
