@@ -41,7 +41,12 @@ export async function setContactEmail(
   githubLogin: string,
   email: string
 ): Promise<{ ok: true } | { ok: false }> {
-  if (!hasDatabase()) return { ok: false }
+  if (!hasDatabase()) {
+    console.error(
+      "[contact-email] write skipped — D1 is not configured (CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_D1_DATABASE_ID / CLOUDFLARE_D1_API_TOKEN)"
+    )
+    return { ok: false }
+  }
 
   try {
     const updatedAt = new Date()
