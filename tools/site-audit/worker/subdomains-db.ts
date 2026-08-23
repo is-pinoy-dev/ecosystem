@@ -34,3 +34,62 @@ export async function readFeaturesOverride(
     return null
   }
 }
+
+/** The one-row-per-subdomain snapshot this Worker writes after a scan. */
+export interface AuditSnapshot {
+  url: string
+  seo: unknown
+  og: unknown
+  /** null when no PageSpeed run has completed for the current scan. */
+  psi: unknown
+  auditedAt: string
+}
+
+/**
+ * Write access to `site_audits` — the counterpart to `readFeaturesOverride`
+ * above, in the opposite direction: this Worker owns that table (see
+ * apps/dashboard/lib/db/schema.ts) and is the only writer, the same way the
+ * dashboard is the only writer of `features_override`. One row per
+ * subdomain, fully overwritten on every scan — it is a snapshot of the most
+ * recent audit, not a history.
+ *
+ * Best-effort: a failed write must never fail the scan the user is actually
+ * looking at, so errors are logged and swallowed.
+ */
+export async function saveAuditSnapshot(
+  db: D1Database,
+  subdomain: string,
+  snapshot: AuditSnapshot
+): Promise<void> {
+  const auditedAtMs = Date.parse(snapshot.auditedAt)
+  const now = Date.now()
+  try {
+    await db
+      .prepare(
+        `INSERT INTO site_audits (subdomain, url, seo, og, psi, audited_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(subdomain) DO UPDATE SET
+           url = excluded.url,
+           seo = excluded.seo,
+           og = excluded.og,
+           psi = excluded.psi,
+           audited_at = excluded.audited_at,
+           updated_at = excluded.updated_at`
+      )
+      .bind(
+        subdomain,
+        snapshot.url,
+        JSON.stringify(snapshot.seo),
+        JSON.stringify(snapshot.og),
+        snapshot.psi ? JSON.stringify(snapshot.psi) : null,
+        Number.isNaN(auditedAtMs) ? now : auditedAtMs,
+        now
+      )
+      .run()
+  } catch (error) {
+    console.warn(
+      `[site-audit] audit snapshot save failed subdomain=${subdomain}`,
+      error
+    )
+  }
+}

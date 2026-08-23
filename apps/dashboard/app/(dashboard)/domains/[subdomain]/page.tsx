@@ -15,12 +15,15 @@ import { getContactEmail } from "@/lib/contact-email"
 import { hasDatabase } from "@/lib/db"
 import { toDomainView, type PendingPRView } from "@/lib/domain-view"
 import { getSubdomainsForOwner } from "@/lib/domains"
+import { findFeature, isFeatureEnabled } from "@/lib/features"
 import { contactFormEnabled } from "@/lib/flags-server"
 import { getGitHubAccessToken } from "@/lib/github-token"
 import { getPortfolioStyle } from "@/lib/portfolio-config"
 import { providerForRecords } from "@/lib/providers"
 import { getPendingProxyPRs } from "@/lib/proxy-pr"
 import { hasScreenshotWorker } from "@/lib/screenshots/client"
+import { getSiteAudit } from "@/lib/site-audit"
+import { SiteAuditPanel } from "@/components/site-audit-panel"
 
 interface Props {
   params: Promise<{ subdomain: string }>
@@ -58,40 +61,51 @@ export default async function DomainDetailPage({ params }: Props) {
   // and the cooldown) and the screenshot Worker. Where either is absent the
   // control can only ever fail, so the block is not offered at all.
   const canRefreshPreview = hosted && hasDatabase() && hasScreenshotWorker()
+  const siteAuditEnabled = isFeatureEnabled(
+    record.features,
+    findFeature("site-audit")!
+  )
 
-  const [token, visits, style, contactFormEmailStatus, contactFormFlagEnabled] =
-    await Promise.all([
-      getGitHubAccessToken(),
-      getVisitsForSubdomains([record.subdomain]).catch((error) => {
-        console.error("[domain] visit totals unavailable", error)
-        return null
-      }),
-      // Only worth a request for a record actually pointed at our renderer.
-      hosted ? getPortfolioStyle(record.subdomain) : null,
-      // The signed-in user's own contact email — Cloudflare Email Routing's
-      // destination-address list is account-wide, and this record's owner is
-      // always the signed-in user (ownership was already checked above), so
-      // there is exactly one email to look up. "absent" (rather than
-      // throwing, or reading as "verified") whenever there's no email yet or
-      // Email Routing isn't configured on this deployment — both mean there
-      // is no confirmed place to deliver mail, which is exactly what blocks
-      // the Contact Form switch below.
-      (session.user.githubId
-        ? getContactEmail(session.user.githubId)
-        : Promise.resolve(null)
-      ).then((email) =>
-        email && hasEmailRouting()
-          ? getDestinationAddressStatus(email).catch((error) => {
-              console.error(
-                "[domain] contact-form email status unavailable",
-                error
-              )
-              return "absent" as const
-            })
-          : Promise.resolve<DestinationAddressStatus>("absent")
-      ),
-      contactFormEnabled(),
-    ])
+  const [
+    token,
+    visits,
+    style,
+    contactFormEmailStatus,
+    contactFormFlagEnabled,
+    siteAudit,
+  ] = await Promise.all([
+    getGitHubAccessToken(),
+    getVisitsForSubdomains([record.subdomain]).catch((error) => {
+      console.error("[domain] visit totals unavailable", error)
+      return null
+    }),
+    // Only worth a request for a record actually pointed at our renderer.
+    hosted ? getPortfolioStyle(record.subdomain) : null,
+    // The signed-in user's own contact email — Cloudflare Email Routing's
+    // destination-address list is account-wide, and this record's owner is
+    // always the signed-in user (ownership was already checked above), so
+    // there is exactly one email to look up. "absent" (rather than
+    // throwing, or reading as "verified") whenever there's no email yet or
+    // Email Routing isn't configured on this deployment — both mean there
+    // is no confirmed place to deliver mail, which is exactly what blocks
+    // the Contact Form switch below.
+    (session.user.githubId
+      ? getContactEmail(session.user.githubId)
+      : Promise.resolve(null)
+    ).then((email) =>
+      email && hasEmailRouting()
+        ? getDestinationAddressStatus(email).catch((error) => {
+            console.error(
+              "[domain] contact-form email status unavailable",
+              error
+            )
+            return "absent" as const
+          })
+        : Promise.resolve<DestinationAddressStatus>("absent")
+    ),
+    contactFormEnabled(),
+    siteAuditEnabled ? getSiteAudit(record.subdomain) : Promise.resolve(null),
+  ])
   const domain = toDomainView(record, {
     contactFormEmailStatus,
     contactFormFlagEnabled,
@@ -120,6 +134,9 @@ export default async function DomainDetailPage({ params }: Props) {
           login={session.user.login}
           style={style}
         />
+      ) : null}
+      {siteAuditEnabled ? (
+        <SiteAuditPanel subdomain={record.subdomain} audit={siteAudit} />
       ) : null}
       <DomainsManager
         domains={[domain]}

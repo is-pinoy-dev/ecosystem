@@ -147,6 +147,7 @@ export default function Layout() {
   const [psiState, setPsiState] = useState<PsiState>({ status: "idle" })
   const [inputValue, setInputValue] = useState("/")
   const pathRef = useRef("/")
+  const savedSignatureRef = useRef<string | null>(null)
 
   const runPsi = useCallback(
     async (strategy: PsiStrategy) => {
@@ -215,6 +216,30 @@ export default function Layout() {
     runAudit(controller.signal)
     return () => controller.abort()
   }, [runAudit])
+
+  // Persist the latest scan so it survives a reload and the dashboard can
+  // show it too (see worker/index.ts's /save-audit handler). Fire-and-forget:
+  // a failed save must never surface as a failed scan. Keyed on auditedAt +
+  // the PSI run's own fetchedAt so a re-render doesn't repost the same pair.
+  useEffect(() => {
+    if (state.status !== "result") return
+    const psi = psiState.status === "result" ? psiState.data : null
+    const signature = `${state.data.auditedAt}:${psi?.fetchedAt ?? ""}`
+    if (savedSignatureRef.current === signature) return
+    savedSignatureRef.current = signature
+    fetch("/_tools/site-audit/save-audit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: state.data.url,
+        auditedAt: state.data.auditedAt,
+        seo: state.data.seo,
+        og: state.data.og,
+        psi,
+      }),
+      keepalive: true,
+    }).catch(() => {})
+  }, [state, psiState])
 
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault()
