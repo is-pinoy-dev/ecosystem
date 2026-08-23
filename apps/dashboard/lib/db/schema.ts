@@ -113,3 +113,28 @@ export const contactEmails = sqliteTable("contact_emails", {
 })
 
 export type ContactEmailRow = typeof contactEmails.$inferSelect
+
+// Latest site-audit snapshot for a subdomain — written directly by the
+// tools/site-audit Worker (same D1 database, see worker/wrangler.toml)
+// after a scan completes, read by both that tool and this dashboard so the
+// radar/scores survive a page reload without re-scanning. One row per
+// subdomain, overwritten on every scan: a rebuildable snapshot of "the last
+// thing site-audit measured", never a history table.
+export const siteAudits = sqliteTable("site_audits", {
+  subdomain: text("subdomain").primaryKey(),
+  url: text("url").notNull(),
+  // AuditCategory ({ score, fields }) from @is-pinoy-dev/schemas, stored as
+  // JSON so the dashboard can render the same ScoreCard/IssueList without a
+  // duplicate column per field.
+  seo: text("seo", { mode: "json" }).notNull().$type<Record<string, unknown>>(),
+  og: text("og", { mode: "json" }).notNull().$type<Record<string, unknown>>(),
+  // PsiResult from @is-pinoy-dev/schemas, or null until a PageSpeed run has
+  // completed for this subdomain.
+  psi: text("psi", { mode: "json" }).$type<Record<string, unknown>>(),
+  auditedAt: integer("audited_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
+export type SiteAuditRow = typeof siteAudits.$inferSelect

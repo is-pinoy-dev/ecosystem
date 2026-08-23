@@ -1,9 +1,14 @@
 import type { D1Database } from "@cloudflare/workers-types"
 import { createRequestHandler } from "@react-router/cloudflare"
+import { auditCategorySchema, psiResultSchema } from "@is-pinoy-dev/schemas"
 // @ts-ignore - build/server is generated at compile time and won't exist during typecheck
 import * as build from "../build/server"
 import { lookupSubdomain, isToolEnabled, type DomainRecord } from "../src/lib/domains"
-import { readFeaturesOverride } from "./subdomains-db"
+import {
+  readFeaturesOverride,
+  saveAuditSnapshot,
+  type AuditSnapshot,
+} from "./subdomains-db"
 
 const handleRequest = createRequestHandler({
   build,
@@ -23,10 +28,12 @@ const PREFIX = "/_tools/site-audit"
 export interface Env {
   ASSETS: Fetcher
   /**
-   * The dashboard's registry database (see
-   * apps/dashboard/lib/db/schema.ts), read-only from here — only for the
-   * `featuresOverride` a dashboard save writes directly, never for anything
-   * the sync workflow owns.
+   * The dashboard's registry database (see apps/dashboard/lib/db/schema.ts).
+   * Read-only against `subdomains` — only for the `featuresOverride` a
+   * dashboard save writes directly, never for anything the sync workflow
+   * owns. Read-write against `site_audits`, which this Worker owns: it is
+   * the only writer of that table, the same way the dashboard is the only
+   * writer of `features_override`.
    */
   SUBDOMAINS_DB: D1Database
 }
@@ -71,6 +78,68 @@ async function isSiteAuditEnabled(
     `[site-audit] feature check subdomain=${subdomain} enabled=${enabled}`
   )
   return enabled
+}
+
+const SAVE_AUDIT_PATH = `${PREFIX}/save-audit`
+
+/**
+ * Validates the client's POST body against the same schemas the tool itself
+ * uses (`@is-pinoy-dev/schemas`), without depending on `zod` directly here —
+ * `tools/site-audit`'s own package.json only carries it transitively via
+ * that package, and worker/ is a separate tsconfig project from src/.
+ */
+function parseAuditSnapshotBody(raw: unknown): AuditSnapshot | null {
+  if (!raw || typeof raw !== "object") return null
+  const body = raw as Record<string, unknown>
+  if (typeof body.url !== "string" || typeof body.auditedAt !== "string") {
+    return null
+  }
+  const seo = auditCategorySchema.safeParse(body.seo)
+  const og = auditCategorySchema.safeParse(body.og)
+  if (!seo.success || !og.success) return null
+  if (body.psi !== null) {
+    const psi = psiResultSchema.safeParse(body.psi)
+    if (!psi.success) return null
+    return { url: body.url, auditedAt: body.auditedAt, seo: seo.data, og: og.data, psi: psi.data }
+  }
+  return { url: body.url, auditedAt: body.auditedAt, seo: seo.data, og: og.data, psi: null }
+}
+
+/**
+ * Persists the scan the browser just computed, so it survives a reload and
+ * can be read back by the dashboard (see apps/dashboard/lib/db/schema.ts,
+ * `siteAudits`). Fire-and-forget from the client (src/routes/layout.tsx) —
+ * a failure here must never surface as a failure of the scan itself.
+ *
+ * Handled here rather than as a React Router route because the write needs
+ * `D1Database`, which only worker/'s tsconfig carries — src/ is typechecked
+ * under DOM lib for the browser bundle and deliberately excludes
+ * @cloudflare/workers-types (see subdomains-db.ts).
+ *
+ * The subdomain to key the row on comes from the request's own host, never
+ * the body: the client could in principle be asked to grade an arbitrary
+ * URL, but a snapshot can only ever be written for the subdomain actually
+ * serving this request.
+ */
+async function handleSaveAudit(
+  request: Request,
+  subdomain: string | null,
+  db: D1Database | undefined
+): Promise<Response> {
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 })
+  }
+  // Apex domain — nothing to key a per-subdomain snapshot on.
+  if (!subdomain || !db) return new Response(null, { status: 204 })
+
+  const raw = await request.json().catch(() => null)
+  const snapshot = parseAuditSnapshotBody(raw)
+  if (!snapshot) {
+    return new Response("Invalid audit snapshot", { status: 400 })
+  }
+
+  await saveAuditSnapshot(db, subdomain, snapshot)
+  return new Response(null, { status: 204 })
 }
 
 function notEnabledResponse(subdomain: string): Response {
@@ -230,8 +299,10 @@ export default {
       `[site-audit] request method=${request.method} host=${url.hostname} path=${url.pathname}`
     )
 
-    if (hostParts.length > 2) {
-      const subdomain = hostParts.slice(0, hostParts.length - 2).join(".")
+    const subdomain =
+      hostParts.length > 2 ? hostParts.slice(0, hostParts.length - 2).join(".") : null
+
+    if (subdomain) {
       const enabled = await isSiteAuditEnabled(subdomain, env, ctx)
       if (!enabled) {
         console.warn(
@@ -239,6 +310,10 @@ export default {
         )
         return notEnabledResponse(subdomain)
       }
+    }
+
+    if (url.pathname === SAVE_AUDIT_PATH) {
+      return handleSaveAudit(request, subdomain, env.SUBDOMAINS_DB)
     }
 
     if (url.pathname.startsWith(PREFIX)) {

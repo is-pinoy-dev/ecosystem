@@ -43,6 +43,13 @@
       "when": 1787314008498,
       "tag": "0005_windy_black_cat",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1787471299685,
+      "tag": "0006_add_site_audits",
+      "breakpoints": true
     }
   ]
 }

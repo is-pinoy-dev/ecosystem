@@ -7,11 +7,13 @@ compatibility_flags = ["nodejs_compat"]
 directory = "../build/client"
 binding = "ASSETS"
 
-# Read-only access to the dashboard's registry database, for the
+# The dashboard's registry database — read-only against `subdomains`, for the
 # `featuresOverride` a dashboard save writes directly (see
 # apps/dashboard/lib/db/settings.ts and apps/dashboard/lib/db/schema.ts).
-# Same database as the dashboard's own CLOUDFLARE_D1_DATABASE_ID env var —
-# keep this in step if that database is ever recreated or migrated.
+# Read-write against `site_audits`, which this Worker owns: it writes the
+# latest scan snapshot there (worker/subdomains-db.ts) so the dashboard can
+# read it back. Same database as the dashboard's own CLOUDFLARE_D1_DATABASE_ID
+# env var — keep this in step if that database is ever recreated or migrated.
 [[d1_databases]]
 binding = "SUBDOMAINS_DB"
 database_name = "dashboard-db"
