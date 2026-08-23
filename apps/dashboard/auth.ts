@@ -3,6 +3,7 @@ import NextAuth, {
   type NextAuthResult,
 } from "next-auth"
 import GitHub from "next-auth/providers/github"
+import { backfillIdentity } from "@/lib/auth-identity-backfill"
 
 declare module "next-auth" {
   interface Session {
@@ -39,7 +40,7 @@ const nextAuth = NextAuth({
     signIn: "/login",
   },
   callbacks: {
-    jwt({ token, profile, account }) {
+    async jwt({ token, profile, account }) {
       // Only present on initial sign-in; persist the GitHub username so the
       // dashboard can match registry records owned by this account.
       if (profile?.login) {
@@ -56,7 +57,11 @@ const nextAuth = NextAuth({
       if (account?.access_token) {
         token.accessToken = account.access_token
       }
-      return token
+
+      // See lib/auth-identity-backfill.ts: self-heals `login`/`githubId` on
+      // sessions minted before those fields existed on the token, instead of
+      // account-scoped actions misreporting the user as not signed in.
+      return backfillIdentity(token)
     },
     session({ session, token }) {
       if (typeof token.login === "string") {
