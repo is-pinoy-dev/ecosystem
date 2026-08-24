@@ -50,6 +50,52 @@ via the GitHub API (slower, rate-limited, no timestamps or sync status).
    (or `db:push` during development).
 4. Set `REGISTRY_SYNC_SECRET` (e.g. `openssl rand -hex 32`) in the dashboard
    deployment and in the domains repo's Actions secrets.
+5. Confirm the credentials work: `pnpm --filter dashboard db:check`.
+
+### Troubleshooting
+
+> `[domains] registry database unavailable, serving from GitHub instead`
+> `Error: D1 query failed: Authentication error`
+
+The dashboard is up and correct — git is the source of truth and the listing
+fell back to reading the repo — but the read model is not being used, so sync
+status, registration dates, showcase screenshots and saved settings are all
+missing until it is fixed.
+
+Cloudflare says the same three words, _Authentication error_, for every cause
+of a refused request, so start by asking it narrower questions:
+
+```bash
+pnpm --filter dashboard db:check
+```
+
+It checks the token, then the token's D1 access to `CLOUDFLARE_ACCOUNT_ID`,
+then whether `CLOUDFLARE_D1_DATABASE_ID` names a database that account owns,
+then a real query — and the first step that fails names the variable to fix.
+It reads `.env.local` when run locally; against a deployment, export the same
+three variables the deployment sets and run it with those.
+
+The usual causes, in the order they turn up:
+
+- **The token was rotated or revoked** and only some of the places that store
+  it were updated. It lives in three: the Vercel project, the
+  `Production – is-pinoy-dev-dashboard` GitHub Environment (which
+  `.github/workflows/migrate-dashboard-db.yml` reads), and each developer's
+  `.env.local`.
+- **The token lacks `Account → D1 → Edit`**, or was issued for a different
+  Cloudflare account than `CLOUDFLARE_ACCOUNT_ID` names.
+- **The stored value has whitespace or quotes around it** — a newline from a
+  `cat`-ed file, or the quotes from a `KEY="value"` line pasted into a form.
+  The app strips these when reading (`lib/db/env.ts`) and says so in the log,
+  but `drizzle-kit` and `wrangler` read the raw value, so fix it at the source.
+- **`CLOUDFLARE_ACCOUNT_ID` or `CLOUDFLARE_D1_DATABASE_ID` is wrong.** A
+  mistyped identifier comes back as an authentication failure too, rather
+  than as a 404. The app warns at startup when either is the wrong shape.
+
+While the credentials are refused, the client stops calling Cloudflare for 30
+seconds at a time rather than spending a failed round trip on every render, and
+logs the reason once per cool-off instead of once per query. A corrected value
+takes effect on its own; no redeploy is needed to clear it.
 
 ### Sync event contract
 
