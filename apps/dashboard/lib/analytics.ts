@@ -17,6 +17,7 @@
 // resolved for the session; every query below is scoped to that list.
 
 import { d1Query, type D1Config } from "@/lib/db/d1"
+import { readEnv } from "@/lib/db/env"
 
 /** Default span rendered in the dashboard. */
 export const DEFAULT_WINDOW_DAYS = 30
@@ -62,11 +63,11 @@ export interface VisitsReport {
 
 function readConfig(): Partial<D1Config> {
   return {
-    accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+    accountId: readEnv("CLOUDFLARE_ACCOUNT_ID"),
     databaseId:
-      process.env.CLOUDFLARE_ANALYTICS_D1_DATABASE_ID ??
+      readEnv("CLOUDFLARE_ANALYTICS_D1_DATABASE_ID") ??
       DEFAULT_ANALYTICS_DATABASE_ID,
-    token: process.env.CLOUDFLARE_D1_API_TOKEN,
+    token: readEnv("CLOUDFLARE_D1_API_TOKEN"),
   }
 }
 

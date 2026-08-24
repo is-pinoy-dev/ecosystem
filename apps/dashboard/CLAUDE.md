@@ -23,6 +23,7 @@ pnpm --filter dashboard test        # vitest run
 pnpm --filter dashboard db:generate # drizzle-kit generate
 pnpm --filter dashboard db:push     # drizzle-kit push (dev)
 pnpm --filter dashboard db:migrate  # drizzle-kit migrate (apply schema)
+pnpm --filter dashboard db:check    # diagnose the D1 credentials (read-only)
 ```
 
 Setup requires a GitHub OAuth app (callback
@@ -33,7 +34,10 @@ one unlocks. In particular:
 - `AUTH_SECRET`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` — required to sign in.
 - `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_D1_DATABASE_ID` / `CLOUDFLARE_D1_API_TOKEN`
   — all three or none. With them, registry reads come from the D1 read model;
-  without them, the dashboard falls back to the slower GitHub-API path.
+  without them, the dashboard falls back to the slower GitHub-API path. When
+  they are set but refused, the log line is
+  `[domains] registry database unavailable` — run `db:check`, which names the
+  offending variable, and see README.md's Troubleshooting section.
 - `REGISTRY_SYNC_SECRET` — authenticates the domains-repo sync workflow's
   `POST /api/registry/events` snapshot that keeps D1 current.
 
