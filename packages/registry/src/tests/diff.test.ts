@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { diff } from "../core/diff.js";
 import type { Domain, CloudflareRecord } from "@is-pinoy-dev/schemas";
 
@@ -595,5 +595,136 @@ describe("diff", () => {
     const result = diff(desired, actual, { scoped: true });
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ type: "DELETE", id: "2" });
+  });
+});
+
+describe("diff — records with no file behind them", () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    process.env.DOMAIN = "is-pinoy.dev";
+    warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  const jun: Domain = {
+    subdomain: "jun",
+    owner: { github: "jun" },
+    records: { CNAME: { value: "jun.vercel.app" } },
+  };
+  const junRecord: CloudflareRecord = {
+    id: "jun-1",
+    name: "jun.is-pinoy.dev",
+    type: "CNAME",
+    content: "jun.vercel.app",
+  };
+  // The record example.is-pinoy.dev was left resolving on after its file was
+  // deleted from the registry in the domains repo.
+  const orphan: CloudflareRecord = {
+    id: "example-1",
+    name: "example.is-pinoy.dev",
+    type: "CNAME",
+    content: "f78396fe5442230b.vercel-dns-017.com",
+  };
+
+  it("never deletes a record just because its file is gone", () => {
+    expect(diff([jun], [junRecord, orphan])).toHaveLength(0);
+  });
+
+  it("warns, naming the subdomain and how to retire it", () => {
+    diff([jun], [junRecord, orphan]);
+    expect(warn).toHaveBeenCalledTimes(1);
+    const message = String(warn.mock.calls[0]?.[0]);
+    expect(message).toContain("example (CNAME)");
+    expect(message).toContain('"destroy": true');
+  });
+
+  it("stays quiet when every record has a file", () => {
+    diff([jun], [junRecord]);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("stays quiet about a domain that is being destroyed properly", () => {
+    const destroyed: Domain = { ...jun, subdomain: "example", destroy: true };
+    const result = diff([jun, destroyed], [junRecord, orphan]);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.type).toBe("DELETE");
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("stays quiet about the platform's own reserved hosts", () => {
+    diff(
+      [jun],
+      [
+        junRecord,
+        {
+          id: "portfolio-1",
+          name: "portfolio.is-pinoy.dev",
+          type: "CNAME",
+          content: "cname.vercel-dns.com",
+        },
+        {
+          id: "status-1",
+          name: "status.is-pinoy.dev",
+          type: "CNAME",
+          content: "status.workers.dev",
+        },
+      ],
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("stays quiet about service records and the apex", () => {
+    diff(
+      [jun],
+      [
+        junRecord,
+        {
+          id: "acme-1",
+          name: "_acme-challenge.is-pinoy.dev",
+          type: "TXT",
+          content: '"token"',
+        },
+        {
+          id: "apex-1",
+          name: "is-pinoy.dev",
+          type: "A",
+          content: "203.0.113.1",
+        },
+        {
+          id: "deep-1",
+          name: "a.b.is-pinoy.dev",
+          type: "CNAME",
+          content: "somewhere.test",
+        },
+      ],
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("stays quiet under a scoped diff, where absence means nothing", () => {
+    diff([jun], [junRecord, orphan], { scoped: true });
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("groups every record type of one orphan into a single warning", () => {
+    diff(
+      [jun],
+      [
+        junRecord,
+        orphan,
+        {
+          id: "example-2",
+          name: "example.is-pinoy.dev",
+          type: "TXT",
+          content: '"hello"',
+        },
+      ],
+    );
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain("example (CNAME, TXT)");
   });
 });
