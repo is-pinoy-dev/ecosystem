@@ -39,7 +39,12 @@ one unlocks. In particular:
   `[domains] registry database unavailable` — run `db:check`, which names the
   offending variable, and see README.md's Troubleshooting section.
 - `REGISTRY_SYNC_SECRET` — authenticates the domains-repo sync workflow's
-  `POST /api/registry/events` snapshot that keeps D1 current.
+  `POST /api/registry/events` snapshot that keeps D1 current. This POST is the
+  *only* thing that refreshes the read model: without it the dashboard serves a
+  frozen list, and the fallback to GitHub never kicks in because D1 is
+  reachable and simply stale. It must be set on the domains repo too.
+- `DASHBOARD_URL` — repo variable on the domains repo pointing at this
+  deployment; defaults to `https://dashboard.is-pinoy.dev`.
 
 ## Architecture
 

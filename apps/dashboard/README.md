@@ -124,11 +124,22 @@ Content-Type: application/json
 ```
 
 `createdAt`/`updatedAt` are optional git-derived dates
-(`git log --follow --format=%cI -- subdomains/<name>.json` — last line is the
-first commit, first line the latest). When provided they become the row's
-registration and last-change dates — including retroactively, so rows from an
-earlier backfill without dates are corrected on the next sync. Without them,
-insert time and `syncedAt` are used.
+(`TZ=UTC git log --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ --
+subdomains/<name>.json` — last line is the first commit, first line the
+latest). When provided they become the row's registration and last-change
+dates — including retroactively, so rows from an earlier backfill without dates
+are corrected on the next sync. Without them, insert time and `syncedAt` are
+used.
+
+Two details of that command matter. The date is forced to UTC with a literal
+`Z` because `createdAt`/`updatedAt` are validated with `z.iso.datetime()`,
+which rejects a numeric offset — `%cI` produces `+08:00` and fails the whole
+payload with a 400. And there is deliberately no `--follow`: a subdomain file
+is usually created by copying a neighbour, and git's rename detection scores
+that as a rename, so `--follow` dates `bosquejun.json` from `mee.json` and
+reports a registration date from before the subdomain existed. Rows are keyed
+by subdomain name, so even a real rename is a new row rather than a
+continuation.
 
 The handler reconciles the table against the snapshot (upsert + delete +
 `updated_at` bumped only when a record's content actually changed), so
@@ -136,22 +147,22 @@ duplicate or replayed deliveries are idempotent. Because it is a full
 snapshot, a lost delivery heals itself on the next sync — and a manual
 backfill is just re-running the same POST.
 
-Example workflow step for the domains repo, after the existing sync step:
+This POST is what keeps the dashboard's list current, and nothing else does.
+It lives in the domains repo's `.github/workflows/sync.yml`, which builds
+`snapshot.json` with `scripts/build-snapshot.sh` and posts it after the
+Cloudflare sync step. Two things there are load-bearing:
 
-```yaml
-- name: Notify dashboard
-  if: always()
-  run: |
-    curl -sf -X POST "$DASHBOARD_URL/api/registry/events" \
-      -H "Authorization: Bearer ${{ secrets.REGISTRY_SYNC_SECRET }}" \
-      -H "Content-Type: application/json" \
-      --data @snapshot.json
-  env:
-    DASHBOARD_URL: https://dashboard.is-pinoy.dev
-```
+- the sync job checks out with `fetch-depth: 0`, since a shallow clone has no
+  history to date the records from;
+- the POST runs under `if: always()` and reports `status: failed` when the
+  Cloudflare sync failed, so a bad run marks the rows rather than leaving the
+  read model silently untouched.
 
-where `snapshot.json` is assembled from the `subdomains/*.json` files plus the
-sync results of the run.
+The step fails the job when `REGISTRY_SYNC_SECRET` is unset or the endpoint
+rejects the snapshot. That is deliberate: while this POST was missing entirely,
+the dashboard served a frozen snapshot for weeks — subdomains registered since
+never appeared, and one deleted from the registry kept being listed — with
+nothing anywhere reporting a problem. A red sync run is the cheaper failure.
 
 ## Automated showcase screenshots
 

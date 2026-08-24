@@ -4,6 +4,7 @@ import {
   type DNSAction,
   type CloudflareRecord,
 } from "@is-pinoy-dev/schemas";
+import { RESERVED_SUBDOMAINS } from "@is-pinoy-dev/validate";
 import { env } from "./env.js";
 import { normalizeContent, normalizeRecordContent } from "./normalize.js";
 import { verificationTargetFqdn } from "./vercel.js";
@@ -193,6 +194,8 @@ export function diff(
     return true;
   }
 
+  const deleted = new Set<string>();
+
   for (const a of actual) {
     const isTXTRecordMatch =
       a.type === "TXT" && destroyedTXTValues.has(a.content);
@@ -203,8 +206,83 @@ export function diff(
       isOrphanedVerification(a)
     ) {
       actions.push({ type: "DELETE", id: a.id, fqdn: a.name });
+      deleted.add(a.id);
     }
   }
 
+  warnUnbackedRecords(actual, desired, claimed, deleted, options);
+
   return actions;
+}
+
+/** The label of `<label>.<zone>`, or null for the apex or anything deeper. */
+function singleLabelOf(name: string): string | null {
+  const suffix = `.${env("DOMAIN")}`;
+  if (!name.endsWith(suffix)) return null;
+  const label = name.slice(0, -suffix.length);
+  return label && !label.includes(".") ? label : null;
+}
+
+/**
+ * Warn about records in the zone that no domain file accounts for.
+ *
+ * Deleting a subdomain's JSON file is the intuitive way to retire it, and it
+ * does nothing at all: `desired` is built by enumerating the files that exist,
+ * so a deleted one is absent rather than destroyed, and the DELETE branch above
+ * only ever fires for a domain that is still present with `destroy: true`. The
+ * record stays live and resolving, and sync reports "all domains are in sync"
+ * over it — which is how example.is-pinoy.dev kept answering for weeks after
+ * its file was removed.
+ *
+ * This does not delete them. A record with no file behind it is genuinely
+ * ambiguous — a retired subdomain, or something added to the zone by hand that
+ * the registry has no business touching — and guessing wrong here takes a live
+ * site down. Naming them is enough to turn a silent no-op into something a
+ * maintainer can act on, by restoring the file with `"destroy": true`.
+ *
+ * Deliberately narrow, so the warning stays worth reading:
+ * - only `<label>.<zone>` names, never the apex or deeper records;
+ * - never a reserved label, which is where the platform's own hand-made
+ *   records live (`portfolio`, `status`, `www`, ...);
+ * - never an underscore-prefixed service name (`_vercel`, `_acme-challenge`);
+ * - never under `--only`, where `desired` is a subset by construction and
+ *   nearly every record in the zone is legitimately unaccounted for.
+ */
+function warnUnbackedRecords(
+  actual: CloudflareRecord[],
+  desired: Domain[],
+  claimed: Set<string>,
+  deleted: Set<string>,
+  options: DiffOptions,
+): void {
+  if (options.scoped) return;
+
+  const known = new Set(desired.map((d) => d.subdomain));
+  const reserved = new Set(RESERVED_SUBDOMAINS);
+  const orphaned = new Map<string, Set<string>>();
+
+  for (const a of actual) {
+    if (claimed.has(a.id) || deleted.has(a.id)) continue;
+    const label = singleLabelOf(a.name);
+    if (label === null) continue;
+    if (label.startsWith("_") || reserved.has(label) || known.has(label)) {
+      continue;
+    }
+    const types = orphaned.get(label) ?? new Set<string>();
+    types.add(a.type);
+    orphaned.set(label, types);
+  }
+
+  if (orphaned.size === 0) return;
+
+  const summary = [...orphaned.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([label, types]) => `${label} (${[...types].sort().join(", ")})`)
+    .join(", ");
+
+  console.warn(
+    `WARNING: ${orphaned.size} subdomain(s) resolve in Cloudflare but have no file in the registry: ${summary}. ` +
+      `Deleting a domain file does not remove its DNS records — sync only deletes what is still present with "destroy": true. ` +
+      `Restore each file with "destroy": true to retire it, or ignore this if the record is managed outside the registry.`,
+  );
 }
